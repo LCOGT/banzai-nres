@@ -8,8 +8,8 @@ services:
       io.rancher.container.pull_image: always
     logging:
       options:
-        max-size: 100m
-        max-file: 3
+        max-size: '100m'
+        max-file: '3'
   BANZAINRESPipelineTestFitsExchange:
     image: rabbitmq:3-management
     ports:
@@ -18,8 +18,8 @@ services:
       io.rancher.container.pull_image: always
     logging:
       options:
-        max-size: 100m
-        max-file: 3
+        max-size: '100m'
+        max-file: '3'
   BANZAINRESPipelineE2EData:
     image: docker.lco.global/nres-pipeline-e2e-data:1.0.1
     entrypoint:
@@ -31,8 +31,8 @@ services:
       io.rancher.container.start_once: 'true'
     logging:
       options:
-        max-size: 100m
-        max-file: 3
+        max-size: '100m'
+        max-file: '3'
   BANZAINRESPipelineTest:
     image: ${DOCKER_IMG}
     environment:
@@ -52,8 +52,8 @@ services:
       io.rancher.sidekicks: BANZAINRESPipelineE2EData
     logging:
       options:
-        max-size: 100m
-        max-file: 3
+        max-size: '100m'
+        max-file: '3'
 volumes:
   banzainrese2e:
     driver: local
