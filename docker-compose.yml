@@ -1,0 +1,59 @@
+version: '2'
+services:
+  BANZAINRESCeleryRabbitmq:
+    image: rabbitmq:3-management
+    ports:
+    - 15675:15672/tcp
+    labels:
+      io.rancher.container.pull_image: always
+    logging:
+      options:
+        max-size: 100m
+        max-file: 3
+  BANZAINRESPipelineTestFitsExchange:
+    image: rabbitmq:3-management
+    ports:
+    - 15676:15672/tcp
+    labels:
+      io.rancher.container.pull_image: always
+    logging:
+      options:
+        max-size: 100m
+        max-file: 3
+  BANZAINRESPipelineE2EData:
+    image: docker.lco.global/nres-pipeline-e2e-data:1.0.1
+    entrypoint:
+    - /bin/true
+    volumes:
+    - banzainrese2e:/archive
+    labels:
+      io.rancher.container.pull_image: always
+      io.rancher.container.start_once: 'true'
+    logging:
+      options:
+        max-size: 100m
+        max-file: 3
+  BANZAINRESPipelineTest:
+    image: ${DOCKER_IMG}
+    environment:
+      BROKER_PASSWORD: ${RABBIT_PASSWORD}
+      BROKER_URL: amqp://${RABBITMQ_USER}:${RABBIT_PASSWORD}@nresceleryrabbitmq:5672/
+      BROKER_USERNAME: ${RABBITMQ_USER}
+      DB_URL: sqlite:////archive/engineering/test.db
+      FITS_BROKER: amqp://${RABBITMQ_USER}:${RABBIT_PASSWORD}@nrestestfitsexchange:5672/
+      RABBITMQ_HOST: banzainresceleryrabbitmq
+    volumes_from:
+    - BANZAINRESPipelineE2EData
+    links:
+    - BANZAINRESCeleryRabbitmq:banzainresceleryrabbitmq
+    - BANZAINRESPipelineTestFitsExchange:banzainrestestfitsexchange
+    labels:
+      io.rancher.container.pull_image: always
+      io.rancher.sidekicks: BANZAINRESPipelineE2EData
+    logging:
+      options:
+        max-size: 100m
+        max-file: 3
+volumes:
+  banzainrese2e:
+    driver: local
