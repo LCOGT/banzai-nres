@@ -19,4 +19,5 @@ setup(name='banzai_nres',
       package_dir={'banzai_nres': 'banzai_nres'},
       setup_requires=['pytest-runner'],
       install_requires=['banzai'],
-      tests_require=['pytest'])
+      tests_require=['pytest'],
+      entry_points = {'console_scripts': ['firsttest=banzai_nres.main:test_one_image']})
