@@ -37,12 +37,13 @@ class TestContext(object):
     Picks out a frame to test.
     """
     def __init__(self,filename):
-        self.processed_path = '/tmp'
-        self.raw_path = '/archive/engineering/lsc/nres01'
+        self.processed_path = '/archive/engineering/lsc/nres01/20180328/tmp'
+        self.raw_path = '/archive/engineering/lsc/nres01/20180328/raw'
         self.filename = filename
 
 def test_one_image():
-    test_image_context = TestContext('20180328')
+    test_image_context = TestContext('lscnrs01-fl09-20180328-0001-w00.fits.fz
+')
     print(make_master_bias(test_image_context))
     return True
 
