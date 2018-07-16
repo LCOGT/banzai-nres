@@ -34,15 +34,22 @@ ordered_stages = [bias.OverscanSubtractor,
 
 class TestContext(object):
     """
-    Picks out a frame to test.
+    Picks out a frame or a set of frames to test.
+    Parameters
+    ----------
+    filename: None if you want just the path to be included in the context (73 frames in this case)
+    Returns
+    -------
+    stages_todo: list of banzai.stages.Stage
+                 The stages that need to be done
     """
     def __init__(self,filename):
         self.processed_path = '/archive/engineering/lsc/nres01/20180328/tmp'
         self.raw_path = '/archive/engineering/lsc/nres01/20180328/raw'
         self.filename = filename
 
-def test_one_image():
-    test_image_context = TestContext('lscnrs01-fl09-20180328-0001-w00.fits.fz')
+def test_making_master_biases():
+    test_image_context = TestContext(None)
     print(make_master_bias(test_image_context))
     return True
 
@@ -129,12 +136,16 @@ def run(stages_to_do, pipeline_context, image_types=[], calibration_maker=False,
         logger.info(log_message, extra={'tags': {'raw_path': pipeline_context.raw_path}})
 
     image_list = image_utils.make_image_list(pipeline_context)
+    """
+    image_list does the following: given the pipeline_context object (file path info etc) we construct the list of images we will analyze.
+    if pipeline_context.filename == None, then we iterate through all the files in the directory.
+    """
     image_list = image_utils.select_images(image_list, image_types)
     images = banzai.images.read_images(image_list, pipeline_context)
 
     for stage in stages_to_do:
-        stage_to_run = stage(pipeline_context)
-        images = stage_to_run.run(images)
+        stage_to_run = stage(pipeline_context)  # isolate the stage that will be run
+        images = stage_to_run.run(images)   # update the list of images after running the stage on them.
 
     output_files = image_utils.save_images(pipeline_context, images,
                                            master_calibration=calibration_maker)
