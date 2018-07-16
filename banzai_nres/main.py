@@ -32,6 +32,11 @@ ordered_stages = [bias.OverscanSubtractor,
                   bias.BiasSubtractor,
                   ]
 
+"""
+TestContext and the functions in this following section are for
+testing the partial pipeline without getting pipeline_context objects
+from the actual array. e.g. from arparse.ArgumentParser etc.
+"""
 class TestContext(object):
     """
     Picks out a frame or a set of frames to test.
@@ -48,13 +53,16 @@ class TestContext(object):
         self.raw_path = '/archive/engineering/lsc/nres01/20180328/raw'
         self.filename = filename
         self.post_to_archive = False
-        self.db_address = _DEFAULT_DB
+        self.db_address = None
 
 def test_making_master_biases():
     test_image_context = TestContext(None)
     print(make_master_bias(test_image_context))
     return True
 
+"""
+Start of the main.py that will remain after we no longer use the above.
+"""
 
 def get_stages_todo(last_stage=None, extra_stages=None):
     """
@@ -108,7 +116,6 @@ class PipelineContext(object):
 
 def make_master_bias(pipeline_context):
     """
-    usually input is a PipelineContext object, however we define it herein for testing.
     Returns:
     master bias and saves the images.
     Note:
