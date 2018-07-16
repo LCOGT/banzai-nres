@@ -151,7 +151,7 @@ def reduce_frames_one_by_one(stages_to_do, pipeline_context, image_types=None):
                                                           'filepath': pipeline_context.raw_path}})
     pipeline_context.filename = original_filename
 
-def image_utils_without_saving_to_db(pipeline_context, images, master_calibration=calibration_maker):
+def image_utils_without_saving_to_db(pipeline_context, images, master_calibration = False):
     """
     An exact copy of image_utils.save_images without the part where it
     saves to a database.
