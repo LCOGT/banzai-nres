@@ -42,8 +42,7 @@ class TestContext(object):
         self.filename = filename
 
 def test_one_image():
-    test_image_context = TestContext('lscnrs01-fl09-20180328-0001-w00.fits.fz
-')
+    test_image_context = TestContext('lscnrs01-fl09-20180328-0001-w00.fits.fz')
     print(make_master_bias(test_image_context))
     return True
 
