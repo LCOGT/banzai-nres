@@ -158,6 +158,7 @@ def image_utils_without_saving_to_db(pipeline_context, images, master_calibratio
     output_files = []
     for image in images:
         output_directory = file_utils.make_output_directory(pipeline_context, image)
+        print('2')
         if not master_calibration:
             image.filename = image.filename.replace('00.fits',
                                                     '{:02d}.fits'.format(int(pipeline_context.rlevel)))
@@ -165,6 +166,7 @@ def image_utils_without_saving_to_db(pipeline_context, images, master_calibratio
         image_filename = os.path.basename(image.filename)
         filepath = os.path.join(output_directory, image_filename)
         output_files.append(filepath)
+        print('3')
         save_pipeline_metadata(image, pipeline_context)
         image.writeto(filepath, pipeline_context.fpack)
         if pipeline_context.fpack:
@@ -172,6 +174,7 @@ def image_utils_without_saving_to_db(pipeline_context, images, master_calibratio
             filepath += '.fz'
 
         if pipeline_context.post_to_archive:
+            print('4')
             logger.info('Posting {filename} to the archive'.format(filename=image_filename))
             try:
                 file_utils.post_to_archive_queue(filepath)
@@ -196,11 +199,11 @@ def run(stages_to_do, pipeline_context, image_types=[], calibration_maker=False,
     """
     image_list = image_utils.select_images(image_list, image_types)
     images = banzai.images.read_images(image_list, pipeline_context)
-
+    print('0')
     for stage in stages_to_do:
         stage_to_run = stage(pipeline_context)  # isolate the stage that will be run
         images = stage_to_run.run(images)   # update the list of images after running the stage on them.
-
+    print('1')
     output_files = image_utils_without_saving_to_db(pipeline_context, images,
                                            master_calibration=calibration_maker)
     return output_files
