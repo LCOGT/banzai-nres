@@ -23,7 +23,7 @@ from banzai import bias, trim
 from banzai import logs
 from banzai.utils import image_utils
 
-import banzai.test.utils
+import banzai.tests.utils
 
 logger = logs.get_logger(__name__)
 
