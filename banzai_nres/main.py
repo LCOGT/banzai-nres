@@ -54,7 +54,6 @@ class TestContext(object):
         self.raw_path = '/archive/engineering/lsc/nres01/20180328/raw'
         self.filename = filename
         self.post_to_archive = False
-        self.db_address = None
 
 def test_making_master_biases():
     test_image_context = TestContext(None)
