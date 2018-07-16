@@ -22,7 +22,8 @@ import banzai.images
 from banzai import bias, trim
 from banzai import logs
 from banzai.utils import image_utils
-
+from banzai.utils.image_utils import save_pipeline_metadata
+from banzai.utils import file_utils
 import banzai.tests.utils
 
 logger = logs.get_logger(__name__)
@@ -150,6 +151,37 @@ def reduce_frames_one_by_one(stages_to_do, pipeline_context, image_types=None):
                                                           'filepath': pipeline_context.raw_path}})
     pipeline_context.filename = original_filename
 
+def image_utils_without_saving_to_db(pipeline_context, images, master_calibration=calibration_maker):
+    """
+    An exact copy of image_utils.save_images without the part where it
+    saves to a database.
+    """
+    output_files = []
+    for image in images:
+        output_directory = file_utils.make_output_directory(pipeline_context, image)
+        if not master_calibration:
+            image.filename = image.filename.replace('00.fits',
+                                                    '{:02d}.fits'.format(int(pipeline_context.rlevel)))
+
+        image_filename = os.path.basename(image.filename)
+        filepath = os.path.join(output_directory, image_filename)
+        output_files.append(filepath)
+        save_pipeline_metadata(image, pipeline_context)
+        image.writeto(filepath, pipeline_context.fpack)
+        if pipeline_context.fpack:
+            image_filename += '.fz'
+            filepath += '.fz'
+
+        if pipeline_context.post_to_archive:
+            logger.info('Posting {filename} to the archive'.format(filename=image_filename))
+            try:
+                file_utils.post_to_archive_queue(filepath)
+            except Exception as e:
+                logger.error("Could not post {0} to ingester.".format(filepath))
+                logger.error(e)
+                continue
+    return output_files
+
 
 def run(stages_to_do, pipeline_context, image_types=[], calibration_maker=False, log_message=''):
     """
@@ -170,6 +202,6 @@ def run(stages_to_do, pipeline_context, image_types=[], calibration_maker=False,
         stage_to_run = stage(pipeline_context)  # isolate the stage that will be run
         images = stage_to_run.run(images)   # update the list of images after running the stage on them.
 
-    output_files = image_utils.save_images(pipeline_context, images,
+    output_files = image_utils_without_saving_to_db(pipeline_context, images,
                                            master_calibration=calibration_maker)
     return output_files
