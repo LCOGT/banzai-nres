@@ -37,16 +37,18 @@ class TestContext(object):
     Picks out a frame or a set of frames to test.
     Parameters
     ----------
-    filename: None if you want just the path to be included in the context (73 frames in this case)
+    filename: None if you want just the path to be included in the context (only frames with OBSTYPE = 'BIAS' are used
     Returns
     -------
     stages_todo: list of banzai.stages.Stage
                  The stages that need to be done
     """
     def __init__(self,filename):
-        self.processed_path = '/archive/engineering/lsc/nres01/20180328/tmp'
+        self.processed_path = '/tmp'
         self.raw_path = '/archive/engineering/lsc/nres01/20180328/raw'
         self.filename = filename
+        self.post_to_archive = False
+        self.db_address = _DEFAULT_DB
 
 def test_making_master_biases():
     test_image_context = TestContext(None)
@@ -88,15 +90,29 @@ class PipelineContext(object):
     def __init__(self, args):
         self.processed_path = args.processed_path
         self.raw_path = args.raw_path
+        self.post_to_archive = args.post_to_archive
+        self.post_to_elasticsearch = args.post_to_elasticsearch
+        self.elasticsearch_url = args.elasticsearch_url
+        self.fpack = args.fpack
+        self.rlevel = args.rlevel
+        self.db_address = args.db_address
+        self.log_level = args.log_level
+        self.preview_mode = args.preview_mode
         self.filename = args.filename
+        self.max_preview_tries = args.max_preview_tries
+        self.elasticsearch_doc_type = args.elasticsearch_doc_type
+        self.elasticsearch_qc_index = args.elasticsearch_qc_index
+
 
 
 
 def make_master_bias(pipeline_context):
     """
     usually input is a PipelineContext object, however we define it herein for testing.
-    :return:
+    Returns:
     master bias and saves the images.
+    Note:
+    image_types = ['BIAS'] selects only images which are bias type, naturally.
     """
     stages_to_do = get_stages_todo(trim.Trimmer, extra_stages=[bias.BiasMaker])
     run(stages_to_do, pipeline_context, image_types=['BIAS'], calibration_maker=True,
