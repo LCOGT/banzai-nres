@@ -26,7 +26,7 @@ from banzai import bias, trim
 from banzai import logs
 from banzai.utils import image_utils
 from banzai.utils.image_utils import save_pipeline_metadata
-from banzai.image import Image
+from banzai.images import Image
 
 from banzai.utils import file_utils
 import banzai.tests.utils
