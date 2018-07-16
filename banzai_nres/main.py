@@ -12,17 +12,22 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import argparse
 import multiprocessing
 import os
+import mock
 import traceback
 import sys
 
 from kombu import Connection, Queue, Exchange
 from kombu.mixins import ConsumerMixin
 
+from astropy.io import fits
+
 import banzai.images
 from banzai import bias, trim
 from banzai import logs
 from banzai.utils import image_utils
 from banzai.utils.image_utils import save_pipeline_metadata
+from banzai.image import Image
+
 from banzai.utils import file_utils
 import banzai.tests.utils
 
@@ -36,7 +41,7 @@ ordered_stages = [bias.OverscanSubtractor,
 """
 TestContext and the functions in this following section are for
 testing the partial pipeline without getting pipeline_context objects
-from the actual array. e.g. from arparse.ArgumentParser etc.
+from the actual array. e.g. from argparse.ArgumentParser etc.
 """
 class TestContext(object):
     """
@@ -150,7 +155,13 @@ def reduce_frames_one_by_one(stages_to_do, pipeline_context, image_types=None):
                                                           'filepath': pipeline_context.raw_path}})
     pipeline_context.filename = original_filename
 
-def image_utils_without_saving_to_db(pipeline_context, images, master_calibration = False):
+"""
+Functions which are my horrible work around to not use mock at the moment.
+An example of Mock is here: test_dbs.py
+
+"""
+
+def image_utils_no_db(pipeline_context, images, master_calibration = False):
     """
     An exact copy of image_utils.save_images without the part where it
     saves to a database.
@@ -158,7 +169,7 @@ def image_utils_without_saving_to_db(pipeline_context, images, master_calibratio
     output_files = []
     for image in images:
         output_directory = file_utils.make_output_directory(pipeline_context, image)
-        print('2')
+
         if not master_calibration:
             image.filename = image.filename.replace('00.fits',
                                                     '{:02d}.fits'.format(int(pipeline_context.rlevel)))
@@ -166,7 +177,7 @@ def image_utils_without_saving_to_db(pipeline_context, images, master_calibratio
         image_filename = os.path.basename(image.filename)
         filepath = os.path.join(output_directory, image_filename)
         output_files.append(filepath)
-        print('3')
+
         save_pipeline_metadata(image, pipeline_context)
         image.writeto(filepath, pipeline_context.fpack)
         if pipeline_context.fpack:
@@ -174,7 +185,7 @@ def image_utils_without_saving_to_db(pipeline_context, images, master_calibratio
             filepath += '.fz'
 
         if pipeline_context.post_to_archive:
-            print('4')
+
             logger.info('Posting {filename} to the archive'.format(filename=image_filename))
             try:
                 file_utils.post_to_archive_queue(filepath)
@@ -184,6 +195,10 @@ def image_utils_without_saving_to_db(pipeline_context, images, master_calibratio
                 continue
     return output_files
 
+
+"""
+end of horrible ad-hoc functions
+"""
 
 def run(stages_to_do, pipeline_context, image_types=[], calibration_maker=False, log_message=''):
     """
@@ -198,12 +213,22 @@ def run(stages_to_do, pipeline_context, image_types=[], calibration_maker=False,
     if pipeline_context.filename == None, then we iterate through all the files in the directory.
     """
     image_list = image_utils.select_images(image_list, image_types)
-    images = banzai.images.read_images(image_list, pipeline_context)
-    print('0')
+    """
+    patch so that banzai.images.read_images doesn't request a db_address
+    """
+    for filename in image_list:
+        hdu_list = fits.open(filename)
+        for hdu in hdu_list:
+            hdu.header['SITEID'] = None
+            hdu.header['INSTRUME'] = None
+    print('line 220, set SITEID and INSTRUME to None to quench db_address calls in banzai.images.read_images.')
+
+    images = banzai.images.read_images(image_list, pipeline_context) # this makes a call to db_address only if site or instrument are both not None
+
     for stage in stages_to_do:
         stage_to_run = stage(pipeline_context)  # isolate the stage that will be run
         images = stage_to_run.run(images)   # update the list of images after running the stage on them.
-    print('1')
-    output_files = image_utils_without_saving_to_db(pipeline_context, images,
+
+    output_files = image_utils_no_db(pipeline_context, images,
                                            master_calibration=calibration_maker)
     return output_files
