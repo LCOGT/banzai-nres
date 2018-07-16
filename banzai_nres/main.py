@@ -213,17 +213,6 @@ def run(stages_to_do, pipeline_context, image_types=[], calibration_maker=False,
     if pipeline_context.filename == None, then we iterate through all the files in the directory.
     """
     image_list = image_utils.select_images(image_list, image_types)
-    """
-    patch so that banzai.images.read_images doesn't request a db_address
-    """
-    for filename in image_list:
-        with fits.open(filename) as hdu_list:
-            for hdu in hdu_list:
-                print(hdu.header['SITEID'])
-                hdu.header['SITEID'] = None
-                print(hdu.header['SITEID'])
-                hdu.header['INSTRUME'] = None
-    print('line 220, set SITEID and INSTRUME to None to quench db_address calls in banzai.images.read_images.')
 
     images = banzai.images.read_images(image_list, pipeline_context) # this makes a call to db_address only if site or instrument are both not None
 
@@ -231,6 +220,7 @@ def run(stages_to_do, pipeline_context, image_types=[], calibration_maker=False,
         stage_to_run = stage(pipeline_context)  # isolate the stage that will be run
         images = stage_to_run.run(images)   # update the list of images after running the stage on them.
 
+    # version of image_utils.save_image without db call
     output_files = image_utils_no_db(pipeline_context, images,
                                            master_calibration=calibration_maker)
     return output_files
