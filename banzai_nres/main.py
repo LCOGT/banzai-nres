@@ -218,8 +218,8 @@ def run(stages_to_do, pipeline_context, image_types=[], calibration_maker=False,
     """
     for filename in image_list:
         with fits.open(filename) as hdu_list:
-            print(hdu_list[1].header.remove('SITEID'))
-            print(hdu_list[1].header.remove('INSTRUME'))
+            hdu_list[1].header.remove('SITEID')
+            hdu_list[1].header.remove('INSTRUME')
     print('line 220, set SITEID and INSTRUME to None to quench db_address calls in banzai.images.read_images.')
 
     images = banzai.images.read_images(image_list, pipeline_context) # this makes a call to db_address only if site or instrument are both not None
