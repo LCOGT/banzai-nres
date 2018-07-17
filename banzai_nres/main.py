@@ -12,6 +12,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import argparse
 import multiprocessing
 import os
+import numpy as np
 import mock
 import traceback
 import sys
@@ -213,7 +214,8 @@ def read_images_zeros_BPM(image_list, pipeline_context):
     images = []
     for filename in image_list:
         try:
-            image = Image(pipeline_context, filename=filename, bpm = np.zeros_like(image))
+            imagedata = fits.getdata(filename)
+            image = Image(pipeline_context, filename=filename, bpm=np.zeros_like(imagedata))
             munge(image, pipeline_context)
             images.append(image)
         except Exception as e:
@@ -252,7 +254,7 @@ def run(stages_to_do, pipeline_context, image_types=[], calibration_maker=False,
     output_files = image_utils.save_images(pipeline_context, images,
                                            master_calibration=calibration_maker)
     """
-    
+
     output_files = image_utils_no_db(pipeline_context, images,
                                            master_calibration=calibration_maker) # version of image_utils.save_image with no db_address calls
     return output_files
