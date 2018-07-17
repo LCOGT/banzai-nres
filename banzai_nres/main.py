@@ -217,6 +217,8 @@ def read_images_zeros_BPM(image_list, pipeline_context):
     for filename in image_list:
         try:
             imagedata = fits.getdata(filename)
+            print(np.zeros_like(imagedata).shape,imagedata.shape)
+            print(type(imagedata),type(np.zeros_like(imagedata)))
             image = Image(pipeline_context, filename=filename, bpm=np.zeros_like(imagedata))
             munge(image, pipeline_context)
             images.append(image)
