@@ -248,10 +248,11 @@ def run(stages_to_do, pipeline_context, image_types=[], calibration_maker=False,
     for stage in stages_to_do:
         stage_to_run = stage(pipeline_context)  # isolate the stage that will be run
         images = stage_to_run.run(images)   # update the list of images after running the stage on them.
-
-    # output_files = image_utils.save_images(pipeline_context, images,
+    """
+    output_files = image_utils.save_images(pipeline_context, images,
                                            master_calibration=calibration_maker)
-
+    """
+    
     output_files = image_utils_no_db(pipeline_context, images,
                                            master_calibration=calibration_maker) # version of image_utils.save_image with no db_address calls
     return output_files
