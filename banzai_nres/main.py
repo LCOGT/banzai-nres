@@ -30,7 +30,7 @@ from banzai.utils.image_utils import save_pipeline_metadata
 from banzai.utils import file_utils
 import banzai.tests.utils
 
-from banzai.dbs import create_db
+from banzai.dbs import create_db, add_or_update_record
 
 logger = logs.get_logger(__name__)
 
@@ -43,6 +43,9 @@ ordered_stages = [bias.OverscanSubtractor,
 TestContext and the functions in this following section are for
 testing the partial pipeline without getting pipeline_context objects
 from the actual array. e.g. from argparse.ArgumentParser etc.
+
+elem_to_add = {lsc
+
 """
 class TestContext(object):
     """
@@ -218,6 +221,10 @@ def run(stages_to_do, pipeline_context, image_types=[], calibration_maker=False,
     if pipeline_context.filename == None, then we iterate through all the files in the directory.
     """
     image_list = image_utils.select_images(image_list, image_types)
+    # spoofing the instrument name to assign a non-nres telescope.
+    for image in image_list:
+        fits.setval(image, 'INSTRUME', value='ef06', ext=1)
+
     images = banzai.images.read_images(image_list, pipeline_context) # this makes a call to db_address only if site or instrument are both not None
 
     for stage in stages_to_do:
