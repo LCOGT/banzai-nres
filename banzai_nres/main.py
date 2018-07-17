@@ -26,10 +26,11 @@ from banzai import bias, trim
 from banzai import logs
 from banzai.utils import image_utils
 from banzai.utils.image_utils import save_pipeline_metadata
-from banzai.images import Image
 
 from banzai.utils import file_utils
 import banzai.tests.utils
+
+from banzai.dbs import create_db
 
 logger = logs.get_logger(__name__)
 
@@ -55,10 +56,14 @@ class TestContext(object):
                  The stages that need to be done
     """
     def __init__(self,filename):
+        _DEFAULT_DB = 'sqlite:////archive/engineering/test.db' #  from docker-compose file
+        create_db('/archive/engineering/lsc/nres01/20180328/raw', db_address=_DEFAULT_DB,
+                  configdb_address='http://configdb.lco.gtn/sites/')
         self.processed_path = '/tmp'
         self.raw_path = '/archive/engineering/lsc/nres01/20180328/raw'
         self.filename = filename
         self.post_to_archive = False
+        self.db_address = _DEFAULT_DB
 
 def test_making_master_biases():
     test_image_context = TestContext(None)
