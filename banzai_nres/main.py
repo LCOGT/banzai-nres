@@ -29,6 +29,8 @@ from banzai.utils import image_utils
 from banzai.utils.image_utils import save_pipeline_metadata
 from banzai.images import Image
 
+from banzai.munge import munge
+
 from banzai.utils import file_utils
 import banzai.tests.utils
 
