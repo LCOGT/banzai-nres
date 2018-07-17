@@ -26,6 +26,7 @@ from banzai import bias, trim
 from banzai import logs
 from banzai.utils import image_utils
 from banzai.utils.image_utils import save_pipeline_metadata
+from banzai.images import Image
 
 from banzai.utils import file_utils
 import banzai.tests.utils
@@ -204,6 +205,23 @@ def image_utils_no_db(pipeline_context, images, master_calibration = False):
     return output_files
 
 
+def read_images_zeros_BPM(image_list, pipeline_context):
+    """
+    This is an exact copy of banzai.images.read_images(image_list, pipeline_context)
+    with a BPM of zeros.
+    """
+    images = []
+    for filename in image_list:
+        try:
+            image = Image(pipeline_context, filename=filename, bpm = np.zeros_like(image))
+            munge(image, pipeline_context)
+            images.append(image)
+        except Exception as e:
+            logger.error('Error loading {0}'.format(filename))
+            logger.error(e)
+            continue
+    return images
+
 """
 end of horrible ad-hoc functions
 """
@@ -225,15 +243,15 @@ def run(stages_to_do, pipeline_context, image_types=[], calibration_maker=False,
     for image in image_list:
         fits.setval(image, 'INSTRUME', value='ef06', ext=1)
 
-    images = banzai.images.read_images(image_list, pipeline_context) # this makes a call to db_address only if site or instrument are both not None
-
+    # images = banzai.images.read_images(image_list, pipeline_context) # this makes a call to db_address only if site or instrument are both not None
+    images = read_images_zeros_BPM(image_list, pipeline_context) # version of read_images which assumes a zero BPM
     for stage in stages_to_do:
         stage_to_run = stage(pipeline_context)  # isolate the stage that will be run
         images = stage_to_run.run(images)   # update the list of images after running the stage on them.
-    """
-    output_files = image_utils.save_images(pipeline_context, images,
+
+    # output_files = image_utils.save_images(pipeline_context, images,
                                            master_calibration=calibration_maker)
-    """
+
     output_files = image_utils_no_db(pipeline_context, images,
                                            master_calibration=calibration_maker) # version of image_utils.save_image with no db_address calls
     return output_files
