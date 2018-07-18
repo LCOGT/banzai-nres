@@ -11,6 +11,8 @@ from banzai.utils import image_utils
 
 from banzai.dbs import create_db, add_or_update_record
 
+from banzai_nres.main import make_master_bias
+
 logger = logs.get_logger(__name__)
 
 class TestContext(object):
