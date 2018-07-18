@@ -216,10 +216,9 @@ def read_images_zeros_BPM(image_list, pipeline_context):
     images = []
     for filename in image_list:
         try:
-            imagedata = fits.getdata(filename)
-            print(np.zeros_like(imagedata).shape,imagedata.shape)
-            print(type(imagedata),type(np.zeros_like(imagedata)))
-            image = Image(pipeline_context, filename=filename, bpm=np.zeros_like(imagedata))
+
+            image = Image(pipeline_context, filename=filename)
+
             munge(image, pipeline_context)
             images.append(image)
         except Exception as e:
@@ -245,12 +244,21 @@ def run(stages_to_do, pipeline_context, image_types=[], calibration_maker=False,
     if pipeline_context.filename == None, then we iterate through all the files in the directory.
     """
     image_list = image_utils.select_images(image_list, image_types)
-    # spoofing the instrument name to assign a non-nres telescope.
-    for image in image_list:
-        fits.setval(image, 'INSTRUME', value='ef06', ext=1)
+    # spoofing the instrument name to assign a non-nres telescope and
+    # adding a bpm of zeros. - Monkey Patch
+    for filename in image_list:
+        fits.setval(filename, 'INSTRUME', value='ef06', ext=1)
+        imagedata = fits.getdata(filename)
+        bpm_array = np.zeros_like(imagedata)
+        hdu_list = fits.open(filename)
+        hdu_bpm = fits.ImageHDU(data=bpm_array, name='BPM')
+        hdu_list.append(hdu_bpm)
+        hdu_list.writeto(filename, overwrite=True)
+        hdu_list.close()
 
-    # images = banzai.images.read_images(image_list, pipeline_context) # this makes a call to db_address only if site or instrument are both not None
-    images = read_images_zeros_BPM(image_list, pipeline_context) # version of read_images which assumes a zero BPM
+    # End of monkey patch.
+    images = banzai.images.read_images(image_list, pipeline_context) # this makes a call to db_address only if site or instrument are both not None
+    #images = read_images_zeros_BPM(image_list, pipeline_context) # version of read_images which assumes a zero BPM
     for stage in stages_to_do:
         stage_to_run = stage(pipeline_context)  # isolate the stage that will be run
         images = stage_to_run.run(images)   # update the list of images after running the stage on them.
@@ -258,7 +266,8 @@ def run(stages_to_do, pipeline_context, image_types=[], calibration_maker=False,
     output_files = image_utils.save_images(pipeline_context, images,
                                            master_calibration=calibration_maker)
     """
-
+    # Monkey Patch
     output_files = image_utils_no_db(pipeline_context, images,
                                            master_calibration=calibration_maker) # version of image_utils.save_image with no db_address calls
+    # End of Monkey Patch
     return output_files
