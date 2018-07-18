@@ -20,4 +20,4 @@ setup(name='banzai_nres',
       setup_requires=['pytest-runner'],
       install_requires=['banzai'],
       tests_require=['pytest'],
-      entry_points = {'console_scripts': ['run_master_bias_test=banzai_nres.tests.test_e2e:test_making_master_biases']})
+      entry_points = {'console_scripts': ['run_master_bias_test=tests.test_e2e:test_making_master_biases']})
