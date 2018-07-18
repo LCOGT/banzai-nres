@@ -45,12 +45,11 @@ ordered_stages = [bias.OverscanSubtractor,
 
 """
 TestContext and the functions in this following section are for
-testing the partial pipeline without getting pipeline_context objects
-from the actual array. e.g. from argparse.ArgumentParser etc.
-
-elem_to_add = {lsc
+testing the partial pipeline on NRES frames.
 
 """
+
+
 class TestContext(object):
     """
     Picks out a frame or a set of frames to test.
@@ -62,7 +61,7 @@ class TestContext(object):
     stages_todo: list of banzai.stages.Stage
                  The stages that need to be done
     """
-    def __init__(self,filename):
+    def __init__(self, filename):
         _DEFAULT_DB = 'sqlite:////archive/engineering/test.db' #  from docker-compose file
         create_db('/archive/engineering/lsc/nres01/20180328/raw', db_address=_DEFAULT_DB,
                   configdb_address='http://configdb.lco.gtn/sites/')
@@ -71,6 +70,7 @@ class TestContext(object):
         self.filename = filename
         self.post_to_archive = False
         self.db_address = _DEFAULT_DB
+
 
 def test_making_master_biases():
     test_image_context = TestContext(None)
@@ -94,9 +94,11 @@ def test_making_master_biases():
     print(make_master_bias(test_image_context))
     return True
 
+
 """
 Start of the main.py that will remain after we no longer use the above.
 """
+
 
 def get_stages_todo(last_stage=None, extra_stages=None):
     """
@@ -184,89 +186,28 @@ def reduce_frames_one_by_one(stages_to_do, pipeline_context, image_types=None):
                                                           'filepath': pipeline_context.raw_path}})
     pipeline_context.filename = original_filename
 
-"""
-Functions which are my horrible work around to not use mock at the moment.
-An example of Mock is here: test_dbs.py
-
-"""
-
-def image_utils_no_db(pipeline_context, images, master_calibration = False):
-    """
-    An exact copy of image_utils.save_images without the part where it
-    saves to a database.
-    """
-    output_files = []
-    for image in images:
-        output_directory = file_utils.make_output_directory(pipeline_context, image)
-
-        if not master_calibration:
-            image.filename = image.filename.replace('00.fits',
-                                                    '{:02d}.fits'.format(int(pipeline_context.rlevel)))
-
-        image_filename = os.path.basename(image.filename)
-        filepath = os.path.join(output_directory, image_filename)
-        output_files.append(filepath)
-
-        save_pipeline_metadata(image, pipeline_context)
-        image.writeto(filepath, pipeline_context.fpack)
-        if pipeline_context.fpack:
-            image_filename += '.fz'
-            filepath += '.fz'
-
-        if pipeline_context.post_to_archive:
-
-            logger.info('Posting {filename} to the archive'.format(filename=image_filename))
-            try:
-                file_utils.post_to_archive_queue(filepath)
-            except Exception as e:
-                logger.error("Could not post {0} to ingester.".format(filepath))
-                logger.error(e)
-                continue
-    return output_files
-
-
-def read_images_zeros_BPM(image_list, pipeline_context):
-    """
-    This is an exact copy of banzai.images.read_images(image_list, pipeline_context)
-    with a BPM of zeros.
-    """
-    images = []
-    for filename in image_list:
-        try:
-
-            image = Image(pipeline_context, filename=filename)
-
-            munge(image, pipeline_context)
-            images.append(image)
-        except Exception as e:
-            logger.error('Error loading {0}'.format(filename))
-            logger.error(e)
-            continue
-    return images
-
-"""
-end of horrible ad-hoc functions
-"""
 
 def run(stages_to_do, pipeline_context, image_types=[], calibration_maker=False, log_message=''):
     """
     Main driver script for banzai-NRES
+
+    Note to self:     image_list does the following: given the pipeline_context object (file path info etc) we construct the list of images we will analyze.
+                    based off of image_types.
+    if pipeline_context.filename == None, then we iterate through all the files in the directory.
     """
     if len(log_message) > 0:
         logger.info(log_message, extra={'tags': {'raw_path': pipeline_context.raw_path}})
 
     image_list = image_utils.make_image_list(pipeline_context)
-    """
-    image_list does the following: given the pipeline_context object (file path info etc) we construct the list of images we will analyze.
-    if pipeline_context.filename == None, then we iterate through all the files in the directory.
-    """
+
     image_list = image_utils.select_images(image_list, image_types)
 
     images = banzai.images.read_images(image_list, pipeline_context) # this makes a call to db_address only if site or instrument are both not None
-
+    print(images)
     for stage in stages_to_do:
         stage_to_run = stage(pipeline_context)  # isolate the stage that will be run
         images = stage_to_run.run(images)   # update the list of images after running the stage on them.
+    print(images)
 
     output_files = image_utils.save_images(pipeline_context, images,
                                            master_calibration=calibration_maker)
