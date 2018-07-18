@@ -117,9 +117,9 @@ def test_making_master_biases():
         hdu_list.close()
     print('finished patching keys to test fits files')
     # End of patching extravaganza.
-
-    test_master_bias = make_master_bias(test_image_context)
-    print(test_master_bias.data)
+    master_bias_path_and_filename = make_master_bias(test_image_context)[0]
+    test_master_bias = fits.getdata(master_bias_path_and_filename)
+    print(test_master_bias)
     return True
 
 
@@ -271,11 +271,11 @@ def run(stages_to_do, pipeline_context, image_types=[], calibration_maker=False,
     image_list = image_utils.select_images(image_list, image_types)
 
     images = read_images_fixed(image_list, pipeline_context) #  in banzai.main this is banzai.images.read_images - but that function does nothing if image.bpm is not None
-    print(images)
+
     for stage in stages_to_do:
         stage_to_run = stage(pipeline_context)  # isolate the stage that will be run
         images = stage_to_run.run(images)   # update the list of images after running the stage on them.
-    print(images)
+
 
     output_files = image_utils.save_images(pipeline_context, images,
                                            master_calibration=calibration_maker)
