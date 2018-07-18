@@ -70,6 +70,7 @@ class TestContext(object):
         self.filename = filename
         self.post_to_archive = False
         self.db_address = _DEFAULT_DB
+        self.preview_mode = False
 
 
 def test_making_master_biases():
