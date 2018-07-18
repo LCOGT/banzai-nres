@@ -72,6 +72,7 @@ class TestContext(object):
         self.db_address = _DEFAULT_DB
         self.preview_mode = False
         self.rlevel = 0
+        self.fpack = True
 
 
 def test_making_master_biases():
