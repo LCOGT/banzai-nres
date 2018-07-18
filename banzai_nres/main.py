@@ -66,7 +66,7 @@ class TestContext(object):
         create_db('/archive/engineering/lsc/nres01/20180328/raw', db_address=_DEFAULT_DB,
                   configdb_address='http://configdb.lco.gtn/sites/')
         self.processed_path = '/tmp'
-        self.raw_path = '/archive/engineering/lsc/nres01/20180328/raw'
+        self.raw_path = '/archive/engineering/lsc/nres01/20180313/raw'
         self.filename = filename
         self.post_to_archive = False
         self.db_address = _DEFAULT_DB
