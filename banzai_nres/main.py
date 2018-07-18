@@ -84,13 +84,23 @@ def test_making_master_biases():
         # spoofing instrument name for one which banzai accepts has a database
         # this is used in building the image as a banzai.images.Image object.
         fits.setval(filename, 'INSTRUME', value='ef06', ext=1)
-        # loading the image and building the null bad-pixel-mask.
-        imagedata = fits.getdata(filename)
-        bpm_array = np.zeros_like(imagedata)
+        # loading the image and building the null bad-pixel-mask if it needs it.
+        need_null_bpm = False
+        with fits.open(filename) as hdu_list:
+            try:
+                hdu_list['BPM']
+
+            except:
+                print('BPM key does not exist for %s \n creating and appending a zeros bad pixel mask' %filename)
+                need_null_bpm = True
+
         hdu_list = fits.open(filename)
-        hdu_bpm = fits.ImageHDU(data=bpm_array, name='BPM')
-        # Appending a bad pixel mask to the image.
-        hdu_list.append(hdu_bpm)
+        if need_null_bpm:
+            imagedata = fits.getdata(filename)
+            bpm_array = np.zeros_like(imagedata)
+            hdu_bpm = fits.ImageHDU(data=bpm_array, name='BPM')
+            # Appending a bad pixel mask to the image.
+            hdu_list.append(hdu_bpm)
         # loading the primary HDU header
         p_hdu_header = hdu_list[0].header
         # headers used in _trim_image
@@ -104,7 +114,7 @@ def test_making_master_biases():
         # Saving changes to the test files.
         hdu_list.writeto(filename, overwrite=True)
         hdu_list.close()
-
+    print('finished patching keys to test fits files')
     # End of patching extravaganza.
 
     print(make_master_bias(test_image_context))
