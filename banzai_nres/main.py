@@ -187,6 +187,46 @@ def reduce_frames_one_by_one(stages_to_do, pipeline_context, image_types=None):
     pipeline_context.filename = original_filename
 
 
+def read_images_fixed(image_list, pipeline_context):
+    """
+    This is a copy of banzai.images.read_images
+    which will properly handle images which already have a Bad Pixel Mask (BPM)
+    as an extension in the fits file. Prior, if image.bpm existed, the main.run
+    program would output an empty list. All that has been added is
+
+            else:
+                images.append(image)
+
+    Parameters:
+        pipeline_context: Object which contains attributes which describe the database etc.
+        image_list: A list of path/filename to fits files.
+    Returns:
+        images: List of banzai.images.Image objects with attached bad pixel masks.
+    """
+
+    images = []
+    for filename in image_list:
+        try:
+            image = Image(pipeline_context, filename=filename)
+            munge(image, pipeline_context)
+            if image.bpm is None:
+                bpm = image_utils.get_bpm(image, pipeline_context)
+                if bpm is None:
+                    logger.error('No BPM file exists for this image.',
+                                 extra={'tags': {'filename': image.filename}})
+                else:
+                    image.bpm = bpm
+                    images.append(image)
+            else:
+                images.append(image)
+        except Exception as e:
+            logger.error('Error loading {0}'.format(filename))
+            logger.error(e)
+            continue
+    return images
+
+
+
 def run(stages_to_do, pipeline_context, image_types=[], calibration_maker=False, log_message=''):
     """
     Main driver script for banzai-NRES
@@ -202,7 +242,7 @@ def run(stages_to_do, pipeline_context, image_types=[], calibration_maker=False,
 
     image_list = image_utils.select_images(image_list, image_types)
 
-    images = banzai.images.read_images(image_list, pipeline_context) # this makes a call to db_address only if site or instrument are both not None
+    images = read_images_fixed(image_list, pipeline_context) #  in banzai.main this is banzai.images.read_images - but that function does nothing if image.bpm is not None
     print(images)
     for stage in stages_to_do:
         stage_to_run = stage(pipeline_context)  # isolate the stage that will be run
