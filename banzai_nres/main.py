@@ -31,6 +31,8 @@ from banzai.images import Image
 
 from banzai.munge import munge
 
+from tests import test_e2e
+
 from banzai.utils import file_utils
 import banzai.tests.utils
 
@@ -43,6 +45,17 @@ ordered_stages = [bias.OverscanSubtractor,
                   bias.BiasSubtractor,
                   ]
 
+# begin functions which act as entry points
+def run_test_making_master_biases():
+    """
+    function that runs test_making_master_biases inside of test_e2e.py because
+    I cannot figure out how to make test_e2e.test_making_master_biases a console
+    entrypoint.
+    """
+    test_e2e.test_making_master_biases()
+
+
+# end of entry point functions
 
 def get_stages_todo(last_stage=None, extra_stages=None):
     """
