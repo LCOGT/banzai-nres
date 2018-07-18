@@ -71,7 +71,7 @@ class TestContext(object):
         self.post_to_archive = False
         self.db_address = _DEFAULT_DB
         self.preview_mode = False
-        self.rlevel = 'Test'
+        self.rlevel = 0
 
 
 def test_making_master_biases():
