@@ -74,6 +74,23 @@ class TestContext(object):
 
 def test_making_master_biases():
     test_image_context = TestContext(None)
+    image_list = image_utils.make_image_list(test_image_context)
+    image_list = image_utils.select_images(image_list, image_types=['BIAS'])
+
+    # spoofing the instrument name to assign each image a non-nres instrument name and
+    # adding a bpm of zeros. - Monkey Patch
+    for filename in image_list:
+        fits.setval(filename, 'INSTRUME', value='ef06', ext=1)
+        imagedata = fits.getdata(filename)
+        bpm_array = np.zeros_like(imagedata)
+        hdu_list = fits.open(filename)
+        hdu_bpm = fits.ImageHDU(data=bpm_array, name='BPM')
+        hdu_list.append(hdu_bpm)
+        hdu_list.writeto(filename, overwrite=True)
+        hdu_list.close()
+
+    # End of monkey patch.
+
     print(make_master_bias(test_image_context))
     return True
 
@@ -244,21 +261,9 @@ def run(stages_to_do, pipeline_context, image_types=[], calibration_maker=False,
     if pipeline_context.filename == None, then we iterate through all the files in the directory.
     """
     image_list = image_utils.select_images(image_list, image_types)
-    # spoofing the instrument name to assign a non-nres telescope and
-    # adding a bpm of zeros. - Monkey Patch
-    for filename in image_list:
-        fits.setval(filename, 'INSTRUME', value='ef06', ext=1)
-        imagedata = fits.getdata(filename)
-        bpm_array = np.zeros_like(imagedata)
-        hdu_list = fits.open(filename)
-        hdu_bpm = fits.ImageHDU(data=bpm_array, name='BPM')
-        hdu_list.append(hdu_bpm)
-        hdu_list.writeto(filename, overwrite=True)
-        hdu_list.close()
 
-    # End of monkey patch.
     images = banzai.images.read_images(image_list, pipeline_context) # this makes a call to db_address only if site or instrument are both not None
-    #images = read_images_zeros_BPM(image_list, pipeline_context) # version of read_images which assumes a zero BPM
+
     for stage in stages_to_do:
         stage_to_run = stage(pipeline_context)  # isolate the stage that will be run
         images = stage_to_run.run(images)   # update the list of images after running the stage on them.
