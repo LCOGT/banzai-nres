@@ -117,6 +117,7 @@ def test_making_master_biases():
         hdu_list.close()
     print('finished patching keys to test fits files')
     # End of patching extravaganza.
+
     master_bias_path_and_filename = str(make_master_bias(test_image_context)[0])
     test_master_bias = fits.getdata('~/' + master_bias_path_and_filename)
     print(test_master_bias.shape)
@@ -186,8 +187,9 @@ def make_master_bias(pipeline_context):
     image_types = ['BIAS'] selects only images which are bias type, naturally.
     """
     stages_to_do = get_stages_todo(trim.Trimmer, extra_stages=[bias.BiasMaker])
-    run(stages_to_do, pipeline_context, image_types=['BIAS'], calibration_maker=True,
+    output_files = run(stages_to_do, pipeline_context, image_types=['BIAS'], calibration_maker=True,
         log_message='Making Master BIAS')
+    return output_files
 
 
 def reduce_science_frames(pipeline_context):
