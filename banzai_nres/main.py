@@ -117,8 +117,8 @@ def test_making_master_biases():
         hdu_list.close()
     print('finished patching keys to test fits files')
     # End of patching extravaganza.
-    master_bias_path_and_filename = make_master_bias(test_image_context)[0]
-    test_master_bias = fits.getdata(master_bias_path_and_filename)
+    master_bias_path_and_filename = make_master_bias(test_image_context)
+    test_master_bias = fits.getdata('~/' + master_bias_path_and_filename)
     print(test_master_bias)
     return True
 
@@ -279,5 +279,6 @@ def run(stages_to_do, pipeline_context, image_types=[], calibration_maker=False,
 
     output_files = image_utils.save_images(pipeline_context, images,
                                            master_calibration=calibration_maker)
+    print(output_files)
     # End of Monkey Patch
     return output_files
