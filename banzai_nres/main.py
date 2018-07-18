@@ -118,7 +118,8 @@ def test_making_master_biases():
     print('finished patching keys to test fits files')
     # End of patching extravaganza.
 
-    print(make_master_bias(test_image_context).data)
+    test_master_bias = make_master_bias(test_image_context)
+    print(test_master_bias.data)
     return True
 
 
