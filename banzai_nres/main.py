@@ -117,10 +117,10 @@ def test_making_master_biases():
         hdu_list.close()
     print('finished patching keys to test fits files')
     # End of patching extravaganza.
-    master_bias_path_and_filename = make_master_bias(test_image_context)
+    master_bias_path_and_filename = str(make_master_bias(test_image_context)[0])
     test_master_bias = fits.getdata('~/' + master_bias_path_and_filename)
-    print(test_master_bias)
-    return True
+    print(test_master_bias.shape)
+    assert True
 
 
 """
