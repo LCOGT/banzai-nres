@@ -77,19 +77,26 @@ def test_making_master_biases():
     image_list = image_utils.make_image_list(test_image_context)
     image_list = image_utils.select_images(image_list, image_types=['BIAS'])
 
-    # spoofing the instrument name to assign each image a non-nres instrument name and
-    # adding a bpm of zeros. - Monkey Patch
+    # monkey patching
     for filename in image_list:
         fits.setval(filename, 'INSTRUME', value='ef06', ext=1)
+        # spoofing instrument name for one which banzai accepts has a database.
         imagedata = fits.getdata(filename)
         bpm_array = np.zeros_like(imagedata)
         hdu_list = fits.open(filename)
         hdu_bpm = fits.ImageHDU(data=bpm_array, name='BPM')
         hdu_list.append(hdu_bpm)
+        # Appending a bad pixel mask to each image.
+        p_hdu_header = hdu_list[0].header
+
+        p_hdu_header.set('CRPIX1', 0)
+        p_hdu_header.set('CRPIX2', 0)
+        p_hdu_header.set('L1STATTR', 0)
+        # Setting keywords and values which banzai.trim._trim_image updates.
         hdu_list.writeto(filename, overwrite=True)
         hdu_list.close()
 
-    # End of monkey patch.
+    # End of monkey patching extravaganza.
 
     print(make_master_bias(test_image_context))
     return True
