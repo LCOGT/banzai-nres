@@ -71,6 +71,7 @@ class TestContext(object):
         self.post_to_archive = False
         self.db_address = _DEFAULT_DB
         self.preview_mode = False
+        self.rlevel = 'Test'
 
 
 def test_making_master_biases():
@@ -78,26 +79,33 @@ def test_making_master_biases():
     image_list = image_utils.make_image_list(test_image_context)
     image_list = image_utils.select_images(image_list, image_types=['BIAS'])
 
-    # monkey patching
+    # Patching missing info so that files will pass through banzai's functions.
     for filename in image_list:
+        # spoofing instrument name for one which banzai accepts has a database
+        # this is used in building the image as a banzai.images.Image object.
         fits.setval(filename, 'INSTRUME', value='ef06', ext=1)
-        # spoofing instrument name for one which banzai accepts has a database.
+        # loading the image and building the null bad-pixel-mask.
         imagedata = fits.getdata(filename)
         bpm_array = np.zeros_like(imagedata)
         hdu_list = fits.open(filename)
         hdu_bpm = fits.ImageHDU(data=bpm_array, name='BPM')
+        # Appending a bad pixel mask to the image.
         hdu_list.append(hdu_bpm)
-        # Appending a bad pixel mask to each image.
+        # loading the primary HDU header
         p_hdu_header = hdu_list[0].header
-
+        # headers used in _trim_image
         p_hdu_header.set('CRPIX1', 0)
         p_hdu_header.set('CRPIX2', 0)
         p_hdu_header.set('L1STATTR', 0)
-        # Setting keywords and values which banzai.trim._trim_image updates.
+        # headers used in save_pipeline_metadata
+        p_hdu_header.set('RLEVEL', 'TBD')  # reduction level
+        p_hdu_header.set('PIPEVER', 'TBD')  # banzai pipeline version - Not banzai-nres.
+        p_hdu_header.set('L1PUBDAT', 'TBD')  # when data will be made public.
+        # Saving changes to the test files.
         hdu_list.writeto(filename, overwrite=True)
         hdu_list.close()
 
-    # End of monkey patching extravaganza.
+    # End of patching extravaganza.
 
     print(make_master_bias(test_image_context))
     return True
