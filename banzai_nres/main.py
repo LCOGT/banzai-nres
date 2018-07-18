@@ -31,7 +31,7 @@ from banzai.images import Image
 
 from banzai.munge import munge
 
-from banzai_nres.tests import test_e2e
+from tests import test_e2e
 
 from banzai.utils import file_utils
 import banzai.tests.utils
