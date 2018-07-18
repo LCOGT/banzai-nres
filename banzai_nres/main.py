@@ -119,7 +119,7 @@ def test_making_master_biases():
     # End of patching extravaganza.
 
     master_bias_path_and_filename = str(make_master_bias(test_image_context)[0])
-    test_master_bias = fits.getdata('~/' + master_bias_path_and_filename)
+    test_master_bias = fits.getdata('~' + master_bias_path_and_filename)
     print(test_master_bias.shape)
     assert True
 
