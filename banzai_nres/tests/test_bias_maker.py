@@ -1,5 +1,5 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
-from banzai.bias import BiasMaker # eventually this will just change to banzai_nres.bias for our new bias maker.
+from banzai_nres.bias import BiasMaker # eventually this will just change to banzai_nres.bias for our new bias maker.
 import numpy as np
 from astropy.io import fits
 
