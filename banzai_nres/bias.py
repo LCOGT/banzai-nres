@@ -69,4 +69,4 @@ class BiasMaker(CalibrationMaker):
         logs.add_tag(logging_tags, 'BIASLVL', mean_bias_level)
         self.logger.debug('Average bias level in ADU', extra=logging_tags)
 
-return [master_bias_image]
+        return [master_bias_image]
