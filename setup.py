@@ -18,5 +18,5 @@ setup(name='banzai_nres',
       packages=['banzai_nres'],
       package_dir={'banzai_nres': 'banzai_nres'},
       setup_requires=['pytest-runner'],
-      install_requires=['banzai'],
+      install_requires=['banzai', 'scipy'],
       tests_require=['pytest'])
