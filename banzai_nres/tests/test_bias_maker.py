@@ -109,6 +109,6 @@ def test_makes_a_sensible_master_bias(mock_images):
     actual_bias = float(kwargs['header']['BIASLVL'])
     assert np.abs((actual_bias - expected_bias)/expected_bias) < 1E-3
     actual_readnoise = np.std(master_bias)
-    assert np.abs(actual_readnoise - expected_readnoise / (nimages ** 0.5)) < 6E-2
+    assert np.abs((actual_readnoise - expected_readnoise / (nimages ** 0.5))/actual_readnoise) < 6E-2
     # expected_readnoise / (nimages ** 0.5) is just the theoretical std after averageing
     # of sqr_root(Var((1/n) \sum_n X_n))
