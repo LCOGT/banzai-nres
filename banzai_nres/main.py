@@ -32,7 +32,7 @@ from banzai.images import Image
 from banzai.munge import munge
 
 
-from banzai.dbs import create_db, add_or_update_record
+from banzai.dbs import create_db, add_or_update_record, get_session
 
 logger = logs.get_logger(__name__)
 
