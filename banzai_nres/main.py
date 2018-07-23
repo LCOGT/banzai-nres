@@ -39,41 +39,13 @@ logger = logs.get_logger(__name__)
 ordered_stages = [bias.OverscanSubtractor,
                   trim.Trimmer,
                   bias.BiasSubtractor,
-                  ]
-# begin of functions which belong in tests/
-
-
-class TestContext(object):
-    """
-    Picks out a frame or a set of frames to test. Provides the appropriate
-    PipelineContext to pass an NRES test frame to the banzai modules.
-    Parameters
-    ----------
-    filename: None if you want just the path to be included in the context (only frames with OBSTYPE = 'BIAS' are used
-    Returns
-    -------
-    stages_todo: list of banzai.stages.Stage
-                 The stages that need to be done
-    """
-    def __init__(self, filename):
-        _DEFAULT_DB = 'sqlite:////archive/engineering/test.db' #  from docker-compose file
-        create_db('/archive/engineering/lsc/nres01/20180328/raw', db_address=_DEFAULT_DB,
-                  configdb_address='http://configdb.lco.gtn/sites/')
-        self.processed_path = '/tmp'
-        self.raw_path = '/archive/engineering/lsc/nres01/20180313/raw'
-        self.filename = filename
-        self.post_to_archive = False
-        self.db_address = _DEFAULT_DB
-        self.preview_mode = False
-        self.rlevel = 0
-        self.fpack = True
-
 
 def amend_nres_frames(pipeline_context, image_types = []):
     """
     Parameters:
         pipeline_context: pipeline context with a database already initialized.
         image_types: ['BIAS','DARK' etc...]
+        This will tack on the Banzai required headers to the files pointed to by pipe_line context.
     """
     image_list = image_utils.make_image_list(pipeline_context)
     image_list = image_utils.select_images(image_list, image_types)
@@ -114,27 +86,6 @@ def amend_nres_frames(pipeline_context, image_types = []):
         hdu_list.writeto(filename, overwrite=True)
         hdu_list.close()
     print('finished patching keys to test fits files')
-
-
-def test_making_master_biases():
-    """
-    Returns:
-        Shape of master bias frame. For now this test is simple.
-
-    """
-    test_image_context = TestContext(None)
-
-    amend_nres_frames(test_image_context, image_types=['BIAS'])
-
-    if test_image_context.fpack:
-        master_bias_path_and_filename = str(make_master_bias(test_image_context)[0] + '.fz')
-    else:
-        master_bias_path_and_filename = str(make_master_bias(test_image_context)[0])
-    test_master_bias = fits.getdata(master_bias_path_and_filename)
-    print(test_master_bias.shape)
-    assert test_master_bias.shape is not None
-
-# end of functions which belong in tests/
 
 
 def get_stages_todo(last_stage=None, extra_stages=None):
