@@ -59,6 +59,11 @@ class TestContext(object):
         _DEFAULT_DB = 'sqlite:////archive/engineering/test.db' #  from docker-compose file
         create_db('/archive/engineering/lsc/nres01/20180328/raw', db_address=_DEFAULT_DB,
                   configdb_address='http://configdb.lco.gtn/sites/')
+
+        db_session = get_session(db_address=_DEFAULT_DB)
+        add_or_update_record(db_session, 'lsc', {'id': 'fl09'},
+                             {'id': 'fl09', 'timezone': '-4'})
+        db_session.commit()
         self.processed_path = '/tmp'
         self.raw_path = '/archive/engineering/lsc/nres01/20180313/raw'
         self.filename = filename
@@ -82,7 +87,7 @@ def amend_nres_frames(pipeline_context, image_types = []):
     for filename in image_list:
         # spoofing instrument name for one which banzai accepts has a database
         # this is used in building the image as a banzai.images.Image object.
-        fits.setval(filename, 'INSTRUME', value='ef06', ext=1)
+        fits.setval(filename, 'INSTRUME', value='fl09', ext=1)
         # loading the image and building the null bad-pixel-mask if it needs it.
         need_null_bpm = False
         with fits.open(filename) as hdu_list:
