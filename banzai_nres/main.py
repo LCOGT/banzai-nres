@@ -38,7 +38,7 @@ logger = logs.get_logger(__name__)
 
 ordered_stages = [bias.OverscanSubtractor,
                   trim.Trimmer,
-                  bias.BiasSubtractor,
+                  bias.BiasSubtractor]
 
 def amend_nres_frames(pipeline_context, image_types = []):
     """
