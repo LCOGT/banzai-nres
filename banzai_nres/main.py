@@ -32,7 +32,7 @@ from banzai.images import Image
 from banzai.munge import munge
 
 
-from banzai.dbs import create_db, add_or_update_record, get_session
+from banzai.dbs import create_db, add_or_update_record, get_session, Site
 
 logger = logs.get_logger(__name__)
 
@@ -61,7 +61,7 @@ class TestContext(object):
                   configdb_address='http://configdb.lco.gtn/sites/')
 
         db_session = get_session(db_address=_DEFAULT_DB)
-        add_or_update_record(db_session, 'lsc', {'id': 'fl09'},
+        add_or_update_record(db_session, Site, {'id': 'fl09'},
                              {'id': 'fl09', 'timezone': '-4'})
         db_session.commit()
         self.processed_path = '/tmp'
