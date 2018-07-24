@@ -115,7 +115,7 @@ def amend_nres_frames(pipeline_context, image_types = []):
     print('finished patching keys to test fits files')
 
 
-def parse_end_of_night_command_line_arguments()
+def parse_end_of_night_command_line_arguments():
     """
     :return: Directory where test NRES frames live. Eventually this would be hooked up to the
     pipeline, instead of giving a fixed directory.
