@@ -21,5 +21,5 @@ setup(name='banzai_nres',
       setup_requires=['pytest-runner'],
       install_requires=['banzai'],
       tests_require=['pytest'],
-      entry_points = {'console_scripts': ['make_master_bias.main:make_master_bias_console',
-                                          'make_master_dark.main:make_master_dark_console']})
+      entry_points = {'console_scripts': ['make_master_bias=banzai_nres.main:make_master_bias_console',
+                                          'make_master_dark=banzai_nres.main:make_master_dark_console']})
