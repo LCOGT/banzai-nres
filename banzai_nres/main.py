@@ -23,7 +23,7 @@ from kombu.mixins import ConsumerMixin
 from astropy.io import fits
 
 
-from banzai import bias, trim
+from banzai import bias, trim, dark
 from banzai import logs
 from banzai.utils import image_utils
 
@@ -40,8 +40,6 @@ ordered_stages = [bias.OverscanSubtractor,
                   trim.Trimmer,
                   bias.BiasSubtractor,
                   ]
-# begin of functions which belong in tests/
-
 
 class TestContext(object):
     """
@@ -74,6 +72,7 @@ def amend_nres_frames(pipeline_context, image_types = []):
     Parameters:
         pipeline_context: pipeline context with a database already initialized.
         image_types: ['BIAS','DARK' etc...]
+    This amends NRES frames to be able to pass through Banzai reduction steps.
     """
     image_list = image_utils.make_image_list(pipeline_context)
     image_list = image_utils.select_images(image_list, image_types)
@@ -116,25 +115,27 @@ def amend_nres_frames(pipeline_context, image_types = []):
     print('finished patching keys to test fits files')
 
 
-def test_making_master_biases():
+def parse_end_of_night_command_line_arguments()
     """
-    Returns:
-        Shape of master bias frame. For now this test is simple.
-
+    :return: Directory where test NRES frames live. Eventually this would be hooked up to the
+    pipeline, instead of giving a fixed directory.
     """
-    test_image_context = TestContext(None)
+    return TestContext(filename=None,raw_path='/archive/engineering/lsc/nres01/20180313/raw')
 
-    amend_nres_frames(test_image_context, image_types=['BIAS'])
 
-    if test_image_context.fpack:
-        master_bias_path_and_filename = str(make_master_bias(test_image_context)[0] + '.fz')
-    else:
-        master_bias_path_and_filename = str(make_master_bias(test_image_context)[0])
-    test_master_bias = fits.getdata(master_bias_path_and_filename)
-    print(test_master_bias.shape)
-    assert test_master_bias.shape is not None
+def run_end_of_night_from_console(scripts_to_run):
+    pipeline_context = parse_end_of_night_command_line_arguments()
+    # logs.start_logging(log_level=pipeline_context.log_level)
+    for script in scripts_to_run:
+        script(pipeline_context)
+    # logs.stop_logging()  # this and logs.start_logging is not needed as I do not understand pipeline_context.log_level
 
-# end of functions which belong in tests/
+
+def make_master_bias_console():
+    run_end_of_night_from_console([make_master_bias])
+
+def make_master_dark_console():
+    run_end_of_night_from_console([make_master_dark])
 
 
 def get_stages_todo(last_stage=None, extra_stages=None):
@@ -189,16 +190,24 @@ class PipelineContext(object):
 
 def make_master_bias(pipeline_context):
     """
-    Returns:
-    master bias and saves the images.
+    Returns: None
+    makes the master bias and saves the images.
     Note:
     image_types = ['BIAS'] selects only images which are bias type, naturally.
     """
+    amend_nres_frames(pipeline_context, image_types=['BIAS'])
+
     stages_to_do = get_stages_todo(trim.Trimmer, extra_stages=[bias.BiasMaker])
     output_files = run(stages_to_do, pipeline_context, image_types=['BIAS'], calibration_maker=True,
         log_message='Making Master BIAS')
     return output_files
 
+def make_master_dark(pipeline_context):
+    amend_nres_frames(pipeline_context, image_types=['DARK'])
+
+    stages_to_do = get_stages_todo(bias.BiasSubtractor, extra_stages=[dark.DarkNormalizer, dark.DarkMaker])
+    run(stages_to_do, pipeline_context, image_types=['DARK'], calibration_maker=True,
+        log_message='Making Master DARK')
 
 def reduce_science_frames(pipeline_context):
     stages_to_do = get_stages_todo()
