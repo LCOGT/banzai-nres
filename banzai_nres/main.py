@@ -26,6 +26,7 @@ from astropy.io import fits
 from banzai import bias, trim, dark
 from banzai import logs
 from banzai.utils import image_utils
+from banzai.main import reduce_frames_one_by_one as banzai_reduce_frames_one_by_one
 
 from banzai.images import Image
 
@@ -188,27 +189,12 @@ def make_master_dark(pipeline_context):
 
 def reduce_science_frames(pipeline_context):
     stages_to_do = get_stages_todo()
-    reduce_frames_one_by_one(stages_to_do, pipeline_context)
+    banzai_reduce_frames_one_by_one(stages_to_do, pipeline_context)
 
 
 def reduce_experimental_frames(pipeline_context):
     stages_to_do = get_stages_todo()
-    reduce_frames_one_by_one(stages_to_do, pipeline_context, image_types=['EXPERIMENTAL'])
-
-
-def reduce_frames_one_by_one(stages_to_do, pipeline_context, image_types=None):
-    if image_types is None:
-        image_types = ['EXPOSE', 'STANDARD']
-    image_list = image_utils.make_image_list(pipeline_context)
-    original_filename = pipeline_context.filename
-    for image in image_list:
-        pipeline_context.filename = os.path.basename(image)
-        try:
-            run(stages_to_do, pipeline_context, image_types=image_types)
-        except Exception as e:
-            logger.error('{0}'.format(e), extra={'tags': {'filename': pipeline_context.filename,
-                                                          'filepath': pipeline_context.raw_path}})
-    pipeline_context.filename = original_filename
+    banzai_reduce_frames_one_by_one(stages_to_do, pipeline_context, image_types=['EXPERIMENTAL'])
 
 
 def read_images_fixed(image_list, pipeline_context):
