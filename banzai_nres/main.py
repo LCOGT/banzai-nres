@@ -22,16 +22,12 @@ from kombu.mixins import ConsumerMixin
 
 from astropy.io import fits
 
+from banzai_nres.utils.image_utils import read_images
 
 from banzai import bias, trim, dark, gain
 from banzai import logs
 from banzai.utils import image_utils
-from banzai.main import reduce_frames_one_by_one as banzai_reduce_frames_one_by_one
-
-from banzai.images import Image
-
-from banzai.munge import munge
-
+from banzai.main import get_stages_todo
 
 from banzai.dbs import create_db, add_or_update_record, get_session, Site
 
@@ -127,44 +123,16 @@ def parse_end_of_night_command_line_arguments():
 
 def run_end_of_night_from_console(scripts_to_run):
     pipeline_context = parse_end_of_night_command_line_arguments()
-    # logs.start_logging(log_level=pipeline_context.log_level)
     for script in scripts_to_run:
         script(pipeline_context)
-    # logs.stop_logging()  # this and logs.start_logging is not needed as I do not understand pipeline_context.log_level
 
 
 def make_master_bias_console():
     run_end_of_night_from_console([make_master_bias])
 
+
 def make_master_dark_console():
     run_end_of_night_from_console([make_master_dark])
-
-
-def get_stages_todo(last_stage=None, extra_stages=None):
-    """
-    Parameters
-    ----------
-    last_stage: banzai.stages.Stage
-                Last stage to do
-    extra_stages: Stages to do after the last stage
-    Returns
-    -------
-    stages_todo: list of banzai.stages.Stage
-                 The stages that need to be done
-    Notes
-    -----
-    Extra stages can be other stages that are not in the ordered_stages list.
-    """
-    if extra_stages is None:
-        extra_stages = []
-
-    if last_stage is None:
-        last_index = None
-    else:
-        last_index = ordered_stages.index(last_stage) + 1
-
-    stages_todo = ordered_stages[:last_index] + extra_stages
-    return stages_todo
 
 
 def make_master_bias(pipeline_context):
@@ -181,61 +149,13 @@ def make_master_bias(pipeline_context):
         log_message='Making Master BIAS')
     return output_files
 
+
 def make_master_dark(pipeline_context):
     amend_nres_frames(pipeline_context, image_types=['DARK'])
 
     stages_to_do = get_stages_todo(bias.BiasSubtractor, extra_stages=[dark.DarkNormalizer, dark.DarkMaker])
     run(stages_to_do, pipeline_context, image_types=['DARK'], calibration_maker=True,
         log_message='Making Master DARK')
-
-def reduce_science_frames(pipeline_context):
-    stages_to_do = get_stages_todo()
-    banzai_reduce_frames_one_by_one(stages_to_do, pipeline_context)
-
-
-def reduce_experimental_frames(pipeline_context):
-    stages_to_do = get_stages_todo()
-    banzai_reduce_frames_one_by_one(stages_to_do, pipeline_context, image_types=['EXPERIMENTAL'])
-
-
-def read_images_fixed(image_list, pipeline_context):
-    """
-    This is a copy of banzai.images.read_images
-    which will properly handle images which already have a Bad Pixel Mask (BPM)
-    as an extension in the fits file. Prior, if image.bpm existed, the main.run
-    program would output an empty list. All that has been added is
-
-            else:
-                images.append(image)
-
-    Parameters:
-        pipeline_context: Object which contains attributes which describe the database etc.
-        image_list: A list of path/filename to fits files.
-    Returns:
-        images: List of banzai.images.Image objects with attached bad pixel masks.
-    """
-
-    images = []
-    for filename in image_list:
-        try:
-            image = Image(pipeline_context, filename=filename)
-            munge(image, pipeline_context)
-            if image.bpm is None:
-                bpm = image_utils.get_bpm(image, pipeline_context)
-                if bpm is None:
-                    logger.error('No BPM file exists for this image.',
-                                 extra={'tags': {'filename': image.filename}})
-                else:
-                    image.bpm = bpm
-                    images.append(image)
-            else:
-                images.append(image)
-        except Exception as e:
-            logger.error('Error loading {0}'.format(filename))
-            logger.error(e)
-            continue
-    return images
-
 
 
 def run(stages_to_do, pipeline_context, image_types=[], calibration_maker=False, log_message=''):
@@ -253,11 +173,11 @@ def run(stages_to_do, pipeline_context, image_types=[], calibration_maker=False,
 
     image_list = image_utils.select_images(image_list, image_types)
 
-    images = read_images_fixed(image_list, pipeline_context) #  in banzai.main this is banzai.images.read_images - but that function does nothing if image.bpm is not None
+    images = read_images(image_list, pipeline_context)
 
     for stage in stages_to_do:
-        stage_to_run = stage(pipeline_context)  # isolate the stage that will be run
-        images = stage_to_run.run(images)   # update the list of images after running the stage on them.
+        stage_to_run = stage(pipeline_context)
+        images = stage_to_run.run(images)
 
 
     output_files = image_utils.save_images(pipeline_context, images,
