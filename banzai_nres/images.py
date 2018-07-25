@@ -1,5 +1,10 @@
 from banzai.images import Image as banzaiImage
 
+from banzai import logs
+
+
+logger = logs.get_logger(__name__)
+
 
 class Image(banzaiImage):
 

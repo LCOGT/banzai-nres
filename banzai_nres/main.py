@@ -161,10 +161,6 @@ def make_master_dark(pipeline_context):
 def run(stages_to_do, pipeline_context, image_types=[], calibration_maker=False, log_message=''):
     """
     Main driver script for banzai-NRES
-
-    Note to self:     image_list does the following: given the pipeline_context object (file path info etc) we construct the list of images we will analyze.
-                    based off of image_types.
-    if pipeline_context.filename == None, then we iterate through all the files in the directory.
     """
     if len(log_message) > 0:
         logger.info(log_message, extra={'tags': {'raw_path': pipeline_context.raw_path}})

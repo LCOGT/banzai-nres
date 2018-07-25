@@ -1,10 +1,11 @@
-from banzai import logs
-
 from banzai.utils.image_utils import get_bpm
 
 from banzai.munge import munge
 
 from banzai_nres.images import Image
+
+from banzai import logs
+
 
 logger = logs.get_logger(__name__)
 
