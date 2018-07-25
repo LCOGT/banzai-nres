@@ -9,14 +9,14 @@ License
     GPL v3.0
 July 2018
 """
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(name='banzai_nres',
       author=['Curtis McCully', 'G. Mirek Brandt', 'Timothy D. Brandt'],
       author_email=['cmccully@lco.global', 'gmbrandt@ucsb.edu', 'tbrandt@physics.ucsb.edu'],
       version='0.1.0',
-      packages=['banzai_nres'],
+      packages=find_packages(),
       package_dir={'banzai_nres': 'banzai_nres'},
       setup_requires=['pytest-runner'],
-      install_requires=['banzai'],
+      install_requires=['banzai', 'scipy'],
       tests_require=['pytest'])
