@@ -165,29 +165,6 @@ def get_stages_todo(last_stage=None, extra_stages=None):
     return stages_todo
 
 
-class PipelineContext(object):
-    """
-    contains some basic information about the images to be processed.
-    """
-    def __init__(self, args):
-        self.processed_path = args.processed_path
-        self.raw_path = args.raw_path
-        self.post_to_archive = args.post_to_archive
-        self.post_to_elasticsearch = args.post_to_elasticsearch
-        self.elasticsearch_url = args.elasticsearch_url
-        self.fpack = args.fpack
-        self.rlevel = args.rlevel
-        self.db_address = args.db_address
-        self.log_level = args.log_level
-        self.preview_mode = args.preview_mode
-        self.filename = args.filename
-        self.max_preview_tries = args.max_preview_tries
-        self.elasticsearch_doc_type = args.elasticsearch_doc_type
-        self.elasticsearch_qc_index = args.elasticsearch_qc_index
-
-
-
-
 def make_master_bias(pipeline_context):
     """
     Returns: None
