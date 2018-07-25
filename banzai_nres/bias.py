@@ -1,5 +1,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+from banzai.bias import BiasMaker as BanzaiBiasMaker
+
 import os.path
 
 import numpy as np
@@ -12,24 +14,14 @@ from banzai.utils import stats, fits_utils
 from scipy.ndimage import filters
 
 
-
-class BiasMaker(CalibrationMaker):
-
+class BiasMaker(BanzaiBiasMaker):
     def __init__(self, pipeline_context):
         super(BiasMaker, self).__init__(pipeline_context)
 
     @property
-    def group_by_keywords(self):
-        return ['ccdsum']
-
-    @property
-    def calibration_type(self):
-        return 'BIAS'
-
-    @property
     def min_images(self):
         return 5
-
+    #  master calibration frame is imported because soon I will include variance calculations as I did with dark.
     def make_master_calibration_frame(self, images, image_config, logging_tags):
 
         bias_data = np.zeros((image_config.ny, image_config.nx, len(images)), dtype=np.float32)

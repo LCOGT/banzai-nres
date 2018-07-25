@@ -4,24 +4,17 @@ import numpy as np
 from astropy.io import fits
 
 from banzai.tests.utils import FakeImage, FakeContext, throws_inhomogeneous_set_exception
+from banzai.tests.test_bias_maker import FakeBiasImage
 
 import mock
 
 """
-This tests BiasMaker.
-It is almost an exact copy of Banzai's test_bias_maker by cmcully.
+This tests BiasMaker. This is almost an exact copy of the banzai test.bias.
+Functions are only explicitly copied because the @mock.patch needs to point to the correct object type.
 
 The only changes are the error margins, which are now fractional errors,
 inside of test_makes_a_sensible_master_bias
 """
-
-class FakeBiasImage(FakeImage):
-    def __init__(self, *args, **kwargs):
-        super(FakeBiasImage, self).__init__(*args, **kwargs)
-        self.caltype = 'bias'
-        self.header = fits.Header()
-        self.header['OBSTYPE'] = 'BIAS'
-
 
 def test_min_images():
     bias_maker = BiasMaker(None)
@@ -64,22 +57,22 @@ def test_header_cal_type_bias(mock_image):
 
 
 @mock.patch('banzai_nres.bias.Image')
-def test_raises_an_exection_if_ccdsums_are_different(mock_images):
+def test_raises_an_exception_if_ccdsums_are_different(mock_images):
     throws_inhomogeneous_set_exception(BiasMaker, FakeContext(), 'ccdsum', '1 1')
 
 
 @mock.patch('banzai_nres.bias.Image')
-def test_raises_an_exection_if_epochs_are_different(mock_images):
+def test_raises_an_exception_if_epochs_are_different(mock_images):
     throws_inhomogeneous_set_exception(BiasMaker, FakeContext(), 'epoch', '20160102')
 
 
 @mock.patch('banzai_nres.bias.Image')
-def test_raises_an_exection_if_nx_are_different(mock_images):
+def test_raises_an_exception_if_nx_are_different(mock_images):
     throws_inhomogeneous_set_exception(BiasMaker, FakeContext(), 'nx', 105)
 
 
 @mock.patch('banzai_nres.bias.Image')
-def test_raises_an_exection_if_ny_are_different(mock_images):
+def test_raises_an_exception_if_ny_are_different(mock_images):
     throws_inhomogeneous_set_exception(BiasMaker, FakeContext(), 'ny', 107)
 
 
@@ -110,5 +103,5 @@ def test_makes_a_sensible_master_bias(mock_images):
     assert np.abs((actual_bias - expected_bias)/expected_bias) < 1E-3
     actual_readnoise = np.std(master_bias)
     assert np.abs((actual_readnoise - expected_readnoise / (nimages ** 0.5))/actual_readnoise) < 6E-2
-    # expected_readnoise / (nimages ** 0.5) is just the theoretical std after averageing
+    # expected_readnoise / (nimages ** 0.5) is just the theoretical std after averaging
     # of sqr_root(Var((1/n) \sum_n X_n))
