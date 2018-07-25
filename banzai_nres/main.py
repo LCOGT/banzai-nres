@@ -23,7 +23,7 @@ from kombu.mixins import ConsumerMixin
 from astropy.io import fits
 
 
-from banzai import bias, trim, dark
+from banzai import bias, trim, dark, gain
 from banzai import logs
 from banzai.utils import image_utils
 from banzai.main import reduce_frames_one_by_one as banzai_reduce_frames_one_by_one
@@ -38,6 +38,7 @@ from banzai.dbs import create_db, add_or_update_record, get_session, Site
 logger = logs.get_logger(__name__)
 
 ordered_stages = [bias.OverscanSubtractor,
+                  gain.GainNormalizer,
                   trim.Trimmer,
                   bias.BiasSubtractor,
                   ]
