@@ -26,9 +26,7 @@ from banzai import bias, trim, dark, gain
 from banzai.qc import header_checker
 from banzai import logs
 from banzai.utils import image_utils
-from banzai.main import get_stages_todo
-
-from banzai.dbs import create_db, add_or_update_record, get_session, Site
+from banzai.main import get_stages_todo, make_master_dark, make_master_bias
 
 logger = logs.get_logger(__name__)
 
@@ -36,8 +34,8 @@ ordered_stages = [header_checker.HeaderSanity,
                   bias.OverscanSubtractor,
                   gain.GainNormalizer,
                   trim.Trimmer,
-                  bias.BiasSubtractor,
-                  ]
+                  bias.BiasSubtractor]
+
 
 class TestContext(object):
     """
@@ -67,43 +65,6 @@ class TestContext(object):
         self.fpack = True
 
 
-def amend_nres_frames(pipeline_context, image_types = []):
-    """
-    Parameters:
-        pipeline_context: pipeline context with a database already initialized.
-        image_types: ['BIAS','DARK' etc...]
-    This amends NRES frames to be able to pass through Banzai reduction steps.
-    """
-    image_list = image_utils.make_image_list(pipeline_context)
-    image_list = image_utils.select_images(image_list, image_types)
-
-    # Patching missing info so that files will pass through banzai's functions.
-    for filename in image_list:
-        # spoofing instrument name for one which banzai accepts has a database
-        # this is used in building the image as a banzai.images.Image object.
-        fits.setval(filename, 'INSTRUME', value='ef06', ext=1)
-        # loading the image and building the null bad-pixel-mask if it needs it.
-        need_null_bpm = False
-        with fits.open(filename) as hdu_list:
-            try:
-                hdu_list['BPM']
-
-            except:
-                print('BPM key does not exist for %s \n creating and appending a zeros bad pixel mask' % filename)
-                need_null_bpm = True
-
-        hdu_list = fits.open(filename)
-        if need_null_bpm:
-            imagedata = fits.getdata(filename)
-            bpm_array = np.zeros_like(imagedata)
-            hdu_bpm = fits.ImageHDU(data=bpm_array, name='BPM')
-            # Appending a bad pixel mask to the image.
-            hdu_list.append(hdu_bpm)
-        hdu_list.writeto(filename, overwrite=True)
-        hdu_list.close()
-    print('finished patching keys to test fits files')
-
-
 def parse_end_of_night_command_line_arguments():
     """
     :return: Directory where test NRES frames live. Eventually this would be hooked up to the
@@ -124,29 +85,6 @@ def make_master_bias_console():
 
 def make_master_dark_console():
     run_end_of_night_from_console([make_master_dark])
-
-
-def make_master_bias(pipeline_context):
-    """
-    Returns: None
-    makes the master bias and saves the images.
-    Note:
-    image_types = ['BIAS'] selects only images which are bias type, naturally.
-    """
-    #amend_nres_frames(pipeline_context, image_types=['BIAS'])
-
-    stages_to_do = get_stages_todo(trim.Trimmer, extra_stages=[bias.BiasMaker])
-    output_files = run(stages_to_do, pipeline_context, image_types=['BIAS'], calibration_maker=True,
-        log_message='Making Master BIAS')
-    return output_files
-
-
-def make_master_dark(pipeline_context):
-    #amend_nres_frames(pipeline_context, image_types=['DARK'])
-
-    stages_to_do = get_stages_todo(bias.BiasSubtractor, extra_stages=[dark.DarkNormalizer, dark.DarkMaker])
-    run(stages_to_do, pipeline_context, image_types=['DARK'], calibration_maker=True,
-        log_message='Making Master DARK')
 
 
 def run(stages_to_do, pipeline_context, image_types=[], calibration_maker=False, log_message=''):
