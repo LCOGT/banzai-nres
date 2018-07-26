@@ -100,11 +100,11 @@ def amend_nres_frames(pipeline_context, image_types = []):
         # headers used in _trim_image
         p_hdu_header.set('CRPIX1', 0)
         p_hdu_header.set('CRPIX2', 0)
-        p_hdu_header.set('L1STATTR', 0)
+        #p_hdu_header.set('L1STATTR', 0)
         # headers used in save_pipeline_metadata
-        p_hdu_header.set('RLEVEL', 'TBD')  # reduction level
-        p_hdu_header.set('PIPEVER', 'TBD')  # banzai pipeline version - Not banzai-nres.
-        p_hdu_header.set('L1PUBDAT', 'TBD')  # when data will be made public.
+        #p_hdu_header.set('RLEVEL', 'TBD')  # reduction level
+        #p_hdu_header.set('PIPEVER', 'TBD')  # banzai pipeline version - Not banzai-nres.
+        #p_hdu_header.set('L1PUBDAT', 'TBD')  # when data will be made public.
         # Saving changes to the test files.
         hdu_list.writeto(filename, overwrite=True)
         hdu_list.close()
