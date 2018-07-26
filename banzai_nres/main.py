@@ -104,4 +104,4 @@ def run(stages_to_do, pipeline_context, image_types=[], calibration_maker=False,
     output_files = image_utils.save_images(pipeline_context, images,
                                            master_calibration=calibration_maker)
 
-    logger.info(str(output_files[0]), extra={'tags': {'raw_path': pipeline_context.raw_path}})
+    logger.info(output_files, extra={'tags': {'raw_path': pipeline_context.raw_path}})
