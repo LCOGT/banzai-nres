@@ -15,7 +15,7 @@ from banzai import bias, trim, dark, gain
 from banzai.qc import header_checker
 from banzai import logs
 from banzai.utils import image_utils
-from banzai.main import make_master_dark, make_master_bias
+from banzai.main import get_stages_todo
 
 logger = logs.get_logger(__name__)
 
@@ -71,6 +71,17 @@ def make_master_bias_console():
 def make_master_dark_console():
     run_end_of_night_from_console([make_master_dark])
 
+# comment these out and import
+def make_master_bias(pipeline_context):
+    stages_to_do = get_stages_todo(trim.Trimmer, extra_stages=[bias.BiasMaker])
+    run(stages_to_do, pipeline_context, image_types=['BIAS'], calibration_maker=True,
+        log_message='Making Master BIAS')
+
+def make_master_dark(pipeline_context):
+    stages_to_do = get_stages_todo(bias.BiasSubtractor, extra_stages=[dark.DarkMaker])
+    run(stages_to_do, pipeline_context, image_types=['DARK'], calibration_maker=True,
+        log_message='Making Master Dark')
+###
 
 def run(stages_to_do, pipeline_context, image_types=[], calibration_maker=False, log_message=''):
     """
