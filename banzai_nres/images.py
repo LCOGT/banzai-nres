@@ -20,6 +20,6 @@ class Image(banzaiImage):
                                                      db_address=pipeline_context.db_address)
         else:
             self.telescope_id = None
-            
+
         logger.info('should be nres01:' + header.get('TELESCOP'), extra={'tags': {'raw_path': pipeline_context.raw_path}})
         logger.info('telescope id:' + self.telescope_id, extra={'tags': {'raw_path': pipeline_context.raw_path}})
