@@ -7,19 +7,8 @@ July 2018
     G. Mirek Brandt (gmbrandt@ucsb.edu)
 July 2018
 """
-import argparse
-import multiprocessing
+
 import os
-import numpy as np
-import mock
-import traceback
-import sys
-
-from kombu import Connection, Queue, Exchange
-from kombu.mixins import ConsumerMixin
-
-from astropy.io import fits
-
 from banzai_nres.utils.image_utils import read_images
 
 from banzai import bias, trim, dark, gain
@@ -50,7 +39,7 @@ class TestContext(object):
     stages_todo: list of banzai.stages.Stage
                  The stages that need to be done
     """
-    def __init__(self, filename, raw_path='/archive/engineering/lsc/nres01/20180313/raw'):
+    def __init__(self, filename=None, raw_path='/archive/engineering/lsc/nres01/20180228/raw'):
         self.processed_path = '/tmp'
         self.raw_path = raw_path
         self.filename = filename
@@ -66,7 +55,7 @@ def parse_end_of_night_command_line_arguments():
     :return: Directory where test NRES frames live. Eventually this would be hooked up to the
     pipeline, instead of giving a fixed directory.
     """
-    return TestContext(filename=None,raw_path='/archive/engineering/lsc/nres01/20180313/raw')
+    return TestContext(filename=None, raw_path='/archive/engineering/lsc/nres01/20180313/raw')
 
 
 def run_end_of_night_from_console(scripts_to_run):
@@ -103,4 +92,3 @@ def run(stages_to_do, pipeline_context, image_types=[], calibration_maker=False,
 
     output_files = image_utils.save_images(pipeline_context, images,
                                            master_calibration=calibration_maker)
-    return output_files

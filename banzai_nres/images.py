@@ -8,9 +8,9 @@ logger = logs.get_logger(__name__)
 
 class Image(banzaiImage):
 
-    def __init__(self, pipeline_context, per_pix_vars=None, filename=None, data=None, header={},
+    def __init__(self, pipeline_context, per_pixel_variance=None, filename=None, data=None, header={},
                  extension_headers=[], bpm=None):
         super(Image, self).__init__(pipeline_context, filename=filename, data=data, header=header,
                                     extension_headers=extension_headers, bpm=bpm)
-        self.per_pix_vars = per_pix_vars
+        self.per_pixel_variance = per_pixel_variance
         self.instrument = header.get('TELESCOP')

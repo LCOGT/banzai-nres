@@ -4,7 +4,9 @@ import os
 import datetime
 import numpy as np
 from astropy.io import fits
-from banzai_nres.main import make_master_bias_console, make_master_dark_console
+from banzai_nres.main import make_master_bias_console, make_master_dark_console, TestContext
+from banzai_nres.images import Image
+
 
 def setup_module(module):
     create_db('./', db_address=os.environ['DB_URL'],
@@ -31,8 +33,20 @@ def setup_module(module):
 
 @pytest.mark.e2e
 def test_e2e():
-    make_master_bias_console()
-    make_master_dark_console()
-    assert True
+    test_context = TestContext()
+    a_random_image = os.listdir(test_context.raw_path)
+    test_image = Image(TestContext(filename=a_random_image))
+    expected_dark_filename = 'dark_' + test_image.instrument + '_' + test_image.epoch + '_bin1x1.fits.fz'
+    expected_bias_filename = 'bias_' + test_image.instrument + '_' + test_image.epoch + '_bin1x1.fits.fz'
+    expected_processed_path = os.path.join(test_context.processed_path, test_image.site,
+                                           test_image.instrument, test_image.epoch,'processed')
 
-# check shape of loaded fits. check the fits key BPM, [1].data.
+    make_master_bias_console()
+    with fits.open(os.path.join(expected_processed_path, expected_bias_filename)) as hdu_list:
+        assert hdu_list[1].data.shape is not None
+        assert hdu_list['BPM'].data.shape == hdu_list[1].data.shape
+
+    make_master_dark_console()
+    with fits.open(os.path.join(expected_processed_path, expected_dark_filename)) as hdu_list:
+        assert hdu_list[1].data.shape is not None
+        assert hdu_list['BPM'].data.shape == hdu_list[1].data.shape
