@@ -42,13 +42,13 @@ def setup_module(module):
 @pytest.mark.e2e
 def test_e2e():
     test_context = TestContext()
-    instrument = 'fl09'
+    instrument = 'nres01'
     epoch = test_context.raw_path[-12:-4]
     site = 'lsc'
     expected_dark_filename = 'dark_' + instrument + '_' + epoch + '_bin1x1.fits.fz'
     expected_bias_filename = 'bias_' + instrument + '_' + epoch + '_bin1x1.fits.fz'
     expected_processed_path = os.path.join(test_context.processed_path, site,
-                                           instrument, epoch, 'processed')
+                                           instrument, 'processed', epoch)
 
     make_master_bias_console()
     with fits.open(os.path.join(expected_processed_path, expected_bias_filename)) as hdu_list:
