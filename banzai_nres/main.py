@@ -23,6 +23,7 @@ from astropy.io import fits
 from banzai_nres.utils.image_utils import read_images
 
 from banzai import bias, trim, dark, gain
+from banzai.qc import header_checker
 from banzai import logs
 from banzai.utils import image_utils
 from banzai.main import get_stages_todo
@@ -31,7 +32,8 @@ from banzai.dbs import create_db, add_or_update_record, get_session, Site
 
 logger = logs.get_logger(__name__)
 
-ordered_stages = [bias.OverscanSubtractor,
+ordered_stages = [header_checker.HeaderSanity,
+                  bias.OverscanSubtractor,
                   gain.GainNormalizer,
                   trim.Trimmer,
                   bias.BiasSubtractor,
@@ -98,13 +100,8 @@ def amend_nres_frames(pipeline_context, image_types = []):
         # loading the primary HDU header
         p_hdu_header = hdu_list[0].header
         # headers used in _trim_image
-        p_hdu_header.set('CRPIX1', 0)
-        p_hdu_header.set('CRPIX2', 0)
-        #p_hdu_header.set('L1STATTR', 0)
-        # headers used in save_pipeline_metadata
-        #p_hdu_header.set('RLEVEL', 'TBD')  # reduction level
-        #p_hdu_header.set('PIPEVER', 'TBD')  # banzai pipeline version - Not banzai-nres.
-        #p_hdu_header.set('L1PUBDAT', 'TBD')  # when data will be made public.
+        #p_hdu_header.set('CRPIX1', 0)
+        #p_hdu_header.set('CRPIX2', 0)
         # Saving changes to the test files.
         hdu_list.writeto(filename, overwrite=True)
         hdu_list.close()
