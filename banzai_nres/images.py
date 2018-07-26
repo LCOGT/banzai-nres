@@ -14,3 +14,9 @@ class Image(banzaiImage):
                                     extension_headers=extension_headers, bpm=bpm)
         self.per_pixel_variance = per_pixel_variance
         self.instrument = header.get('TELESCOP')
+
+        if self.site is not None and self.instrument is not None:
+            self.telescope_id = dbs.get_telescope_id(self.site, self.instrument,
+                                                     db_address=pipeline_context.db_address)
+        else:
+            self.telescope_id = None

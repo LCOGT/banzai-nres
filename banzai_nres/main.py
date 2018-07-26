@@ -96,8 +96,6 @@ def run(stages_to_do, pipeline_context, image_types=[], calibration_maker=False,
 
     images = read_images(image_list, pipeline_context)
 
-    logger.info(images[0].instrument, extra={'tags': {'raw_path': pipeline_context.raw_path}})
-
     for stage in stages_to_do:
         stage_to_run = stage(pipeline_context)
         images = stage_to_run.run(images)
