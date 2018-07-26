@@ -26,7 +26,7 @@ from banzai import bias, trim, dark, gain
 from banzai.qc import header_checker
 from banzai import logs
 from banzai.utils import image_utils
-from banzai.main import get_stages_todo, make_master_dark, make_master_bias
+from banzai.main import make_master_dark, make_master_bias
 
 logger = logs.get_logger(__name__)
 
@@ -34,7 +34,8 @@ ordered_stages = [header_checker.HeaderSanity,
                   bias.OverscanSubtractor,
                   gain.GainNormalizer,
                   trim.Trimmer,
-                  bias.BiasSubtractor]
+                  bias.BiasSubtractor,
+                  dark.DarkSubtractor]
 
 
 class TestContext(object):
@@ -50,11 +51,6 @@ class TestContext(object):
                  The stages that need to be done
     """
     def __init__(self, filename, raw_path='/archive/engineering/lsc/nres01/20180313/raw'):
-        """
-        _DEFAULT_DB = 'sqlite:////archive/engineering/test.db' #  from docker-compose file
-        create_db('/archive/engineering/lsc/nres01/20180328/raw', db_address=_DEFAULT_DB,
-                  configdb_address='http://configdb.lco.gtn/sites/')
-        """
         self.processed_path = '/tmp'
         self.raw_path = raw_path
         self.filename = filename
