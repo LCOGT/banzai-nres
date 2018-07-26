@@ -4,7 +4,7 @@ import os
 import datetime
 import numpy as np
 from astropy.io import fits
-from  banzai_nres.main import make_master_bias_console, make_master_dark_console
+from banzai_nres.main import make_master_bias_console, make_master_dark_console
 
 def setup_module(module):
     create_db('./', db_address=os.environ['DB_URL'],
