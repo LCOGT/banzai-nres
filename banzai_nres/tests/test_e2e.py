@@ -8,7 +8,7 @@ from banzai_nres.main import make_master_bias_console, make_master_dark_console
 
 def setup_module(module):
     create_db('./', db_address=os.environ['DB_URL'],
-              configdb_address='http://configdb.lco.gtn/sites/')
+              configdb_address='http://configdbdev.lco.gtn/sites/')
 
     os.makedirs('/archive/engineering/lsc/nres01/bpm')
     os.makedirs('/archive/engineering/elp/nres02/bpm')
