@@ -55,7 +55,7 @@ def parse_end_of_night_command_line_arguments():
     :return: Directory where test NRES frames live. Eventually this would be hooked up to the
     pipeline, instead of giving a fixed directory.
     """
-    return TestContext(filename=None, raw_path='/archive/engineering/lsc/nres01/20180313/raw')
+    return TestContext()
 
 
 def run_end_of_night_from_console(scripts_to_run):
