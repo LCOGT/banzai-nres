@@ -41,11 +41,8 @@ def setup_module(module):
 
 @pytest.mark.e2e
 def test_e2e():
-    make_master_bias_console()
-    make_master_dark_console()
-
     test_context = TestContext()
-    instrument = 'nres01'
+    instrument = 'fl09'
     epoch = test_context.raw_path[-12:-4]
     site = 'lsc'
     expected_dark_filename = 'dark_' + instrument + '_' + epoch + '_bin1x1.fits.fz'
@@ -53,10 +50,12 @@ def test_e2e():
     expected_processed_path = os.path.join(test_context.processed_path, site,
                                            instrument, epoch, 'processed')
 
+    make_master_bias_console()
     with fits.open(os.path.join(expected_processed_path, expected_bias_filename)) as hdu_list:
         assert hdu_list[1].data.shape is not None
         assert hdu_list['BPM'].data.shape == hdu_list[1].data.shape
 
+    make_master_dark_console()
     with fits.open(os.path.join(expected_processed_path, expected_dark_filename)) as hdu_list:
         assert hdu_list[1].data.shape is not None
         assert hdu_list['BPM'].data.shape == hdu_list[1].data.shape
