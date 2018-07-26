@@ -52,14 +52,16 @@ class TestContext(object):
                  The stages that need to be done
     """
     def __init__(self, filename, raw_path='/archive/engineering/lsc/nres01/20180313/raw'):
+        """
         _DEFAULT_DB = 'sqlite:////archive/engineering/test.db' #  from docker-compose file
         create_db('/archive/engineering/lsc/nres01/20180328/raw', db_address=_DEFAULT_DB,
                   configdb_address='http://configdb.lco.gtn/sites/')
+        """
         self.processed_path = '/tmp'
         self.raw_path = raw_path
         self.filename = filename
         self.post_to_archive = False
-        self.db_address = _DEFAULT_DB
+        self.db_address = os.environ['DB_URL']
         self.preview_mode = False
         self.rlevel = 0
         self.fpack = True
@@ -97,12 +99,6 @@ def amend_nres_frames(pipeline_context, image_types = []):
             hdu_bpm = fits.ImageHDU(data=bpm_array, name='BPM')
             # Appending a bad pixel mask to the image.
             hdu_list.append(hdu_bpm)
-        # loading the primary HDU header
-        p_hdu_header = hdu_list[0].header
-        # headers used in _trim_image
-        #p_hdu_header.set('CRPIX1', 0)
-        #p_hdu_header.set('CRPIX2', 0)
-        # Saving changes to the test files.
         hdu_list.writeto(filename, overwrite=True)
         hdu_list.close()
     print('finished patching keys to test fits files')
@@ -137,7 +133,7 @@ def make_master_bias(pipeline_context):
     Note:
     image_types = ['BIAS'] selects only images which are bias type, naturally.
     """
-    amend_nres_frames(pipeline_context, image_types=['BIAS'])
+    #amend_nres_frames(pipeline_context, image_types=['BIAS'])
 
     stages_to_do = get_stages_todo(trim.Trimmer, extra_stages=[bias.BiasMaker])
     output_files = run(stages_to_do, pipeline_context, image_types=['BIAS'], calibration_maker=True,
@@ -146,7 +142,7 @@ def make_master_bias(pipeline_context):
 
 
 def make_master_dark(pipeline_context):
-    amend_nres_frames(pipeline_context, image_types=['DARK'])
+    #amend_nres_frames(pipeline_context, image_types=['DARK'])
 
     stages_to_do = get_stages_todo(bias.BiasSubtractor, extra_stages=[dark.DarkNormalizer, dark.DarkMaker])
     run(stages_to_do, pipeline_context, image_types=['DARK'], calibration_maker=True,

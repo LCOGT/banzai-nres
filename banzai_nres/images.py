@@ -13,3 +13,4 @@ class Image(banzaiImage):
         super(Image, self).__init__(pipeline_context, filename=filename, data=data, header=header,
                                     extension_headers=extension_headers, bpm=bpm)
         self.per_pix_vars = per_pix_vars
+        self.instrument = header.get('TELESCOP')
