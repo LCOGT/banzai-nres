@@ -3,6 +3,7 @@ from banzai.utils.image_utils import get_bpm
 from banzai.munge import munge
 
 from banzai_nres.images import Image
+from banzai.utils import fits_utils
 
 from banzai import logs
 
@@ -20,6 +21,8 @@ def read_images(image_list, pipeline_context):
     for filename in image_list:
         try:
             logger.info('in banzai_nres read', extra={'tags': {'raw_path': pipeline_context.raw_path}})
+            fits_utils.open_image(filename)  #
+            logger.info('file opened', extra={'tags': {'raw_path': pipeline_context.raw_path}})
             image = Image(pipeline_context, filename=filename)
             logger.info('built image', extra={'tags': {'inst,site,teleid': image.instrument + image.site + str(image.telescope_id)}})
             munge(image, pipeline_context)
