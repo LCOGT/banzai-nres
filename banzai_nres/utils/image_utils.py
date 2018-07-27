@@ -29,7 +29,6 @@ def read_images(image_list, pipeline_context):
                 logger.info('tele id and ccdsum: ' + str(image.telescope_id) + ' ,ccdsum:' + str(image.ccdsum))
                 logger.info('instrument name and site:' + str(image.instrument) + str(image.site))
                 bpm = get_bpm(image, pipeline_context)
-                logger.info(str(bpm.shape))
                 if bpm is None:
                     logger.error('No BPM file exists for this image.',
                                  extra={'tags': {'filename': image.filename}})
@@ -37,10 +36,10 @@ def read_images(image_list, pipeline_context):
                     image.bpm = bpm
                     logger.info('images good')
                     images.append(image)
-                    logger.info(str(image.bpm.shape))
+                    logger.info('into else')
             else:
                 images.append(image)
-                logger.info(str(image.bpm.shape))
+                logger.info('into outer else')
         except Exception as e:
             logger.error('Error loading {0}'.format(filename))
             logger.error(e)
