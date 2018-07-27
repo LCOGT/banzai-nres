@@ -29,10 +29,10 @@ def setup_module(module):
     os.system('funpack {file}'.format(file=fits_file_to_copy + '.fz'))
     # generating the zeros bpm. Files need to start with bpm.
     with fits.open(fits_file_to_copy) as hdu_list:
-        hdu_list[1].data = np.zeros(hdu_list[1].data.shape, dtype=np.uint8)
-        hdu_list[1].header['OBSTYPE'] = 'BPM'
-        hdu_list[1].header['EXTNAME'] = 'BPM'
-        hdu_list[1].header['INSTRUME'] = 'nres01'
+        hdu_list[0].data = np.zeros(hdu_list[1].data.shape, dtype=np.uint8)
+        hdu_list[0].header['OBSTYPE'] = 'BPM'
+        hdu_list[0].header['EXTNAME'] = 'BPM'
+        hdu_list[0].header['INSTRUME'] = 'nres01'
         output_filename = '/archive/engineering/lsc/nres01/bpm/bpm_lsc_fl09_' \
                           + date_marker + '.fits'
         hdu_list.writeto(output_filename, overwrite=True)
@@ -41,9 +41,9 @@ def setup_module(module):
         # delete the un-fpacked file.
         os.system('rm {file}'.format(file=output_filename))
 
-        hdu_list[1].header['INSTRUME'] = 'nres02'
-        hdu_list[1].header['SITEID'] = 'elp'
-        hdu_list[1].header['TELESCOP'] = 'nres02'
+        hdu_list[0].header['INSTRUME'] = 'nres02'
+        hdu_list[0].header['SITEID'] = 'elp'
+        hdu_list[0].header['TELESCOP'] = 'nres02'
         output_filename = '/archive/engineering/elp/nres02/bpm/bpm_elp_fl17_' \
                           + date_marker + '.fits'
         hdu_list.writeto(output_filename, overwrite=True)
