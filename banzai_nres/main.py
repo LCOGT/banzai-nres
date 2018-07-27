@@ -10,6 +10,8 @@ July 2018
 
 import os
 from banzai_nres.utils.image_utils import read_images
+from banzai_nres.bias import BiasMaker as nres_BiasMaker
+from banzai_nres.dark import DarkMaker as nres_DarkMaker
 
 from banzai import bias, trim, dark, gain
 from banzai.qc import header_checker
@@ -72,17 +74,18 @@ def make_master_bias_console():
 def make_master_dark_console():
     run_end_of_night_from_console([make_master_dark])
 
-# comment these out and import
+
 def make_master_bias(pipeline_context):
-    stages_to_do = get_stages_todo(trim.Trimmer, extra_stages=[bias.BiasMaker])
+    stages_to_do = get_stages_todo(trim.Trimmer, extra_stages=[nres_BiasMaker])
     run(stages_to_do, pipeline_context, image_types=['BIAS'], calibration_maker=True,
         log_message='Making Master BIAS')
 
+
 def make_master_dark(pipeline_context):
-    stages_to_do = get_stages_todo(bias.BiasSubtractor, extra_stages=[dark.DarkMaker])
+    stages_to_do = get_stages_todo(bias.BiasSubtractor, extra_stages=[nres_DarkMaker])
     run(stages_to_do, pipeline_context, image_types=['DARK'], calibration_maker=True,
         log_message='Making Master Dark')
-###
+
 
 def run(stages_to_do, pipeline_context, image_types=[], calibration_maker=False, log_message=''):
     """
@@ -101,7 +104,6 @@ def run(stages_to_do, pipeline_context, image_types=[], calibration_maker=False,
         stage_to_run = stage(pipeline_context)
         logger.info('running' + str(stage_to_run))
         images = stage_to_run.run(images)
-
 
     output_files = image_utils.save_images(pipeline_context, images,
                                            master_calibration=calibration_maker)
