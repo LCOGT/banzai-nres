@@ -9,7 +9,7 @@ from banzai_nres.main import make_master_bias_console, make_master_dark_console,
 
 def setup_module(module):
     create_db('./', db_address=os.environ['DB_URL'],
-              configdb_address='http://configdbdev.lco.gtn/sites/')
+              configdb_address=os.environ['CONFIG_DB_URL'])
 
     # clearing the bad pixel mask folder if it exists
     if os.path.exists('/archive/engineering/lsc/nres01/bpm'):

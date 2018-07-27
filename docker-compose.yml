@@ -40,6 +40,7 @@ services:
       BROKER_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@banzainresceleryrabbitmq:5672/
       BROKER_USERNAME: ${RABBITMQ_USER}
       DB_URL: sqlite:////archive/engineering/test.db
+      CONFIG_DB_URL: http://configdb.lco.gtn/sites/
       FITS_BROKER: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@banzainrestestfitsexchange:5672/
       RABBITMQ_HOST: banzainresceleryrabbitmq
     volumes_from:
