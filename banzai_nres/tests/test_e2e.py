@@ -25,9 +25,9 @@ def setup_module(module):
     populate_bpm_table('/archive/engineering/lsc/nres01/bpm', db_address=os.environ['DB_URL'])
     populate_bpm_table('/archive/engineering/elp/nres02/bpm', db_address=os.environ['DB_URL'])
 
-    # using a bias fits as a template for the bpm fits.
-    fits_file_to_copy = '/archive/engineering/lsc/nres01/20180328/raw/lscnrs01-fl09-20180328-0066-b00.fits.fz'
-    date_marker = '20180725'
+    # using an arbitrary fits as a template for the bpm fits.
+    fits_file_to_copy = '/archive/engineering/lsc/nres01/20180228/raw/lscnrs01-fl09-20180228-0010-e00.fits.fz'
+    date_marker = '20180727'
 
     # generating the zeros bpm. Files need to start with bpm.
     with fits.open(fits_file_to_copy) as hdu_list:
