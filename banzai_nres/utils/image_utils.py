@@ -1,6 +1,6 @@
 from banzai.utils.image_utils import get_bpm
 
-from banzai.munge import munge
+from banzai.munge import munge as banzai_munge
 
 from banzai_nres.images import Image
 from banzai.utils import fits_utils
@@ -9,6 +9,12 @@ from banzai import logs
 
 
 logger = logs.get_logger(__name__)
+
+def munge(image, pipeline_context):
+    image.header['CRPIX1'] = 0
+    image.header['CRPIX2'] = 0
+    # adding headers which get called inside of _trim_image of trim.py in Banzai.
+    banzai_munge(image, pipeline_context)
 
 def read_images(image_list, pipeline_context):
     """

@@ -9,6 +9,12 @@ from banzai_nres.main import make_master_bias_console, make_master_dark_console,
 
 
 def setup_module(module):
+    """
+    :param module: None
+    :return: None.
+    This function creates the sqlite database and populates it with
+    telescopes and BPM's for the test data sets elp/nres02 and lsc/nres01.
+    """
     create_db('./', db_address=os.environ['DB_URL'],
               configdb_address=os.environ['CONFIG_DB_URL'])
 
