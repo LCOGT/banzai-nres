@@ -26,16 +26,20 @@ def read_images(image_list, pipeline_context):
             munge(image, pipeline_context)
             if image.bpm is None:
                 logger.info('tele id and ccdsum: ' + str(image.telescope_id) + ' ,ccdsum:' + str(image.ccdsum))
-                logger.info('instrument name and db instrument name: ' + str(image.instrument))
+                logger.info('instrument name:' + str(image.instrument))
                 bpm = get_bpm(image, pipeline_context)
+                logger.info(str(bpm.shape))
                 if bpm is None:
                     logger.error('No BPM file exists for this image.',
                                  extra={'tags': {'filename': image.filename}})
                 else:
                     image.bpm = bpm
+                    logger.info('images good')
                     images.append(image)
+                    logger.info(str(image.bpm.shape))
             else:
                 images.append(image)
+                logger.info(str(image.bpm.shape))
         except Exception as e:
             logger.error('Error loading {0}'.format(filename))
             logger.error(e)
