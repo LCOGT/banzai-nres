@@ -29,14 +29,15 @@ def setup_module(module):
     fits_file_to_copy = '/archive/engineering/lsc/nres01/20180328/raw/lscnrs01-fl09-20180328-0066-b00.fits.fz'
     date_marker = '20180725'
 
-    # generating the zeros bpm.
+    # generating the zeros bpm. Files need to start with bpm.
     with fits.open(fits_file_to_copy) as hdu_list:
         hdu_list[1].data = np.zeros(hdu_list[1].data.shape, dtype=np.uint8)
         hdu_list[1].header['OBSTYPE'] = 'BPM'
-        hdu_list.writeto('/archive/engineering/lsc/nres01/bpm/lsc_fl09_BPM_' +
+        hdu_list[1].header['EXTNAME'] = 'BPM'
+        hdu_list.writeto('/archive/engineering/lsc/nres01/bpm/bpm_lsc_fl09_' +
                          date_marker + '.fits.fz', overwrite=True)
         hdu_list[1].header['INSTRUME'] = 'fl17'
-        hdu_list.writeto('/archive/engineering/elp/nres02/bpm/elp_fl17_BPM_'
+        hdu_list.writeto('/archive/engineering/elp/nres02/bpm/bpm_elp_fl17_'
                          + date_marker + '.fits.fz', overwrite=True)
 
 @pytest.mark.e2e
