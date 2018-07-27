@@ -1,4 +1,5 @@
 from banzai.images import Image as banzaiImage
+from banzai import dbs
 
 from banzai import logs
 
