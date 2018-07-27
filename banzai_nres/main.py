@@ -91,16 +91,16 @@ def run(stages_to_do, pipeline_context, image_types=[], calibration_maker=False,
         logger.info(log_message, extra={'tags': {'raw_path': pipeline_context.raw_path}})
 
     image_list = image_utils.make_image_list(pipeline_context)
-
+    logger.info('make', extra={'tags': {'raw_path': pipeline_context.raw_path}})
     image_list = image_utils.select_images(image_list, image_types)
-
+    logger.info('select', extra={'tags': {'raw_path': pipeline_context.raw_path}})
     images = read_images(image_list, pipeline_context)
-
+    logger.info('read', extra={'tags': {'raw_path': pipeline_context.raw_path}})
     for stage in stages_to_do:
         stage_to_run = stage(pipeline_context)
         images = stage_to_run.run(images)
 
-
+    logger.info('do', extra={'tags': {'raw_path': pipeline_context.raw_path}})
     output_files = image_utils.save_images(pipeline_context, images,
                                            master_calibration=calibration_maker)
 
