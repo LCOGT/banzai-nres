@@ -11,23 +11,22 @@ July 2018
 import os
 from banzai_nres.utils.image_utils import read_images
 from banzai_nres.bias import BiasMaker as nres_BiasMaker
-from banzai_nres.dark import DarkMaker as nres_DarkMaker
 
 from banzai import bias, trim, dark, gain
 from banzai.qc import header_checker
 from banzai import logs
 from banzai.utils import image_utils
 from banzai.main import get_stages_todo
+from banzai import main as banzai_main
 
 logger = logs.get_logger(__name__)
 
-# as is, the banzai stages run by default, not these.
-ordered_stages = [header_checker.HeaderSanity,
-                  bias.OverscanSubtractor,
-                  gain.GainNormalizer,
-                  trim.Trimmer,
-                  bias.BiasSubtractor,
-                  dark.DarkSubtractor]
+
+banzai_main.ordered_stages = [header_checker.HeaderSanity,
+                              bias.OverscanSubtractor,
+                              gain.GainNormalizer,
+                              trim.Trimmer,
+                              bias.BiasSubtractor]
 
 
 class TestContext(object):
@@ -71,20 +70,10 @@ def make_master_bias_console():
     run_end_of_night_from_console([make_master_bias])
 
 
-def make_master_dark_console():
-    run_end_of_night_from_console([make_master_dark])
-
-
 def make_master_bias(pipeline_context):
     stages_to_do = get_stages_todo(trim.Trimmer, extra_stages=[nres_BiasMaker])
     run(stages_to_do, pipeline_context, image_types=['BIAS'], calibration_maker=True,
         log_message='Making Master BIAS')
-
-
-def make_master_dark(pipeline_context):
-    stages_to_do = get_stages_todo(bias.BiasSubtractor, extra_stages=[nres_DarkMaker])
-    run(stages_to_do, pipeline_context, image_types=['DARK'], calibration_maker=True,
-        log_message='Making Master Dark')
 
 
 def run(stages_to_do, pipeline_context, image_types=[], calibration_maker=False, log_message=''):

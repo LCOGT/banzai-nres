@@ -4,7 +4,7 @@ import os
 import numpy as np
 import shutil
 from astropy.io import fits
-from banzai_nres.main import make_master_bias_console, make_master_dark_console, TestContext
+from banzai_nres.main import make_master_bias_console, TestContext
 
 
 
@@ -84,10 +84,5 @@ def test_e2e():
 
     make_master_bias_console()
     with fits.open(os.path.join(expected_processed_path, expected_bias_filename)) as hdu_list:
-        assert hdu_list[1].data.shape is not None
-        assert hdu_list['BPM'].data.shape == hdu_list[1].data.shape
-
-    make_master_dark_console()
-    with fits.open(os.path.join(expected_processed_path, expected_dark_filename)) as hdu_list:
         assert hdu_list[1].data.shape is not None
         assert hdu_list['BPM'].data.shape == hdu_list[1].data.shape
