@@ -7,7 +7,6 @@ from astropy.io import fits
 from banzai_nres.main import make_master_bias_console, TestContext
 
 
-
 def setup_module(module):
     """
     :param module: None

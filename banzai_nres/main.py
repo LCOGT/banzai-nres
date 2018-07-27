@@ -22,8 +22,7 @@ from banzai import main as banzai_main
 logger = logs.get_logger(__name__)
 
 
-banzai_main.ordered_stages = [header_checker.HeaderSanity,
-                              bias.OverscanSubtractor,
+banzai_main.ordered_stages = [bias.OverscanSubtractor,
                               gain.GainNormalizer,
                               trim.Trimmer,
                               bias.BiasSubtractor]
