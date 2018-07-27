@@ -24,7 +24,6 @@ def read_images(image_list, pipeline_context):
         try:
             image = Image(pipeline_context, filename=filename)
             munge(image, pipeline_context)
-            logger.info(str(image.data.shape) + ', shape. filename:' + str(image.filename))
             if image.bpm is None:
                 logger.info('tele id and ccdsum: ' + str(image.telescope_id) + ' ,ccdsum:' + str(image.ccdsum))
                 logger.info('instrument name and site:' + str(image.instrument) + str(image.site))
@@ -36,10 +35,8 @@ def read_images(image_list, pipeline_context):
                     image.bpm = bpm
                     logger.info('images good')
                     images.append(image)
-                    logger.info('into else')
             else:
                 images.append(image)
-                logger.info('into outer else')
         except Exception as e:
             logger.error('Error loading {0}'.format(filename))
             logger.error(e)

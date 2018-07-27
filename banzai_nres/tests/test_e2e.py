@@ -26,32 +26,39 @@ def setup_module(module):
     fits_file_to_copy = '/archive/engineering/lsc/nres01/20180228/raw/lscnrs01-fl09-20180228-0010-e00.fits'
     date_marker = '20180727'
 
-    os.system('funpack {file}'.format(file=fits_file_to_copy + '.fz'))
     # generating the zeros bpm. Files need to start with bpm.
+    os.system('funpack {}'.format(fits_file_to_copy + '.fz'))
+    # lsc output bpm.
+    output_filename = '/archive/engineering/lsc/nres01/bpm/bpm_lsc_fl09_' \
+                      + date_marker + '.fits'
     with fits.open(fits_file_to_copy) as hdu_list:
         hdu_list[0].data = np.zeros(hdu_list[1].data.shape, dtype=np.uint8)
         hdu_list[0].header['OBSTYPE'] = 'BPM'
         hdu_list[0].header['EXTNAME'] = 'BPM'
         hdu_list[0].header['INSTRUME'] = 'nres01'
-        output_filename = '/archive/engineering/lsc/nres01/bpm/bpm_lsc_fl09_' \
-                          + date_marker + '.fits'
+        hdu_list[0].header['SITEID'] = 'lsc'
+        hdu_list[0].header['TELESCOP'] = 'nres01'
         hdu_list.writeto(output_filename, overwrite=True)
-        # fpack the file (which creates an fpacked copy)
-        os.system('fpack {file}'.format(file=output_filename))
-        # delete the un-fpacked file.
-        os.system('rm {file}'.format(file=output_filename))
 
+    # fpack the file and delete the funpacked input.
+    os.system('fpack -D {0}'.format(output_filename))
+
+    # now for elp.
+    output_filename = '/archive/engineering/elp/nres02/bpm/bpm_elp_fl17_' \
+                      + date_marker + '.fits'
+    with fits.open(fits_file_to_copy) as hdu_list:
+        hdu_list[0].data = np.zeros(hdu_list[1].data.shape, dtype=np.uint8)
+        hdu_list[0].header['OBSTYPE'] = 'BPM'
+        hdu_list[0].header['EXTNAME'] = 'BPM'
         hdu_list[0].header['INSTRUME'] = 'nres02'
         hdu_list[0].header['SITEID'] = 'elp'
         hdu_list[0].header['TELESCOP'] = 'nres02'
-        output_filename = '/archive/engineering/elp/nres02/bpm/bpm_elp_fl17_' \
-                          + date_marker + '.fits'
         hdu_list.writeto(output_filename, overwrite=True)
-        os.system('fpack {file}'.format(file=output_filename))
-        os.system('rm {file}'.format(file=output_filename))
 
-    # delete the unpacked file which was initially copied.
-    os.system('rm {file}'.format(file=fits_file_to_copy))
+    # fpack the file and delete the funpacked input.
+    os.system('fpack -D {0}'.format(output_filename))
+    # delete the unpacked file which was initially copied via funpack
+    os.system('rm {0}'.format(fits_file_to_copy))
     # adding the bpm folder to database and populating the sqlite tables.
     populate_bpm_table('/archive/engineering/lsc/nres01/bpm', db_address=os.environ['DB_URL'])
     populate_bpm_table('/archive/engineering/elp/nres02/bpm', db_address=os.environ['DB_URL'])
