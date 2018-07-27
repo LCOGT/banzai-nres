@@ -32,7 +32,7 @@ def setup_module(module):
     output_filename = '/archive/engineering/lsc/nres01/bpm/bpm_lsc_fl09_' \
                       + date_marker + '.fits'
     with fits.open(fits_file_to_copy) as hdu_list:
-        hdu_list[0].data = np.zeros(hdu_list[1].data.shape, dtype=np.uint8)
+        hdu_list[0].data = np.zeros(hdu_list[0].data.shape, dtype=np.uint8)
         hdu_list[0].header['OBSTYPE'] = 'BPM'
         hdu_list[0].header['EXTNAME'] = 'BPM'
         hdu_list[0].header['INSTRUME'] = 'nres01'
@@ -48,7 +48,7 @@ def setup_module(module):
     output_filename = '/archive/engineering/elp/nres02/bpm/bpm_elp_fl17_' \
                       + date_marker + '.fits'
     with fits.open(fits_file_to_copy) as hdu_list:
-        hdu_list[0].data = np.zeros(hdu_list[1].data.shape, dtype=np.uint8)
+        hdu_list[0].data = np.zeros(hdu_list[0].data.shape, dtype=np.uint8)
         hdu_list[0].header['OBSTYPE'] = 'BPM'
         hdu_list[0].header['EXTNAME'] = 'BPM'
         hdu_list[0].header['INSTRUME'] = 'nres02'
@@ -59,7 +59,7 @@ def setup_module(module):
     # fpack the file and delete the funpacked input.
     os.system('fpack {0}'.format(output_filename))
     os.system('rm {0}'.format(output_filename))
-    # delete the unpacked file which was initially copied into raw/ via funpack 
+    # delete the unpacked file which was initially copied into raw/ via funpack
     os.system('rm {0}'.format(fits_file_to_copy))
     # adding the bpm folder to database and populating the sqlite tables.
     populate_bpm_table('/archive/engineering/lsc/nres01/bpm', db_address=os.environ['DB_URL'])
