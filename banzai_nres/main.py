@@ -19,6 +19,7 @@ from banzai.main import get_stages_todo
 
 logger = logs.get_logger(__name__)
 
+# as is, the banzai stages run by default, not these.
 ordered_stages = [header_checker.HeaderSanity,
                   bias.OverscanSubtractor,
                   gain.GainNormalizer,
@@ -98,6 +99,7 @@ def run(stages_to_do, pipeline_context, image_types=[], calibration_maker=False,
 
     for stage in stages_to_do:
         stage_to_run = stage(pipeline_context)
+        logger.info('running' + str(stage_to_run))
         images = stage_to_run.run(images)
 
 
