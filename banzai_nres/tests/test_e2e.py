@@ -33,7 +33,10 @@ def setup_module(module):
         hdu_list[1].header['INSTRUME'] = 'nres01'
         hdu_list.writeto('/archive/engineering/lsc/nres01/bpm/bpm_lsc_fl09_' +
                          date_marker + '.fits.fz', overwrite=True)
+
         hdu_list[1].header['INSTRUME'] = 'nres02'
+        hdu_list[1].header['SITEID'] = 'elp'
+        hdu_list[1].header['TELESCOP'] = 'nres02'
         hdu_list.writeto('/archive/engineering/elp/nres02/bpm/bpm_elp_fl17_'
                          + date_marker + '.fits.fz', overwrite=True)
 
