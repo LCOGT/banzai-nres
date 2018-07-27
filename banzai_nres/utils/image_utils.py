@@ -19,7 +19,9 @@ def read_images(image_list, pipeline_context):
     images = []
     for filename in image_list:
         try:
+            logger.info('in banzai_nres read', extra={'tags': {'raw_path': pipeline_context.raw_path}})
             image = Image(pipeline_context, filename=filename)
+            logger.info('built image', extra={'tags': {'inst,site,teleid': image.instrument + image.site + str(image.telescope_id)}})
             munge(image, pipeline_context)
             if image.bpm is None:
                 bpm = get_bpm(image, pipeline_context)
