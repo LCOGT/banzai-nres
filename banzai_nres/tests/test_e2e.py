@@ -41,7 +41,8 @@ def setup_module(module):
         hdu_list.writeto(output_filename, overwrite=True)
 
     # fpack the file and delete the funpacked input.
-    os.system('fpack -D {0}'.format(output_filename))
+    os.system('fpack {0}'.format(output_filename))
+    os.system('rm {0}'.format(output_filename))
 
     # now for elp.
     output_filename = '/archive/engineering/elp/nres02/bpm/bpm_elp_fl17_' \
@@ -56,8 +57,9 @@ def setup_module(module):
         hdu_list.writeto(output_filename, overwrite=True)
 
     # fpack the file and delete the funpacked input.
-    os.system('fpack -D {0}'.format(output_filename))
-    # delete the unpacked file which was initially copied via funpack
+    os.system('fpack {0}'.format(output_filename))
+    os.system('rm {0}'.format(output_filename))
+    # delete the unpacked file which was initially copied into raw/ via funpack 
     os.system('rm {0}'.format(fits_file_to_copy))
     # adding the bpm folder to database and populating the sqlite tables.
     populate_bpm_table('/archive/engineering/lsc/nres01/bpm', db_address=os.environ['DB_URL'])
