@@ -26,7 +26,7 @@ def read_images(image_list, pipeline_context):
             munge(image, pipeline_context)
             if image.bpm is None:
                 logger.info('tele id and ccdsum: ' + str(image.telescope_id) + ' ,ccdsum:' + str(image.ccdsum))
-                logger.info('instrument name:' + str(image.instrument))
+                logger.info('instrument name and site:' + str(image.instrument) + str(image.site))
                 bpm = get_bpm(image, pipeline_context)
                 logger.info(str(bpm.shape))
                 if bpm is None:
