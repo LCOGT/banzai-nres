@@ -20,9 +20,7 @@ def read_images(image_list, pipeline_context):
     images = []
     for filename in image_list:
         try:
-            logger.info('in banzai_nres read', extra={'tags': {'raw_path': pipeline_context.raw_path}})
-            fits_utils.open_image(filename)  #
-            logger.info('file opened', extra={'tags': {'raw_path': pipeline_context.raw_path}})
+            logger.info('in read_images')
             image = Image(pipeline_context, filename=filename)
             logger.info('built image', extra={'tags': {'inst,site,teleid': image.instrument + image.site + str(image.telescope_id)}})
             munge(image, pipeline_context)
