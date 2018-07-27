@@ -21,10 +21,6 @@ def setup_module(module):
     os.makedirs('/archive/engineering/lsc/nres01/bpm')
     os.makedirs('/archive/engineering/elp/nres02/bpm')
 
-    # adding the bpm folder to database
-    populate_bpm_table('/archive/engineering/lsc/nres01/bpm', db_address=os.environ['DB_URL'])
-    populate_bpm_table('/archive/engineering/elp/nres02/bpm', db_address=os.environ['DB_URL'])
-
     # using an arbitrary fits as a template for the bpm fits.
     fits_file_to_copy = '/archive/engineering/lsc/nres01/20180228/raw/lscnrs01-fl09-20180228-0010-e00.fits.fz'
     date_marker = '20180727'
@@ -34,11 +30,16 @@ def setup_module(module):
         hdu_list[1].data = np.zeros(hdu_list[1].data.shape, dtype=np.uint8)
         hdu_list[1].header['OBSTYPE'] = 'BPM'
         hdu_list[1].header['EXTNAME'] = 'BPM'
+        hdu_list[1].header['INSTRUME'] = 'nres01'
         hdu_list.writeto('/archive/engineering/lsc/nres01/bpm/bpm_lsc_fl09_' +
                          date_marker + '.fits.fz', overwrite=True)
-        hdu_list[1].header['INSTRUME'] = 'fl17'
+        hdu_list[1].header['INSTRUME'] = 'nres02'
         hdu_list.writeto('/archive/engineering/elp/nres02/bpm/bpm_elp_fl17_'
                          + date_marker + '.fits.fz', overwrite=True)
+
+    # adding the bpm folder to database and populating the sqlite tables.
+    populate_bpm_table('/archive/engineering/lsc/nres01/bpm', db_address=os.environ['DB_URL'])
+    populate_bpm_table('/archive/engineering/elp/nres02/bpm', db_address=os.environ['DB_URL'])
 
 @pytest.mark.e2e
 def test_e2e():
