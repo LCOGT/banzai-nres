@@ -25,7 +25,8 @@ def read_images(image_list, pipeline_context):
             image = Image(pipeline_context, filename=filename)
             munge(image, pipeline_context)
             if image.bpm is None:
-                logger.info('info relevant to bpm: ' + str(image.telescope_id) + ' ,ccdsum:' + str(image.ccdsum))
+                logger.info('tele id and ccdsum: ' + str(image.telescope_id) + ' ,ccdsum:' + str(image.ccdsum))
+                logger.info('instrument name and db instrument name: ' + str(image.instrument))
                 bpm = get_bpm(image, pipeline_context)
                 if bpm is None:
                     logger.error('No BPM file exists for this image.',
