@@ -15,16 +15,18 @@ def read_images(image_list, pipeline_context):
     This is a copy of banzai.images.read_images
     which will properly handle images which already have a Bad Pixel Mask (BPM).
     Once this is fixed upstream in banzai, this should be deleted.
+    The Image class will not work in upstream banzai for NRES frames (as is) because
+    it fails to find the instrument in the DB.
     """
 
     images = []
     for filename in image_list:
         try:
-            logger.info('in read_images')
             image = Image(pipeline_context, filename=filename)
-            logger.info('built image', extra={'tags': {'inst,site,teleid': image.instrument + image.site + str(image.telescope_id)}})
             munge(image, pipeline_context)
             if image.bpm is None:
+                logger.info('info relevant to bpm: ' + str(image.telescope_id) + ' ,ccdsum:' + str(image.ccdsum))
+                logger.info(pipeline_context.db_address)
                 bpm = get_bpm(image, pipeline_context)
                 if bpm is None:
                     logger.error('No BPM file exists for this image.',

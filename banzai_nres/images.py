@@ -42,10 +42,13 @@ class Image(object):
 
         self.site = header.get('SITEID')
         self.instrument = header.get('TELESCOP')
-        # because NRES has TELESCOP in place of instrument inside the dm
+        # because NRES has TELESCOP in place of instrument inside the database (db)
         if self.site is not None and self.instrument is not None:
             self.telescope_id = dbs.get_telescope_id(self.site, self.instrument,
                                                      db_address=pipeline_context.db_address)
+            # NOTE: if self.instrument = header.get('INSTRUME'), then dbs.get_telescope_id will break
+            # this Image call and exit with an error. For NRES frames, the instrument in the db is the telescope
+            # ID, not the instrument ID (things were flipped from images to NRES).
         else:
             self.telescope_id = None
         self.epoch = str(header.get('DAY-OBS'))
