@@ -74,19 +74,19 @@ def setup_module(module):
 @pytest.mark.e2e
 def test_e2e():
     db_address = os.environ['DB_URL']
-    test_data_path = ''
+    raw_data_path = '/archive/engineering/lsc/nres01/20180228/raw'
     instrument = 'nres01'
     site = 'lsc'
     epoch = '20180228'
 
-    expected_bias_filename = 'bias_' + instrument + '_' + epoch + '_bin1x1.fits.fz'
+    expected_bias_filename = 'bias_' + instrument + '_' + epoch + '_bin1x1.fits'
     expected_processed_path = os.path.join('/tmp', site, instrument, epoch, 'processed')
 
     # executing the master_calibration maker as one would from the command line.
     # make_master_bias is the console entry point
-    os.system('make_master_bias --db-host {0} --raw-path {1} --instrument {2} --processed-path /tmp '
-              '--log-level debug --site {3} --epoch {4}'.format(db_address, test_data_path, instrument, site, epoch))
+    os.system('make_master_bias --db-address {0} --raw-path {1} '
+              '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
 
     with fits.open(os.path.join(expected_processed_path, expected_bias_filename)) as hdu_list:
-        assert hdu_list[1].data.shape is not None
+        assert hdu_list[0].data.shape is not None
         assert hdu_list['BPM'].data.shape == hdu_list[1].data.shape
