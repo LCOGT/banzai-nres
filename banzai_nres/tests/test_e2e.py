@@ -4,8 +4,7 @@ import os
 import numpy as np
 import shutil
 from astropy.io import fits
-from banzai_nres.main import make_master_bias_console
-from banzai_nres.tests.utils import TestContext
+from banzai_nres.main import *
 
 
 def setup_module(module):
@@ -74,17 +73,20 @@ def setup_module(module):
 
 @pytest.mark.e2e
 def test_e2e():
-    test_context = TestContext()
+    db_address = os.environ['DB_URL']
+    test_data_path = ''
     instrument = 'nres01'
-    epoch = test_context.raw_path[-12:-4]
     site = 'lsc'
+    epoch = '20180228'
+
     expected_bias_filename = 'bias_' + instrument + '_' + epoch + '_bin1x1.fits.fz'
-    expected_processed_path = os.path.join(test_context.processed_path, site,
-                                           instrument, epoch, 'processed')
+    expected_processed_path = os.path.join('/tmp', site, instrument, epoch, 'processed')
 
-    #os.system('make_master_bias --{0}'.format(test_context.raw_path))
+    # executing the master_calibration maker as one would from the command line.
+    # make_master_bias is the console entry point
+    os.system('make_master_bias --db-host {0} --raw-path {1} --instrument {2} --processed-path /tmp '
+              '--log-level debug --site {3} --epoch {4}'.format(db_address, test_data_path, instrument, site, epoch))
 
-    make_master_bias_console()
     with fits.open(os.path.join(expected_processed_path, expected_bias_filename)) as hdu_list:
         assert hdu_list[1].data.shape is not None
         assert hdu_list['BPM'].data.shape == hdu_list[1].data.shape
