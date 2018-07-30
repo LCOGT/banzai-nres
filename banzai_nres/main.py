@@ -1,6 +1,6 @@
 """
 main.py: Main driver script for the banzai-NRES pipeline.
-    The main() function is a console entry point.
+    The make_master_bias_console() is the entry point.
 Authors
     Curtis McCully (cmccully@lcogt.net)
 July 2018
@@ -42,7 +42,7 @@ def make_master_bias(pipeline_context):
 
 def run(stages_to_do, pipeline_context, image_types=[], calibration_maker=False, log_message=''):
     """
-    Main driver script for banzai-NRES
+    Main driver script for banzai-NRES.
     """
     if len(log_message) > 0:
         logger.info(log_message, extra={'tags': {'raw_path': pipeline_context.raw_path}})
