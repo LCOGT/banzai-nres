@@ -14,10 +14,8 @@ from banzai_nres.dark import DarkMaker as nres_DarkMaker
 
 from banzai import bias, trim, dark, gain
 from banzai import logs, qc
-from banzai.utils import image_utils
-from banzai.main import get_stages_todo, run_end_of_night_from_console
+from banzai.main import get_stages_todo, run_end_of_night_from_console, run
 from banzai import main as banzai_main
-from banzai.images import read_images
 
 logger = logs.get_logger(__name__)
 
@@ -53,26 +51,3 @@ def make_master_dark(pipeline_context):
     stages_to_do = get_stages_todo(bias.BiasSubtractor, extra_stages=[dark.DarkNormalizer, nres_DarkMaker])
     run(stages_to_do, pipeline_context, image_types=['DARK'], calibration_maker=True,
         log_message='Making Master Dark')
-
-
-def run(stages_to_do, pipeline_context, image_types=[], calibration_maker=False, log_message=''):
-    """
-    Main driver script for banzai-NRES.
-    """
-    if len(log_message) > 0:
-        logger.info(log_message, extra={'tags': {'raw_path': pipeline_context.raw_path}})
-
-    image_list = image_utils.make_image_list(pipeline_context)
-
-    image_list = image_utils.select_images(image_list, image_types)
-
-    images = read_images(image_list, pipeline_context)
-
-    for stage in stages_to_do:
-        stage_to_run = stage(pipeline_context)
-        images = stage_to_run.run(images)
-
-    output_files = image_utils.save_images(pipeline_context, images,
-                                           master_calibration=calibration_maker)
-
-    logger.info(output_files, extra={'tags': {'raw_path': pipeline_context.raw_path}})
