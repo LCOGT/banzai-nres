@@ -10,7 +10,7 @@ July 2018
 
 from banzai_nres.bias import BiasMaker as nres_BiasMaker
 from banzai_nres.dark import DarkMaker as nres_DarkMaker
-from banzai_nres.traces import TraceFitOrderbyOrder
+from banzai_nres import traces
 
 
 from banzai import bias, trim, dark, gain
@@ -57,6 +57,6 @@ def make_master_dark(pipeline_context):
         log_message='Making Master Dark')
 
 def make_master_trace(pipeline_context):
-    stages_to_do = get_stages_todo(dark.DarkSubtractor, extra_stages=[TraceFitOrderbyOrder])
-    run(stages_to_do, pipeline_context, image_types=['FLAT'], calibration_maker=True,
+    stages_to_do = get_stages_todo(dark.DarkSubtractor, extra_stages=[traces.TraceFitOrderbyOrder])
+    run(stages_to_do, pipeline_context, image_types=['LAMPFLAT'], calibration_maker=True,
         log_message='Making Master Dark')
