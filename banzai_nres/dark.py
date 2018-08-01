@@ -2,7 +2,6 @@ import os.path
 
 import numpy as np
 
-from banzai_nres.images import Image
 from banzai import logs
 from banzai.dark import DarkMaker as BanzaiDarkMaker
 from banzai.utils import stats, fits_utils
