@@ -17,7 +17,7 @@ from banzai import logs, qc
 from banzai.utils import image_utils
 from banzai.main import get_stages_todo, run_end_of_night_from_console
 from banzai import main as banzai_main
-from banzai import images
+from banzai.images import read_images
 
 logger = logs.get_logger(__name__)
 
@@ -55,7 +55,7 @@ def run(stages_to_do, pipeline_context, image_types=[], calibration_maker=False,
 
     image_list = image_utils.select_images(image_list, image_types)
 
-    images = images.read_images(image_list, pipeline_context)
+    images = read_images(image_list, pipeline_context)
 
     for stage in stages_to_do:
         stage_to_run = stage(pipeline_context)
