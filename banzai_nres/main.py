@@ -8,8 +8,6 @@ July 2018
 July 2018
 """
 
-
-from banzai_nres.utils.image_utils import read_images
 from banzai_nres.bias import BiasMaker as nres_BiasMaker
 
 from banzai import bias, trim, dark, gain
@@ -17,7 +15,8 @@ from banzai import logs, qc
 from banzai.utils import image_utils
 from banzai.main import get_stages_todo, run_end_of_night_from_console
 from banzai import main as banzai_main
-from banzai.images import read_images
+#from banzai.images import read_images
+from banzai_nres.utils.image_utils import read_images
 
 logger = logs.get_logger(__name__)
 

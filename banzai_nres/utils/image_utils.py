@@ -23,8 +23,11 @@ def read_images(image_list, pipeline_context):
     images = []
     for filename in image_list:
         try:
+            logger.info('above Image call')
             image = Image(pipeline_context, filename=filename)
+            logger.info('created the Image object')
             if image.telescope is None:
+                logger.info('None telescope')
                 error_message = 'Telescope is not in the database: {site}/{instrument}'
                 error_message = error_message.format(site=image.site, instrument=image.instrument)
                 raise dbs.TelescopeMissingException(error_message)
