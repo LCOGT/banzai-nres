@@ -2,7 +2,7 @@ from banzai.utils.image_utils import get_bpm
 from banzai.munge import munge as banzai_munge
 from banzai import logs
 
-from banzai_nres.images import Image
+from banzai.images import Image
 
 
 logger = logs.get_logger(__name__)
