@@ -1,4 +1,3 @@
-from banzai.utils.image_utils import get_bpm
 from banzai.munge import munge as banzai_munge
 from banzai import logs, dbs
 from banzai.utils import image_utils
