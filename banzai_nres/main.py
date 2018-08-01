@@ -41,6 +41,9 @@ def make_master_bias_console():
 def make_master_dark_console():
     run_end_of_night_from_console([make_master_dark])
 
+def make_master_dark_console():
+    run_end_of_night_from_console([make_master_dark])
+
 
 def make_master_bias(pipeline_context):
     stages_to_do = get_stages_todo(trim.Trimmer, extra_stages=[nres_BiasMaker])
@@ -54,6 +57,6 @@ def make_master_dark(pipeline_context):
         log_message='Making Master Dark')
 
 def make_master_trace(pipeline_context):
-    stages_to_do = get_stages_todo(bias.BiasSubtractor, extra_stages=[TraceFitOrderbyOrder])
+    stages_to_do = get_stages_todo(dark.DarkSubtractor, extra_stages=[TraceFitOrderbyOrder])
     run(stages_to_do, pipeline_context, image_types=['FLAT'], calibration_maker=True,
         log_message='Making Master Dark')
