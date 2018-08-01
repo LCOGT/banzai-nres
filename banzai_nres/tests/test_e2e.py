@@ -13,15 +13,13 @@ def make_dummy_bpm(bpm_path, output_bpm_name_addition, fits_file_to_copy, date_m
     # clearing the bad pixel mask folder if it exists
     if os.path.exists(bpm_path):
         shutil.rmtree(bpm_path)
-
     # building bpm folder
     os.makedirs(bpm_path)
-
     # unpacking a fits file via funpack. Astropy's unpack messes with the files.
     os.system('funpack {}'.format(fits_file_to_copy + '.fz'))
+    # where to save the file
+    output_filename = bpm_path + output_bpm_name_addition + date_marker + '.fits'
     # creating the bpm
-    output_filename = bpm_path + output_bpm_name_addition + \
-                      + date_marker + '.fits'
     with fits.open(fits_file_to_copy) as hdu_list:
         hdu_list[0].data = np.zeros(hdu_list[0].data.shape, dtype=np.uint8)
         hdu_list[0].header['OBSTYPE'] = 'BPM'
@@ -56,7 +54,7 @@ def setup_module(module):
                    fits_file_to_copy=fits_file_to_copy, date_marker=date_marker,
                    telescope_name='nres01', site_name='lsc')
     make_dummy_bpm('/archive/engineering/elp/nres02/bpm', '/bpm_elp_fl17_',
-                   fits_file_to_copy=fits_file_to_copy, date_marker=date_marker, 
+                   fits_file_to_copy=fits_file_to_copy, date_marker=date_marker,
                    telescope_name='nres02', site_name='elp')
 
     # adding the bpm folder to database and populating the sqlite tables.
