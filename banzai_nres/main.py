@@ -93,7 +93,8 @@ def run(stages_to_do, pipeline_context, image_types=[], calibration_maker=False,
         logger.info(str(stage))
         images = stage_to_run.run(images)
         logger.info('stage run successfully')
-
+    logger.info('images:')
+    logger.info(images)
     output_files = image_utils.save_images(pipeline_context, images,
                                            master_calibration=calibration_maker)
     logger.info('output files saved')

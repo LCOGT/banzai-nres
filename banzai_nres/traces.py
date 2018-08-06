@@ -71,7 +71,7 @@ class BlindTraceMaker(CalibrationMaker):
         :param image_config: images[0] if some checks pass
         :return: list of the banzai Image object which contains the trace coefficients in the image.data attribute.
         """
-        logger.info('inside of order-order stage')
+        logger.info('inside of order-by-order stage')
         master_bias_filename = self.get_calibration_filename(image_config)
         logger.info('calibration info obtained')
         master_traces = make_master_traces(images, image_config, logging_tags, master_bias_filename,
