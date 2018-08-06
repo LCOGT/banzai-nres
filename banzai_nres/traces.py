@@ -26,6 +26,8 @@ class TraceMaker(CalibrationMaker):
     def __init__(self, pipeline_context):
         super(TraceMaker, self).__init__(pipeline_context)
 
+        self.pipeline_context = pipeline_context
+
     @property
     def group_by_keywords(self):
         return ['ccdsum']
@@ -53,6 +55,8 @@ class BlindTraceMaker(CalibrationMaker):
     """
     def __init__(self, pipeline_context):
         super(BlindTraceMaker, self).__init__(pipeline_context)
+
+        self.pipeline_context = pipeline_context
 
     @property
     def group_by_keywords(self):
