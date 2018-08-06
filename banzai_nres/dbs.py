@@ -1,4 +1,5 @@
-from banzai.stages import CalibrationMaker, MasterCalibrationDoesNotExist
+from banzai.stages import MasterCalibrationDoesNotExist
+from banzai_nres.traces import TraceMaker
 from astropy.io import fits
 import os
 
@@ -6,7 +7,7 @@ import os
 def get_trace_coefficients(image, pipeline_context):
     coefficients_and_indices, fiber_order = None, None
 
-    master_trace_filename = CalibrationMaker.get_calibration_filename(pipeline_context, image)
+    master_trace_filename = TraceMaker(pipeline_context).get_calibration_filename(image)
     master_trace_file_path = os.path.join(pipeline_context.processed_path, master_trace_filename)
     if image.header['OBSTYPE'] != 'TRACE' and os.path.isfile(master_trace_file_path):
         fiber_order = fits.getheader(master_trace_file_path).get('FIBRORDR')
