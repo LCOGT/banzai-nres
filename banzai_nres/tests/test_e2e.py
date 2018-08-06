@@ -62,7 +62,7 @@ def setup_module(module):
     populate_bpm_table('/archive/engineering/elp/nres02/bpm', db_address=os.environ['DB_URL'])
 
 
-@pytest.mark.e2e
+#@pytest.mark.e2e
 def test_e2e():
     db_address = os.environ['DB_URL']
     raw_data_path = '/archive/engineering/lsc/nres01/20180228/raw'
@@ -110,12 +110,3 @@ def test_e2e():
     with fits.open(os.path.join(expected_processed_path, expected_trace_filename)) as hdu_list:
         assert hdu_list[0].data.shape is not None
         assert hdu_list[0].data.shape[1] == 6  # the trace_fit poly order + 2
-
-
-def test_traces():
-    """
-    temporary fix to always engage the end to end test.
-    """
-    setup_module(None)
-    test_e2e()
-    assert True
