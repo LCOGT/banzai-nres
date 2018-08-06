@@ -116,4 +116,6 @@ def test_traces():
     """
     temporary fix to always engage the end to end test.
     """
+    setup_module(None)
     test_e2e()
+    assert True

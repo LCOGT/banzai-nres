@@ -8,7 +8,6 @@ Authors
 """
 
 
-from __future__ import print_function
 import numpy as np
 from scipy import ndimage, optimize, interpolate
 from scipy.optimize import curve_fit
