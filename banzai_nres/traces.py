@@ -164,10 +164,12 @@ def make_master_traces(images, maker_object, image_config, logging_tags, method,
     header['OBSTYPE'] = 'TRACE'
     header['DATE-OBS'] = images[0].header['DATE-OBS']
     header['DAY-OBS'] = images[0].header['DAY-OBS']
+    header['INSTRUME'] = images[0].header['TELESCOP']
 
     logger.info(os.path.basename(master_trace_filename))
 
-    master_trace_coefficients = Image(maker_object.pipeline_context, data=coefficients_and_indices_list[0], header=header)
+    master_trace_coefficients = Image(pipeline_context=maker_object.pipeline_context,
+                                      data=coefficients_and_indices_list[0], header=header)
     master_trace_coefficients.filename = master_trace_filename
 
     return master_trace_coefficients
