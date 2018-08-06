@@ -132,11 +132,11 @@ def make_master_traces(images, image_config, logging_tags, master_bias_filename,
     logs.add_tag(logging_tags, method + 'master_trace', os.path.basename(master_bias_filename))
 
     satisfactory_fit = False
-    image_indices_to_try = cross_correlate_image_indices(images, cross_correlate_num)
+    image_indices_to_try, try_combinations_of_images = cross_correlate_image_indices(images, cross_correlate_num)
     coefficients_and_indices_list = []
     counter = 0
     while not satisfactory_fit:
-        if len(image_indices_to_try[counter]) >= 2:
+        if try_combinations_of_images:
             images_to_try = [images[i] for i in image_indices_to_try[counter]]
         else:
             images_to_try = [images[counter]]

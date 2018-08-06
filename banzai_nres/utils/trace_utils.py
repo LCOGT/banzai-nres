@@ -572,10 +572,11 @@ def cross_correlate_image_indices(images, cross_correlate_num):
     assert len(images) >= 1
     if len(images) >= cross_correlate_num >= 2:
         image_indices_to_try = list(itertools.combinations(range(len(images)), cross_correlate_num))
-    if len(images) < cross_correlate_num:
-        image_indices_to_try = [list(range(cross_correlate_num - 1))]
-
-    return image_indices_to_try
+        try_combinations_of_images = True
+    if len(images) < cross_correlate_num or cross_correlate_num == 1:
+        image_indices_to_try = list(range(len(images)))
+        try_combinations_of_images = False
+    return image_indices_to_try, try_combinations_of_images
 
 
 def extract_coeffs_entire_lampflat_frame(image, order_of_poly_fits):
