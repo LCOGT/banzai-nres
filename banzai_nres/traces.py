@@ -143,10 +143,10 @@ def make_master_traces(images, image_config, logging_tags, master_bias_filename,
         counter += 1
         for image in images_to_try:
             if method == 'order-by-order':
-                #logger.info('fitting order by order on %s' % image.filename)
+                logger.info('fitting order by order on %s' % image.filename)
                 coefficients_and_indices_initial, fiber_order = fit_traces_order_by_order(image, order_of_poly_fits=4)
             if method == 'global-meta':
-                #logger.info('importing master coeffs and refining fit on %s' % image.filename)
+                logger.info('importing master coeffs and refining fit on %s' % image.filename)
                 coefficients_and_indices_initial, fiber_order = get_trace_coefficients(image)
 
             coefficients_and_indices_list += [optimize_coeffs_entire_lampflat_frame(
@@ -171,8 +171,7 @@ def make_master_traces(images, image_config, logging_tags, master_bias_filename,
     header['DATE-OBS'] = images[0].header['DATE-OBS']
     header['DAY-OBS'] = images[0].header['DAY-OBS']
 
-    logs.pop_tag(logging_tags, 'master_trace' + method)
-    logs.add_tag(logging_tags, 'filename', os.path.basename(master_bias_filename))
+    logger.info(os.path.basename(master_bias_filename))
 
     master_trace_coefficients = Image(images[0].pipeline_context, data=coefficients_and_indices_list[0], header=header)
     master_trace_coefficients.filename = master_bias_filename
