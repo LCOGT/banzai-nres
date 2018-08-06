@@ -62,7 +62,7 @@ def setup_module(module):
     populate_bpm_table('/archive/engineering/elp/nres02/bpm', db_address=os.environ['DB_URL'])
 
 
-#@pytest.mark.e2e
+@pytest.mark.e2e
 def test_e2e():
     db_address = os.environ['DB_URL']
     raw_data_path = '/archive/engineering/lsc/nres01/20180228/raw'
