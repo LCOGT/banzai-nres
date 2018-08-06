@@ -72,9 +72,11 @@ def test_e2e():
 
     expected_bias_filename = 'bias_' + instrument + '_' + epoch + '_bin1x1.fits'
     expected_dark_filename = 'dark_' + instrument + '_' + epoch + '_bin1x1.fits'
+    expected_trace_filename = 'trace_' + instrument + '_' + epoch + '_bin1x1.fits'
     expected_processed_path = os.path.join('/tmp', site, instrument, epoch, 'processed')
 
     # executing the master bias maker as one would from the command line.
+
     os.system('make_master_bias --db-address {0} --raw-path {1} '
               '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
 
@@ -83,9 +85,35 @@ def test_e2e():
         assert hdu_list['BPM'].data.shape == hdu_list[1].data.shape
 
     # executing the master dark maker as one would from the command line.
+
     os.system('make_master_dark --db-address {0} --raw-path {1} '
               '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
 
     with fits.open(os.path.join(expected_processed_path, expected_dark_filename)) as hdu_list:
         assert hdu_list[0].data.shape is not None
         assert hdu_list['BPM'].data.shape == hdu_list[1].data.shape
+
+    # executing the master trace maker, using order-order fit, as one would from the command line.
+
+    os.system('make_master_trace_blind --db-address {0} --raw-path {1} '
+              '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
+
+    with fits.open(os.path.join(expected_processed_path, expected_trace_filename)) as hdu_list:
+        assert hdu_list[0].data.shape is not None
+        assert hdu_list[0].data.shape[1] == 6  # the trace_fit poly order + 2
+
+    # executing the master trace maker, using global-meta fit, as one would from the command line.
+
+    os.system('make_master_trace --db-address {0} --raw-path {1} '
+              '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
+
+    with fits.open(os.path.join(expected_processed_path, expected_trace_filename)) as hdu_list:
+        assert hdu_list[0].data.shape is not None
+        assert hdu_list[0].data.shape[1] == 6  # the trace_fit poly order + 2
+
+
+def test_traces():
+    """
+    temporary fix to always engage the end to end test.
+    """
+    test_e2e()
