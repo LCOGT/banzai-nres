@@ -71,7 +71,7 @@ class BlindTraceMaker(CalibrationMaker):
     def make_master_calibration_frame(self, images, image_config, logging_tags):
         master_traces = make_master_traces(images, self, image_config, logging_tags,
                                            'order-by-order', cross_correlate_num=1)
-
+        logger.info(master_traces)
         return [master_traces]
 
 
@@ -174,5 +174,7 @@ def make_master_traces(images, maker_object, image_config, logging_tags, method,
     master_trace_coefficients = Image(pipeline_context=maker_object.pipeline_context,
                                       data=coefficients_and_indices_list[0], header=header)
     master_trace_coefficients.filename = master_trace_filename
+    logger.info('found coefficients:')
+    logger.info(master_trace_coefficients)
 
     return master_trace_coefficients

@@ -1,5 +1,6 @@
 from banzai.stages import MasterCalibrationDoesNotExist
 from banzai_nres import traces
+# note, this is a circular import, should probably move get_trace_Coefficients to traces.py
 from astropy.io import fits
 import os
 
