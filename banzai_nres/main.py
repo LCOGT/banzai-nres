@@ -28,7 +28,8 @@ banzai_main.ordered_stages = [qc.HeaderSanity,
                               gain.GainNormalizer,
                               trim.Trimmer,
                               bias.BiasSubtractor,
-                              dark.DarkSubtractor]
+                              dark.DarkSubtractor,
+                              traces.TraceUpdater]
 
 
 def make_master_bias_console():
@@ -60,12 +61,12 @@ def make_master_dark(pipeline_context):
 
 
 def make_master_trace(pipeline_context):
-    stages_to_do = get_stages_todo(dark.DarkSubtractor, extra_stages=[traces.TraceFitOrderbyOrder])
+    stages_to_do = get_stages_todo(dark.DarkSubtractor, extra_stages=[traces.TraceMaker])
     run(stages_to_do, pipeline_context, image_types=['LAMPFLAT'], calibration_maker=True,
         log_message='Making Master Trace by Updating Previous Master with global-meta Technique')
 
 
 def make_master_trace_blind(pipeline_context):
-    stages_to_do = get_stages_todo(dark.DarkSubtractor, extra_stages=[traces.TraceFitOrderbyOrder])
+    stages_to_do = get_stages_todo(dark.DarkSubtractor, extra_stages=[traces.BlindTraceMaker])
     run(stages_to_do, pipeline_context, image_types=['LAMPFLAT'], calibration_maker=True,
         log_message='Making Master Trace via order-by-order Blind Technique!')
