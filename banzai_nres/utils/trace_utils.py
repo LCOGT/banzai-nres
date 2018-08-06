@@ -530,12 +530,6 @@ def NegativeGradient(coeffs_vector, *args):
 
     firstd = np.array([image_splines.first_derivative[i](traces[:, i]) for i in pixelyarray]).T
 
-    if False:
-        plt.figure()
-        for trace in range(traces.shape[0]):
-            plt.plot(firstd[trace] + 1E6 * trace)
-        plt.show()
-
     # construct the filled gradient
     gradients = np.dot(firstd, legpolyarr.T)  # evaluating the gradient for all traces
     grad = []

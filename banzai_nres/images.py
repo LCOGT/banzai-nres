@@ -10,4 +10,4 @@ class Image(BanzaiImage):
                                     extension_headers=extension_headers, bpm=bpm)
 
         if self.header is not None:
-            self.trace_fit_coefficients, self.fiber_order = get_trace_coefficients(self)
+            self.trace_fit_coefficients, self.fiber_order = get_trace_coefficients(self, pipeline_context)

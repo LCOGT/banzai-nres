@@ -25,7 +25,6 @@ class TraceMaker(CalibrationMaker):
     """
     def __init__(self, pipeline_context):
         super(TraceMaker, self).__init__(pipeline_context)
-
         self.pipeline_context = pipeline_context
 
     @property
@@ -55,7 +54,6 @@ class BlindTraceMaker(CalibrationMaker):
     """
     def __init__(self, pipeline_context):
         super(BlindTraceMaker, self).__init__(pipeline_context)
-
         self.pipeline_context = pipeline_context
 
     @property
@@ -85,6 +83,7 @@ class TraceUpdater(Stage):
     """
     def __init__(self, pipeline_context):
         super(TraceUpdater, self).__init__(pipeline_context)
+        self.pipeline_context = pipeline_context
 
     @property
     def group_by_keywords(self):
@@ -96,7 +95,7 @@ class TraceUpdater(Stage):
 
     def do_stage(self, images):
         for image in images:
-            coefficients_and_indices_initial, fiber_order = get_trace_coefficients(image)
+            coefficients_and_indices_initial, fiber_order = get_trace_coefficients(image, self.pipeline_context)
             assert image.fiber_order == fiber_order
             coefficients_and_indices_new = optimize_coeffs_entire_lampflat_frame(
                 coefficients_and_indices_initial, image, order_of_meta_fit=6)
