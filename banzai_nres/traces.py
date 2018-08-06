@@ -41,7 +41,7 @@ class TraceMaker(CalibrationMaker):
     def make_master_calibration_frame(self, images, image_config, logging_tags):
         master_bias_filename = self.get_calibration_filename(image_config)
         master_traces = make_master_traces(images, image_config, logging_tags, master_bias_filename,
-                                           'global-meta', cross_correlate_num=2)
+                                           'global-meta', cross_correlate_num=1)
 
         return [master_traces]
 
@@ -75,7 +75,7 @@ class BlindTraceMaker(CalibrationMaker):
         master_bias_filename = self.get_calibration_filename(image_config)
         logger.info('calibration info obtained')
         master_traces = make_master_traces(images, image_config, logging_tags, master_bias_filename,
-                                           'order-by-order', cross_correlate_num=2)
+                                           'order-by-order', cross_correlate_num=1)
 
         return [master_traces]
 
@@ -168,9 +168,10 @@ def make_master_traces(images, image_config, logging_tags, master_bias_filename,
     header['FIBRORDR'] = fiber_order
     header['FITFLAT'] = images[0].filename
     header['OBSTYPE'] = 'TRACE'
-    header['OBS-DATE'] = images[0].header['OBS-DATE']
+    header['DATE-OBS'] = images[0].header['DATE-OBS']
+    header['DAY-OBS'] = images[0].header['DAY-OBS']
 
-    logs.pop_tag(logging_tags, 'master_trace')
+    logs.pop_tag(logging_tags, 'master_trace' + method)
     logs.add_tag(logging_tags, 'filename', os.path.basename(master_bias_filename))
 
     master_trace_coefficients = Image(images[0].pipeline_context, data=coefficients_and_indices_list[0], header=header)

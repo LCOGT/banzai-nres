@@ -13,6 +13,9 @@ from scipy import ndimage, optimize, interpolate
 from scipy.optimize import curve_fit
 import copy
 import itertools
+from banzai import logs
+
+logger = logs.get_logger(__name__)
 
 
 def maxima(A, s, k, ref):
@@ -628,8 +631,8 @@ def fit_traces_order_by_order(image, order_of_poly_fits=4):
     lowermost_fiber_designation = 1
     image_center = int(image.data.shape[1]/2)
 
-    print('%s traces found'%totalnumberoftraces)
-    print('selecting only %s of them, with the fiber %s centroid at y=%s x=%s'%(int(num_of_orders*2), uppermost_fiber_designation,
+    logger.info('%s traces found'%totalnumberoftraces)
+    logger.info('selecting only %s of them, with the fiber %s centroid at y=%s x=%s'%(int(num_of_orders*2), uppermost_fiber_designation,
                                                                              position_zero_of_uppermost_fiber_at_image_center, image_center))
 
     coefficients_and_indices, fiber_order = recognize_fibers_and_split_coefficients(coefficients_and_indices,
