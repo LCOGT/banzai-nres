@@ -22,4 +22,6 @@ setup(name='banzai_nres',
       install_requires=['banzai', 'scipy'],
       tests_require=['pytest'],
       entry_points={'console_scripts': ['make_master_bias=banzai_nres.main:make_master_bias_console',
-                                        'make_master_dark=banzai_nres.main:make_master_dark_console']})
+                                        'make_master_dark=banzai_nres.main:make_master_dark_console',
+                                        'make_master_trace=banzai_nres.main:make_master_trace_console',
+                                        'make_master_trace_blind=banzai_nres.main:make_master_trace_blind_console']})
