@@ -23,6 +23,9 @@ class TraceMaker(CalibrationMaker):
     """
     Updates the master calibration trace file.
     """
+    def __init__(self, pipeline_context):
+        super(TraceMaker, self).__init__(pipeline_context)
+
     @property
     def group_by_keywords(self):
         return ['ccdsum']
@@ -35,12 +38,9 @@ class TraceMaker(CalibrationMaker):
     def min_images(self):
         return 1
 
-    def __init__(self, pipeline_context):
-        super(TraceMaker, self).__init__(pipeline_context)
-
     def make_master_calibration_frame(self, images, image_config, logging_tags):
         master_bias_filename = self.get_calibration_filename(image_config)
-        master_traces = make_master_traces(images, image_config, logging_tags, master_bias_filename,
+        master_traces = make_master_traces(images, self, logging_tags, master_bias_filename,
                                            'global-meta', cross_correlate_num=1)
 
         return [master_traces]
@@ -51,6 +51,9 @@ class BlindTraceMaker(CalibrationMaker):
     Fits traces order by order. Only use if you want to generate a new master
     trace file without loading any trace locations from the data-base
     """
+    def __init__(self, pipeline_context):
+        super(BlindTraceMaker, self).__init__(pipeline_context)
+
     @property
     def group_by_keywords(self):
         return ['ccdsum']
@@ -63,18 +66,9 @@ class BlindTraceMaker(CalibrationMaker):
     def min_images(self):
         return 1
 
-    def __init__(self, pipeline_context):
-        super(BlindTraceMaker, self).__init__(pipeline_context)
-
     def make_master_calibration_frame(self, images, image_config, logging_tags):
-        """
-        :param image_config: images[0] if some checks pass
-        :return: list of the banzai Image object which contains the trace coefficients in the image.data attribute.
-        """
-        logger.info('inside of order-by-order stage')
         master_bias_filename = self.get_calibration_filename(image_config)
-        logger.info('calibration info obtained')
-        master_traces = make_master_traces(images, image_config, logging_tags, master_bias_filename,
+        master_traces = make_master_traces(images, self, logging_tags, master_bias_filename,
                                            'order-by-order', cross_correlate_num=1)
 
         return [master_traces]
@@ -103,7 +97,7 @@ class TraceUpdater(Stage):
             assert image.fiber_order == fiber_order
             coefficients_and_indices_new = optimize_coeffs_entire_lampflat_frame(
                 coefficients_and_indices_initial, image, order_of_meta_fit=6)
-            #logger.info('refining trace coefficients on %s' % image.filename)
+            logger.info('refining trace coefficients on %s' % image.filename)
 
             close_fit = check_for_close_fit([coefficients_and_indices_new, coefficients_and_indices_initial],
                                             [image, image], max_pixel_error=3)
@@ -119,13 +113,14 @@ class TraceUpdater(Stage):
         return images
 
 
-def make_master_traces(images, image_config, logging_tags, master_bias_filename, method, cross_correlate_num=2):
+def make_master_traces(images, maker_object, logging_tags, master_bias_filename, method, cross_correlate_num=2):
     """
     :param images: List of banzai Image classes
     :param method: 'order-by-order' or 'global-meta'. Order by order should only be used when making a brand new Master
                 if the current master traces have floated too far away.
     :param cross_correlate_num: number of frames to cross correlate trace solutions if there are sufficient number of
                 frames. cross_correlate_num must be at least 1. If =1, no cross correlation will be done.
+    :param maker_object: CalibrationMaker object.
     :return: Banzai image object where image.data are the trace coefficients. with order indices as the first column.
     """
 
@@ -173,7 +168,7 @@ def make_master_traces(images, image_config, logging_tags, master_bias_filename,
 
     logger.info(os.path.basename(master_bias_filename))
 
-    master_trace_coefficients = Image(images[0].pipeline_context, data=coefficients_and_indices_list[0], header=header)
+    master_trace_coefficients = Image(maker_object.pipeline_context, data=coefficients_and_indices_list[0], header=header)
     master_trace_coefficients.filename = master_bias_filename
 
     return master_trace_coefficients

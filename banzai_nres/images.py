@@ -10,5 +10,4 @@ class Image(BanzaiImage):
                                     extension_headers=extension_headers, bpm=bpm)
 
         if self.header is not None:
-            # does not try and get these coefficients if the image is a master calibration.
             self.trace_fit_coefficients, self.fiber_order = get_trace_coefficients(self)
