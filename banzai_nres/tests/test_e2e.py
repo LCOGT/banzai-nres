@@ -65,10 +65,11 @@ def setup_module(module):
 @pytest.mark.e2e
 def test_e2e():
     db_address = os.environ['DB_URL']
-    raw_data_path = '/archive/engineering/lsc/nres01/20180228/raw'
+    epoch = '20180307'
     instrument = 'nres01'
     site = 'lsc'
-    epoch = '20180307'
+
+    raw_data_path = os.path.join('/archive/engineering/', site, instrument, epoch, 'raw')
 
     expected_bias_filename = 'bias_' + instrument + '_' + epoch + '_bin1x1.fits'
     expected_dark_filename = 'dark_' + instrument + '_' + epoch + '_bin1x1.fits'
