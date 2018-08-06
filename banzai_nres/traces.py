@@ -40,7 +40,7 @@ class TraceMaker(CalibrationMaker):
 
     def make_master_calibration_frame(self, images, image_config, logging_tags):
         master_bias_filename = self.get_calibration_filename(image_config)
-        master_traces = make_master_traces(images, self, logging_tags, master_bias_filename,
+        master_traces = make_master_traces(images, self, image_config, logging_tags,
                                            'global-meta', cross_correlate_num=1)
 
         return [master_traces]
@@ -67,8 +67,7 @@ class BlindTraceMaker(CalibrationMaker):
         return 1
 
     def make_master_calibration_frame(self, images, image_config, logging_tags):
-        master_bias_filename = self.get_calibration_filename(image_config)
-        master_traces = make_master_traces(images, self, logging_tags, master_bias_filename,
+        master_traces = make_master_traces(images, self, image_config, logging_tags,
                                            'order-by-order', cross_correlate_num=1)
 
         return [master_traces]
@@ -113,7 +112,7 @@ class TraceUpdater(Stage):
         return images
 
 
-def make_master_traces(images, maker_object, logging_tags, master_bias_filename, method, cross_correlate_num=2):
+def make_master_traces(images, maker_object, image_config, logging_tags, method, cross_correlate_num=2):
     """
     :param images: List of banzai Image classes
     :param method: 'order-by-order' or 'global-meta'. Order by order should only be used when making a brand new Master
@@ -123,8 +122,8 @@ def make_master_traces(images, maker_object, logging_tags, master_bias_filename,
     :param maker_object: CalibrationMaker object.
     :return: Banzai image object where image.data are the trace coefficients. with order indices as the first column.
     """
-
-    logs.add_tag(logging_tags, method + 'master_trace', os.path.basename(master_bias_filename))
+    master_trace_filename = maker_object.get_calibration_filename(image_config)
+    logs.add_tag(logging_tags, method + 'master_trace', os.path.basename(master_trace_filename))
 
     satisfactory_fit = False
     image_indices_to_try, try_combinations_of_images = cross_correlate_image_indices(images, cross_correlate_num)
@@ -166,9 +165,9 @@ def make_master_traces(images, maker_object, logging_tags, master_bias_filename,
     header['DATE-OBS'] = images[0].header['DATE-OBS']
     header['DAY-OBS'] = images[0].header['DAY-OBS']
 
-    logger.info(os.path.basename(master_bias_filename))
+    logger.info(os.path.basename(master_trace_filename))
 
     master_trace_coefficients = Image(maker_object.pipeline_context, data=coefficients_and_indices_list[0], header=header)
-    master_trace_coefficients.filename = master_bias_filename
+    master_trace_coefficients.filename = master_trace_filename
 
     return master_trace_coefficients
