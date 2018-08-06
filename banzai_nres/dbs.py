@@ -6,8 +6,8 @@ import os
 def get_trace_coefficients(image, pipeline_context):
     coefficients_and_indices, fiber_order = None, None
 
-    master_trace_filename = CalibrationMaker(pipeline_context).get_calibration_filename(image)
-    master_trace_file_path = os.path.join(image.pipeline_context.processed_path, master_trace_filename)
+    master_trace_filename = CalibrationMaker.get_calibration_filename(pipeline_context, image)
+    master_trace_file_path = os.path.join(pipeline_context.processed_path, master_trace_filename)
     if image.header['OBSTYPE'] != 'TRACE' and os.path.isfile(master_trace_file_path):
         fiber_order = fits.getheader(master_trace_file_path).get('FIBRORDR')
         coefficients_and_indices = fits.getdata(master_trace_file_path)
