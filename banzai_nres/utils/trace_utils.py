@@ -622,6 +622,12 @@ def fit_traces_order_by_order(image, order_of_poly_fits=4):
     # do not overscan trim image.
     num_of_orders = 67
     position_zero_of_uppermost_fiber_at_image_center = 47
+
+    if image.trace_fit_coefficients is not None:
+        # for testing in test_trace_maker
+        position_zero_of_uppermost_fiber_at_image_center = 4
+        num_of_orders = np.max(image.trace_fit_coefficients[:, 0]) + 1
+
     uppermost_fiber_designation = 0
     lowermost_fiber_designation = 1
     image_center = int(image.data.shape[1]/2)

@@ -184,7 +184,6 @@ def make_master_traces(images, maker_object, image_config, logging_tags, method,
     header['DATE-OBS'] = images[0].header['DATE-OBS']
     header['DAY-OBS'] = images[0].header['DAY-OBS']
     header['INSTRUME'] = images[0].header['TELESCOP']
-    header['EXTNAME'] = 'TRACE'
 
     logger.info(os.path.basename(master_trace_filename))
 
