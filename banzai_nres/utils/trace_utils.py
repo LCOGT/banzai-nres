@@ -633,6 +633,9 @@ def fit_traces_order_by_order(image, order_of_poly_fits=4):
     coefficients_and_indices, fiber_order = recognize_fibers_and_split_coefficients(coefficients_and_indices,
                                             position_zero_of_uppermost_fiber_at_image_center, uppermost_fiber_designation,
                                             lowermost_fiber_designation, int(num_of_orders*2), image)
+    logger.info(str(fiber_order))
+    logger.info(coefficients_and_indices.shape)
+    logger.info('inside fit_traces_order_by_order')
     return coefficients_and_indices, fiber_order
 
 

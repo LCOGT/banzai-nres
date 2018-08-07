@@ -71,7 +71,7 @@ class BlindTraceMaker(CalibrationMaker):
     def make_master_calibration_frame(self, images, image_config, logging_tags):
         master_traces = make_master_traces(images, self, image_config, logging_tags,
                                            'order-by-order', cross_correlate_num=1)
-        logger.info(master_traces)
+        logger.info(master_traces.data.shape)
         return [master_traces]
 
 
@@ -153,7 +153,7 @@ def make_master_traces(images, maker_object, image_config, logging_tags, method,
 
         if not satisfactory_fit:
             logger.warning(
-                "Unsatisfactory master fits. Trying a new set of lampflats. %s sets exist" % len(image_indices_to_try))
+                "Unsatisfactory master fit. Trying a new set of lampflats. %s sets exist" % len(image_indices_to_try))
 
         if counter >= len(image_indices_to_try) and not satisfactory_fit:
             raise "No set of %s master meta-fits agree enough. Master Trace fitting failed on this batch%s ! " \
@@ -170,11 +170,12 @@ def make_master_traces(images, maker_object, image_config, logging_tags, method,
     header['INSTRUME'] = images[0].header['TELESCOP']
 
     logger.info(os.path.basename(master_trace_filename))
-
+    logger.info(coefficients_and_indices_list[0].data.shape)
+    logger.info('before Image call')
     master_trace_coefficients = Image(pipeline_context=maker_object.pipeline_context,
                                       data=coefficients_and_indices_list[0], header=header)
     master_trace_coefficients.filename = master_trace_filename
-    logger.info('found coefficients:')
-    logger.info(master_trace_coefficients)
+    logger.info('found coefficients after image call:')
+    logger.info(master_trace_coefficients.data.shape)
 
     return master_trace_coefficients
