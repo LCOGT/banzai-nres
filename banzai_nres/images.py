@@ -1,5 +1,4 @@
 from banzai.images import Image as BanzaiImage
-from banzai_nres import traces
 
 
 class Image(BanzaiImage):

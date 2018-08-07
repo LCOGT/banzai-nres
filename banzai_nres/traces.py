@@ -39,7 +39,6 @@ class TraceMaker(CalibrationMaker):
         return 1
 
     def make_master_calibration_frame(self, images, image_config, logging_tags):
-        master_bias_filename = self.get_calibration_filename(image_config)
         master_traces = make_master_traces(images, self, image_config, logging_tags,
                                            'global-meta', cross_correlate_num=1)
 
