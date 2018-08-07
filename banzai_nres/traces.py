@@ -69,7 +69,6 @@ class BlindTraceMaker(CalibrationMaker):
     def make_master_calibration_frame(self, images, image_config, logging_tags):
         master_traces = make_master_traces(images, self, image_config, logging_tags,
                                            'order-by-order', cross_correlate_num=1)
-        logger.info(master_traces.data.shape)
         return [master_traces]
 
 
@@ -159,7 +158,7 @@ def make_master_traces(images, maker_object, image_config, logging_tags, method,
             if method == 'global-meta':
                 logger.info('importing master coeffs and refining fit on %s' % image.filename)
                 coefficients_and_indices_initial, fiber_order = get_trace_coefficients(image, maker_object)
-
+                logger.info('debug: successfully imported coefficients with shape ' + str(coefficients_and_indices_initial.shape))
             coefficients_and_indices_list += [optimize_coeffs_entire_lampflat_frame(
                 coefficients_and_indices_initial, image, order_of_meta_fit=6)]
 
@@ -189,8 +188,7 @@ def make_master_traces(images, maker_object, image_config, logging_tags, method,
                                       data=coefficients_and_indices_list[0], header=header)
 
     master_trace_coefficients.filename = master_trace_filename
-    logger.info('found coefficients after image call:')
-    logger.info(master_trace_coefficients.data.shape)
+    logger.info('coefficients shape (including index column) ' + str(master_trace_coefficients.data.shape))
 
     return master_trace_coefficients
 
