@@ -11,14 +11,11 @@ July 2018
 from banzai_nres.bias import BiasMaker as nres_BiasMaker
 from banzai_nres.dark import DarkMaker as nres_DarkMaker
 from banzai_nres import traces
-import argparse
 
 from banzai import bias, trim, dark, gain
 from banzai import logs, qc
-from banzai.main import get_stages_todo, run_end_of_night_from_console#, run
+from banzai.main import get_stages_todo, run_end_of_night_from_console, run
 from banzai import main as banzai_main
-from banzai.images import read_images
-from banzai.utils import image_utils
 
 logger = logs.get_logger(__name__)
 
@@ -72,31 +69,3 @@ def make_master_trace_blind(pipeline_context):
     stages_to_do = get_stages_todo(dark.DarkSubtractor, extra_stages=[traces.BlindTraceMaker])
     run(stages_to_do, pipeline_context, image_types=['LAMPFLAT'], calibration_maker=True,
         log_message='Making Master Trace via order-by-order Blind Technique!')
-
-
-def run(stages_to_do, pipeline_context, image_types=[], calibration_maker=False, log_message=''):
-    """
-    Main driver script for banzai.
-    """
-    if len(log_message) > 0:
-        logger.info(log_message, extra={'tags': {'raw_path': pipeline_context.raw_path}})
-
-    image_list = image_utils.make_image_list(pipeline_context)
-    logger.info('made image list')
-    image_list = image_utils.select_images(image_list, image_types)
-    logger.info(str(len(image_list)) + '=length of image list')
-    images = read_images(image_list, pipeline_context)
-    logger.info(str(len(images)) + '=length of images')
-
-    for stage in stages_to_do:
-        stage_to_run = stage(pipeline_context)
-        logger.info(str(stage))
-        images = stage_to_run.run(images)
-        logger.info('stage run successfully')
-
-    logger.info(images)
-    output_files = image_utils.save_images(pipeline_context, images,
-                                           master_calibration=calibration_maker)
-    logger.info('output files saved')
-    logger.info(output_files)
-    return output_files

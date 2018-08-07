@@ -11,6 +11,7 @@ from banzai_nres.images import Image
 from banzai.stages import CalibrationMaker, Stage, MasterCalibrationDoesNotExist
 from banzai.utils import fits_utils
 from banzai import logs
+from banzai import dbs
 from astropy.io import fits
 import os
 
@@ -183,6 +184,7 @@ def make_master_traces(images, maker_object, image_config, logging_tags, method,
     header['DATE-OBS'] = images[0].header['DATE-OBS']
     header['DAY-OBS'] = images[0].header['DAY-OBS']
     header['INSTRUME'] = images[0].header['TELESCOP']
+    header['EXTNAME'] = 'TRACE'
 
     logger.info(os.path.basename(master_trace_filename))
 
@@ -203,21 +205,18 @@ def get_trace_coefficients(image, maker_object):
     """
     coefficients_and_indices, fiber_order = None, None
 
-    master_trace_filename = maker_object.get_calibration_filename(image)
-    master_trace_file_path = os.path.join(maker_object.pipeline_context.processed_path, master_trace_filename)
-    logger.info('debug:Inside get_trace_coefficients')
-    logger.info(image.header['OBSTYPE'])
-    logger.debug(str(master_trace_file_path))
-    logger.debug(str(master_trace_filename))
-    logger.info(str(os.path.isfile(master_trace_file_path)))
-    if image.header['OBSTYPE'] != 'TRACE' and os.path.isfile(master_trace_file_path):
-        fiber_order = fits.getheader(master_trace_file_path).get('FIBRORDR')
-        coefficients_and_indices = fits.getdata(master_trace_file_path)
-        logger.info(str(coefficients_and_indices.shape))
+    master_trace_full_path = dbs.get_master_calibration_image(image, maker_object.calibration_type,
+                                                             maker_object.group_by_keywords,
+                                                             db_address=maker_object.pipeline_context.db_address)
+
+    if image.header['OBSTYPE'] != 'TRACE' and os.path.isfile(master_trace_full_path):
+        fiber_order = fits.getheader(master_trace_full_path).get('FIBRORDR')
+        coefficients_and_indices = fits.getdata(master_trace_full_path)
+        logger.debug('Imported master trace coefficients shape: ' + str(coefficients_and_indices.shape))
         assert coefficients_and_indices is not None
         assert fiber_order is not None
 
-    if image.header['OBSTYPE'] != 'LAMPFLAT' and not os.path.isfile(master_trace_file_path):
+    if image.header['OBSTYPE'] != 'LAMPFLAT' and not os.path.isfile(master_trace_full_path):
         raise MasterCalibrationDoesNotExist
 
     return coefficients_and_indices, fiber_order

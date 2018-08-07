@@ -43,6 +43,7 @@ def trim_coefficients_to_fit_image(image, trace_fit_coefficients_no_indices):
     order_indices = np.array([i for i in range(0, trace_fit_coefficients_no_indices.shape[0])])
     trace_fit_coefficients = np.insert(trace_fit_coefficients_no_indices, obj=0, values=order_indices, axis=1)
     trace_values_versus_xpixel, num_traces, x = get_trace_centroids_from_coefficients(trace_fit_coefficients, image)
+    for i in range(trace_values_versus_xpixel.shape[0]):
 
     return 0
 
