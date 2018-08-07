@@ -92,11 +92,26 @@ class TraceUpdater(Stage):
     def calibration_type(self):
         return 'trace'
 
+    def get_calibration_filename(self, image):
+        cal_file = '{cal_type}_{instrument}_{epoch}_bin{bin}{filter}.fits'
+        if 'filter' in self.group_by_keywords:
+            filter_str = '_{filter}'.format(filter=image.filter)
+        else:
+            filter_str = ''
+
+        cal_file = cal_file.format(instrument=image.instrument,
+                                   epoch=image.epoch, bin=image.ccdsum.replace(' ', 'x'),
+                                   cal_type=self.calibration_type.lower(), filter=filter_str)
+        return cal_file
+
     def do_stage(self, images):
         for image in images:
-            coefficients_and_indices_initial = image.trace_fit_coefficients
-            fiber_order = image.fiber_order
+            # getting coefficients from master trace file
+            coefficients_and_indices_initial, fiber_order = get_trace_coefficients(image, self)
+            image.trace_fit_coefficients = coefficients_and_indices_initial
+            image.fiber_order = fiber_order
 
+            # optimizing master traces on this frame in particular
             coefficients_and_indices_new = optimize_coeffs_entire_lampflat_frame(
                 coefficients_and_indices_initial, image, order_of_meta_fit=6)
             logger.info('refining trace coefficients on %s' % image.filename)
@@ -105,7 +120,7 @@ class TraceUpdater(Stage):
                                             [image, image], max_pixel_error=3)
             reasonable_flux_change = check_flux_change(coefficients_and_indices_new, coefficients_and_indices_initial,
                                                        image)
-
+            # keeping the optimized traces only if they satisfy certain conditions
             if close_fit and reasonable_flux_change:
                 image.trace_fit_coefficients = coefficients_and_indices_new
                 logger.info('New trace fit accepted on %s' % image.filename)
@@ -144,7 +159,7 @@ def make_master_traces(images, maker_object, image_config, logging_tags, method,
                 coefficients_and_indices_initial, fiber_order = fit_traces_order_by_order(image, order_of_poly_fits=4)
             if method == 'global-meta':
                 logger.info('importing master coeffs and refining fit on %s' % image.filename)
-                coefficients_and_indices_initial, fiber_order = get_trace_coefficients(image, maker_object.pipeline_context)
+                coefficients_and_indices_initial, fiber_order = get_trace_coefficients(image, maker_object)
 
             coefficients_and_indices_list += [optimize_coeffs_entire_lampflat_frame(
                 coefficients_and_indices_initial, image, order_of_meta_fit=6)]
@@ -181,11 +196,16 @@ def make_master_traces(images, maker_object, image_config, logging_tags, method,
     return master_trace_coefficients
 
 
-def get_trace_coefficients(image, pipeline_context):
+def get_trace_coefficients(image, maker_object):
+    """
+    :param image: Banzai Image
+    :param maker_object: CalibrationMaker or Stage object - must have attribute pipeline context
+    :return: The coefficients and indices (ndarray), and fiber order tuple from the nearest master trace file.
+    """
     coefficients_and_indices, fiber_order = None, None
 
-    master_trace_filename = TraceMaker(pipeline_context).get_calibration_filename(image)
-    master_trace_file_path = os.path.join(pipeline_context.processed_path, master_trace_filename)
+    master_trace_filename = maker_object.get_calibration_filename(image)
+    master_trace_file_path = os.path.join(maker_object.pipeline_context.processed_path, master_trace_filename)
     if image.header['OBSTYPE'] != 'TRACE' and os.path.isfile(master_trace_file_path):
         fiber_order = fits.getheader(master_trace_file_path).get('FIBRORDR')
         coefficients_and_indices = fits.getdata(master_trace_file_path)

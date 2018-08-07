@@ -9,5 +9,5 @@ class Image(BanzaiImage):
         super(Image, self).__init__(pipeline_context, filename=filename, data=data, header=header,
                                     extension_headers=extension_headers, bpm=bpm)
 
-        if self.header is not None:
-            self.trace_fit_coefficients, self.fiber_order = traces.get_trace_coefficients(self, pipeline_context)
+        self.trace_fit_coefficients = None
+        self.fiber_order = None

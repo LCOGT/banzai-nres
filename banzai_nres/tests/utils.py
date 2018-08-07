@@ -5,7 +5,7 @@ import numpy as np
 
 
 class FakeImage(Image):
-    def __init__(self, nx=4096, ny=259, ccdsum='2 2', epoch='20180807', n_amps=1):
+    def __init__(self, nx=256, ny=259, ccdsum='2 2', epoch='20180807', n_amps=1):
         self.nx = nx
         self.ny = ny
         self.telescope_id = -1
@@ -30,7 +30,6 @@ class FakeImage(Image):
         self.fiber_order = None
 
 
-
 class FakeTraceImage(FakeImage):
     def __init__(self, *args, **kwargs):
         super(FakeImage, self).__init__(*args, **kwargs)
@@ -48,5 +47,11 @@ def random_yet_realistic_trace_coefficients(image, nx, ny):
     meta_coefficients_even[4] = [0.581, -0.374, 0.188, 0, 0.0207, 0]
     meta_coefficients_odd = np.copy(meta_coefficients_even)
     meta_coefficients_odd[0] = [1668.1, 1940, 386, 59, 4.9, 1.37]
-    for i in range(meta_coefficients_even.shape[0]):
-        scale = meta_coefficients_even[i,0]/100
+    for i in range(1, meta_coefficients_even.shape[0]):
+        noise_scale = meta_coefficients_even[i, 0]/100
+        noise = np.random.normal(loc=0,scale=noise_scale,size=meta_coefficients_even.shape[1])
+        meta_coefficients_even[i] += noise
+        meta_coefficients_odd[i] += noise
+
+    trace_coefficients_odd = get_coefficients_from_meta(meta_coefficients_odd, stpolyarr)
+    trace_coefficients_even = get_coefficients_from_meta(meta_coefficients_even, stpolyarr)
