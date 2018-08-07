@@ -6,7 +6,7 @@ from banzai_nres.utils.trace_utils import get_coefficients_from_meta, generate_l
 
 
 class FakeImage(Image):
-    def __init__(self, nx=256, ny=259, ccdsum='2 2', epoch='20180807', readnoise=11):
+    def __init__(self, nx=256, ny=259, ccdsum='2 2', epoch='20180807'):
         self.nx = nx
         self.ny = ny
         self.telescope_id = -1
@@ -22,7 +22,7 @@ class FakeImage(Image):
         self.caltype = ''
         self.bpm = np.zeros((ny, nx), dtype=np.uint8)
         self.request_number = '0000331403'
-        self.readnoise = readnoise
+        self.readnoise = 11
         self.block_id = '254478983'
         self.molecule_id = '544562351'
         self.exptime = 30.0
