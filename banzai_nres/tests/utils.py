@@ -40,7 +40,7 @@ class FakeTraceImage(FakeImage):
 
 
 def trim_coefficients_to_fit_image(image, trace_fit_coefficients_no_indices):
-
+    return 0
 
 def random_yet_realistic_trace_coefficients(image):
     """
