@@ -5,6 +5,7 @@ from banzai_nres.traces import BlindTraceMaker
 from banzai.tests.utils import FakeContext
 import numpy as np
 from banzai import logs
+from banzai.utils import stats
 
 
 logger = logs.get_logger(__name__)
@@ -30,5 +31,9 @@ def test_blind_trace_maker(mock_images):
         master_trace = kwargs['data']
 
         difference = test_utils.differences_between_found_and_generated_trace_vals(master_trace, images[0])
-        logger.info('test_error in trace fitting is less than %s of a pixel' % np.median(np.abs(difference)))
-        assert np.median(np.abs(difference)) < 1/10
+        logger.info('error in trace fitting is less than %s of a pixel' % stats.absolute_deviation(np.abs(difference)))
+        logger.info('systematic error (median difference) in trace fitting is less than %s of a pixel' %
+                    np.abs(np.median(difference)))
+
+        assert stats.absolute_deviation(np.abs(difference)) < 1/10
+        assert np.abs(np.median(difference)) < 1/100
