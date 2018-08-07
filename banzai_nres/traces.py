@@ -7,12 +7,12 @@ Authors
 
 from banzai_nres.utils.trace_utils import check_for_close_fit, check_flux_change, cross_correlate_image_indices, \
     optimize_coeffs_entire_lampflat_frame, fit_traces_order_by_order
-
 from banzai_nres.dbs import get_trace_coefficients
 from banzai_nres.images import Image
-from banzai.stages import CalibrationMaker, Stage
+from banzai.stages import CalibrationMaker, Stage, MasterCalibrationDoesNotExist
 from banzai.utils import fits_utils
 from banzai import logs
+from astropy.io import fits
 import os
 
 
@@ -170,12 +170,30 @@ def make_master_traces(images, maker_object, image_config, logging_tags, method,
     header['INSTRUME'] = images[0].header['TELESCOP']
 
     logger.info(os.path.basename(master_trace_filename))
-    logger.info(coefficients_and_indices_list[0].data.shape)
-    logger.info('before Image call')
+
     master_trace_coefficients = Image(pipeline_context=maker_object.pipeline_context,
                                       data=coefficients_and_indices_list[0], header=header)
+
     master_trace_coefficients.filename = master_trace_filename
     logger.info('found coefficients after image call:')
     logger.info(master_trace_coefficients.data.shape)
 
     return master_trace_coefficients
+
+
+def get_trace_coefficients(image, pipeline_context):
+    coefficients_and_indices, fiber_order = None, None
+
+    master_trace_filename = TraceMaker(pipeline_context).get_calibration_filename(image)
+    master_trace_file_path = os.path.join(pipeline_context.processed_path, master_trace_filename)
+    if image.header['OBSTYPE'] != 'TRACE' and os.path.isfile(master_trace_file_path):
+        fiber_order = fits.getheader(master_trace_file_path).get('FIBRORDR')
+        coefficients_and_indices = fits.getdata(master_trace_file_path)
+
+        assert coefficients_and_indices is not None
+        assert fiber_order is not None
+
+    if image.header['OBSTYPE'] != 'LAMPFLAT' and not os.path.isfile(master_trace_file_path):
+        raise MasterCalibrationDoesNotExist
+
+    return coefficients_and_indices, fiber_order

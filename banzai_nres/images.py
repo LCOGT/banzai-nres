@@ -1,5 +1,5 @@
 from banzai.images import Image as BanzaiImage
-from banzai_nres.dbs import get_trace_coefficients
+from banzai_nres import traces
 
 
 class Image(BanzaiImage):
@@ -10,4 +10,4 @@ class Image(BanzaiImage):
                                     extension_headers=extension_headers, bpm=bpm)
 
         if self.header is not None:
-            self.trace_fit_coefficients, self.fiber_order = get_trace_coefficients(self, pipeline_context)
+            self.trace_fit_coefficients, self.fiber_order = traces.get_trace_coefficients(self, pipeline_context)

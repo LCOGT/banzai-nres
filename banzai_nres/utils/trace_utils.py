@@ -626,16 +626,15 @@ def fit_traces_order_by_order(image, order_of_poly_fits=4):
     lowermost_fiber_designation = 1
     image_center = int(image.data.shape[1]/2)
 
-    logger.info('%s traces found'%totalnumberoftraces)
-    logger.info('selecting only %s of them, with the fiber %s centroid at y=%s x=%s'%(int(num_of_orders*2), uppermost_fiber_designation,
-                                                                             position_zero_of_uppermost_fiber_at_image_center, image_center))
-
     coefficients_and_indices, fiber_order = recognize_fibers_and_split_coefficients(coefficients_and_indices,
                                             position_zero_of_uppermost_fiber_at_image_center, uppermost_fiber_designation,
                                             lowermost_fiber_designation, int(num_of_orders*2), image)
-    logger.info(str(fiber_order))
-    logger.info(coefficients_and_indices.shape)
-    logger.info('inside fit_traces_order_by_order')
+
+    logger.info('%s traces found' % totalnumberoftraces)
+    logger.info('selecting only %s of them, with the fiber %s centroid at y=%s x=%s' % (
+    int(num_of_orders * 2), uppermost_fiber_designation,
+    position_zero_of_uppermost_fiber_at_image_center, image_center))
+
     return coefficients_and_indices, fiber_order
 
 
