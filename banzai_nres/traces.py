@@ -95,8 +95,9 @@ class TraceUpdater(Stage):
 
     def do_stage(self, images):
         for image in images:
-            coefficients_and_indices_initial, fiber_order = get_trace_coefficients(image, self.pipeline_context)
-            assert image.fiber_order == fiber_order
+            coefficients_and_indices_initial = image.trace_fit_coefficients
+            fiber_order = image.fiber_order
+
             coefficients_and_indices_new = optimize_coeffs_entire_lampflat_frame(
                 coefficients_and_indices_initial, image, order_of_meta_fit=6)
             logger.info('refining trace coefficients on %s' % image.filename)
@@ -144,7 +145,7 @@ def make_master_traces(images, maker_object, image_config, logging_tags, method,
                 coefficients_and_indices_initial, fiber_order = fit_traces_order_by_order(image, order_of_poly_fits=4)
             if method == 'global-meta':
                 logger.info('importing master coeffs and refining fit on %s' % image.filename)
-                coefficients_and_indices_initial, fiber_order = get_trace_coefficients(image)
+                coefficients_and_indices_initial, fiber_order = get_trace_coefficients(image, maker_object.pipeline_context)
 
             coefficients_and_indices_list += [optimize_coeffs_entire_lampflat_frame(
                 coefficients_and_indices_initial, image, order_of_meta_fit=6)]
