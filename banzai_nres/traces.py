@@ -113,7 +113,7 @@ class TraceUpdater(Stage):
             # optimizing master traces on this frame in particular
             coefficients_and_indices_new = optimize_coeffs_entire_lampflat_frame(
                 coefficients_and_indices_initial, image, order_of_meta_fit=6)
-            logger.info('refining trace coefficients on %s' % image.filename)
+            logger.debug('refining trace coefficients on %s' % image.filename)
 
             close_fit = check_for_close_fit([coefficients_and_indices_new, coefficients_and_indices_initial],
                                             [image, image], max_pixel_error=3)
@@ -122,10 +122,10 @@ class TraceUpdater(Stage):
             # keeping the optimized traces only if they satisfy certain conditions
             if close_fit and reasonable_flux_change:
                 image.trace_fit_coefficients = coefficients_and_indices_new
-                logger.info('New trace fit accepted on %s' % image.filename)
+                logger.debug('New trace fit accepted on %s' % image.filename)
             if not close_fit or not reasonable_flux_change:
-                logger.info('Either 1. orders have possibly shifted drastically on %s, or it is very low S/N \n'
-                            'resorting to as imported coefficients.' % image.filename)
+                logger.warning('Either 1. orders have possibly shifted drastically on %s, or it is very low S/N \n'
+                               'resorting to as imported coefficients.' % image.filename)
         return images
 
 
@@ -154,12 +154,12 @@ def make_master_traces(images, maker_object, image_config, logging_tags, method,
         counter += 1
         for image in images_to_try:
             if method == 'order-by-order':
-                logger.info('fitting order by order on %s' % image.filename)
+                logger.debug('fitting order by order on %s' % image.filename)
                 coefficients_and_indices_initial, fiber_order = fit_traces_order_by_order(image, order_of_poly_fits=4)
             if method == 'global-meta':
-                logger.info('importing master coeffs and refining fit on %s' % image.filename)
+                logger.debug('importing master coeffs and refining fit on %s' % image.filename)
                 coefficients_and_indices_initial, fiber_order = get_trace_coefficients(image, maker_object)
-                logger.info('debug: successfully imported coefficients with shape ' + str(coefficients_and_indices_initial.shape))
+
             coefficients_and_indices_list += [optimize_coeffs_entire_lampflat_frame(
                 coefficients_and_indices_initial, image, order_of_meta_fit=6)]
 
@@ -192,8 +192,8 @@ def make_master_traces(images, maker_object, image_config, logging_tags, method,
                                       data=coefficients_and_indices_list[0], header=header)
 
     master_trace_coefficients.filename = master_trace_filename
-    logger.info('coefficients shape (including index column) ' + str(master_trace_coefficients.data.shape))
     assert master_trace_coefficients.data.shape is not None
+
     return master_trace_coefficients
 
 
@@ -204,14 +204,13 @@ def get_trace_coefficients(image, maker_object):
     :return: The coefficients and indices (ndarray), and fiber order tuple from the nearest master trace file.
     """
     coefficients_and_indices, fiber_order = None, None
-
     master_trace_full_path = dbs.get_master_calibration_image(image, maker_object.calibration_type,
-                                                             maker_object.group_by_keywords,
-                                                             db_address=maker_object.pipeline_context.db_address)
-
+                                                              maker_object.group_by_keywords,
+                                                              db_address=maker_object.pipeline_context.db_address)
     if image.header['OBSTYPE'] != 'TRACE' and os.path.isfile(master_trace_full_path):
         fiber_order = fits.getheader(master_trace_full_path).get('FIBRORDR')
         coefficients_and_indices = fits.getdata(master_trace_full_path)
+
         logger.debug('Imported master trace coefficients shape: ' + str(coefficients_and_indices.shape))
         assert coefficients_and_indices is not None
         assert fiber_order is not None

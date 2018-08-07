@@ -107,7 +107,7 @@ def test_e2e():
 
     os.system('make_master_trace --db-address {0} --raw-path {1} '
               '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
-    assert False
+
     with fits.open(os.path.join(expected_processed_path, expected_trace_filename)) as hdu_list:
         assert hdu_list[0].data.shape is not None
         assert hdu_list[0].data.shape[1] == 6  # the trace_fit poly order + 2

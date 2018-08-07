@@ -46,8 +46,17 @@ def trim_coefficients_to_fit_image(image, trace_fit_coefficients_no_indices):
     trace_values_versus_xpixel, num_traces, x = get_trace_centroids_from_coefficients(trace_fit_coefficients, image)
     good_indices = []
     for i in range(trace_values_versus_xpixel.shape[0]):
-        if (trace_values_versus_xpixel[i,:] < max_y).all() and (trace_values_versus_xpixel[i,:] > min_y).all():
+        if (trace_values_versus_xpixel[i, :] < max_y).all() and (trace_values_versus_xpixel[i, :] > min_y).all():
             good_indices += [i]
+    trimmed_trace_fit_coefficients = trace_fit_coefficients[good_indices]
+    trimmed_trace_fit_coefficients[:, 0] = 0
+    return trimmed_trace_fit_coefficients
+
+
+def munge_coefficients(even_coefficients, odd_coefficients):
+    if even_coefficients.shape[0] != odd_coefficients.shape[0]:
+        min_shape = min(odd_coefficients.shape[0], even_coefficients.shape[0]) - 1
+    return even_coefficients[:min_shape], odd_coefficients[:min_shape]
 
 
 def random_yet_realistic_trace_coefficients(image):
@@ -72,4 +81,5 @@ def random_yet_realistic_trace_coefficients(image):
     meta_legendre_array, x, xnorm = generate_legendre_array(image, order_of_poly_fits=meta_coefficients_even.shape[1]-1)
     trace_coefficients_odd = get_coefficients_from_meta(meta_coefficients_odd, meta_legendre_array)
     trace_coefficients_even = get_coefficients_from_meta(meta_coefficients_even, meta_legendre_array)
-
+    image.fiber_order = (0, 1)
+    image.trace_fit_coefficients = np.vstack((meta_coefficients_even, meta_coefficients_odd))
