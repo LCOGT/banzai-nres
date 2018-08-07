@@ -207,6 +207,8 @@ def get_trace_coefficients(image, maker_object):
     master_trace_file_path = os.path.join(maker_object.pipeline_context.processed_path, master_trace_filename)
     logger.info('debug:Inside get_trace_coefficients')
     logger.info(image.header['OBSTYPE'])
+    logger.debug(str(master_trace_file_path))
+    logger.debug(str(master_trace_filename))
     logger.info(str(os.path.isfile(master_trace_file_path)))
     if image.header['OBSTYPE'] != 'TRACE' and os.path.isfile(master_trace_file_path):
         fiber_order = fits.getheader(master_trace_file_path).get('FIBRORDR')
@@ -217,5 +219,5 @@ def get_trace_coefficients(image, maker_object):
 
     if image.header['OBSTYPE'] != 'LAMPFLAT' and not os.path.isfile(master_trace_file_path):
         raise MasterCalibrationDoesNotExist
-    assert False
+
     return coefficients_and_indices, fiber_order

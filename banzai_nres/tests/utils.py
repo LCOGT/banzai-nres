@@ -2,7 +2,7 @@ from banzai_nres.images import Image
 import datetime
 from astropy.io import fits
 import numpy as np
-from banzai_nres.utils.trace_utils import get_coefficients_from_meta, generate_legendre_array
+from banzai_nres.utils.trace_utils import get_coefficients_from_meta, generate_legendre_array, get_trace_centroids_from_coefficients
 
 
 class FakeImage(Image):
@@ -40,6 +40,10 @@ class FakeTraceImage(FakeImage):
 
 
 def trim_coefficients_to_fit_image(image, trace_fit_coefficients_no_indices):
+    order_indices = np.array([i for i in range(0, trace_fit_coefficients_no_indices.shape[0])])
+    trace_fit_coefficients = np.insert(trace_fit_coefficients_no_indices, obj=0, values=order_indices, axis=1)
+    trace_values_versus_xpixel, num_traces, x = get_trace_centroids_from_coefficients(trace_fit_coefficients, image)
+
     return 0
 
 def random_yet_realistic_trace_coefficients(image):
@@ -61,6 +65,7 @@ def random_yet_realistic_trace_coefficients(image):
         meta_coefficients_even[i] += noise
         meta_coefficients_odd[i] += noise
 
-    meta_legendre_array, x, xnorm = generate_legendre_array(image, meta_coefficients_even.shape[1]-1)
+    meta_legendre_array, x, xnorm = generate_legendre_array(image, order_of_poly_fits=meta_coefficients_even.shape[1]-1)
     trace_coefficients_odd = get_coefficients_from_meta(meta_coefficients_odd, meta_legendre_array)
     trace_coefficients_even = get_coefficients_from_meta(meta_coefficients_even, meta_legendre_array)
+
