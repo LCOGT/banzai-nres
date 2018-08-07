@@ -7,7 +7,6 @@ Authors
 
 from banzai_nres.utils.trace_utils import check_for_close_fit, check_flux_change, cross_correlate_image_indices, \
     optimize_coeffs_entire_lampflat_frame, fit_traces_order_by_order
-from banzai_nres.dbs import get_trace_coefficients
 from banzai_nres.images import Image
 from banzai.stages import CalibrationMaker, Stage, MasterCalibrationDoesNotExist
 from banzai.utils import fits_utils
