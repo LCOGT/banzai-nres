@@ -1,5 +1,5 @@
 from banzai_nres.images import Image
-import datetime
+from datetime import datetime
 import numpy as np
 
 
@@ -27,6 +27,3 @@ class FakeImage(Image):
         self.obstype = 'TEST'
         self.trace_fit_coefficients = None
         self.fiber_order = None
-
-
-

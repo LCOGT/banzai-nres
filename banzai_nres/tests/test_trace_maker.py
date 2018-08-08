@@ -147,7 +147,7 @@ def test_blind_trace_maker(mock_images):
     readnoise = 11.0
 
     for x in range(num_trials):
-        images = [FakeBiasImage()]
+        images = [FakeTraceImage()]
         images[0].readnoise = readnoise
 
         make_random_yet_realistic_trace_coefficients(images[0])
