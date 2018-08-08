@@ -16,7 +16,7 @@ logger = logs.get_logger(__name__)
 
 class FakeTraceImage(FakeImage):
     def __init__(self, *args, **kwargs):
-        super(FakeImage, self).__init__(*args, **kwargs)
+        super(FakeTraceImage, self).__init__(*args, **kwargs)
         self.caltype = 'trace'
         self.header = fits.Header()
         self.header['OBSTYPE'] = 'LAMPFLAT'
