@@ -31,7 +31,7 @@ def trim_coefficients_to_fit_image(image, trace_fit_coefficients_no_indices):
         if (trace_values_versus_xpixel[i, :] < max_y).all() and (trace_values_versus_xpixel[i, :] > min_y).all():
             good_indices += [i]
     trimmed_trace_fit_coefficients_and_indices = trace_fit_coefficients[good_indices]
-    assert np.array(good_indices) - np.min(np.array(good_indices)) == np.array(list(range(len(good_indices))))
+    assert (np.array(good_indices) - np.min(np.array(good_indices)) == np.array(list(range(len(good_indices))))).all()
     # replacing order indices with proper indicators
     trimmed_trace_fit_coefficients_and_indices[:, 0] = np.array(list(range(len(good_indices))))
     return trimmed_trace_fit_coefficients_and_indices
