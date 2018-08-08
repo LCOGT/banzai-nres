@@ -166,10 +166,11 @@ def test_blind_trace_maker(mock_images):
         logger.debug(master_trace.shape)
 
         difference = differences_between_found_and_generated_trace_vals(master_trace, images[0])
-        logger.info('error in trace fitting is less than %s of a pixel' % stats.absolute_deviation(np.abs(difference)))
+        logger.info('error in trace fitting is less than %s of a pixel' %
+                    stats.absolute_deviation(np.abs(difference).flatten()))
         logger.info('worst error in trace fitting is %s pixels'%np.max(np.abs(difference)))
         logger.info('systematic error (median difference) in trace fitting is less than %s of a pixel' %
-                    np.abs(np.median(difference)))
+                    np.abs(np.mean(difference)))
 
-        assert stats.absolute_deviation(np.abs(difference)) < 1/10
+        assert stats.absolute_deviation(np.abs(difference).flatten()) < 1/10
         assert np.abs(np.median(difference)) < 1/100
