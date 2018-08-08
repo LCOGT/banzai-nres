@@ -66,7 +66,7 @@ def make_random_yet_realistic_trace_coefficients(image):
     meta_coefficients_odd[0, 0] = 15
 
     for i in range(1, meta_coefficients_even.shape[0]):
-        noise_scale = np.abs(np.mean(meta_coefficients_even[i, 0]))/1000
+        noise_scale = 1/100
         noise = np.random.normal(loc=0, scale=noise_scale, size=meta_coefficients_even.shape[1])
         meta_coefficients_even[i] += noise
         meta_coefficients_odd[i] += noise
@@ -175,7 +175,7 @@ def test_blind_trace_maker(mock_images):
                     np.median(np.abs(difference - np.median(difference))))
         logger.info('worst error in unit-test trace fitting is %s pixels'%np.max(np.abs(difference)))
         logger.info('systematic error (median difference) in unit-test trace fitting is less than %s of a pixel' %
-                    np.abs(np.mean(difference)))
+                    np.abs(np.median(difference)))
 
         assert np.median(np.abs(difference - np.median(difference))) < 1/10
-        assert np.abs(np.mean(difference)) < 5/100
+        assert np.abs(np.median(difference)) < 1/10
