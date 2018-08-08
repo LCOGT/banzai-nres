@@ -4,7 +4,6 @@ from banzai_nres.traces import BlindTraceMaker
 from banzai.tests.utils import FakeContext
 import numpy as np
 from banzai import logs
-from banzai.utils import stats
 from banzai_nres.utils.trace_utils import get_coefficients_from_meta, generate_legendre_array, get_trace_centroids_from_coefficients
 from banzai_nres.tests.utils import FakeImage
 from astropy.io import fits
@@ -167,10 +166,10 @@ def test_blind_trace_maker(mock_images):
 
         difference = differences_between_found_and_generated_trace_vals(master_trace, images[0])
         logger.info('error in trace fitting is less than %s of a pixel' %
-                    stats.absolute_deviation(np.abs(difference).flatten()))
+                    np.median(np.abs(difference - np.median(difference))))
         logger.info('worst error in trace fitting is %s pixels'%np.max(np.abs(difference)))
         logger.info('systematic error (median difference) in trace fitting is less than %s of a pixel' %
                     np.abs(np.mean(difference)))
 
-        assert stats.absolute_deviation(np.abs(difference).flatten()) < 1/10
+        assert np.median(np.abs(difference - np.median(difference))) < 1/10
         assert np.abs(np.median(difference)) < 1/100
