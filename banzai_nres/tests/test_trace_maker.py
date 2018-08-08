@@ -67,7 +67,7 @@ def make_random_yet_realistic_trace_coefficients(image):
     meta_coefficients_odd = np.copy(meta_coefficients_even)
     meta_coefficients_odd[0] = [1668.1, 1940, 386, 59, 4.9, 1.37]
     for i in range(1, meta_coefficients_even.shape[0]):
-        noise_scale = meta_coefficients_even[i, 0]/100
+        noise_scale = np.abs(np.median(meta_coefficients_even[i, 0]))/100
         noise = np.random.normal(loc=0, scale=noise_scale, size=meta_coefficients_even.shape[1])
         meta_coefficients_even[i] += noise
         meta_coefficients_odd[i] += noise
