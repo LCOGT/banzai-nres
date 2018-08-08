@@ -564,12 +564,13 @@ def cross_correlate_image_indices(images, cross_correlate_num):
     :return: All unique combinations of the indices of images from image
     """
     assert len(images) >= 1
+
+    image_indices_to_try = list(range(len(images)))
+    try_combinations_of_images = False
+
     if len(images) >= cross_correlate_num >= 2:
         image_indices_to_try = list(itertools.combinations(range(len(images)), cross_correlate_num))
         try_combinations_of_images = True
-    if len(images) < cross_correlate_num or cross_correlate_num == 1:
-        image_indices_to_try = list(range(len(images)))
-        try_combinations_of_images = False
     return image_indices_to_try, try_combinations_of_images
 
 

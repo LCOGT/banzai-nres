@@ -63,10 +63,10 @@ def make_random_yet_realistic_trace_coefficients(image):
     meta_coefficients_even[3] = [-2.35116489e-01, -2.64776632e-01, -1.17453609e-01, -6.87267618e-02, -6.73017389e-02, -6.30241483e-02]
     meta_coefficients_even[4] = [5.80449884e-01, -3.74220905e-01,  1.84019236e-01,  5.20675962e-02, 1.23541898e-02,  2.08741426e-01]
     meta_coefficients_odd = np.copy(meta_coefficients_even)
-    meta_coefficients_odd[0, 0] = 12
+    meta_coefficients_odd[0, 0] = 15
 
     for i in range(1, meta_coefficients_even.shape[0]):
-        noise_scale = np.abs(np.mean(meta_coefficients_even[i, 0]))/100
+        noise_scale = np.abs(np.mean(meta_coefficients_even[i, 0]))/1000
         noise = np.random.normal(loc=0, scale=noise_scale, size=meta_coefficients_even.shape[1])
         meta_coefficients_even[i] += noise
         meta_coefficients_odd[i] += noise
@@ -101,7 +101,7 @@ def fill_image_with_traces(image):
 
     trace_values_versus_xpixel, num_traces, x = get_trace_centroids_from_coefficients(image.trace_fit_coefficients, image)
     vgauss = np.vectorize(gaussian)  # prepare guassian for evaluation along a slice centered at each trace point.
-    order_width, odd_fiber_intensity, even_fiber_intensity = 1.8, 1E4, 5E3
+    order_width, odd_fiber_intensity, even_fiber_intensity = 1.25, 1E4, 5E3
     # these are realistic intensity values according to a 120 sec LSC exposure.
     for x_pixel in range(even_fiber.shape[1]):
         for i in range(num_traces):
