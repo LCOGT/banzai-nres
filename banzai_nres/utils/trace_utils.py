@@ -619,7 +619,7 @@ def fit_traces_order_by_order(image, order_of_poly_fits=4):
     """
 
     coefficients_and_indices, vals, totalnumberoftraces = extract_coeffs_entire_lampflat_frame(image, order_of_poly_fits)
-    # do not overscan trim image.
+
     num_of_orders = 67
     position_zero_of_uppermost_fiber_at_image_center = 47
 

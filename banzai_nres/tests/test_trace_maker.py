@@ -110,19 +110,23 @@ def fill_image_with_traces(image):
     image.data[:trimmed_shape[0], :trimmed_shape[1]] += (odd_fiber_intensity* odd_fiber + even_fiber_intensity * even_fiber)
 
 
-def add_overscan_and_noisify_image(image):
+def noisify_image(image):
     """
     :param image: Banzai_nres FakeImage object.
-    This adds poisson, overscan and readnoise to an image with traces already on it, in that order.
+    This adds poisson, readnoise to an image with traces already on it, in that order.
     """
     trimmed_shape = tuple([min(image.data.shape)] * 2)
     # poisson noise
     poissonnoise_mask = np.random.poisson(image.data[:trimmed_shape[0], :trimmed_shape[1]])
     image.data[:trimmed_shape[0], :trimmed_shape[1]] += poissonnoise_mask
-    # overscan
-    image.data += 800
     # read noise
     image.data += np.random.normal(0, image.readnoise, image.data.shape)
+
+
+def trim_image(image):
+    trimmed_shape = tuple([min(image.data.shape)] * 2)
+    image.data = image.data[:trimmed_shape[0], :trimmed_shape[1]]
+    image.ny, image.nx = trimmed_shape
 
 
 def differences_between_found_and_generated_trace_vals(found_coefficients, image):
@@ -143,7 +147,8 @@ def test_blind_trace_maker(mock_images):
 
         make_random_yet_realistic_trace_coefficients(images[0])
         fill_image_with_traces(images[0])
-        add_overscan_and_noisify_image(images[0])
+        noisify_image(images[0])
+        trim_image(images[0])
 
         maker = BlindTraceMaker(FakeContext())
         maker.do_stage(images)
