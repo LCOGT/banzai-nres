@@ -169,9 +169,9 @@ def make_master_traces(images, maker_object, image_config, logging_tags, method,
     header['FIBRORDR'] = fiber_order
     header['FITFLAT'] = images[0].filename
     header['OBSTYPE'] = 'TRACE'
-    header['DATE-OBS'] = images[0].header['DATE-OBS']
-    header['DAY-OBS'] = images[0].header['DAY-OBS']
-    header['INSTRUME'] = images[0].header['TELESCOP']
+    header['DATE-OBS'] = images[0].header.get('DATE-OBS')
+    header['DAY-OBS'] = images[0].header.get('DAY-OBS')
+    header['INSTRUME'] = images[0].header.get('TELESCOP')
 
     logger.info(os.path.basename(master_trace_filename))
 

@@ -19,6 +19,10 @@ class FakeTraceImage(FakeImage):
         self.caltype = 'trace'
         self.header = fits.Header()
         self.header['OBSTYPE'] = 'LAMPFLAT'
+        self.nx = 500
+        self.ny = 502
+        self.bpm = np.zeros((self.ny, self.nx), dtype=np.uint8)
+        self.data = np.zeros((self.ny, self.nx))
 
 
 def trim_coefficients_to_fit_image(image, trace_fit_coefficients_no_indices):
