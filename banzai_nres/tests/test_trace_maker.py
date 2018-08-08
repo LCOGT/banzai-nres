@@ -8,7 +8,6 @@ from banzai.utils import stats
 from banzai_nres.utils.trace_utils import get_coefficients_from_meta, generate_legendre_array, get_trace_centroids_from_coefficients
 from banzai_nres.tests.utils import FakeImage
 from astropy.io import fits
-from banzai.bias import BiasMaker
 
 
 logger = logs.get_logger(__name__)
@@ -20,14 +19,6 @@ class FakeTraceImage(FakeImage):
         self.caltype = 'trace'
         self.header = fits.Header()
         self.header['OBSTYPE'] = 'LAMPFLAT'
-
-
-class FakeBiasImage(FakeImage):
-    def __init__(self, *args, **kwargs):
-        super(FakeBiasImage, self).__init__(*args, **kwargs)
-        self.caltype = 'bias'
-        self.header = fits.Header()
-        self.header['OBSTYPE'] = 'BIAS'
 
 
 def trim_coefficients_to_fit_image(image, trace_fit_coefficients_no_indices):
@@ -168,25 +159,4 @@ def test_blind_trace_maker(mock_images):
 
         assert stats.absolute_deviation(np.abs(difference)) < 1/10
         assert np.abs(np.median(difference)) < 1/100
-
-
-
-@mock.patch('banzai.bias.Image')
-def test_makes_a_sensible_master_bias(mock_images):
-    nimages = 20
-    expected_bias = 1183.0
-    expected_readnoise = 15.0
-
-    images = [FakeBiasImage() for x in range(nimages)]
-    for image in images:
-        image.data = np.random.normal(loc=expected_bias, scale=expected_readnoise,
-                                      size=(image.ny, image.nx))
-
-    maker = BiasMaker(FakeContext())
-    maker.do_stage(images)
-
-    args, kwargs = mock_images.call_args
-    master_bias = kwargs['data']
-    logger.debug(master_bias.shape)
-    logger.debug('inside test bias maker')
-    assert False
+        assert False
