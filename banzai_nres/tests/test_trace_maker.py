@@ -150,6 +150,8 @@ def test_blind_trace_maker(mock_images):
         noisify_image(images[0])
         trim_image(images[0])
 
+        print(images[0].trace_fit_coefficients)
+
         maker = BlindTraceMaker(FakeContext())
         maker.do_stage(images)
 
