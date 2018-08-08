@@ -143,14 +143,14 @@ def differences_between_found_and_generated_trace_vals(found_coefficients, image
     assert num_traces_1 == num_traces_2
     return trace_values_2 - trace_values_1
 
-"""
+
 @mock.patch('banzai_nres.traces.Image')
 def test_blind_trace_maker(mock_images):
     num_trials = 2
     readnoise = 11.0
 
     for x in range(num_trials):
-        images = [FakeTraceImage()]
+        images = [FakeBiasImage()]
         images[0].readnoise = readnoise
 
         make_random_yet_realistic_trace_coefficients(images[0])
@@ -162,6 +162,7 @@ def test_blind_trace_maker(mock_images):
 
         args, kwargs = mock_images.call_args
         master_trace = kwargs['data']
+        logger.debug(master_trace.shape)
 
         difference = differences_between_found_and_generated_trace_vals(master_trace, images[0])
         logger.info('error in trace fitting is less than %s of a pixel' % stats.absolute_deviation(np.abs(difference)))
@@ -170,7 +171,7 @@ def test_blind_trace_maker(mock_images):
 
         assert stats.absolute_deviation(np.abs(difference)) < 1/10
         assert np.abs(np.median(difference)) < 1/100
-"""
+
 
 
 @mock.patch('banzai.bias.Image')
@@ -190,6 +191,5 @@ def test_makes_a_sensible_master_bias(mock_images):
     args, kwargs = mock_images.call_args
     master_bias = kwargs['data']
     logger.debug(master_bias.shape)
-    logger.debug(master_bias.type)
     logger.debug('inside test bias maker')
     assert False
