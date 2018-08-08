@@ -8,9 +8,6 @@ from banzai.utils import stats
 from banzai_nres.utils.trace_utils import get_coefficients_from_meta, generate_legendre_array, get_trace_centroids_from_coefficients
 from banzai_nres.tests.utils import FakeImage
 from astropy.io import fits
-
-
-from banzai.tests.utils import FakeImage, FakeContext
 from banzai.bias import BiasMaker
 
 

@@ -3,7 +3,6 @@ import datetime
 import numpy as np
 
 
-
 class FakeImage(Image):
     def __init__(self, nx=256, ny=259, ccdsum='2 2', epoch='20180807'):
         self.nx = nx
