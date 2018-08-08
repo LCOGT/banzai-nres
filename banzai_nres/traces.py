@@ -91,18 +91,6 @@ class TraceUpdater(Stage):
     def calibration_type(self):
         return 'trace'
 
-    def get_calibration_filename(self, image):
-        cal_file = '{cal_type}_{instrument}_{epoch}_bin{bin}{filter}.fits'
-        if 'filter' in self.group_by_keywords:
-            filter_str = '_{filter}'.format(filter=image.filter)
-        else:
-            filter_str = ''
-
-        cal_file = cal_file.format(instrument=image.instrument,
-                                   epoch=image.epoch, bin=image.ccdsum.replace(' ', 'x'),
-                                   cal_type=self.calibration_type.lower(), filter=filter_str)
-        return cal_file
-
     def do_stage(self, images):
         for image in images:
             # getting coefficients from master trace file
