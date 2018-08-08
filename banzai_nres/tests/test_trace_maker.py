@@ -28,7 +28,7 @@ def trim_coefficients_to_fit_image(image, trace_fit_coefficients_no_indices):
     trace_values_versus_xpixel, num_traces, x = get_trace_centroids_from_coefficients(trace_fit_coefficients, image)
     good_indices = []
     for i in range(trace_values_versus_xpixel.shape[0]):
-        if (trace_values_versus_xpixel[i, :] < max_y).all() and (trace_values_versus_xpixel[i, :] > min_y).all():
+        if 1.3*np.mean(trace_values_versus_xpixel[i, :]) < max_y and (trace_values_versus_xpixel[i, :] > min_y).all():
             good_indices += [i]
     trimmed_trace_fit_coefficients_and_indices = trace_fit_coefficients[good_indices]
     assert (np.array(good_indices) - np.min(np.array(good_indices)) == np.array(list(range(len(good_indices))))).all()
@@ -40,7 +40,9 @@ def trim_coefficients_to_fit_image(image, trace_fit_coefficients_no_indices):
 def munge_coefficients(even_coefficients, odd_coefficients):
     if even_coefficients.shape[0] != odd_coefficients.shape[0]:
         min_shape = min(odd_coefficients.shape[0], even_coefficients.shape[0]) - 1
-    return even_coefficients[:min_shape], odd_coefficients[:min_shape]
+        return even_coefficients[:min_shape], odd_coefficients[:min_shape]
+    else:
+        return even_coefficients, odd_coefficients
 
 
 def make_random_yet_realistic_trace_coefficients(image):
@@ -50,15 +52,16 @@ def make_random_yet_realistic_trace_coefficients(image):
     and an arbitrary fiber_order onto image.fiber_order
     """
     meta_coefficients_even = np.zeros((5, 6))
-    meta_coefficients_even[0] = [1664.8, 1957, 394, 61, 5, 1.62]
-    meta_coefficients_even[1] = [-36.4, -50, -16.5, -3.31, -0.74, 0]
-    meta_coefficients_even[2] = [89.9, 1.69, 0.294, -0.112, 0, 1.62]
-    meta_coefficients_even[3] = [-0.234, -0.264, -0.114, 0, 0, 0]
-    meta_coefficients_even[4] = [0.581, -0.374, 0.188, 0, 0.0207, 0]
+    meta_coefficients_even[0] = [0, 3800, 3.86378543e+02, 5.90806434e+01, 4.94386504e+00, 1.37890482e+00]
+    meta_coefficients_even[1] = [-3.64547386e+01, -5.01236304e+01, -1.65331378e+01, -3.31442330e+00, -7.46833391e-01, -8.14690916e-02]
+    meta_coefficients_even[2] = [8.99994878e+01,  1.69576526e+00,  2.98550032e-01, -1.12856233e-01, 5.53028580e-03, -1.45839718e-01]
+    meta_coefficients_even[3] = [-2.35116489e-01, -2.64776632e-01, -1.17453609e-01, -6.87267618e-02, -6.73017389e-02, -6.30241483e-02]
+    meta_coefficients_even[4] = [5.80449884e-01, -3.74220905e-01,  1.84019236e-01,  5.20675962e-02, 1.23541898e-02,  2.08741426e-01]
     meta_coefficients_odd = np.copy(meta_coefficients_even)
-    meta_coefficients_odd[0] = [1668.1, 1940, 386, 59, 4.9, 1.37]
+    meta_coefficients_odd[0, 0] = 15
+
     for i in range(1, meta_coefficients_even.shape[0]):
-        noise_scale = np.abs(np.median(meta_coefficients_even[i, 0]))/100
+        noise_scale = np.abs(np.mean(meta_coefficients_even[i, 0]))/100
         noise = np.random.normal(loc=0, scale=noise_scale, size=meta_coefficients_even.shape[1])
         meta_coefficients_even[i] += noise
         meta_coefficients_odd[i] += noise
@@ -150,8 +153,6 @@ def test_blind_trace_maker(mock_images):
         noisify_image(images[0])
         trim_image(images[0])
 
-        print(images[0].trace_fit_coefficients)
-
         maker = BlindTraceMaker(FakeContext())
         maker.do_stage(images)
 
@@ -161,6 +162,7 @@ def test_blind_trace_maker(mock_images):
 
         difference = differences_between_found_and_generated_trace_vals(master_trace, images[0])
         logger.info('error in trace fitting is less than %s of a pixel' % stats.absolute_deviation(np.abs(difference)))
+        logger.info('worst error in trace fitting is %s pixels'%np.max(np.abs(difference)))
         logger.info('systematic error (median difference) in trace fitting is less than %s of a pixel' %
                     np.abs(np.median(difference)))
 

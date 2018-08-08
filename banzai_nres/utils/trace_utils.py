@@ -627,8 +627,9 @@ def fit_traces_order_by_order(image, order_of_poly_fits=4):
         # for testing in test_trace_maker
         position_zero_of_uppermost_fiber_at_image_center = 4
         num_of_orders = np.max(image.trace_fit_coefficients[:, 0]) + 1
-        print(image.data[:, 50])
         print(totalnumberoftraces)
+        print(num_of_orders)
+        print(image.trace_fit_coefficients[:, 0])
 
     uppermost_fiber_designation = 0
     lowermost_fiber_designation = 1
