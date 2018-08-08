@@ -172,4 +172,5 @@ def test_blind_trace_maker(mock_images):
                     np.abs(np.mean(difference)))
 
         assert np.median(np.abs(difference - np.median(difference))) < 1/10
-        assert np.abs(np.median(difference)) < 1/100
+        assert np.abs(np.mean(difference)) < 1/100
+        assert False
