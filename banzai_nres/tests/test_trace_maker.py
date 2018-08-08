@@ -106,7 +106,7 @@ def fill_image_with_traces(image):
     for x_pixel in range(even_fiber.shape[1]):
         for i in range(num_traces):
             centroid = trace_values_versus_xpixel[i, x_pixel]
-            low, high = max(0, int(centroid - 4 * order_width)), min(even_fiber.shape[1]-1, int(centroid + 4 * order_width)) + 1
+            low, high = max(0, int(centroid - 5 * order_width)), min(even_fiber.shape[1]-1, int(centroid + 5 * order_width)) + 1
             evalwindow = np.arange(low, high, 1)
             if len(evalwindow) > 0:
                 if i % 2 == 0:

@@ -81,9 +81,9 @@ class BlindTraceMaker(CalibrationMaker):
 
 class TraceUpdater(Stage):
     """
-    Updates the trace centroid locations for a frame
-    of any observation type. Will keep the as-imported master_trace locations
-    if the reasonable criterion which indicate a good fit are not met.
+    Loads the most recent master trace file and stores it on the image under trace_fit_coefficients and fiber_order.
+    Updates the trace centroid locations for a frame of any observation type.
+    Will keep the as-imported master_trace locations if the reasonable criterion which indicate a good fit are not met.
     """
     def __init__(self, pipeline_context):
         super(TraceUpdater, self).__init__(pipeline_context)
