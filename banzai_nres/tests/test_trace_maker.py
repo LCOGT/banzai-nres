@@ -28,7 +28,7 @@ def trim_coefficients_to_fit_image(image, trace_fit_coefficients_no_indices):
     trace_values_versus_xpixel, num_traces, x = get_trace_centroids_from_coefficients(trace_fit_coefficients, image)
     good_indices = []
     for i in range(trace_values_versus_xpixel.shape[0]):
-        if 1*np.mean(trace_values_versus_xpixel[i, :]) < max_y and (trace_values_versus_xpixel[i, :] > min_y).all():
+        if 1.1*np.mean(trace_values_versus_xpixel[i, :]) < max_y and (trace_values_versus_xpixel[i, :] > min_y).all():
             good_indices += [i]
     trimmed_trace_fit_coefficients_and_indices = trace_fit_coefficients[good_indices]
     assert (np.array(good_indices) - np.min(np.array(good_indices)) == np.array(list(range(len(good_indices))))).all()
@@ -169,4 +169,3 @@ def test_blind_trace_maker(mock_images):
 
         assert stats.absolute_deviation(np.abs(difference)) < 1/10
         assert np.abs(np.median(difference)) < 1/100
-        assert False
