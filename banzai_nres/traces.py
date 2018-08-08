@@ -26,6 +26,7 @@ class TraceMaker(CalibrationMaker):
     def __init__(self, pipeline_context):
         super(TraceMaker, self).__init__(pipeline_context)
         self.pipeline_context = pipeline_context
+        self.order_of_meta_fit = 6
 
     @property
     def group_by_keywords(self):
@@ -41,7 +42,8 @@ class TraceMaker(CalibrationMaker):
 
     def make_master_calibration_frame(self, images, image_config, logging_tags):
         master_traces = make_master_traces(images, self, image_config, logging_tags,
-                                           'global-meta', cross_correlate_num=1)
+                                           'global-meta', cross_correlate_num=1,
+                                           order_of_meta_fit=self.order_of_meta_fit)
 
         return [master_traces]
 
@@ -54,6 +56,8 @@ class BlindTraceMaker(CalibrationMaker):
     def __init__(self, pipeline_context):
         super(BlindTraceMaker, self).__init__(pipeline_context)
         self.pipeline_context = pipeline_context
+        self.order_of_meta_fit = 6
+        self.order_of_poly_fit = 4
 
     @property
     def group_by_keywords(self):
@@ -69,7 +73,9 @@ class BlindTraceMaker(CalibrationMaker):
 
     def make_master_calibration_frame(self, images, image_config, logging_tags):
         master_traces = make_master_traces(images, self, image_config, logging_tags,
-                                           'order-by-order', cross_correlate_num=1)
+                                           'order-by-order', cross_correlate_num=1,
+                                           order_of_poly_fits=self.order_of_poly_fit,
+                                           order_of_meta_fit=self.order_of_meta_fit)
         return [master_traces]
 
 
@@ -82,6 +88,7 @@ class TraceUpdater(Stage):
     def __init__(self, pipeline_context):
         super(TraceUpdater, self).__init__(pipeline_context)
         self.pipeline_context = pipeline_context
+        self.order_of_meta_fit = 6
 
     @property
     def group_by_keywords(self):
@@ -92,6 +99,7 @@ class TraceUpdater(Stage):
         return 'trace'
 
     def do_stage(self, images):
+        add_nres_trace_attributes(images)
         for image in images:
             # getting coefficients from master trace file
             coefficients_and_indices_initial, fiber_order = get_trace_coefficients(image, self)
@@ -100,7 +108,7 @@ class TraceUpdater(Stage):
 
             # optimizing master traces on this frame in particular
             coefficients_and_indices_new = optimize_coeffs_entire_lampflat_frame(
-                coefficients_and_indices_initial, image, order_of_meta_fit=6)
+                coefficients_and_indices_initial, image, order_of_meta_fit=self.order_of_meta_fit)
             logger.debug('refining trace coefficients on %s' % image.filename)
 
             close_fit = check_for_close_fit([coefficients_and_indices_new, coefficients_and_indices_initial],
@@ -117,7 +125,8 @@ class TraceUpdater(Stage):
         return images
 
 
-def make_master_traces(images, maker_object, image_config, logging_tags, method, cross_correlate_num=2):
+def make_master_traces(images, maker_object, image_config, logging_tags, method,
+                       cross_correlate_num=2, order_of_poly_fits=4, order_of_meta_fit=6):
     """
     :param images: List of banzai Image classes
     :param method: 'order-by-order' or 'global-meta'. Order by order should only be used when making a brand new Master
@@ -127,6 +136,7 @@ def make_master_traces(images, maker_object, image_config, logging_tags, method,
     :param maker_object: CalibrationMaker object.
     :return: Banzai image object where image.data are the trace coefficients. with order indices as the first column.
     """
+    add_nres_trace_attributes(images)
     master_trace_filename = maker_object.get_calibration_filename(image_config)
     logs.add_tag(logging_tags, method + 'master_trace', os.path.basename(master_trace_filename))
 
@@ -143,13 +153,13 @@ def make_master_traces(images, maker_object, image_config, logging_tags, method,
         for image in images_to_try:
             if method == 'order-by-order':
                 logger.debug('fitting order by order on %s' % image.filename)
-                coefficients_and_indices_initial, fiber_order = fit_traces_order_by_order(image, order_of_poly_fits=4)
+                coefficients_and_indices_initial, fiber_order = fit_traces_order_by_order(image, order_of_poly_fits=order_of_poly_fits)
             if method == 'global-meta':
                 logger.debug('importing master coeffs and refining fit on %s' % image.filename)
                 coefficients_and_indices_initial, fiber_order = get_trace_coefficients(image, maker_object)
 
             coefficients_and_indices_list += [optimize_coeffs_entire_lampflat_frame(
-                coefficients_and_indices_initial, image, order_of_meta_fit=6)]
+                coefficients_and_indices_initial, image, order_of_meta_fit=order_of_meta_fit)]
 
         satisfactory_fit = check_for_close_fit(coefficients_and_indices_list, images_to_try, max_pixel_error=1E-1)
 
@@ -182,6 +192,18 @@ def make_master_traces(images, maker_object, image_config, logging_tags, method,
     assert master_trace_coefficients.data.shape is not None
 
     return master_trace_coefficients
+
+
+def add_nres_trace_attributes(images):
+    """
+    :param images: banzai image objects
+    :return: the same image objects with trace_coefficients and fiber_order attributes
+    """
+    for image in images:
+        if not hasattr(image, 'trace_fit_coefficients'):
+            setattr(image, 'trace_fit_coefficients', None)
+        if not hasattr(image, 'fiber_order'):
+            setattr(image, 'fiber_order', None)
 
 
 def get_trace_coefficients(image, maker_object):

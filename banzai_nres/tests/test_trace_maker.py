@@ -49,13 +49,13 @@ def munge_coefficients(even_coefficients, odd_coefficients):
         return even_coefficients, odd_coefficients
 
 
-def make_random_yet_realistic_trace_coefficients(image):
+def make_random_yet_realistic_trace_coefficients(image, order_of_poly_fit=4):
     """
     :param image: Banzai_nres Image object
     Adds realistic coefficients for traces which fit entirely in the frame, saving into image.trace_fit_coefficients
     and an arbitrary fiber_order onto image.fiber_order
     """
-    meta_coefficients_even = np.zeros((5, 6))
+    meta_coefficients_even = np.zeros((order_of_poly_fit + 1, 6))
     # NOTE: This 5 is poly_order + 1 We need polyorder as a global variable, or just never change it from 4.
     meta_coefficients_even[0] = [0, image.ny*15, 400, 5.90806434e+01, 4.94386504e+00, 1.37890482e+00]
     meta_coefficients_even[1] = [-3.64547386e+01, -5.01236304e+01, -1.65331378e+01, -3.31442330e+00, -7.46833391e-01, -8.14690916e-02]
@@ -153,17 +153,19 @@ def differences_between_found_and_generated_trace_vals(found_coefficients, image
 def test_blind_trace_maker(mock_images):
     num_trials = 2
     readnoise = 11.0
+    order_of_poly_fit = 4
 
     for x in range(num_trials):
         images = [FakeTraceImage()]
         images[0].readnoise = readnoise
 
-        make_random_yet_realistic_trace_coefficients(images[0])
+        make_random_yet_realistic_trace_coefficients(images[0], order_of_poly_fit=order_of_poly_fit)
         fill_image_with_traces(images[0])
         noisify_image(images[0])
         trim_image(images[0])
 
         maker = BlindTraceMaker(FakeContext())
+        maker.order_of_poly_fit = order_of_poly_fit
         maker.do_stage(images)
 
         args, kwargs = mock_images.call_args
