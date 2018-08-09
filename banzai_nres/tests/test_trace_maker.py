@@ -57,7 +57,7 @@ def make_random_yet_realistic_trace_coefficients(image, order_of_poly_fit=4):
     """
     meta_coefficients_even = np.zeros((order_of_poly_fit + 1, 6))
     # NOTE: This 5 is poly_order + 1 We need polyorder as a global variable, or just never change it from 4.
-    meta_coefficients_even[0] = [0, image.ny*15, 400, 5.90806434e+01, 4.94386504e+00, 1.37890482e+00]
+    meta_coefficients_even[0] = [0, image.ny*20, 400, 5.90806434e+01, 4.94386504e+00, 1.37890482e+00]
     meta_coefficients_even[1] = [-3.64547386e+01, -5.01236304e+01, -1.65331378e+01, -3.31442330e+00, -7.46833391e-01, -8.14690916e-02]
     meta_coefficients_even[2] = [8.99994878e+01,  1.69576526e+00,  2.98550032e-01, -1.12856233e-01, 5.53028580e-03, -1.45839718e-01]
     meta_coefficients_even[3] = [-2.35116489e-01, -2.64776632e-01, -1.17453609e-01, -6.87267618e-02, -6.73017389e-02, -6.30241483e-02]
@@ -179,5 +179,5 @@ def test_blind_trace_maker(mock_images):
         logger.info('systematic error (median difference) in unit-test trace fitting is less than %s of a pixel' %
                     np.abs(np.median(difference)))
 
-        assert np.median(np.abs(difference - np.median(difference))) < 1/10
-        assert np.abs(np.median(difference)) < 1/10
+        assert np.median(np.abs(difference - np.median(difference))) < 1/100
+        assert np.abs(np.median(difference)) < 1/100
