@@ -350,7 +350,7 @@ def totalflux_all_traces(coefficients_and_indices, image):
     :return: total flux summed across all traces.
     """
     order_of_poly_fits = coefficients_and_indices.shape[1]-2
-    legendre_array, xnorm, x = generate_legendre_array(image, order_of_poly_fits)
+    legendre_array, x, xnorm = generate_legendre_array(image, order_of_poly_fits)
     X = list(x)*(coefficients_and_indices.shape[0])
     #  X = [0,1,...,4095,0,1,..,4095,..]
     TraceYvals = np.dot(coefficients_and_indices[:,1:],legendre_array).flatten()
