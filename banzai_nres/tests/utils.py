@@ -25,5 +25,3 @@ class FakeImage(Image):
         self.molecule_id = '544562351'
         self.exptime = 30.0
         self.obstype = 'TEST'
-        self.trace_fit_coefficients = None
-        self.fiber_order = None

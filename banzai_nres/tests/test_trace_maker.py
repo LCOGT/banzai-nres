@@ -6,6 +6,7 @@ import numpy as np
 from banzai import logs
 from banzai_nres.utils.trace_utils import get_coefficients_from_meta, generate_legendre_array, get_trace_centroids_from_coefficients
 from banzai_nres.tests.utils import FakeImage
+from banzai_nres.traces import Trace
 from astropy.io import fits
 
 
@@ -23,7 +24,7 @@ class FakeTraceImage(FakeImage):
         self.ny = 502
         self.bpm = np.zeros((self.ny, self.nx), dtype=np.uint8)
         self.data = np.zeros((self.ny, self.nx))
-
+        self.trace = Trace()
 
 def trim_coefficients_to_fit_image(image, trace_fit_coefficients_no_indices):
     min_y, max_y = 0, image.data.shape[0]
@@ -52,8 +53,8 @@ def munge_coefficients(even_coefficients, odd_coefficients):
 def make_random_yet_realistic_trace_coefficients(image, order_of_poly_fit=4):
     """
     :param image: Banzai_nres Image object
-    Adds realistic coefficients for traces which fit entirely in the frame, saving into image.trace_fit_coefficients
-    and an arbitrary fiber_order onto image.fiber_order
+    Adds realistic coefficients for traces which fit entirely in the frame, saving into image.trace.coefficients
+    and an arbitrary fiber_order onto image.trace.fiber_order
     """
     meta_coefficients_even = np.zeros((order_of_poly_fit + 1, 6))
     # NOTE: This 5 is poly_order + 1 We need polyorder as a global variable, or just never change it from 4.
@@ -81,8 +82,8 @@ def make_random_yet_realistic_trace_coefficients(image, order_of_poly_fit=4):
     trace_coefficients_even_and_indices, trace_coefficients_odd_and_indices = munge_coefficients(
                                                 trace_coefficients_even_and_indices, trace_coefficients_odd_and_indices)
 
-    image.fiber_order = (0, 1)
-    image.trace_fit_coefficients = np.vstack((trace_coefficients_even_and_indices, trace_coefficients_odd_and_indices))
+    image.trace.fiber_order = (0, 1)
+    image.trace.coefficients = np.vstack((trace_coefficients_even_and_indices, trace_coefficients_odd_and_indices))
 
 
 def gaussian(x, A, b, sigma):
@@ -99,7 +100,7 @@ def fill_image_with_traces(image):
     even_fiber = np.zeros(trimmed_shape)
     odd_fiber = np.zeros(trimmed_shape)
 
-    trace_values_versus_xpixel, num_traces, x = get_trace_centroids_from_coefficients(image.trace_fit_coefficients, image)
+    trace_values_versus_xpixel, num_traces, x = get_trace_centroids_from_coefficients(image.trace.coefficients, image)
     vgauss = np.vectorize(gaussian)  # prepare guassian for evaluation along a slice centered at each trace point.
     order_width, odd_fiber_intensity, even_fiber_intensity = 1.25, 1E4, 5E3
     # these are realistic intensity values according to a 120 sec LSC exposure.
@@ -143,7 +144,7 @@ def differences_between_found_and_generated_trace_vals(found_coefficients, image
     :param image: banzai image object with trace_Fit_coefficients not None
     :return: ndarray, the difference between the y values of the found traces and the old traces at each x value.
     """
-    trace_values_1, num_traces_1, x = get_trace_centroids_from_coefficients(image.trace_fit_coefficients, image)
+    trace_values_1, num_traces_1, x = get_trace_centroids_from_coefficients(image.trace.coefficients, image)
     trace_values_2, num_traces_2, x = get_trace_centroids_from_coefficients(found_coefficients, image)
     assert num_traces_1 == num_traces_2
     return trace_values_2 - trace_values_1

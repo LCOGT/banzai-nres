@@ -353,7 +353,7 @@ def totalflux_all_traces(coefficients_and_indices, image):
     legendre_array, x, xnorm = generate_legendre_array(image, order_of_poly_fits)
     X = list(x)*(coefficients_and_indices.shape[0])
     #  X = [0,1,...,4095,0,1,..,4095,..]
-    TraceYvals = np.dot(coefficients_and_indices[:,1:],legendre_array).flatten()
+    TraceYvals = np.dot(coefficients_and_indices[:, 1:], legendre_array).flatten()
     totalflux = np.sum(ndimage.map_coordinates(image.data.astype(np.float64), [TraceYvals, X], prefilter=True))
     return totalflux
 
@@ -624,10 +624,10 @@ def fit_traces_order_by_order(image, order_of_poly_fits=4):
     num_of_orders = 67
     position_zero_of_uppermost_fiber_at_image_center = 47
 
-    if image.trace_fit_coefficients is not None:
+    if image.trace is not None:
         # for testing in test_trace_maker
         position_zero_of_uppermost_fiber_at_image_center = 4
-        num_of_orders = np.max(image.trace_fit_coefficients[:, 0]) + 1
+        num_of_orders = np.max(image.trace.coefficients[:, 0]) + 1
 
     uppermost_fiber_designation = 0
     lowermost_fiber_designation = 1

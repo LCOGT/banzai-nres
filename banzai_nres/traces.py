@@ -19,6 +19,15 @@ import os
 logger = logs.get_logger(__name__)
 
 
+class Trace(object):
+    """
+    Object for storing all the trace related attributes. This gets appended to each Image instance.
+    """
+    def __init__(self):
+        self.coefficients = None
+        self.fiber_order = None
+
+
 class TraceMaker(CalibrationMaker):
     """
     Updates the master calibration trace file.
@@ -81,7 +90,7 @@ class BlindTraceMaker(CalibrationMaker):
 
 class TraceUpdater(Stage):
     """
-    Loads the most recent master trace file and stores it on the image under trace_fit_coefficients and fiber_order.
+    Loads the most recent master trace file and stores it on the image under trace.coefficients and trace.fiber_order.
     Updates the trace centroid locations for a frame of any observation type.
     Will keep the as-imported master_trace locations if the reasonable criterion which indicate a good fit are not met.
     """
@@ -103,8 +112,8 @@ class TraceUpdater(Stage):
         for image in images:
             # getting coefficients from master trace file
             coefficients_and_indices_initial, fiber_order = get_trace_coefficients(image, self)
-            image.trace_fit_coefficients = coefficients_and_indices_initial
-            image.fiber_order = fiber_order
+            image.trace.coefficients = coefficients_and_indices_initial
+            image.trace.fiber_order = fiber_order
 
             # optimizing master traces on this frame in particular
             coefficients_and_indices_new = optimize_coeffs_entire_lampflat_frame(
@@ -117,7 +126,7 @@ class TraceUpdater(Stage):
                                                        image)
             # keeping the optimized traces only if they satisfy certain conditions
             if close_fit and reasonable_flux_change:
-                image.trace_fit_coefficients = coefficients_and_indices_new
+                image.trace.coefficients = coefficients_and_indices_new
                 logger.debug('New trace fit accepted on %s' % image.filename)
             if not close_fit or not reasonable_flux_change:
                 logger.warning('Either 1. orders have possibly shifted drastically on %s, or it is very low S/N \n'
@@ -200,10 +209,9 @@ def add_nres_trace_attributes(images):
     :return: the same image objects with trace_coefficients and fiber_order attributes
     """
     for image in images:
-        if not hasattr(image, 'trace_fit_coefficients'):
-            setattr(image, 'trace_fit_coefficients', None)
-        if not hasattr(image, 'fiber_order'):
-            setattr(image, 'fiber_order', None)
+        if not hasattr(image, 'trace'):
+            setattr(image, 'trace', None)
+            image.trace = Trace()
 
 
 def get_trace_coefficients(image, maker_object):

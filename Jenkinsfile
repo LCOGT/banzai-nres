@@ -31,7 +31,7 @@ pipeline {
 		stage('Test') {
 			steps {
 				script {
-					sh 'docker run --rm --user=root --entrypoint=pytest ${DOCKER_IMG} -s -m "not e2e" /lco/banzai-nres/'
+					sh 'docker run --rm --user=root --entrypoint=pytest ${DOCKER_IMG} -m "not e2e" /lco/banzai-nres/'
 				}
 			}
 		}
