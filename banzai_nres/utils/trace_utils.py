@@ -336,7 +336,7 @@ def check_flux_change(coefficients_and_indices_new, coefficients_and_indices_ini
     """
     initial_flux = totalflux_all_traces(coefficients_and_indices_initial, image)
     delta_fraction_flux = (totalflux_all_traces(coefficients_and_indices_new, image) - initial_flux)/initial_flux
-    print('(new_flux - master_cal_flux)/master_cal_flux) = %s' % delta_fraction_flux)
+    logger.debug('(new_flux - master_cal_flux)/master_cal_flux) = %s' % delta_fraction_flux)
     if np.abs(delta_fraction_flux) < 1E-2:
         return True
     else:
