@@ -582,7 +582,7 @@ def trim_and_split_coefficients(coefficients, image):
     # cutting of order index column
     coefficients = coefficients[:, 1:]
     # only keep traces which have a contiguous section on the detector.
-    coefficients = coefficients[coefficients[0] > 0]
+    coefficients = coefficients[coefficients[:, 0] > 0]
     # ensuring an even number of traces in the coefficients so that they can be split easily
     if coefficients.shape[0] % 2 != 0:
         coefficients = coefficients[:-1]

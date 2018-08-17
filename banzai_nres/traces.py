@@ -184,7 +184,6 @@ def make_master_traces(images, maker_object, image_config, logging_tags, method,
                   "Try generating order by order. This set of lamp flat frames possibly disagree." % (
                       cross_correlate_num, images_to_try[0].filename)
 
-    # choice is arbitrary since they all agree.
     header = fits_utils.create_master_calibration_header(images)
     header['FIBRORDR'] = fiber_order
     header['FITFLAT'] = images[0].filename
