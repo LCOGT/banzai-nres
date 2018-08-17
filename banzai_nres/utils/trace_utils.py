@@ -578,10 +578,10 @@ def extract_coeffs_entire_lampflat_frame(image, order_of_poly_fits):
     return coefficients_and_indices, vals, totalnumberoforders
 
 
-def trim_and_split_coefficients(coefficients, image):
+def trim_and_split_coefficients(coefficients):
     # cutting of order index column
     coefficients = coefficients[:, 1:]
-    # only keep traces which have a contiguous section on the detector.
+    # trim any traces which may be far off the bottom of the detector.
     coefficients = coefficients[coefficients[:, 0] > 0]
     # ensuring an even number of traces in the coefficients so that they can be split easily
     if coefficients.shape[0] % 2 != 0:
@@ -604,7 +604,7 @@ def fit_traces_order_by_order(image, order_of_poly_fits=4):
     the first 67 rows of the array. fiber designation is arbitrary at this point.
     """
     coefficients_and_indices, vals, totalnumberoftraces = extract_coeffs_entire_lampflat_frame(image, order_of_poly_fits)
-    coefficients_and_indices = trim_and_split_coefficients(coefficients_and_indices, image)
+    coefficients_and_indices = trim_and_split_coefficients(coefficients_and_indices)
     logger.info('%s traces found' % coefficients_and_indices.shape[0])
 
     return coefficients_and_indices
