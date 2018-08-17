@@ -162,7 +162,8 @@ def make_master_traces(images, maker_object, image_config, logging_tags, method,
         for image in images_to_try:
             if method == 'order-by-order':
                 logger.debug('fitting order by order on %s' % image.filename)
-                coefficients_and_indices_initial, fiber_order = fit_traces_order_by_order(image, order_of_poly_fits=order_of_poly_fits)
+                coefficients_and_indices_initial = fit_traces_order_by_order(image, order_of_poly_fits=order_of_poly_fits)
+                fiber_order = None
             if method == 'global-meta':
                 logger.debug('importing master coeffs and refining fit on %s' % image.filename)
                 coefficients_and_indices_initial, fiber_order = get_trace_coefficients(image, maker_object)
@@ -206,7 +207,7 @@ def make_master_traces(images, maker_object, image_config, logging_tags, method,
 def add_nres_trace_attributes(images):
     """
     :param images: banzai image objects
-    :return: the same image objects with trace_coefficients and fiber_order attributes
+    :return: the same image objects with an instance of the Trace class appended
     """
     for image in images:
         if not hasattr(image, 'trace'):

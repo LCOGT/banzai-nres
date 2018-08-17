@@ -20,8 +20,10 @@ logger = logs.get_logger(__name__)
 
 def maxima(A, s, k, ref):
     """
+    A procedure for finding maxima which are not just peaks in the noise floor.
     :param A: An array of values where you wish to find maxima
-    :param s: The window were a points value must be larger than all the other values in the window.
+    :param s: The window were the central-point's value must be larger than all the other values in the window to qualify
+              as a maximum.
     :param k: multiplicative constant which qualifies a point as a real maxima (not just noise)
     :param ref: the reference value which k*r defines the value any real maximal point must exceed
     :return: The index of the a point near a maximum and the value at the maximum
@@ -261,31 +263,6 @@ def generate_legendre_array(image, order_of_poly_fits):
     for i in range(1, order_of_poly_fits + 1):
         legendre_polynomial_array[i] = np.polynomial.legendre.legval(xnorm, [0 for j in range(i)] + [1])
     return legendre_polynomial_array, x, xnorm
-
-
-def recognize_fibers_and_split_coefficients(coefficients, position_zero_of_first_fiber_at_image_center, first_fiber_designation, second_fiber_designation, num_of_orders, image):
-    coefficients = coefficients[:, 1:]
-    # cutting off order index column.
-    assert num_of_orders % 2 == 0
-    assert coefficients.shape[0] >= num_of_orders
-
-    order_indices = [i for i in range(int(num_of_orders/2))]*2
-    order_of_poly_fits = coefficients.shape[1] - 1
-
-    legendre_polynomial_array, not_needed, not_needed_2 = generate_legendre_array(image, order_of_poly_fits)
-
-    trace_values_versus_xpixel = np.dot(coefficients, legendre_polynomial_array)
-
-    zeroth_order_row = find_nearest(trace_values_versus_xpixel[:, int(image.data.shape[1]/2)], position_zero_of_first_fiber_at_image_center)
-    coefficients = coefficients[zeroth_order_row : zeroth_order_row + num_of_orders]
-
-
-    first_fiber_coefficients = coefficients[::2]
-    second_fiber_coefficients = coefficients[1::2]
-    fiber_order = tuple((first_fiber_designation, second_fiber_designation))
-    ordered_coefficients = np.vstack((first_fiber_coefficients, second_fiber_coefficients))
-    coefficients_and_indices = np.insert(ordered_coefficients, obj=0, values=order_indices, axis=1)
-    return coefficients_and_indices, fiber_order
 
 
 def check_for_close_fit(coefficients_and_indices_list, images, max_pixel_error=1E-1):
@@ -601,48 +578,36 @@ def extract_coeffs_entire_lampflat_frame(image, order_of_poly_fits):
     return coefficients_and_indices, vals, totalnumberoforders
 
 
+def trim_and_split_coefficients(coefficients, image):
+    # cutting of order index column
+    coefficients = coefficients[:, 1:]
+    # only keep traces which have a contiguous section on the detector.
+    coefficients = coefficients[coefficients[0] > 0]
+    # ensuring an even number of traces in the coefficients so that they can be split easily
+    if coefficients.shape[0] % 2 != 0:
+        coefficients = coefficients[:-1]
+    num_orders = int(coefficients.shape[0] / 2)
+    order_indices = [i for i in range(num_orders)]*2
+
+    first_fiber_coefficients = coefficients[::2]
+    second_fiber_coefficients = coefficients[1::2]
+    ordered_coefficients = np.vstack((first_fiber_coefficients, second_fiber_coefficients))
+    coefficients_and_indices = np.insert(ordered_coefficients, obj=0, values=order_indices, axis=1)
+    return coefficients_and_indices
+
+
 def fit_traces_order_by_order(image, order_of_poly_fits=4):
     """
     :param image: Banzai image object
     :param order_of_poly_fits: Highest order of the polynomial fit to each trace. 4 is good. Do not change needlessly.
-    :internal params: CHANGE WITH CAUTION
-            num_of_orders = 67 per fiber, giving 134 traces. Only change if for some reason you want to exclude
-                            orders near the bottom of the detector
-            position_zero_of_uppermost_fiber_at_image_center = Pixel position of fiber_one near the bottom of the detector
-                            called uppermost because python displays CCD images with pixels 0,0 at the bottom.
-                            E.g. 47 would be a good one. The correct region is where the orders are most densely packed.
-                            The order that you select for this, will become what you designate uppermost_fiber_designation.
-                            The fiber right below it will be lowermost_fiber_designation.
-                uppermost_fiber_designation = 0
-                lowermost_fiber_designation = 1 explained above.
-    :return array of trace fit coefficients arranged such that those for uppermost_fiber_designation are first, e.g.
-    the first 67 rows of the array.
+    :return array of trace fit coefficients arranged such that those for the first fiber are first.
+    the first 67 rows of the array. fiber designation is arbitrary at this point.
     """
-
     coefficients_and_indices, vals, totalnumberoftraces = extract_coeffs_entire_lampflat_frame(image, order_of_poly_fits)
+    coefficients_and_indices = trim_and_split_coefficients(coefficients_and_indices, image)
+    logger.info('%s traces found' % coefficients_and_indices.shape[0])
 
-    num_of_orders = 67
-    position_zero_of_uppermost_fiber_at_image_center = 47
-
-    if image.trace is not None:
-        # for testing in test_trace_maker
-        position_zero_of_uppermost_fiber_at_image_center = 4
-        num_of_orders = np.max(image.trace.coefficients[:, 0]) + 1
-
-    uppermost_fiber_designation = 0
-    lowermost_fiber_designation = 1
-    image_center = int(image.data.shape[1]/2)
-
-    coefficients_and_indices, fiber_order = recognize_fibers_and_split_coefficients(coefficients_and_indices,
-                                            position_zero_of_uppermost_fiber_at_image_center, uppermost_fiber_designation,
-                                            lowermost_fiber_designation, int(num_of_orders*2), image)
-
-    logger.info('%s traces found' % totalnumberoftraces)
-    logger.info('selecting only %s of them, with the fiber %s centroid at y=%s x=%s' % (
-    int(num_of_orders * 2), uppermost_fiber_designation,
-    position_zero_of_uppermost_fiber_at_image_center, image_center))
-
-    return coefficients_and_indices, fiber_order
+    return coefficients_and_indices
 
 
 def optimize_coeffs_entire_lampflat_frame(trace_coefficients, image, order_of_meta_fit=6, bpm=None):
