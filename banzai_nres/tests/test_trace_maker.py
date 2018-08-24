@@ -26,6 +26,7 @@ class FakeTraceImage(FakeImage):
         self.data = np.zeros((self.ny, self.nx))
         self.trace = Trace()
 
+
 def trim_coefficients_to_fit_image(image, trace_fit_coefficients_no_indices):
     min_y, max_y = 0, image.data.shape[0]
     order_indices = np.array([i for i in range(0, trace_fit_coefficients_no_indices.shape[0])])
@@ -152,6 +153,13 @@ def differences_between_found_and_generated_trace_vals(found_coefficients, image
 
 @mock.patch('banzai_nres.traces.Image')
 def test_blind_trace_maker(mock_images):
+    """
+    This tests blind trace making (which involves blind trace making and then refining via meta-fit).
+    Note: The fake images made here must have enough orders N such that N > order_of_meta_fit + 1.
+    Currently it creates ~20 traces so 10 orders. A bigger image would have more traces, but expanding the
+    image size may cause the created traces to be unrealistic. My suggestion is to never change the fake_image size
+    and to keep order_of_meta_fit less than 8. (6 works well so why would you want it larger?)
+    """
     num_trials = 2
     readnoise = 11.0
     order_of_poly_fit = 4
@@ -174,10 +182,10 @@ def test_blind_trace_maker(mock_images):
         logger.debug(master_trace.shape)
 
         difference = differences_between_found_and_generated_trace_vals(master_trace, images[0])
-        logger.info('error in unit-test trace fitting is less than %s of a pixel' %
+        logger.debug('error in unit-test trace fitting is less than %s of a pixel' %
                     np.median(np.abs(difference - np.median(difference))))
-        logger.info('worst error in unit-test trace fitting is %s pixels'%np.max(np.abs(difference)))
-        logger.info('systematic error (median difference) in unit-test trace fitting is less than %s of a pixel' %
+        logger.debug('worst error in unit-test trace fitting is %s pixels'%np.max(np.abs(difference)))
+        logger.debug('systematic error (median difference) in unit-test trace fitting is less than %s of a pixel' %
                     np.abs(np.median(difference)))
 
         assert np.median(np.abs(difference - np.median(difference))) < 1/100
