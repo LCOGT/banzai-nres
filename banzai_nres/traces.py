@@ -7,6 +7,7 @@ Authors
 
 from banzai_nres.utils.trace_utils import check_for_close_fit, check_flux_change, cross_correlate_image_indices, \
     optimize_coeffs_entire_lampflat_frame, fit_traces_order_by_order
+from banzai_nres.utils.NRES_class_utils import add_nres_attribute
 from banzai_nres.images import Image
 from banzai.stages import CalibrationMaker, Stage, MasterCalibrationDoesNotExist
 from banzai.utils import fits_utils
@@ -112,7 +113,7 @@ class TraceUpdater(Stage):
         return 'trace'
 
     def do_stage(self, images):
-        add_nres_trace_attributes(images)
+        add_nres_attribute(images, 'trace', Trace)
         for image in images:
             # getting coefficients from master trace file
             coefficients_and_indices_initial, fiber_order = get_trace_coefficients(image, self)
@@ -149,7 +150,7 @@ def make_master_traces(images, maker_object, image_config, logging_tags, method,
     :param maker_object: CalibrationMaker object.
     :return: Banzai image object where image.data are the trace coefficients. with order indices as the first column.
     """
-    add_nres_trace_attributes(images)
+    add_nres_attribute(images, 'trace', Trace)
     master_trace_filename = maker_object.get_calibration_filename(image_config)
     logs.add_tag(logging_tags, method + 'master_trace', os.path.basename(master_trace_filename))
 
@@ -208,19 +209,6 @@ def make_master_traces(images, maker_object, image_config, logging_tags, method,
 
     return master_trace_coefficients
 
-
-def add_nres_trace_attributes(images):
-    """
-    :param images: banzai image objects
-    :return: the same image objects with an instance of the Trace class appended
-    """
-    for image in images:
-        if not hasattr(image, 'trace'):
-            setattr(image, 'trace', None)
-            image.trace = Trace()
-        else:
-            if image.trace is None:
-                image.trace = Trace()
 
 def get_trace_coefficients(image, maker_object):
     """
