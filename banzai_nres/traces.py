@@ -215,9 +215,12 @@ def add_nres_trace_attributes(images):
     :return: the same image objects with an instance of the Trace class appended
     """
     for image in images:
-        setattr(image, 'trace', None)
-        image.trace = Trace()
-
+        if not hasattr(image, 'trace'):
+            setattr(image, 'trace', None)
+            image.trace = Trace()
+        else:
+            if image.trace is None:
+                image.trace = Trace()
 
 def get_trace_coefficients(image, maker_object):
     """
