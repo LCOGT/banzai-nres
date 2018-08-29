@@ -168,7 +168,7 @@ def make_master_traces(images, maker_object, image_config, logging_tags, method,
                 logger.debug('fitting order by order on %s' % image.filename)
                 coefficients_and_indices_initial = fit_traces_order_by_order(image,
                                                                              order_of_poly_fits=order_of_poly_fits,
-                                                                             num_lit_fibers = 2)
+                                                                             num_lit_fibers=2)
                 fiber_order = None
             if method == 'global-meta':
                 logger.debug('importing master coeffs and refining fit on %s' % image.filename)
@@ -215,9 +215,8 @@ def add_nres_trace_attributes(images):
     :return: the same image objects with an instance of the Trace class appended
     """
     for image in images:
-        if not hasattr(image, 'trace'):
-            setattr(image, 'trace', None)
-            image.trace = Trace()
+        setattr(image, 'trace', None)
+        image.trace = Trace()
 
 
 def get_trace_coefficients(image, maker_object):
