@@ -578,29 +578,31 @@ def extract_coeffs_entire_lampflat_frame(image, order_of_poly_fits):
     return coefficients_and_indices, vals, totalnumberoforders
 
 
-def trim_and_split_coefficients(coefficients, image):
+def trim_and_split_coefficients(coefficients, image, num_lit_fibers):
     # cutting of order index column
     coefficients = coefficients[:, 1:]
-    #
+
     order_of_poly_fits = coefficients.shape[1] - 1
     legendre_polynomial_array, not_needed, not_needed_2 = generate_legendre_array(image, order_of_poly_fits)
     trace_values_versus_xpixel = np.dot(coefficients, legendre_polynomial_array)
     # trim any traces which are not contiguously on the detector.
     coefficients = coefficients[np.all(trace_values_versus_xpixel > 0, axis=1)]
-    # ensuring an even number of traces in the coefficients so that they can be split easily
-    if coefficients.shape[0] % 2 != 0:
-        coefficients = coefficients[:-1]
-    num_orders = int(coefficients.shape[0] / 2)
-    order_indices = [i for i in range(num_orders)]*2
 
-    first_fiber_coefficients = coefficients[::2]
-    second_fiber_coefficients = coefficients[1::2]
-    ordered_coefficients = np.vstack((first_fiber_coefficients, second_fiber_coefficients))
+    # ensuring an even number of traces in the coefficients so that they can be split easily
+    while coefficients.shape[0] % num_lit_fibers != 0:
+        coefficients = coefficients[:-1]
+    num_orders = int(coefficients.shape[0] / num_lit_fibers)
+    order_indices = [i for i in range(num_orders)]*num_lit_fibers
+
+    fiber_coefficients = (coefficients[::num_lit_fibers],)
+    for i in range(1, num_lit_fibers):
+        fiber_coefficients += (coefficients[i::num_lit_fibers],)
+    ordered_coefficients = np.vstack(fiber_coefficients)
     coefficients_and_indices = np.insert(ordered_coefficients, obj=0, values=order_indices, axis=1)
     return coefficients_and_indices
 
 
-def fit_traces_order_by_order(image, order_of_poly_fits=4):
+def fit_traces_order_by_order(image, order_of_poly_fits=4, num_lit_fibers=2):
     """
     :param image: Banzai image object
     :param order_of_poly_fits: Highest order of the polynomial fit to each trace. 4 is good. Do not change needlessly.
@@ -608,7 +610,7 @@ def fit_traces_order_by_order(image, order_of_poly_fits=4):
     the first 67 rows of the array. fiber designation is arbitrary at this point.
     """
     coefficients_and_indices, vals, totalnumberoftraces = extract_coeffs_entire_lampflat_frame(image, order_of_poly_fits)
-    coefficients_and_indices = trim_and_split_coefficients(coefficients_and_indices, image)
+    coefficients_and_indices = trim_and_split_coefficients(coefficients_and_indices, image, num_lit_fibers)
     logger.info('%s traces found' % coefficients_and_indices.shape[0])
 
     return coefficients_and_indices

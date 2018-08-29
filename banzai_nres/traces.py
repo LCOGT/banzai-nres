@@ -166,7 +166,9 @@ def make_master_traces(images, maker_object, image_config, logging_tags, method,
         for image in images_to_try:
             if method == 'order-by-order':
                 logger.debug('fitting order by order on %s' % image.filename)
-                coefficients_and_indices_initial = fit_traces_order_by_order(image, order_of_poly_fits=order_of_poly_fits)
+                coefficients_and_indices_initial = fit_traces_order_by_order(image,
+                                                                             order_of_poly_fits=order_of_poly_fits,
+                                                                             num_lit_fibers = 2)
                 fiber_order = None
             if method == 'global-meta':
                 logger.debug('importing master coeffs and refining fit on %s' % image.filename)
