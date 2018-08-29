@@ -93,11 +93,15 @@ class TraceUpdater(Stage):
     Loads the most recent master trace file and stores it on the image under trace.coefficients and trace.fiber_order.
     Updates the trace centroid locations for a frame of any observation type.
     Will keep the as-imported master_trace locations if the reasonable criterion which indicate a good fit are not met.
+    Right now, any updating of traces away from the recent master calibration file is not allowed. So technically,
+    this stage only serves the purpose of loading the loading the master calibration traces. One can enable on the
+    fly updating by allow_on_the_fly_updating = False, however that may pose issues downstream.
     """
     def __init__(self, pipeline_context):
         super(TraceUpdater, self).__init__(pipeline_context)
         self.pipeline_context = pipeline_context
         self.order_of_meta_fit = 6
+        self.allow_on_the_fly_updating = False
 
     @property
     def group_by_keywords(self):
@@ -125,7 +129,7 @@ class TraceUpdater(Stage):
             reasonable_flux_change = check_flux_change(coefficients_and_indices_new, coefficients_and_indices_initial,
                                                        image)
             # keeping the optimized traces only if they satisfy certain conditions
-            if close_fit and reasonable_flux_change:
+            if close_fit and reasonable_flux_change and self.allow_on_the_fly_updating:
                 image.trace.coefficients = coefficients_and_indices_new
                 logger.debug('New trace fit accepted on %s' % image.filename)
             if not close_fit or not reasonable_flux_change:
