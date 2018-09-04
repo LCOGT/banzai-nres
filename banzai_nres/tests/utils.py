@@ -3,6 +3,8 @@ import numpy as np
 
 from banzai_nres.traces import Trace
 from banzai_nres.images import Image
+from banzai_nres.coordinate_transform import Coordinates
+from banzai_nres.fiber_profile import FiberProfile
 
 
 class FakeImage(Image):
@@ -29,6 +31,9 @@ class FakeImage(Image):
         self.obstype = 'TEST'
 
         self.trace = Trace()
+        self.coordinates = Coordinates()
+        self.fiber_profile = FiberProfile()
+        self.ivar = None
 
 
 def noisify_image(image, trimmed_shape):
@@ -51,3 +56,23 @@ def trim_image(image, trimmed_shape):
     """
     image.data = image.data[:trimmed_shape[0], :trimmed_shape[1]]
     image.ny, image.nx = trimmed_shape
+
+
+def append_good_region_info(image):
+    image.trace.has_sufficient_signal_to_noise = np.ones(len(image.trace.coefficients)).astype(bool)
+    image.trace.high_signal_to_noise_region_bounds = np.ones((len(image.trace.coefficients), 2))
+    image.trace.high_signal_to_noise_region_bounds[:, 0] = 0
+    image.trace.high_signal_to_noise_region_bounds[:, 1] = image.data.shape[1]-1
+
+
+def append_x_y_coordinate_info(image):
+    X, Y = np.meshgrid(np.arange(image.data.shape[1]), np.arange(image.data.shape[0]))
+    image.coordinates.x, image.coordinates.y = X, Y
+
+
+def fill_with_simple_inverse_variances(image):
+    read_var = image.readnoise ** 2
+    shot_var = image.data.astype(np.float32)
+    vars = shot_var + read_var
+    vars[vars < read_var] = read_var
+    image.ivar = np.reciprocal(vars)

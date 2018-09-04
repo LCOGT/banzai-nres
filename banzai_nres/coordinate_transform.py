@@ -10,6 +10,8 @@ from banzai.stages import Stage
 from banzai_nres.utils.NRES_class_utils import add_class_as_attribute
 from banzai_nres.utils.coordinate_utils import generate_delta_y_and_closest_trace_coordinates
 
+import numpy as np
+
 
 class MakeTraceCentricCoordinates(Stage):
     """
@@ -18,6 +20,14 @@ class MakeTraceCentricCoordinates(Stage):
     """
     def __init__(self, pipeline_context):
         super(MakeTraceCentricCoordinates, self).__init__(pipeline_context)
+
+    @property
+    def group_by_keywords(self):
+        return ['ccdsum']
+
+    @property
+    def calibration_type(self):
+        return 'coordinate_transformation'
 
     def do_stage(self, images):
         """
@@ -36,6 +46,9 @@ class MakeTraceCentricCoordinates(Stage):
                 image.coordinates.closest_trace_in_y = prototypical_image.coordinates.closest_trace_in_y
             else:
                 generate_delta_y_and_closest_trace_coordinates(image)
+            X, Y = np.meshgrid(np.arange(image.data.shape[1]), np.arange(image.data.shape[0]))
+            image.coordinates.x, image.coordinates.y = X, Y
+        return images
 
 
 class Coordinates(object):

@@ -26,7 +26,6 @@ def generate_delta_y_and_closest_trace_coordinates(image):
         closest_trace[min_trace_pos : max_trace_pos][indices_of_values_to_change] = trace_number
 
     image.coordinates.closest_trace_in_y = closest_trace
-    image.coordinates.x, image.coordinates.y = X, Y
     image.coordinates.delta_y_from_trace = delta_Y_from_trace_center
 
 
