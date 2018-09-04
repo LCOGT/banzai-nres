@@ -13,7 +13,7 @@ from banzai_nres.good_regions import IdentifyRegionsWithGoodSignaltoNoise
 from banzai_nres.coordinate_transform import MakeTraceCentricCoordinates
 from banzai_nres.error_propagation import InitializeInverseVariances
 
-from banzai_nres import traces, fiber_profile
+from banzai_nres import traces, fiber_profile, extraction
 
 from banzai import bias, trim, dark, gain
 from banzai import logs, qc
@@ -37,7 +37,9 @@ banzai_main.ordered_stages = [qc.HeaderSanity,
                               fiber_profile.LoadFiberProfileImage,
                               ]
 
-
+"""
+master calibration commands
+"""
 def make_master_bias_console():
     run_end_of_night_from_console([make_master_bias])
 
@@ -88,3 +90,20 @@ def make_master_fiber_profile_image(pipeline_context):
                                                                               fiber_profile.FiberProfileMaker])
     run(stages_to_do, pipeline_context, image_types=['LAMPFLAT'], calibration_maker=True,
         log_message='Making Master Fiber Profile Image')
+
+
+"""
+Reduction commands
+"""
+
+
+def extract_arc_spectrum_optimally(pipeline_context):
+    stages_to_do = get_stages_todo(last_stage=None, extra_stages=[extraction.OptimallyExtractSpectrum])
+    run(stages_to_do, pipeline_context, image_types=['DOUBLE'], calibration_maker=False,
+        log_message='Extracting spectrum from arc via optimal extraction')
+
+
+def extract_arc_spectrum_box(pipeline_context):
+    stages_to_do = get_stages_todo(last_stage=None, extra_stages=[extraction.BoxExtractSpectrum])
+    run(stages_to_do, pipeline_context, image_types=['DOUBLE'], calibration_maker=False,
+        log_message='Extracting spectrum from arc frames via box extraction')

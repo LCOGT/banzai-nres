@@ -5,8 +5,7 @@ from banzai.tests.utils import FakeContext
 import numpy as np
 from banzai import logs
 from banzai_nres.utils.trace_utils import get_coefficients_from_meta, generate_legendre_array, get_trace_centroids_from_coefficients
-from banzai_nres.tests.utils import FakeImage
-from banzai_nres.traces import Trace
+from banzai_nres.tests.utils import FakeImage, noisify_image, trim_image
 from astropy.io import fits
 
 
@@ -24,7 +23,6 @@ class FakeTraceImage(FakeImage):
         self.ny = 502
         self.bpm = np.zeros((self.ny, self.nx), dtype=np.uint8)
         self.data = np.zeros((self.ny, self.nx))
-        self.trace = Trace()
 
 
 def trim_coefficients_to_fit_image(image, trace_fit_coefficients_no_indices):
@@ -91,9 +89,11 @@ def gaussian(x, A, b, sigma):
     return A * np.exp(-(x - b) ** 2 / (2 * sigma ** 2))
 
 
-def fill_image_with_traces(image):
+def fill_image_with_traces(image, order_width=1.25):
     """
     :param image: Banzai_nres FakeImage object which is square after trimming.
+    :param order_width : the standard deviation of an unnormalized guassian e.g. sigma
+           from np.exp(-(x - b) ** 2 / (2 * sigma ** 2))
     fills the image.data with guassian profiled trace coefficients.
     """
     image.data = np.zeros_like(image.data)
@@ -103,7 +103,7 @@ def fill_image_with_traces(image):
 
     trace_values_versus_xpixel, num_traces, x = get_trace_centroids_from_coefficients(image.trace.coefficients, image)
     vgauss = np.vectorize(gaussian)  # prepare guassian for evaluation along a slice centered at each trace point.
-    order_width, odd_fiber_intensity, even_fiber_intensity = 1.25, 1E4, 5E3
+    odd_fiber_intensity, even_fiber_intensity = 1E4, 5E3
     # these are realistic intensity values according to a 120 sec LSC exposure.
     for x_pixel in range(even_fiber.shape[1]):
         for i in range(num_traces):
@@ -120,28 +120,7 @@ def fill_image_with_traces(image):
     image.data[:trimmed_shape[0], :trimmed_shape[1]] += (odd_fiber_intensity* odd_fiber + even_fiber_intensity * even_fiber)
 
 
-def noisify_image(image):
-    """
-    :param image: Banzai_nres FakeImage object.
-    This adds poisson, readnoise to an image with traces already on it, in that order.
-    """
-    trimmed_shape = tuple([min(image.data.shape)] * 2)
-    # poisson noise
-    poissonnoise_mask = np.random.poisson(image.data[:trimmed_shape[0], :trimmed_shape[1]])
-    image.data[:trimmed_shape[0], :trimmed_shape[1]] += poissonnoise_mask
-    # read noise
-    image.data += np.random.normal(0, image.readnoise, image.data.shape)
 
-
-def trim_image(image):
-    """
-    :param image:
-    Squares up the image, thus fake images which are not square are a bad idea.
-    this trim_image may be unneccessary.
-    """
-    trimmed_shape = tuple([min(image.data.shape)] * 2)
-    image.data = image.data[:trimmed_shape[0], :trimmed_shape[1]]
-    image.ny, image.nx = trimmed_shape
 
 
 def differences_between_found_and_generated_trace_vals(found_coefficients, image):
@@ -175,8 +154,8 @@ def test_blind_trace_maker(mock_images):
 
         make_random_yet_realistic_trace_coefficients(images[0], order_of_poly_fit=order_of_poly_fit)
         fill_image_with_traces(images[0])
-        noisify_image(images[0])
-        trim_image(images[0])
+        noisify_image(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
+        trim_image(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
 
         maker = BlindTraceMaker(FakeContext())
         maker.order_of_poly_fit = order_of_poly_fit

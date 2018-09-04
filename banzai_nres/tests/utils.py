@@ -1,6 +1,8 @@
-from banzai_nres.images import Image
 from datetime import datetime
 import numpy as np
+
+from banzai_nres.traces import Trace
+from banzai_nres.images import Image
 
 
 class FakeImage(Image):
@@ -25,3 +27,27 @@ class FakeImage(Image):
         self.molecule_id = '544562351'
         self.exptime = 30.0
         self.obstype = 'TEST'
+
+        self.trace = Trace()
+
+
+def noisify_image(image, trimmed_shape):
+    """
+    :param image: Banzai_nres FakeImage object.
+    This adds poisson, readnoise to an image with traces already on it, in that order.
+    """
+    # poisson noise
+    poissonnoise_mask = np.random.poisson(image.data[:trimmed_shape[0], :trimmed_shape[1]])
+    image.data[:trimmed_shape[0], :trimmed_shape[1]] += poissonnoise_mask
+    # read noise
+    image.data += np.random.normal(0, image.readnoise, image.data.shape)
+
+
+def trim_image(image, trimmed_shape):
+    """
+    :param image:
+    Squares up the image, thus fake images which are not square are a bad idea.
+    this trim_image may be unneccessary.
+    """
+    image.data = image.data[:trimmed_shape[0], :trimmed_shape[1]]
+    image.ny, image.nx = trimmed_shape
