@@ -120,9 +120,6 @@ def fill_image_with_traces(image, order_width=1.25):
     image.data[:trimmed_shape[0], :trimmed_shape[1]] += (odd_fiber_intensity* odd_fiber + even_fiber_intensity * even_fiber)
 
 
-
-
-
 def differences_between_found_and_generated_trace_vals(found_coefficients, image):
     """
     :param found_coefficients: Trace coefficients computed

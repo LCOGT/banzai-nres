@@ -128,7 +128,7 @@ class GenerateFiberProfileImage(FiberStage):
             for trace_number in range(num_traces):
                 horizontal_ranges = image.fiber_profile.horizontal_ranges[trace_number]
                 normalized_coeffs = image.fiber_profile.fit_coefficients[trace_number]
-                fwhm = fiber_profile_utils.Shapelets().full_width_half_max(normalized_coeffs[0])
+                fwhm = self.fiber_profile_model().full_width_half_max(normalized_coeffs[0])
                 # interpolating coefficients into generating functions
                 mean_of_horizontal_ranges.append(np.mean(horizontal_ranges, axis=1))
                 coefficient_gen_funcs = fiber_profile_utils.interpolate_fiber_fits(normalized_coeffs,
