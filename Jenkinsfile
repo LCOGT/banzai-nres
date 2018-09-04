@@ -17,7 +17,7 @@ pipeline {
 		stage('Build image') {
 			steps {
 				script {
-					dockerImage = docker.build("${DOCKER_IMG}", "--build-arg BANZAI_VERSION=0.9.6-4-gc2fbc8b .")
+					dockerImage = docker.build("${DOCKER_IMG}", "--build-arg BANZAI_VERSION=0.9.8 .")
 				}
 			}
 		}
