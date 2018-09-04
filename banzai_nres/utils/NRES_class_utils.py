@@ -9,6 +9,5 @@ def add_class_as_attribute(images, attribute_name, class_to_append):
     for image in images:
         if not hasattr(image, attribute_name):
             setattr(image, attribute_name, class_to_append())
-        else:
-            if getattr(image, attribute_name) is None:
-                setattr(image, attribute_name, class_to_append())
+        if getattr(image, attribute_name) is None:
+            setattr(image, attribute_name, class_to_append())
