@@ -4,7 +4,7 @@ import numpy as np
 
 
 class FakeImage(Image):
-    def __init__(self, nx=100, ny=402, ccdsum='2 2', epoch='20180807'):
+    def __init__(self, nx=100, ny=102, ccdsum='2 2', epoch='20180807'):
         self.nx = nx
         self.ny = ny
         self.telescope_id = -1

@@ -34,7 +34,8 @@ banzai_main.ordered_stages = [qc.HeaderSanity,
                               dark.DarkSubtractor,
                               traces.TraceUpdater,
                               MakeTraceCentricCoordinates,
-                              fiber_profile.LoadFiberProfileImage]
+                              fiber_profile.LoadFiberProfileImage,
+                              ]
 
 
 def make_master_bias_console():
