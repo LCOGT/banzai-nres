@@ -1,4 +1,4 @@
-def add_nres_attribute(images, attribute_name, class_to_append):
+def add_class_as_attribute(images, attribute_name, class_to_append):
     """
     :param images: banzai image objects
     :param attribute_name: string
