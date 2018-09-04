@@ -34,3 +34,4 @@ class IdentifyRegionsWithGoodSignaltoNoise(Stage):
             min_good_region_width = int(image.data.shape[1] / 10) # roughly 400 pixels.
             image.trace.has_sufficient_signal_to_noise = flag_traces_with_insufficient_high_SN_region(image,
                                                                                       min_good_region_width)
+        return images
