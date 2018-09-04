@@ -8,4 +8,7 @@ class Image(BanzaiImage):
         super(Image, self).__init__(pipeline_context, filename=filename, data=data, header=header,
                                     extension_headers=extension_headers, bpm=bpm)
 
+        self.ivar = None
         self.trace = None
+        self.coordinates = None
+        self.fiber_profile = None

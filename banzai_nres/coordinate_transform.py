@@ -1,4 +1,11 @@
-#! /usr/bin/python3
+"""
+Scripts for assigning to each pixel:
+    1. The index number of the closest trace
+    2. The distance in y (perpendicular to dispersion) from said closest-trace.
+Author
+    G. Mirek Brandt (gmbrandt@ucsb.edu)
+"""
+
 from banzai.stages import Stage
 from banzai_nres.utils.NRES_class_utils import add_class_as_attribute
 from banzai_nres.utils.coordinate_utils import generate_delta_y_and_closest_trace_coordinates

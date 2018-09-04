@@ -3,6 +3,7 @@ traces.py: Driver scripts for finding echelle orders across a CCD.
 
 Authors
     G. Mirek Brandt (gmbrandt@ucsb.edu)
+    Tim Brandt (tbrandt@ucsb.edu)
 """
 
 from banzai_nres.utils.trace_utils import check_for_close_fit, check_flux_change, cross_correlate_image_indices, \
@@ -27,6 +28,8 @@ class Trace(object):
     def __init__(self):
         self.coefficients = None
         self.fiber_order = None
+        self.high_signal_to_noise_region_bounds = None
+        self.has_sufficient_signal_to_noise = None
 
 
 class TraceMaker(CalibrationMaker):

@@ -1,8 +1,11 @@
-#! /usr/bin/python3
+"""
+Scripts for fitting the fiber intensity perpendicular to the dispersion.
+Author
+    G. Mirek Brandt (gmbrandt@ucsb.edu)
+"""
 import numpy as np
 from scipy import ndimage
 
-from banzai.stages import CalibrationMaker, Stage, MasterCalibrationDoesNotExist
 
 from banzai_nres.images import Image
 from banzai_nres.utils import fiber_profile_utils
@@ -11,6 +14,11 @@ from banzai_nres.utils.fiber_profile_utils import fit_vertical_fiber_intensity_f
 from banzai_nres.utils.array_utils import fill_with_nearest_left_value_if_flagged_as_false
 from banzai_nres.utils.NRES_class_utils import add_class_as_attribute
 
+from banzai import logs
+from banzai.stages import CalibrationMaker, Stage, MasterCalibrationDoesNotExist
+
+
+logger = logs.get_logger(__name__)
 
 
 class FiberProfile(object):
@@ -26,9 +34,21 @@ class FiberStage(Stage):
     the model with which one fits the profiles can be changed via the self.fiber_profile_model attribute.
     the default option is Shapelets. See fiber_profile_utils.py for the Shapelets Class.
     """
+
     def __init__(self, pipeline_context):
         super(FiberStage, self).__init__(pipeline_context)
         self.fiber_profile_model = fiber_profile_utils.Shapelets
+
+    @property
+    def group_by_keywords(self):
+        return ['ccdsum']
+
+    @property
+    def calibration_type(self):
+        return 'fiber_profile'
+
+    def do_stage(self, images):
+        pass
 
 
 class SampleFiberProfileAcrossImage(FiberStage):
@@ -37,6 +57,14 @@ class SampleFiberProfileAcrossImage(FiberStage):
     """
     def __init__(self, pipeline_context):
         super(SampleFiberProfileAcrossImage, self).__init__(pipeline_context)
+
+    @property
+    def group_by_keywords(self):
+        return ['ccdsum']
+
+    @property
+    def calibration_type(self):
+        return 'fiber_profile'
 
     def do_stage(self, images):
         add_class_as_attribute(images, 'fiber_profile', FiberProfile)
@@ -81,6 +109,14 @@ class GenerateFiberProfileImage(FiberStage):
     """
     def __init__(self, pipeline_context):
         super(GenerateFiberProfileImage, self).__init__(pipeline_context)
+
+    @property
+    def group_by_keywords(self):
+        return ['ccdsum']
+
+    @property
+    def calibration_type(self):
+        return 'fiber_profile'
 
     def do_stage(self, images):
         add_class_as_attribute(images, 'fiber_profile', FiberProfile)
@@ -129,10 +165,12 @@ class FiberProfileMaker(CalibrationMaker):
         return 1
 
     def make_master_calibration_frame(self, images, image_config, logging_tags):
-        SampleFiberProfileAcrossImage(self.pipeline_context).do_stage(images)
-        GenerateFiberProfileImage(self.pipeline_context).do_stage(images)
+        single_image_list = [images[0]]
+        logger.info('making master profile image on only the first image in the image list')
+        SampleFiberProfileAcrossImage(self.pipeline_context).do_stage(single_image_list)
+        GenerateFiberProfileImage(self.pipeline_context).do_stage(single_image_list)
         master_profile_image = Image(pipeline_context=self.pipeline_context,
-                                     data=images[0].fiber_profile.normalized_fiber_profile_image, header=None)
+                                     data=single_image_list[0].fiber_profile.normalized_fiber_profile_image, header=None)
         # also save all aspects of FiberProfile object as extra cards and the good regions we extracted. - but do
         # good region stuff in a different stage.
 
@@ -145,6 +183,14 @@ class LoadFiberProfileImage(Stage):
     """
     def __init__(self, pipeline_context):
         super(LoadFiberProfileImage, self).__init__(pipeline_context)
+
+    @property
+    def group_by_keywords(self):
+        return ['ccdsum']
+
+    @property
+    def calibration_type(self):
+        return 'fiber_profile'
 
     def do_stage(self, images):
         add_class_as_attribute(images, 'fiber_profile', FiberProfile)

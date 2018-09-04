@@ -1,5 +1,8 @@
 """
 Module for identifying the regions on the CCD where the traces have a S/N above some threshold.
+
+Author
+    G. Mirek Brandt (gmbrandt@ucsb.edu)
 """
 from banzai.stages import Stage, MasterCalibrationDoesNotExist
 from banzai_nres.utils.good_regions_utils import identify_high_SN_region_bounds_along_traces,\
@@ -13,6 +16,14 @@ class IdentifyRegionsWithGoodSignaltoNoise(Stage):
     """
     def __init__(self, pipeline_context):
         super(IdentifyRegionsWithGoodSignaltoNoise, self).__init__(pipeline_context)
+
+    @property
+    def group_by_keywords(self):
+        return ['ccdsum']
+
+    @property
+    def calibration_type(self):
+        return 'fiber_profile'
 
     def do_stage(self, images):
         for image in images:

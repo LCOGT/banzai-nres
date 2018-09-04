@@ -1,13 +1,12 @@
-#! /usr/bin/python3
 """
-This file is for fitting the line profile of the fiber intensity function.
+Scripts for extracting spectrum as a function of x-pixel (horizontal coordinate across the CCD)
+Author
+    G. Mirek Brandt (gmbrandt@ucsb.edu)
 """
 
-from banzai import Stage
+from banzai.stages import Stage
 from banzai_nres.utils.extraction_utils import extract_spectrum_full_image, OptimalFiberProfileExtraction, BoxExtraction, VerticalExtraction
-from banzai_nres.coordinate_transform import MakeTraceCentricCoordinates
-from banzai_nres.fiber_profile import LoadFiberProfileImage, FiberProfile
-from banzai_nres.error_propagation import InitializeInverseVariances
+from banzai_nres.fiber_profile import FiberProfile
 from banzai_nres.utils.NRES_class_utils import add_class_as_attribute
 import numpy as np
 
