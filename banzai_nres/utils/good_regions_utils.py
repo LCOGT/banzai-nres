@@ -1,7 +1,6 @@
 import numpy as np
-from .trace_utils import get_trace_centroids_from_coefficients
+from banzai_nres.utils.trace_utils import get_trace_centroids_from_coefficients
 from scipy import ndimage, signal
-import matplotlib.pyplot as plt
 
 
 def identify_high_SN_region_bounds_along_traces(image, sig_to_noise_threshold=20):

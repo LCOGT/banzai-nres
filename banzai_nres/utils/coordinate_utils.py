@@ -1,9 +1,7 @@
 import numpy as np
-import matplotlib.pyplot as plt
 from scipy import ndimage
 from scipy import interpolate
-from utils.trace_utils import get_trace_centroids_from_coefficients
-import time
+from banzai_nres.utils.trace_utils import get_trace_centroids_from_coefficients
 
 
 def region_in_y_surrounding_trace(trace_centroid_y_values, max_possible_row, min_possible_row):

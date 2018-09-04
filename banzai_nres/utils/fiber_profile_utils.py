@@ -6,10 +6,8 @@ from scipy import ndimage, interpolate
 from scipy import optimize, integrate
 
 import numpy as np
-from .array_utils import evaluate_functions_only_on_equal_index_coords
-from .coordinate_utils import  region_in_y_surrounding_trace
-import matplotlib.pyplot as plt
-import time
+from banzai_nres.utils.array_utils import evaluate_functions_only_on_equal_index_coords
+from banzai_nres.utils.coordinate_utils import region_in_y_surrounding_trace
 
 
 class Shapelets(object):

@@ -1,7 +1,7 @@
 import numpy as np
-from .coordinate_utils import region_in_y_surrounding_trace
-from .array_utils import sum_like_index_coords
-from .trace_utils import get_trace_centroids_from_coefficients
+from banzai_nres.utils.coordinate_utils import region_in_y_surrounding_trace
+from banzai_nres.utils.array_utils import sum_like_index_coords
+from banzai_nres.utils.trace_utils import get_trace_centroids_from_coefficients
 
 class VerticalExtraction(object):
     """
