@@ -6,12 +6,12 @@ how far off the fit is from the true fiber profile guassian (including noise).
 import numpy as np
 import mock
 
-from banzai.tests.utils import FakeContext, GenerateFiberProfileImage
+from banzai.tests.utils import FakeContext
 from banzai import logs
 
 from banzai_nres.tests.utils import FakeImage, noisify_image, trim_image
 from banzai_nres.tests.test_trace_maker import fill_image_with_traces, trim_coefficients_to_fit_image
-from banzai_nres.fiber_profile import SampleFiberProfileAcrossImage
+from banzai_nres.fiber_profile import SampleFiberProfileAcrossImage, GenerateFiberProfileImage
 
 
 logger = logs.get_logger(__name__)
