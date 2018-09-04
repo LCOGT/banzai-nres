@@ -49,6 +49,7 @@ class ExtractSpectrumVersusPixel(Stage):
 
             image.spectra.intensity_versus_x_per_order = \
                 self.split_and_fill_spectra_with_zeros_where_missing(fluxes_and_x_coords, image)
+        return images
 
     def split_and_fill_spectra_with_zeros_where_missing(self, fluxes_and_x_coords, image):
         fluxes = [fluxes_and_x_coords[i][0] for i in range(len(fluxes_and_x_coords))]

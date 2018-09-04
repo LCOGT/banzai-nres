@@ -9,10 +9,11 @@ import mock
 from banzai.tests.utils import FakeContext
 from banzai import logs
 
-from banzai_nres.tests.utils import FakeImage, noisify_image, trim_image, append_x_y_coordinate_info, \
+from banzai_nres.tests.utils import FakeImage, noisify_image, trim_image, \
     append_good_region_info, fill_with_simple_inverse_variances
 from banzai_nres.tests.test_trace_maker import fill_image_with_traces, trim_coefficients_to_fit_image
 from banzai_nres.fiber_profile import SampleFiberProfileAcrossImage, GenerateFiberProfileImage
+from banzai_nres.coordinate_transform import MakeTraceCentricCoordinates
 
 
 logger = logs.get_logger(__name__)
@@ -37,14 +38,18 @@ def test_fiber_profile_maker():
     real_full_width_half_max = 1.25
     image = generate_image_with_two_flat_traces(order_width=real_full_width_half_max)
     append_good_region_info(image)
-    append_x_y_coordinate_info(image)
+
     fill_with_simple_inverse_variances(image)
     images = [image]
 
+    # appending coordinate info
+    coordinate_stage = MakeTraceCentricCoordinates(FakeContext())
+    images = coordinate_stage.do_stage(images)
+    #
     sampling_stage = SampleFiberProfileAcrossImage(FakeContext())
-    sampling_stage.do_stage(images)
+    images = sampling_stage.do_stage(images)
     fiber_profile_maker_stage = GenerateFiberProfileImage(FakeContext())
-    fiber_profile_maker_stage.do_stage(images)
+    images = fiber_profile_maker_stage.do_stage(images)
     fwhm_estimate = images[0].median_full_width_half_max
 
     fwhm_abs_error = np.abs(real_full_width_half_max - fwhm_estimate)

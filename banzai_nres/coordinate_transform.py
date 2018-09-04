@@ -61,7 +61,3 @@ class Coordinates(object):
         self.y = None
         self.delta_y_from_trace = None
         self.closest_trace_in_y = None
-
-
-if __name__ == "__main__":
-    None

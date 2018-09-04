@@ -99,6 +99,7 @@ class SampleFiberProfileAcrossImage(FiberStage):
 
             image.fiber_profile.fit_coefficients = np.array(fiber_profile_coeffs_per_trace)
             image.fiber_profile.horizontal_ranges = np.array(horizontal_ranges_per_profile_fit_per_trace)
+        return images
 
 
 class GenerateFiberProfileImage(FiberStage):
@@ -145,6 +146,7 @@ class GenerateFiberProfileImage(FiberStage):
 
             image.fiber_profile.normalized_fiber_profile_image = normalized_fiber_profile_image
             image.median_full_width_half_max = np.median(np.array(full_width_half_maxes))
+        return images
 
 
 class FiberProfileMaker(CalibrationMaker):
@@ -167,8 +169,8 @@ class FiberProfileMaker(CalibrationMaker):
     def make_master_calibration_frame(self, images, image_config, logging_tags):
         single_image_list = [images[0]]
         logger.info('making master profile image on only the first image in the image list')
-        SampleFiberProfileAcrossImage(self.pipeline_context).do_stage(single_image_list)
-        GenerateFiberProfileImage(self.pipeline_context).do_stage(single_image_list)
+        single_image_list = SampleFiberProfileAcrossImage(self.pipeline_context).do_stage(single_image_list)
+        single_image_list = GenerateFiberProfileImage(self.pipeline_context).do_stage(single_image_list)
         master_profile_image = Image(pipeline_context=self.pipeline_context,
                                      data=single_image_list[0].fiber_profile.normalized_fiber_profile_image, header=None)
         # also save all aspects of FiberProfile object as extra cards and the good regions we extracted. - but do
@@ -197,6 +199,7 @@ class LoadFiberProfileImage(Stage):
         for image in images:
             normalized_fiber_profile_image = load_master_profile()
             image.fiber_profile.normalized_fiber_profile_image = normalized_fiber_profile_image
+        return images
 
 
 def horizontal_windows_to_fit_fiber_profile(image, trace_number):

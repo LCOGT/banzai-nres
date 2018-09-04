@@ -19,3 +19,4 @@ class InitializeInverseVariances(Stage):
             vars = shot_var + read_var
             vars[vars < read_var] = read_var
             image.ivar = np.reciprocal(vars)
+        return images

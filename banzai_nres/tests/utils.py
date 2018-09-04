@@ -65,11 +65,6 @@ def append_good_region_info(image):
     image.trace.high_signal_to_noise_region_bounds[:, 1] = image.data.shape[1]-1
 
 
-def append_x_y_coordinate_info(image):
-    X, Y = np.meshgrid(np.arange(image.data.shape[1]), np.arange(image.data.shape[0]))
-    image.coordinates.x, image.coordinates.y = X, Y
-
-
 def fill_with_simple_inverse_variances(image):
     read_var = image.readnoise ** 2
     shot_var = image.data.astype(np.float32)
