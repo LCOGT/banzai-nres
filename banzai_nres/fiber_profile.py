@@ -35,6 +35,8 @@ class FiberStage(Stage):
     the default option is Shapelets. See fiber_profile_utils.py for the Shapelets Class.
     :param self.size_of_basis : is the order of polynomial you wish you multiply by the guassian (for shapelets) in order
     to fit your fiber profile
+    :param self.middle_intervals : number of chunks to break up the middle third of the image into
+    :param self.wing_intervals : umber of chunks to break up the left and right third chunks into.
     """
 
     def __init__(self, pipeline_context):

@@ -34,6 +34,12 @@ def generate_image_with_two_flat_traces(readnoise=10, order_width=1.25):
 
 
 def test_fiber_profile_maker():
+    """
+    tests the accuracy of the profile fitter by fitting a guassian profile about known trace centers.
+    Because we are fitting a gaussian (Which is normalized) the guassian is completely determined by the sigma parameter
+    so if the found_sigma and the real_sigma (called here full width half maxes fwhm) are equal, then we have matched
+    the true profile.
+    """
     real_full_width_half_max = 1.25
     image = generate_image_with_two_flat_traces(order_width=real_full_width_half_max)
     append_good_region_info(image)
@@ -44,7 +50,7 @@ def test_fiber_profile_maker():
     coordinate_stage = MakeTraceCentricCoordinates(FakeContext())
     images = coordinate_stage.do_stage(images)
     sampling_stage = SampleFiberProfileAcrossImage(FakeContext())
-    #
+    # modifying fit parameters to work for such a small image.
     sampling_stage.wing_intervals = 1
     sampling_stage.middle_intervals = 1
     sampling_stage.size_of_basis = 2
