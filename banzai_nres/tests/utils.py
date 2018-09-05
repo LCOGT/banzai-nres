@@ -3,9 +3,6 @@ import numpy as np
 
 from banzai_nres.traces import Trace
 from banzai_nres.images import Image
-from banzai_nres.coordinate_transform import Coordinates
-from banzai_nres.fiber_profile import FiberProfile
-from banzai_nres.extraction import Spectra
 
 from banzai_nres.utils.trace_utils import get_trace_centroids_from_coefficients
 
@@ -39,10 +36,6 @@ class FakeImage(Image):
         self.obstype = 'TEST'
 
         self.trace = Trace()
-        self.coordinates = Coordinates()
-        self.fiber_profile = FiberProfile()
-        self.spectra = Spectra()
-        self.ivar = None
 
 
 def gaussian(x, A, b, sigma):
