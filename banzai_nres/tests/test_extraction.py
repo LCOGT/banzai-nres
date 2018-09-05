@@ -6,8 +6,6 @@ from banzai_nres.tests.utils import append_good_region_info, fill_with_simple_in
 from banzai_nres.coordinate_transform import MakeTraceCentricCoordinates
 from banzai_nres import extraction
 
-import matplotlib.pyplot as plt
-
 import numpy as np
 
 logger = logs.get_logger(__name__)
@@ -24,7 +22,7 @@ def undefined_testing_of_extraction_method(extract_method=extraction.ExtractSpec
     coordinate_stage = MakeTraceCentricCoordinates(FakeContext())
     images = coordinate_stage.do_stage(images)
     fiber_profile_image = generate_image_with_two_flat_traces(order_width=real_full_width_half_max,
-                                                              normalized_traces=True)
+                                                              normalized_traces=True, add_noise=False)
     images[0].fiber_profile.normalized_fiber_profile_image = fiber_profile_image.data
     images[0].fiber_profile.median_full_width_half_max = real_full_width_half_max
 

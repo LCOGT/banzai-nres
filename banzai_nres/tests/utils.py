@@ -91,7 +91,7 @@ Trace related test utils:
 """
 
 
-def generate_image_with_two_flat_traces(readnoise=10, order_width=1.25, normalized_traces=False):
+def generate_image_with_two_flat_traces(readnoise=10, order_width=1.25, normalized_traces=False, add_noise=True):
     overscan_size = 2
     nx = 1000 + overscan_size
     ny = 50
@@ -109,7 +109,8 @@ def generate_image_with_two_flat_traces(readnoise=10, order_width=1.25, normaliz
         # adopt standard intensities which mimic a 120 sec frame
         fill_image_with_traces(image, trimmed_shape=trimmed_shape, order_width=order_width)
     image.readnoise = readnoise
-    noisify_image(image, trimmed_shape=trimmed_shape)
+    if add_noise:
+        noisify_image(image, trimmed_shape=trimmed_shape)
     trim_image(image, trimmed_shape=trimmed_shape)
     return image
 
