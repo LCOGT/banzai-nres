@@ -5,8 +5,8 @@ from banzai.tests.utils import FakeContext
 import numpy as np
 from banzai import logs
 from banzai_nres.utils.trace_utils import get_coefficients_from_meta, generate_legendre_array, get_trace_centroids_from_coefficients
-from banzai_nres.tests.utils import FakeImage
-from banzai_nres.traces import Trace
+from banzai_nres.tests.utils import FakeImage, noisify_image, trim_image, trim_coefficients_to_fit_image,\
+    fill_image_with_traces
 from astropy.io import fits
 
 
@@ -24,23 +24,6 @@ class FakeTraceImage(FakeImage):
         self.ny = 502
         self.bpm = np.zeros((self.ny, self.nx), dtype=np.uint8)
         self.data = np.zeros((self.ny, self.nx))
-        self.trace = Trace()
-
-
-def trim_coefficients_to_fit_image(image, trace_fit_coefficients_no_indices):
-    min_y, max_y = 0, image.data.shape[0]
-    order_indices = np.array([i for i in range(0, trace_fit_coefficients_no_indices.shape[0])])
-    trace_fit_coefficients = np.insert(trace_fit_coefficients_no_indices, obj=0, values=order_indices, axis=1)
-    trace_values_versus_xpixel, num_traces, x = get_trace_centroids_from_coefficients(trace_fit_coefficients, image)
-    good_indices = []
-    for i in range(trace_values_versus_xpixel.shape[0]):
-        if 1.1*np.mean(trace_values_versus_xpixel[i, :]) < max_y and (trace_values_versus_xpixel[i, :] > min_y).all():
-            good_indices += [i]
-    trimmed_trace_fit_coefficients_and_indices = trace_fit_coefficients[good_indices]
-    assert (np.array(good_indices) - np.min(np.array(good_indices)) == np.array(list(range(len(good_indices))))).all()
-    # replacing order indices with proper indicators
-    trimmed_trace_fit_coefficients_and_indices[:, 0] = np.array(list(range(len(good_indices))))
-    return trimmed_trace_fit_coefficients_and_indices
 
 
 def munge_coefficients(even_coefficients, odd_coefficients):
@@ -87,63 +70,6 @@ def make_random_yet_realistic_trace_coefficients(image, order_of_poly_fit=4):
     image.trace.coefficients = np.vstack((trace_coefficients_even_and_indices, trace_coefficients_odd_and_indices))
 
 
-def gaussian(x, A, b, sigma):
-    return A * np.exp(-(x - b) ** 2 / (2 * sigma ** 2))
-
-
-def fill_image_with_traces(image):
-    """
-    :param image: Banzai_nres FakeImage object which is square after trimming.
-    fills the image.data with guassian profiled trace coefficients.
-    """
-    image.data = np.zeros_like(image.data)
-    trimmed_shape = tuple([min(image.data.shape)]*2)
-    even_fiber = np.zeros(trimmed_shape)
-    odd_fiber = np.zeros(trimmed_shape)
-
-    trace_values_versus_xpixel, num_traces, x = get_trace_centroids_from_coefficients(image.trace.coefficients, image)
-    vgauss = np.vectorize(gaussian)  # prepare guassian for evaluation along a slice centered at each trace point.
-    order_width, odd_fiber_intensity, even_fiber_intensity = 1.25, 1E4, 5E3
-    # these are realistic intensity values according to a 120 sec LSC exposure.
-    for x_pixel in range(even_fiber.shape[1]):
-        for i in range(num_traces):
-            centroid = trace_values_versus_xpixel[i, x_pixel]
-            low, high = max(0, int(centroid - 5 * order_width)), min(even_fiber.shape[1]-1, int(centroid + 5 * order_width)) + 1
-            evalwindow = np.arange(low, high, 1)
-            if len(evalwindow) > 0:
-                if i % 2 == 0:
-                    even_fiber[low:high, x_pixel] += vgauss(evalwindow, 1, centroid, order_width)
-                else:
-                    odd_fiber[low:high, x_pixel] += vgauss(evalwindow, 1, centroid, order_width)
-
-    # add traces
-    image.data[:trimmed_shape[0], :trimmed_shape[1]] += (odd_fiber_intensity* odd_fiber + even_fiber_intensity * even_fiber)
-
-
-def noisify_image(image):
-    """
-    :param image: Banzai_nres FakeImage object.
-    This adds poisson, readnoise to an image with traces already on it, in that order.
-    """
-    trimmed_shape = tuple([min(image.data.shape)] * 2)
-    # poisson noise
-    poissonnoise_mask = np.random.poisson(image.data[:trimmed_shape[0], :trimmed_shape[1]])
-    image.data[:trimmed_shape[0], :trimmed_shape[1]] += poissonnoise_mask
-    # read noise
-    image.data += np.random.normal(0, image.readnoise, image.data.shape)
-
-
-def trim_image(image):
-    """
-    :param image:
-    Squares up the image, thus fake images which are not square are a bad idea.
-    this trim_image may be unneccessary.
-    """
-    trimmed_shape = tuple([min(image.data.shape)] * 2)
-    image.data = image.data[:trimmed_shape[0], :trimmed_shape[1]]
-    image.ny, image.nx = trimmed_shape
-
-
 def differences_between_found_and_generated_trace_vals(found_coefficients, image):
     """
     :param found_coefficients: Trace coefficients computed
@@ -164,6 +90,9 @@ def test_blind_trace_maker(mock_images):
     Currently it creates ~20 traces so 10 orders. A bigger image would have more traces, but expanding the
     image size may cause the created traces to be unrealistic. My suggestion is to never change the fake_image size
     and to keep order_of_meta_fit less than 8. (6 works well so why would you want it larger?)
+    WARNING: Because trace fitting is defined with polynomials which are normalized from -1 to 1, if one squeezes
+    the x axis of the image further, then the traces bend more drastically. Thus it is recommended you do not change the
+    size of the FakeTraceImage
     """
     num_trials = 2
     readnoise = 11.0
@@ -174,9 +103,9 @@ def test_blind_trace_maker(mock_images):
         images[0].readnoise = readnoise
 
         make_random_yet_realistic_trace_coefficients(images[0], order_of_poly_fit=order_of_poly_fit)
-        fill_image_with_traces(images[0])
-        noisify_image(images[0])
-        trim_image(images[0])
+        fill_image_with_traces(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
+        noisify_image(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
+        trim_image(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
 
         maker = BlindTraceMaker(FakeContext())
         maker.order_of_poly_fit = order_of_poly_fit
@@ -193,5 +122,5 @@ def test_blind_trace_maker(mock_images):
         logger.debug('systematic error (median difference) in unit-test trace fitting is less than %s of a pixel' %
                     np.abs(np.median(difference)))
 
-        assert np.median(np.abs(difference - np.median(difference))) < 1/100
-        assert np.abs(np.median(difference)) < 1/100
+        assert np.median(np.abs(difference - np.median(difference))) < 2/100
+        assert np.abs(np.median(difference)) < 2/100
