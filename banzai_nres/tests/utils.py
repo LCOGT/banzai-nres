@@ -5,6 +5,13 @@ from banzai_nres.traces import Trace
 from banzai_nres.images import Image
 from banzai_nres.coordinate_transform import Coordinates
 from banzai_nres.fiber_profile import FiberProfile
+from banzai_nres.extraction import Spectra
+
+from banzai_nres.utils.trace_utils import get_trace_centroids_from_coefficients
+
+"""
+General test utils:
+"""
 
 
 class FakeImage(Image):
@@ -34,7 +41,12 @@ class FakeImage(Image):
         self.trace = Trace()
         self.coordinates = Coordinates()
         self.fiber_profile = FiberProfile()
+        self.spectra = Spectra()
         self.ivar = None
+
+
+def gaussian(x, A, b, sigma):
+    return A * np.exp(-(x - b) ** 2 / (2 * sigma ** 2))
 
 
 def noisify_image(image, trimmed_shape):
@@ -72,3 +84,76 @@ def fill_with_simple_inverse_variances(image):
     vars = shot_var + read_var
     vars[vars < read_var] = read_var
     image.ivar = np.reciprocal(vars)
+
+
+"""
+Trace related test utils:
+"""
+
+
+def generate_image_with_two_flat_traces(readnoise=10, order_width=1.25, normalized_traces=False):
+    overscan_size = 2
+    nx = 1000 + overscan_size
+    ny = 50
+    trimmed_shape = (ny, nx - overscan_size)
+    image = FakeImage(nx=nx, ny=(ny+2))
+    trace_coefficients_no_indices = np.array([[image.data.shape[0]*1/3, 0, 0],
+                                              [image.data.shape[0]*2/3, 0, 0]])
+
+    image.trace.coefficients = trim_coefficients_to_fit_image(image, trace_coefficients_no_indices)
+    if normalized_traces:
+        gaussian_norm_factor = 1/np.sqrt(2 * np.pi * order_width ** 2)
+        fill_image_with_traces(image, trimmed_shape=trimmed_shape, order_width=order_width,
+                               odd_fiber_intensity=gaussian_norm_factor, even_fiber_intensity=gaussian_norm_factor)
+    if not normalized_traces:
+        # adopt standard intensities which mimic a 120 sec frame
+        fill_image_with_traces(image, trimmed_shape=trimmed_shape, order_width=order_width)
+    image.readnoise = readnoise
+    noisify_image(image, trimmed_shape=trimmed_shape)
+    trim_image(image, trimmed_shape=trimmed_shape)
+    return image
+
+
+def fill_image_with_traces(image, trimmed_shape, order_width=1.25, odd_fiber_intensity=1E4, even_fiber_intensity=5E3):
+    """
+    :param image: Banzai_nres FakeImage object which is square after trimming.
+    :param order_width : the standard deviation of an unnormalized guassian e.g. sigma
+           from np.exp(-(x - b) ** 2 / (2 * sigma ** 2))
+    fills the image.data with guassian profiled trace coefficients.
+    """
+    image.data = np.zeros_like(image.data)
+    even_fiber = np.zeros(trimmed_shape)
+    odd_fiber = np.zeros(trimmed_shape)
+
+    trace_values_versus_xpixel, num_traces, x = get_trace_centroids_from_coefficients(image.trace.coefficients, image)
+    vgauss = np.vectorize(gaussian)  # prepare guassian for evaluation along a slice centered at each trace point.
+    # these are realistic intensity values according to a 120 sec LSC exposure.
+    for x_pixel in range(even_fiber.shape[1]):
+        for i in range(num_traces):
+            centroid = trace_values_versus_xpixel[i, x_pixel]
+            low, high = max(0, int(centroid - 5 * order_width)), min(even_fiber.shape[1]-1, int(centroid + 5 * order_width)) + 1
+            evalwindow = np.arange(low, high, 1)
+            if len(evalwindow) > 0:
+                if i % 2 == 0:
+                    even_fiber[low:high, x_pixel] += vgauss(evalwindow, 1, centroid, order_width)
+                else:
+                    odd_fiber[low:high, x_pixel] += vgauss(evalwindow, 1, centroid, order_width)
+
+    # add traces
+    image.data[:trimmed_shape[0], :trimmed_shape[1]] += (odd_fiber_intensity* odd_fiber + even_fiber_intensity * even_fiber)
+
+
+def trim_coefficients_to_fit_image(image, trace_fit_coefficients_no_indices):
+    min_y, max_y = 0, image.data.shape[0]
+    order_indices = np.array([i for i in range(0, trace_fit_coefficients_no_indices.shape[0])])
+    trace_fit_coefficients = np.insert(trace_fit_coefficients_no_indices, obj=0, values=order_indices, axis=1)
+    trace_values_versus_xpixel, num_traces, x = get_trace_centroids_from_coefficients(trace_fit_coefficients, image)
+    good_indices = []
+    for i in range(trace_values_versus_xpixel.shape[0]):
+        if 1.1*np.mean(trace_values_versus_xpixel[i, :]) < max_y and (trace_values_versus_xpixel[i, :] > min_y).all():
+            good_indices += [i]
+    trimmed_trace_fit_coefficients_and_indices = trace_fit_coefficients[good_indices]
+    assert (np.array(good_indices) - np.min(np.array(good_indices)) == np.array(list(range(len(good_indices))))).all()
+    # replacing order indices with proper indicators
+    trimmed_trace_fit_coefficients_and_indices[:, 0] = np.array(list(range(len(good_indices))))
+    return trimmed_trace_fit_coefficients_and_indices
