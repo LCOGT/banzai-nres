@@ -4,7 +4,6 @@ Here we should generate a fake trace image with just two flat traces e.g an imag
 how far off the fit is from the true fiber profile guassian (including noise).
 """
 import numpy as np
-import mock
 
 from banzai.tests.utils import FakeContext
 from banzai import logs
@@ -21,13 +20,13 @@ logger = logs.get_logger(__name__)
 
 def generate_image_with_two_flat_traces(readnoise=10, order_width=1.25):
     nx = 1000
-    ny = 100
+    ny = 50
     image = FakeImage(nx=nx, ny=(ny+2))
     trace_coefficients_no_indices = np.array([[image.data.shape[0]*1/3, 0, 0],
                                               [image.data.shape[0]*2/3, 0, 0]])
 
     image.trace.coefficients = trim_coefficients_to_fit_image(image, trace_coefficients_no_indices)
-    fill_image_with_traces(image, order_width=order_width)
+    fill_image_with_traces(image, trimmed_shape=(ny, nx), order_width=order_width)
     image.readnoise = readnoise
     noisify_image(image, trimmed_shape=(ny, nx))
     trim_image(image, trimmed_shape=(ny, nx))
@@ -41,12 +40,15 @@ def test_fiber_profile_maker():
 
     fill_with_simple_inverse_variances(image)
     images = [image]
-
     # appending coordinate info
     coordinate_stage = MakeTraceCentricCoordinates(FakeContext())
     images = coordinate_stage.do_stage(images)
-    #
     sampling_stage = SampleFiberProfileAcrossImage(FakeContext())
+    #
+    sampling_stage.wing_intervals = 1
+    sampling_stage.middle_intervals = 1
+    sampling_stage.size_of_basis = 2
+
     images = sampling_stage.do_stage(images)
     fiber_profile_maker_stage = GenerateFiberProfileImage(FakeContext())
     images = fiber_profile_maker_stage.do_stage(images)
@@ -56,5 +58,4 @@ def test_fiber_profile_maker():
     fwhm_fractional_error = fwhm_abs_error/real_full_width_half_max
     logger.info('%s = |real_fwhm - fwhm_estimate|' % fwhm_abs_error)
     logger.info('%s = |real_fwhm - fwhm_estimate|/real_fwhm' % fwhm_fractional_error)
-    assert False
-    assert (fwhm_fractional_error < 0.05)
+    assert (fwhm_fractional_error < 0.01)

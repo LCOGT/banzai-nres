@@ -92,9 +92,9 @@ def fit_fiber_intensity_function_over_window(filtered_flux_data, image, window, 
                                          [trace_centroid_values[mask_of_values_to_extract],
                                           horiz_coords[mask_of_values_to_extract]], mode='constant', cval=0.0,
                                          prefilter=False)
-    fluxes = image.data.astype(np.float64)[min_y : max_y, min_x: max_x][mask_of_values_to_extract]
+    fluxes = image.data.astype(np.float64)[min_y: max_y, min_x: max_x][mask_of_values_to_extract]
     vertical_values_to_fit = delta_from_trace_coords[mask_of_values_to_extract]
-    ivar = image.ivar[min_y : max_y, min_x: max_x][mask_of_values_to_extract]
+    ivar = image.ivar[min_y: max_y, min_x: max_x][mask_of_values_to_extract]
     var = np.reciprocal(ivar)
     fluxes /= max_fluxes
     var /= max_fluxes ** 2
@@ -105,7 +105,7 @@ def fit_fiber_intensity_function_over_window(filtered_flux_data, image, window, 
     plt.errorbar(vertical_values_to_fit, fluxes, yerr=sigmas, xerr=1E-2, fmt="none")
     plt.show()
     """
-    # fitting with flux errors included!
+    # fitting with flux errors included.
     try:
         # currently 75% of the computation time is spent fitting.
         fit_coeffs, pcov = optimize.curve_fit(model_intensity_function, vertical_values_to_fit, fluxes, p0=coeffs_guess,

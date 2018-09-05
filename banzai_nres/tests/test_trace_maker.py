@@ -89,7 +89,7 @@ def gaussian(x, A, b, sigma):
     return A * np.exp(-(x - b) ** 2 / (2 * sigma ** 2))
 
 
-def fill_image_with_traces(image, order_width=1.25):
+def fill_image_with_traces(image, trimmed_shape, order_width=1.25):
     """
     :param image: Banzai_nres FakeImage object which is square after trimming.
     :param order_width : the standard deviation of an unnormalized guassian e.g. sigma
@@ -97,7 +97,6 @@ def fill_image_with_traces(image, order_width=1.25):
     fills the image.data with guassian profiled trace coefficients.
     """
     image.data = np.zeros_like(image.data)
-    trimmed_shape = tuple([min(image.data.shape)]*2)
     even_fiber = np.zeros(trimmed_shape)
     odd_fiber = np.zeros(trimmed_shape)
 
@@ -150,7 +149,7 @@ def test_blind_trace_maker(mock_images):
         images[0].readnoise = readnoise
 
         make_random_yet_realistic_trace_coefficients(images[0], order_of_poly_fit=order_of_poly_fit)
-        fill_image_with_traces(images[0])
+        fill_image_with_traces(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
         noisify_image(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
         trim_image(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
 

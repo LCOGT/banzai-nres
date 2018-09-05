@@ -33,11 +33,16 @@ class FiberStage(Stage):
     """
     the model with which one fits the profiles can be changed via the self.fiber_profile_model attribute.
     the default option is Shapelets. See fiber_profile_utils.py for the Shapelets Class.
+    :param self.size_of_basis : is the order of polynomial you wish you multiply by the guassian (for shapelets) in order
+    to fit your fiber profile
     """
 
     def __init__(self, pipeline_context):
         super(FiberStage, self).__init__(pipeline_context)
         self.fiber_profile_model = fiber_profile_utils.Shapelets
+        self.middle_intervals = 6
+        self.wing_intervals = 3
+        self.size_of_basis = 10
 
     @property
     def group_by_keywords(self):
@@ -77,10 +82,10 @@ class SampleFiberProfileAcrossImage(FiberStage):
             horizontal_ranges_per_profile_fit_per_trace = []
             for trace_number in range(num_traces):
                 if image.trace.has_sufficient_signal_to_noise[trace_number]:
-                    horizontal_ranges = horizontal_windows_to_fit_fiber_profile(image, trace_number)
+                    horizontal_ranges = self.horizontal_windows_to_fit_fiber_profile(image, trace_number)
                     coeffs_at_each_window = fit_vertical_fiber_intensity_functions_over_given_horizontal_ranges(
                         filtered_image_data, image, trace_centroid_values_per_order, trace_number, horizontal_ranges,
-                        Model=self.fiber_profile_model)
+                        Model=self.fiber_profile_model, size_of_basis=self.size_of_basis)
 
                     normalized_coeffs = fiber_profile_utils.normalize_fiber_fits(coeffs_at_each_window)
                     fiber_profile_coeffs_per_trace.append(normalized_coeffs)
@@ -100,6 +105,27 @@ class SampleFiberProfileAcrossImage(FiberStage):
             image.fiber_profile.fit_coefficients = np.array(fiber_profile_coeffs_per_trace)
             image.fiber_profile.horizontal_ranges = np.array(horizontal_ranges_per_profile_fit_per_trace)
         return images
+
+    def horizontal_windows_to_fit_fiber_profile(self, image, trace_number):
+        fitting_window_size = int(image.data.shape[1] / 26)
+        # this is set so that for a 4k x 4k image, we get a window of roughly 150 points.
+        smallest_good_x, largest_good_x = image.trace.high_signal_to_noise_region_bounds[trace_number]
+        # the detector is too dim in some regions to fit.
+        x_range = largest_good_x - smallest_good_x
+        middle_intervals = self.middle_intervals
+        wing_intervals = self.wing_intervals
+        low_extents = np.concatenate((np.linspace(smallest_good_x, smallest_good_x + x_range / 3,
+                                                  num=wing_intervals, endpoint=False),
+                                      np.linspace(smallest_good_x + x_range / 3,
+                                                  smallest_good_x + 2 * x_range / 3,
+                                                  num=middle_intervals, endpoint=False),
+                                      np.linspace(smallest_good_x + 2 * x_range / 3,
+                                                  largest_good_x - fitting_window_size,
+                                                  num=wing_intervals)))
+        low_extents = low_extents[low_extents.argsort()]
+        high_extents = low_extents + fitting_window_size
+        horizontal_ranges = list(zip(low_extents.astype(np.int), high_extents.astype(np.int)))
+        return horizontal_ranges
 
 
 class GenerateFiberProfileImage(FiberStage):
@@ -200,28 +226,6 @@ class LoadFiberProfileImage(Stage):
             normalized_fiber_profile_image = load_master_profile()
             image.fiber_profile.normalized_fiber_profile_image = normalized_fiber_profile_image
         return images
-
-
-def horizontal_windows_to_fit_fiber_profile(image, trace_number):
-    fitting_window_size = int(image.data.shape[1] / 26)
-    # this is set so that for a 4k x 4k image, we get a window of roughly 150 points.
-    smallest_good_x, largest_good_x = image.trace.high_signal_to_noise_region_bounds[trace_number]
-    # the detector is too dim in some regions to fit.
-    x_range = largest_good_x - smallest_good_x
-    middle_intervals = 8
-    wing_intervals = 4
-    low_extents = np.concatenate((np.linspace(smallest_good_x, smallest_good_x + x_range / 3,
-                                              num=wing_intervals, endpoint=False),
-                                  np.linspace(smallest_good_x + x_range / 3,
-                                              smallest_good_x + 2 * x_range / 3,
-                                              num=middle_intervals, endpoint=False),
-                                  np.linspace(smallest_good_x + 2 * x_range / 3,
-                                              largest_good_x - fitting_window_size,
-                                              num=wing_intervals)))
-    low_extents = low_extents[low_extents.argsort()]
-    high_extents = low_extents + fitting_window_size
-    horizontal_ranges = list(zip(low_extents.astype(np.int), high_extents.astype(np.int)))
-    return horizontal_ranges
 
 
 if __name__ == "__main__":
