@@ -1,4 +1,4 @@
-from banzai import Stage
+from banzai.stages import Stage
 import numpy as np
 
 
