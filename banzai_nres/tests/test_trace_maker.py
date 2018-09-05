@@ -92,7 +92,7 @@ def test_blind_trace_maker(mock_images):
     and to keep order_of_meta_fit less than 8. (6 works well so why would you want it larger?)
     WARNING: Because trace fitting is defined with polynomials which are normalized from -1 to 1, if one squeezes
     the x axis of the image further, then the traces bend more drastically. Thus it is recommended you do not change the
-    size of the FakeTraceImage
+    size of the FakeTraceImage.
     """
     num_trials = 2
     readnoise = 11.0
