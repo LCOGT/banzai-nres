@@ -10,6 +10,14 @@ class InitializeInverseVariances(Stage):
     def __init__(self, pipeline_context):
         super(InitializeInverseVariances, self).__init__(pipeline_context)
 
+    @property
+    def group_by_keywords(self):
+        return ['ccdsum']
+
+    @property
+    def calibration_type(self):
+        return 'filling_variances'
+
     def do_stage(self, images):
         for image in images:
             if not hasattr(image, 'ivar'):
