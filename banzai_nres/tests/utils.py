@@ -8,7 +8,7 @@ from banzai_nres.fiber_profile import FiberProfile
 
 
 class FakeImage(Image):
-    def __init__(self, nx=100, ny=102, ccdsum='2 2', epoch='20180807'):
+    def __init__(self, nx=102, ny=100, overscan_size=2, ccdsum='2 2', epoch='20180807'):
         self.nx = nx
         self.ny = ny
         self.telescope_id = -1
@@ -16,13 +16,14 @@ class FakeImage(Image):
         self.instrument = 'nres01'
         self.ccdsum = ccdsum
         self.epoch = epoch
+        self.overscan_size = overscan_size
         self.data = np.ones((ny, nx))
         self.filename = 'test.fits'
         self.filter = 'U'
         self.dateobs = datetime(2018, 8, 7)
         self.header = {}
         self.caltype = ''
-        self.bpm = np.zeros((ny, nx), dtype=np.uint8)
+        self.bpm = np.zeros((ny, nx-overscan_size), dtype=np.uint8)
         self.request_number = '0000331403'
         self.readnoise = 11
         self.block_id = '254478983'

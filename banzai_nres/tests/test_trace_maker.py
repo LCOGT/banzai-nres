@@ -139,6 +139,9 @@ def test_blind_trace_maker(mock_images):
     Currently it creates ~20 traces so 10 orders. A bigger image would have more traces, but expanding the
     image size may cause the created traces to be unrealistic. My suggestion is to never change the fake_image size
     and to keep order_of_meta_fit less than 8. (6 works well so why would you want it larger?)
+    WARNING: Because trace fitting is defined with polynomials which are normalized from -1 to 1, if one squeezes
+    the x axis of the image further, then the traces bend more drastically. Thus it is recommended you do not change the
+    size of the FakeTraceImage
     """
     num_trials = 2
     readnoise = 11.0
@@ -168,5 +171,5 @@ def test_blind_trace_maker(mock_images):
         logger.debug('systematic error (median difference) in unit-test trace fitting is less than %s of a pixel' %
                     np.abs(np.median(difference)))
 
-        assert np.median(np.abs(difference - np.median(difference))) < 1/100
-        assert np.abs(np.median(difference)) < 1/100
+        assert np.median(np.abs(difference - np.median(difference))) < 2/100
+        assert np.abs(np.median(difference)) < 2/100

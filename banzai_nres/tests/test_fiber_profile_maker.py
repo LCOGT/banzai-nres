@@ -18,18 +18,20 @@ from banzai_nres.coordinate_transform import MakeTraceCentricCoordinates
 logger = logs.get_logger(__name__)
 
 
-def generate_image_with_two_flat_traces(readnoise=10, order_width=1.25):
-    nx = 1000
+def generate_image_with_two_traces(readnoise=10, order_width=1.25):
+    overscan_size = 2
+    nx = 1000 + overscan_size
     ny = 50
+    trimmed_shape = (ny, nx - overscan_size)
     image = FakeImage(nx=nx, ny=(ny+2))
     trace_coefficients_no_indices = np.array([[image.data.shape[0]*1/3, 0, 0],
                                               [image.data.shape[0]*2/3, 0, 0]])
 
     image.trace.coefficients = trim_coefficients_to_fit_image(image, trace_coefficients_no_indices)
-    fill_image_with_traces(image, trimmed_shape=(ny, nx), order_width=order_width)
+    fill_image_with_traces(image, trimmed_shape=trimmed_shape, order_width=order_width)
     image.readnoise = readnoise
-    noisify_image(image, trimmed_shape=(ny, nx))
-    trim_image(image, trimmed_shape=(ny, nx))
+    noisify_image(image, trimmed_shape=trimmed_shape)
+    trim_image(image, trimmed_shape=trimmed_shape)
     return image
 
 
@@ -41,7 +43,7 @@ def test_fiber_profile_maker():
     the true profile.
     """
     real_full_width_half_max = 1.25
-    image = generate_image_with_two_flat_traces(order_width=real_full_width_half_max)
+    image = generate_image_with_two_traces(order_width=real_full_width_half_max)
     append_good_region_info(image)
 
     fill_with_simple_inverse_variances(image)
