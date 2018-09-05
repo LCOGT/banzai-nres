@@ -23,8 +23,11 @@ class InitializeInverseVariances(Stage):
             if not hasattr(image, 'ivar'):
                 setattr(image, 'ivar', None)
             read_var = 100 #image.header['RDNOISE']**2
+            # the image is converted to electrons at this point, is the read noise already converted as well?
             shot_var = image.data.astype(np.float32)
             vars = shot_var + read_var
+            del shot_var
             vars[vars < read_var] = read_var
             image.ivar = np.reciprocal(vars)
+            del vars
         return images
