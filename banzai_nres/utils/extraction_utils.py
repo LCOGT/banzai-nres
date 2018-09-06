@@ -91,11 +91,9 @@ def extract_spectrum_full_image(image, delta_from_trace_coordinates, ownership_c
     num_traces = int(np.max(ownership_coordinates) + 1)
     mask = np.ones_like(image.data, dtype=bool) # this would be a bpm.
     spectrum_for_each_order = []
-    #start1 = time.clock()
     weights = ExtractMethod().get_weights(image)
     if weights is None:
         weights = np.ones_like(image.data)
-    #print(time.clock() - start1, 'time to get weights')
     for i in range(num_traces):
         spectrum_for_each_order.append(extract_spectrum_single_order(image.data, image, delta_from_trace_coordinates,
                                        mask, ownership_coordinates, i, window=window, weights=weights,

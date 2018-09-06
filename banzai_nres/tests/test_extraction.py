@@ -18,7 +18,6 @@ def undefined_testing_of_extraction_method(extract_method=extraction.ExtractSpec
     image = generate_image_with_two_flat_traces(nx=1000, ny=50, fiber_1_intensity=peak_intensity,
                                                 fiber_2_intensity=peak_intensity,
                                                 order_width=real_full_width_half_max)
-    theoretical_max_signal_to_noise = peak_intensity / np.sqrt(peak_intensity + image.readnoise ** 2)
     append_good_region_info(image)
 
     fill_with_simple_inverse_variances(image)
@@ -32,14 +31,17 @@ def undefined_testing_of_extraction_method(extract_method=extraction.ExtractSpec
     images[0].fiber_profile.median_full_width_half_max = real_full_width_half_max
 
     extract_stage = extract_method(FakeContext())
-    extract_stage.extraction_window_fwhm = 5
+    extract_stage.extraction_window_fwhm = 3
     images = extract_stage.do_stage(images)
     extracted_spectra = images[0].spectra.intensity_versus_x_per_order
+
+    theoretical_peak_of_trace_signal_to_noise = peak_intensity / np.sqrt(peak_intensity + image.readnoise ** 2)
     for order in range(extracted_spectra.shape[0]):
+        logger.info('testing extraction method {method}'.format(method=extract_method))
         signal_to_noise = np.mean(extracted_spectra[order])/np.std(extracted_spectra[order])
-        logger.info('signal to noise %s and theoretical signal to noise %s' %
-                    (signal_to_noise, theoretical_max_signal_to_noise))
-        assert True
+        logger.info('signal to noise {0} and theoretical signal to noise at trace maximum {1}'.format
+                    (signal_to_noise, theoretical_peak_of_trace_signal_to_noise))
+        assert signal_to_noise > theoretical_peak_of_trace_signal_to_noise
 
 
 def test_box_extraction():
