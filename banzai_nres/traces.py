@@ -74,7 +74,7 @@ class BlindTraceMaker(CalibrationMaker):
         self.pipeline_context = pipeline_context
         self.order_of_meta_fit = 6
         self.order_of_poly_fit = 4
-        self.average_trace_vertical_extent = 90
+        self.average_trace_vertical_extent = 90  # do NOT haphazardly change this.
 
     @property
     def group_by_keywords(self):
