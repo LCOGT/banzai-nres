@@ -25,7 +25,7 @@ def test_fiber_profile_maker():
     the true profile.
     """
     real_full_width_half_max = 1.25
-    image = generate_image_with_two_flat_traces(order_width=real_full_width_half_max)
+    image = generate_image_with_two_flat_traces(nx=1000, ny=50, order_width=real_full_width_half_max)
     append_good_region_info(image)
 
     fill_with_simple_inverse_variances(image)
