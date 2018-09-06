@@ -20,7 +20,8 @@ logger = logs.get_logger(__name__)
 
 def maxima(A, s, k, ref):
     """
-    A procedure for finding maxima which are not just peaks in the noise floor.
+    A procedure for finding maxima which are not just peaks in the noise floor. E.g. searches for statistically
+    significant maxima.
     :param A: An array of values where you wish to find maxima
     :param s: The window were the central-point's value must be larger than all the other values in the window to qualify
               as a maximum.
@@ -80,19 +81,23 @@ def fluxvalues(testpoints, p, imfilt, x, arr):
     return values
 
 
-def findorder(im, imfilt, x, arr, order=2, lastcoef=None, direction='up'):
+def findorder(im, imfilt, x, arr, order=2, second_order_coefficient_guess=90, lastcoef=None, direction='up'):
     """
     :param im: ndarray, data of the image
     :param imfilt: ndattay, image.data passed through ndimage.spline_filter
     :param x: array of the x pixels from [0,1,2,...,im.shape[1]]
     :param arr: Legendre polynomial array.
     :param order: order of the legendre polynomial fit
+    :param second_order_coefficient_guess: coefficient guess for the second order legendre polynomial which
+    describe the traces across the ccd. The 70-100 works well for all LCOGT NRES instruments as of 2018/09/07
     :param lastcoef: [0th_order_coeff, 1st_order_coeff,...] for the last polynomial fit.
     :param direction: Which direction we are proceeding along the detector.
-    :return:
+    :return: optimized coefficients, value of the sum of the fluxes across the trace, 0 or 1.
+    0 if another maximum exists (e.g. another potential trace), 1 if no reasonable maximum exists.
 
-    NOTE: This requires that the traces curve upwards on the detector. If for some new detector,
-    things reverse, you must change p[2] to -90.
+    WARNING: It is hardcoded that the traces are spaced by no more than 100 pixels. If for some future detector they
+    become further spaced, we will have to change the two instances of 100 here to that larger value. Although 100
+    is like 10x the current trace spacing, so I do not forsee any issues.
     """
 
     # Manual guess for the first order to fit--basically just choose a
@@ -104,7 +109,7 @@ def findorder(im, imfilt, x, arr, order=2, lastcoef=None, direction='up'):
         p = [0. for i in range(order + 1)]
         p[0] = int(imfilt.shape[0]/3)
         if order >= 2:
-            p[2] = 90
+            p[2] = second_order_coefficient_guess
         coeffsguess = copy.deepcopy(p)
     else:
         # Find a new zero-th order term for the polynomial fit by
@@ -137,7 +142,7 @@ def findorder(im, imfilt, x, arr, order=2, lastcoef=None, direction='up'):
 
         coeffsguess = [p0] + list(p)
 
-    if deltap0guess != -1337:  # if deltap0guess = -1337, no next order exists.
+    if deltap0guess != -1337:  # if deltap0guess == -1337, no next order exists.
         p1 = optimize.minimize(crosscoef, coeffsguess, (imfilt, x, arr), method='Powell').x
 
         val = -1 * crosscoef(p1, imfilt, x, arr)
@@ -147,11 +152,13 @@ def findorder(im, imfilt, x, arr, order=2, lastcoef=None, direction='up'):
         return lastcoef, refflux, 1
 
 
-def tracesacrossccd(im, imfilt, order):
+def tracesacrossccd(im, imfilt, order, second_order_coefficient_guess):
     """
     :param im: ndarray, data of the image
     :param imfilt: ndattay, image.data passed through ndimage.spline_filter
     :param order: order of the polynomial fit.
+    :param second_order_coefficient_guess: coefficient guess for the second order legendre polynomial which
+    describe the traces across the ccd.
     :return:
     """
     length, width = im.shape
@@ -175,7 +182,8 @@ def tracesacrossccd(im, imfilt, order):
     for i in range(2, order + 1):
         if coef is not None:
             coef = list(coef) + [0]
-        coef, val, nomax = findorder(im, imfilt, x, arr, order=i, lastcoef=coef,
+        coef, val, nomax = findorder(im, imfilt, x, arr, order=i,
+                                     second_order_coefficient_guess=second_order_coefficient_guess, lastcoef=coef,
                                      direction='inplace')
 
     vals = [val]
@@ -551,16 +559,16 @@ def cross_correlate_image_indices(images, cross_correlate_num):
     return image_indices_to_try, try_combinations_of_images
 
 
-def extract_coeffs_entire_lampflat_frame(image, order_of_poly_fits):
+def extract_coeffs_entire_lampflat_frame(image, order_of_poly_fits, second_order_coefficient_guess):
     """
     This extracts the trace coefficients for each bright order of a frame. This is only stable for lampflat frames.
     It returns a list of the coefficients, ordered arbitrarily (fibers are not separated). It also returns the summed fluxed across each order
     called val, and the total number of orders found by the algorithm.
     Parameters:
-        image = Banzai Image object.
-        orderofpolyfits = order of the polynomial fit per trace.
-        xvals = list of x coordinates where you want to sample the center of the traces
-        debug = will plot sampled points if True
+        image : Banzai Image object.
+        order_of_poly_fits : order of the polynomial fit per trace.
+        second_order_coefficient_guess : coefficient guess for the second order legendre polynomial which
+        describe the traces across the ccd.
 
     """
 
@@ -568,7 +576,7 @@ def extract_coeffs_entire_lampflat_frame(image, order_of_poly_fits):
     imagefiltered = ndimage.spline_filter(image_data)
 
     # finding coefficients of traces which fit the echelle orders across the CCD.
-    allcoef, vals, totalnumberoforders = tracesacrossccd(image_data, imagefiltered, order_of_poly_fits)
+    allcoef, vals, totalnumberoforders = tracesacrossccd(image_data, imagefiltered, order_of_poly_fits, second_order_coefficient_guess)
     sortedallcoefs = np.array(allcoef)[np.array(allcoef)[:, 0].argsort()]
     order_indices = np.arange(totalnumberoforders)
     # appending indices 0,1,2...,totalnumberoforders as the first column. prior it is indexed from negative numbers.
@@ -602,14 +610,17 @@ def trim_and_split_coefficients(coefficients, image, num_lit_fibers):
     return coefficients_and_indices
 
 
-def fit_traces_order_by_order(image, order_of_poly_fits=4, num_lit_fibers=2):
+def fit_traces_order_by_order(image, second_order_coefficient_guess, order_of_poly_fits=4, num_lit_fibers=2):
     """
     :param image: Banzai image object
+    :param second_order_coefficient_guess: guess for the coefficient of the second order legendre polynomial for
+    the blind fit.
     :param order_of_poly_fits: Highest order of the polynomial fit to each trace. 4 is good. Do not change needlessly.
     :return array of trace fit coefficients arranged such that those for the first fiber are first.
     the first 67 rows of the array. fiber designation is arbitrary at this point.
     """
-    coefficients_and_indices, vals, totalnumberoftraces = extract_coeffs_entire_lampflat_frame(image, order_of_poly_fits)
+    coefficients_and_indices, vals, totalnumberoftraces = extract_coeffs_entire_lampflat_frame(image, order_of_poly_fits,
+                                                                                          second_order_coefficient_guess)
     coefficients_and_indices = trim_and_split_coefficients(coefficients_and_indices, image, num_lit_fibers)
     logger.info('%s traces found' % coefficients_and_indices.shape[0])
 

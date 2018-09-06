@@ -62,12 +62,19 @@ class BlindTraceMaker(CalibrationMaker):
     """
     Fits traces order by order. Only use if you want to generate a new master
     trace file without loading any trace locations from the data-base
+    :param average_trace_vertical_extent : should in no instance ever be changed unless the detector drastically
+    changes. This is the approximate (good to within \pm 30 pixels) difference between the position of the bottom
+    of the trace and its position when it contacts the edge of the detector. E.g. if you were to surround a trace in
+    the minimum sized box possible, this is the y-height of the box (parallel to increasing order direction). Sign matters
+    the convention is that if the traces curve upwards then this is positive. Negative if they curve downwards. Sign matters
+    because this is exactly the guess for the second order coefficient of the blind trace-trace fit.
     """
     def __init__(self, pipeline_context):
         super(BlindTraceMaker, self).__init__(pipeline_context)
         self.pipeline_context = pipeline_context
         self.order_of_meta_fit = 6
         self.order_of_poly_fit = 4
+        self.average_trace_vertical_extent = 90
 
     @property
     def group_by_keywords(self):
@@ -167,7 +174,8 @@ def make_master_traces(images, maker_object, image_config, logging_tags, method,
         for image in images_to_try:
             if method == 'order-by-order':
                 logger.debug('fitting order by order on %s' % image.filename)
-                coefficients_and_indices_initial = fit_traces_order_by_order(image,
+                second_order_coefficient_guess = maker_object.average_trace_vertical_extent
+                coefficients_and_indices_initial = fit_traces_order_by_order(image, second_order_coefficient_guess,
                                                                              order_of_poly_fits=order_of_poly_fits,
                                                                              num_lit_fibers=2)
                 fiber_order = None
