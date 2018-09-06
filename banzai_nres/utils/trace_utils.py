@@ -587,28 +587,38 @@ def extract_coeffs_entire_lampflat_frame(image, order_of_poly_fits, second_order
     return coefficients_and_indices, vals, totalnumberoforders
 
 
-def trim_and_split_coefficients(coefficients, image, num_lit_fibers):
-    # cutting of order index column
-    coefficients = coefficients[:, 1:]
-
-    order_of_poly_fits = coefficients.shape[1] - 1
+def exclude_traces_which_jet_off_detector(coefficients_and_indices, image):
+    order_of_poly_fits = coefficients_and_indices.shape[1] - 2
     legendre_polynomial_array, not_needed, not_needed_2 = generate_legendre_array(image, order_of_poly_fits)
-    trace_values_versus_xpixel = np.dot(coefficients, legendre_polynomial_array)
+    trace_values_versus_xpixel = np.dot(coefficients_and_indices[:, 1:], legendre_polynomial_array)
     # trim any traces which are not contiguously on the detector.
-    coefficients = coefficients[np.all(trace_values_versus_xpixel > 0, axis=1)]
+    coefficients_and_indices = coefficients_and_indices[np.all(trace_values_versus_xpixel > 0, axis=1)]
+    return coefficients_and_indices
+
+
+def split_and_sort_coefficients_for_each_fiber(coefficients_and_indices, num_lit_fibers):
+    # cutting of order index column
+    coefficients_and_indices = coefficients_and_indices[:, 1:]
 
     # ensuring an even number of traces in the coefficients so that they can be split easily
-    while coefficients.shape[0] % num_lit_fibers != 0:
-        coefficients = coefficients[:-1]
-    num_orders = int(coefficients.shape[0] / num_lit_fibers)
+    while coefficients_and_indices.shape[0] % num_lit_fibers != 0:
+        coefficients_and_indices = coefficients_and_indices[:-1]
+    num_orders = int(coefficients_and_indices.shape[0] / num_lit_fibers)
     order_indices = [i for i in range(num_orders)]*num_lit_fibers
 
-    fiber_coefficients = (coefficients[::num_lit_fibers],)
+    fiber_coefficients = (coefficients_and_indices[::num_lit_fibers],)
     for i in range(1, num_lit_fibers):
-        fiber_coefficients += (coefficients[i::num_lit_fibers],)
-    ordered_coefficients = np.vstack(fiber_coefficients)
-    coefficients_and_indices = np.insert(ordered_coefficients, obj=0, values=order_indices, axis=1)
-    return coefficients_and_indices
+        fiber_coefficients += (coefficients_and_indices[i::num_lit_fibers],)
+    return fiber_coefficients, order_indices
+
+
+def split_already_sorted_coefficients_into_each_fiber(coefficients_and_indices, num_lit_fibers):
+    split_indices = np.where(coefficients_and_indices[:, 0] == np.max(coefficients_and_indices[:, 0]))[0]
+    assert len(split_indices) == num_lit_fibers
+    fiber_coefficients = (coefficients_and_indices[:split_indices[0] + 1],)
+    for i in range(1, len(split_indices)):
+        fiber_coefficients += (coefficients_and_indices[split_indices[i-1]+1: split_indices[i]+1],)
+    return fiber_coefficients
 
 
 def fit_traces_order_by_order(image, second_order_coefficient_guess, order_of_poly_fits=4, num_lit_fibers=2):
@@ -622,18 +632,21 @@ def fit_traces_order_by_order(image, second_order_coefficient_guess, order_of_po
     """
     coefficients_and_indices, vals, totalnumberoftraces = extract_coeffs_entire_lampflat_frame(image, order_of_poly_fits,
                                                                                           second_order_coefficient_guess)
-    coefficients_and_indices = trim_and_split_coefficients(coefficients_and_indices, image, num_lit_fibers)
+
+    coefficients_and_indices = exclude_traces_which_jet_off_detector(coefficients_and_indices, image)
+    coeffs_per_fiber, order_indices = split_and_sort_coefficients_for_each_fiber(coefficients_and_indices, num_lit_fibers)
+    ordered_coefficients = np.vstack(coeffs_per_fiber)
+    coefficients_and_indices = np.insert(ordered_coefficients, obj=0, values=order_indices, axis=1)
     logger.info('%s traces found' % coefficients_and_indices.shape[0])
 
     return coefficients_and_indices
 
 
 def optimize_coeffs_entire_lampflat_frame(coefficients_and_indices, image, num_of_lit_fibers=2, order_of_meta_fit=6, bpm=None):
-    #TODO: rework this so that it works for any arbitrary number of fibers.
     """
     coefficients which are loaded must be in the format where the first 0,1,2,3,N rows are for the first fiber, and the
     next set for the second fiber. The first column must be the order number designation.
-    :param bad_pixel_mask: The binary mask whereby bad pixels are set to 0.
+    :param bpm: The binary mask whereby bad pixels are set to 0.
     """
 
     coeflen, coefwidth = coefficients_and_indices.shape
@@ -654,47 +667,38 @@ def optimize_coeffs_entire_lampflat_frame(coefficients_and_indices, image, num_o
 
     legendre_polynomial_array, x, xnorm = generate_legendre_array(image, trace_poly_order)
 
-    # requires input coefficients to be ordered correctly.
-    first_coefficients = coefficients_and_indices[:int(number_of_traces / 2), 1:]
-    second_coefficients = coefficients_and_indices[int(number_of_traces / 2):, 1:]
-    #  simple order number arrays which are normalized from -1 to 1 to control numerical errors.
-    first_norm = np.arange(first_coefficients.shape[0])
-    second_norm = np.arange(second_coefficients.shape[0])
-    first_norm = first_norm * 2. / first_norm[-1] - 1
-    second_norm = second_norm * 2. / second_norm[-1] - 1
-
-    # initial meta-fit
-    first_coefficients_meta = metacoefficients(first_norm, first_coefficients, order_of_meta_fit)
-    second_coefficients_meta = metacoefficients(second_norm, second_coefficients, order_of_meta_fit)
-
-    #  building legendre polynomial arrays to use for the meta-fit basis.
-    legendre_polynomial_array_meta_first = np.ones((order_of_meta_fit + 1, first_norm.shape[0]))
-    legendre_polynomial_array_meta_second = np.ones((order_of_meta_fit + 1, second_norm.shape[0]))
-
-    for i in range(1, order_of_meta_fit + 1):
-        legendre_polynomial_array_meta_first[i] = np.polynomial.legendre.legval(first_norm, [0 for j in range(i)] + [1])
-        legendre_polynomial_array_meta_second[i] = np.polynomial.legendre.legval(second_norm,
-                                                                                 [0 for j in range(i)] + [1])
-
-    # optimizing the meta-fit
-    first_coefficients_meta_optimum = meta_fit(first_coefficients_meta, legendre_polynomial_array_meta_first,
-                                               legendre_polynomial_array, image_splines, x)
-    second_coefficients_meta_optimum = meta_fit(second_coefficients_meta, legendre_polynomial_array_meta_second,
-                                                legendre_polynomial_array, image_splines, x)
-
-    # outputting optimized coeffs with order indices
-    first_coefficients_optimum = get_coefficients_from_meta(first_coefficients_meta_optimum,
-                                                            legendre_polynomial_array_meta_first)
-
-    second_coefficients_optimum = get_coefficients_from_meta(second_coefficients_meta_optimum,
-                                                             legendre_polynomial_array_meta_second)
-
-    optimized_coefficients = np.vstack((first_coefficients_optimum, second_coefficients_optimum))
-
     order_indices = coefficients_and_indices[:, 0]
-    optimized_coefficients_and_indices = np.insert(optimized_coefficients, obj=0, values=order_indices, axis=1)
+    fiber_coefficients = split_already_sorted_coefficients_into_each_fiber(coefficients_and_indices, num_of_lit_fibers)
+    optimized_coeffs_per_fiber = []
+    for coefficients in fiber_coefficients:
+        #  simple order number arrays which are normalized from -1 to 1 to control numerical errors.
+        single_fiber_coeffs = coefficients[:, 1:]
+        order_norm = np.arange(single_fiber_coeffs.shape[0])
+        order_norm = order_norm * 2. / order_norm[-1] - 1
 
-    return optimized_coefficients_and_indices
+        # initial meta-fit
+        meta_coefficients = metacoefficients(order_norm, single_fiber_coeffs, order_of_meta_fit)
+
+        #  building legendre polynomial arrays to use for the meta-fit basis.
+        legendre_polynomial_array_meta = np.ones((order_of_meta_fit + 1, order_norm.shape[0]))
+
+        for i in range(1, order_of_meta_fit + 1):
+            legendre_polynomial_array_meta[i] = np.polynomial.legendre.legval(order_norm, [0 for j in range(i)] + [1])
+
+        # optimizing the meta-fit
+        optimum_meta_coefficients = meta_fit(meta_coefficients, legendre_polynomial_array_meta,
+                                                   legendre_polynomial_array, image_splines, x)
+
+        # outputting optimized coeffs with order indices
+        optimized_coefficients_no_indices = get_coefficients_from_meta(optimum_meta_coefficients,
+                                                                       legendre_polynomial_array_meta)
+
+        optimized_coeffs_per_fiber.append(optimized_coefficients_no_indices)
+
+    all_optimized_coefficients_no_indices = np.vstack(optimized_coeffs_per_fiber)
+    all_optimized_coefficients_and_indices = np.insert(all_optimized_coefficients_no_indices, obj=0, values=order_indices,
+                                                   axis=1)
+    return all_optimized_coefficients_and_indices
 
 
 def get_number_of_lit_fibers(coefficients_and_indices):
