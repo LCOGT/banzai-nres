@@ -273,9 +273,10 @@ def generate_legendre_array(image, order_of_poly_fits):
     return legendre_polynomial_array, x, xnorm
 
 
-def check_for_close_fit(coefficients_and_indices_list, images, max_pixel_error=1E-1):
+def check_for_close_fit(coefficients_and_indices_list, images, num_lit_fibers, max_pixel_error=1E-1):
     """
-    :param coefficients_and_indices_list: ndarray with the first column 0,1,2,..66,0,1.. the fiber indexes, and the second column
+    :param coefficients_and_indices_list: list of trace_coefficients across the detector for multiple different fits
+     . I.e. a list of ndarray with the first column 0,1,2,..66,0,1.. the fiber indexes, and the second column
             the 0th order coefficients for that order trace. The fibers are arranged fiber_order[0] then fiber_order[1].
             as listed in the attribute Image().fiber_order
     :param images: List of Banzai Image objects
@@ -283,6 +284,7 @@ def check_for_close_fit(coefficients_and_indices_list, images, max_pixel_error=1
                         the central orders. E.g. orders 10-50 for 67 orders per fiber.
     :return: True if close, False if not.
     """
+
     trace_values_versus_xpixel_list = []
     num_traces_list = []
     for coefficients, image in zip(coefficients_and_indices_list, images):
@@ -291,8 +293,8 @@ def check_for_close_fit(coefficients_and_indices_list, images, max_pixel_error=1
         trace_values_versus_xpixel_list += [trace_values_versus_xpixel]
         image_shape = image.data.shape
     assert num_traces_list[1:] == num_traces_list[:-1]
-    assert num_traces %2 == 0
-    num_orders = int(num_traces/2)
+    assert num_traces % num_lit_fibers == 0
+    num_orders = int(num_traces/num_lit_fibers)
     order_buffer = int(num_orders/5)
     x_buffer = int(image_shape[1]/4)
 
@@ -300,8 +302,8 @@ def check_for_close_fit(coefficients_and_indices_list, images, max_pixel_error=1
     trace_values_versus_xpixel_arr = np.array(trace_values_versus_xpixel_list)
     error_between_fits = np.abs((trace_values_versus_xpixel_arr - np.mean(trace_values_versus_xpixel_arr, axis=0)))
     # restricting region where we care about differences (center of detector)
-    select_errors_first_fiber = error_between_fits[:,order_buffer:(num_orders-order_buffer), x_buffer:(image_shape[1] - x_buffer)]
-    select_errors_second_fiber = error_between_fits[:,num_orders + order_buffer:(num_traces-order_buffer), x_buffer:(image_shape[1] - x_buffer)]
+    select_errors_first_fiber = error_between_fits[:, order_buffer:(num_orders-order_buffer), x_buffer:(image_shape[1] - x_buffer)]
+    select_errors_second_fiber = error_between_fits[:, num_orders + order_buffer:(num_traces-order_buffer), x_buffer:(image_shape[1] - x_buffer)]
 
     max_error_between_fits = max(np.max(select_errors_first_fiber), np.max(select_errors_second_fiber))
     if max_error_between_fits < max_pixel_error:
@@ -354,7 +356,6 @@ def get_trace_centroids_from_coefficients(coefficients_and_indices, image):
     """
     coeflen, coefwidth = coefficients_and_indices.shape
     num_traces, order_of_poly_fits = coeflen, coefwidth - 2
-    assert num_traces % 2 == 0
     legendre_polynomial_array, x, xnorm = generate_legendre_array(image, order_of_poly_fits)
     trace_values_versus_xpixel = np.dot(coefficients_and_indices[:, 1:], legendre_polynomial_array)
     return trace_values_versus_xpixel, num_traces, x
@@ -627,17 +628,16 @@ def fit_traces_order_by_order(image, second_order_coefficient_guess, order_of_po
     return coefficients_and_indices
 
 
-def optimize_coeffs_entire_lampflat_frame(trace_coefficients, image, order_of_meta_fit=6, bpm=None):
+def optimize_coeffs_entire_lampflat_frame(coefficients_and_indices, image, num_of_lit_fibers=2, order_of_meta_fit=6, bpm=None):
+    #TODO: rework this so that it works for any arbitrary number of fibers.
     """
     coefficients which are loaded must be in the format where the first 0,1,2,3,N rows are for the first fiber, and the
     next set for the second fiber. The first column must be the order number designation.
     :param bad_pixel_mask: The binary mask whereby bad pixels are set to 0.
     """
 
-    coeflen, coefwidth = trace_coefficients.shape
+    coeflen, coefwidth = coefficients_and_indices.shape
     number_of_traces, trace_poly_order = coeflen, coefwidth - 2
-
-    assert number_of_traces % 2 == 0
 
     if bpm == None:
         bpm = np.ones_like(image.data)
@@ -655,8 +655,8 @@ def optimize_coeffs_entire_lampflat_frame(trace_coefficients, image, order_of_me
     legendre_polynomial_array, x, xnorm = generate_legendre_array(image, trace_poly_order)
 
     # requires input coefficients to be ordered correctly.
-    first_coefficients = trace_coefficients[:int(number_of_traces / 2), 1:]
-    second_coefficients = trace_coefficients[int(number_of_traces / 2):, 1:]
+    first_coefficients = coefficients_and_indices[:int(number_of_traces / 2), 1:]
+    second_coefficients = coefficients_and_indices[int(number_of_traces / 2):, 1:]
     #  simple order number arrays which are normalized from -1 to 1 to control numerical errors.
     first_norm = np.arange(first_coefficients.shape[0])
     second_norm = np.arange(second_coefficients.shape[0])
@@ -691,7 +691,22 @@ def optimize_coeffs_entire_lampflat_frame(trace_coefficients, image, order_of_me
 
     optimized_coefficients = np.vstack((first_coefficients_optimum, second_coefficients_optimum))
 
-    order_indices = trace_coefficients[:, 0]
+    order_indices = coefficients_and_indices[:, 0]
     optimized_coefficients_and_indices = np.insert(optimized_coefficients, obj=0, values=order_indices, axis=1)
 
     return optimized_coefficients_and_indices
+
+
+def get_number_of_lit_fibers(coefficients_and_indices):
+    """
+    :param coefficients_and_indices: trace coefficients with indices (0,...,67,0,,..67) as the first column
+    :return: the number of lit fibers. This works only if the trace coefficients are all in one array as described.
+    This is a temporary function and should be replaced by len(fiber_order) at some point (when we have fiber_order)
+    figured out.
+    """
+    unique, counts = np.unique(coefficients_and_indices[:, 0], return_counts=True)
+    number_of_traces = coefficients_and_indices[:, 0].shape[0]
+    assert (counts == counts[0]).all()
+    num_lit_fibers = int(counts[0])
+    assert number_of_traces % num_lit_fibers == 0
+    return num_lit_fibers

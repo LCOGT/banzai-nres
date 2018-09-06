@@ -6,7 +6,7 @@ Authors
 """
 
 from banzai_nres.utils.trace_utils import check_for_close_fit, check_flux_change, cross_correlate_image_indices, \
-    optimize_coeffs_entire_lampflat_frame, fit_traces_order_by_order
+    optimize_coeffs_entire_lampflat_frame, fit_traces_order_by_order, get_number_of_lit_fibers
 from banzai_nres.utils.NRES_class_utils import add_class_as_attribute
 from banzai_nres.images import Image
 from banzai.stages import CalibrationMaker, Stage, MasterCalibrationDoesNotExist
@@ -124,16 +124,20 @@ class TraceUpdater(Stage):
         for image in images:
             # getting coefficients from master trace file
             coefficients_and_indices_initial, fiber_order = get_trace_coefficients(image, self)
+            num_lit_fibers = get_number_of_lit_fibers(coefficients_and_indices_initial)
+            # once we write fiber_order correctly this should turn into len(fiber_order) or maybe assert
+            # num_lit_fibers = len(fiber_order)
             image.trace.coefficients = coefficients_and_indices_initial
             image.trace.fiber_order = fiber_order
 
             # optimizing master traces on this frame in particular
             coefficients_and_indices_new = optimize_coeffs_entire_lampflat_frame(
-                coefficients_and_indices_initial, image, order_of_meta_fit=self.order_of_meta_fit)
+                coefficients_and_indices_initial, image, num_of_lit_fibers=num_lit_fibers,
+                order_of_meta_fit=self.order_of_meta_fit)
             logger.debug('refining trace coefficients on %s' % image.filename)
 
             close_fit = check_for_close_fit([coefficients_and_indices_new, coefficients_and_indices_initial],
-                                            [image, image], max_pixel_error=3)
+                                            [image, image], num_lit_fibers, max_pixel_error=3)
             reasonable_flux_change = check_flux_change(coefficients_and_indices_new, coefficients_and_indices_initial,
                                                        image)
             # keeping the optimized traces only if they satisfy certain conditions
@@ -183,10 +187,15 @@ def make_master_traces(images, maker_object, image_config, logging_tags, method,
                 logger.debug('importing master coeffs and refining fit on %s' % image.filename)
                 coefficients_and_indices_initial, fiber_order = get_trace_coefficients(image, maker_object)
 
-            coefficients_and_indices_list += [optimize_coeffs_entire_lampflat_frame(
-                coefficients_and_indices_initial, image, order_of_meta_fit=order_of_meta_fit)]
+            num_lit_fibers = get_number_of_lit_fibers(coefficients_and_indices_initial)
+            # once we write fiber_order correctly this should turn into len(fiber_order) or maybe assert
+            # num_lit_fibers = len(fiber_order)
 
-        satisfactory_fit = check_for_close_fit(coefficients_and_indices_list, images_to_try, max_pixel_error=1E-1)
+            coefficients_and_indices_list += [optimize_coeffs_entire_lampflat_frame(
+                coefficients_and_indices_initial, image, num_of_lit_fibers=num_lit_fibers, order_of_meta_fit=order_of_meta_fit)]
+
+        satisfactory_fit = check_for_close_fit(coefficients_and_indices_list, images_to_try, num_lit_fibers,
+                                               max_pixel_error=1E-1)
 
         assert coefficients_and_indices_initial.shape == coefficients_and_indices_list[0].shape
 
