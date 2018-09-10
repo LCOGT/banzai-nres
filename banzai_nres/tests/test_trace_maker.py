@@ -114,8 +114,8 @@ def test_finding_first_statistically_significant_maxima():
 def test_finding_total_flux_across_a_trace():
     """
     test type: Unit Test.
-    info: tests the function which evaluates the negative sum of the fluxes across a trace of given coefficients
-    across the image.
+    info: tests the two closely tied functions which evaluate
+    the negative sum of the fluxes across a trace of given coefficients across the image.
     """
     size_of_test_image = 3
     image_data = np.zeros((size_of_test_image, size_of_test_image))
@@ -130,6 +130,13 @@ def test_finding_total_flux_across_a_trace():
     found_value = trace_utils.crosscoef(legendre_polynomial_coefficients, image_filt,
                                         x_pixel_coords, legendre_polynomial_array)
     assert np.isclose(found_value, expected_value)
+
+    testpoints = np.array([1])
+    found_value = (-1) * trace_utils.fluxvalues(testpoints, [], image_filt, x_pixel_coords, legendre_polynomial_array)[0]
+    assert np.isclose(found_value, expected_value)
+
+
+
 
 
 @mock.patch('banzai_nres.traces.Image')

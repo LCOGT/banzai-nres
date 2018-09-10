@@ -66,7 +66,7 @@ def crosscoef(p, imfilt, x, arr):
 
 def fluxvalues(testpoints, p, imfilt, x, arr):
     """
-    :param p: list of legendre polynomial coefficients
+    :param p: list of legendre polynomial coefficients excluding 0th order coefficients
     :param imfilt: ndattay, image.data passed through ndimage.spline_filter
     :param x: array of the x pixels from [0,1,2,...,im.shape[1]]
     :param arr: Legendre polynomial array.
