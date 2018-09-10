@@ -6,7 +6,7 @@ Authors
 
     Tim Brandt (tbrandt@physics.ucsb.edu)
 """
-
+import time
 
 import numpy as np
 from scipy import ndimage, optimize, interpolate
@@ -489,7 +489,6 @@ def NegativeHessian(coeffs_vector, *args):
     # Setting so that the Hessian is perfectly symmetric.
     Hessian = np.tril(Hessian, k=0)  # zero the elements in the upper triangle - they differ due to np.dot errors.
     Hessian = Hessian + Hessian.T - np.diag(np.diag(Hessian))  # calculate the fully symmetric Hessian.
-
     return (-1) * Hessian
 
 
@@ -523,7 +522,6 @@ def NegativeGradient(coeffs_vector, *args):
         for j in range(metapolyorder + 1):
             grad += [np.sum(stpolyarr[j] * gradients[:, k])]
     grad = np.array(grad)
-
     return (-1) * grad
 
 
@@ -531,12 +529,15 @@ def meta_fit(metacoeffs, stpolyarr, legpolyarr, image_splines, pixelxarray):
     """
     Evaluates meta-coefficients which optimize the flux across the entire detector.
     Best method is Newton-CG because it is well suited theoretically to this problem.
+    Performance notes : On a 500x500 test frame with 20 traces, this function takes 10 ms to evaluate the Hessian,
+    and 5 ms to evaluate the gradient. It calls the grad and hessian ~5 and ~20 times respectively, and evalutes the
+    function ~20 times. function evaluations take about 5 ms.
+    The total meta fit time is roughly 150 ms on said test frame.
     """
     metacoeffsinitial = np.copy(metacoeffs).reshape(metacoeffs.size)
     extraargs = (image_splines, stpolyarr, legpolyarr, pixelxarray)
     tracepolyorder = legpolyarr.shape[0] - 1
     metapolyorder = stpolyarr.shape[0] - 1
-
     metacoeffsnew = optimize.minimize(neg_totalflux_for_scipy, metacoeffsinitial, args=extraargs, method='NEWTON-CG'
                                       , jac=NegativeGradient, hess=NegativeHessian, options={'disp': False}).x
 
