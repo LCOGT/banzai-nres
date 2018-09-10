@@ -2,11 +2,15 @@ import pytest
 import mock
 from banzai_nres.traces import BlindTraceMaker
 from banzai.tests.utils import FakeContext
+
+from scipy import ndimage
 import numpy as np
 from banzai import logs
 from banzai_nres.utils.trace_utils import get_coefficients_from_meta, generate_legendre_array, get_trace_centroids_from_coefficients
-from banzai_nres.tests.utils import FakeImage, noisify_image, trim_image, trim_coefficients_to_fit_image,\
-    fill_image_with_traces
+from banzai_nres.tests.utils import FakeImage, noisify_image, trim_image, gaussian
+from banzai_nres.tests.adding_traces_to_images_utils import trim_coefficients_to_fit_image, fill_image_with_traces
+
+from banzai_nres.utils import trace_utils
 from astropy.io import fits
 
 
@@ -14,12 +18,14 @@ logger = logs.get_logger(__name__)
 
 
 class FakeTraceImage(FakeImage):
+    """
+    Image must be square and at least 400x400 for trace making integration test to behave. 500x500 is recommended.
+    """
     def __init__(self, *args, **kwargs):
         super(FakeTraceImage, self).__init__(*args, **kwargs)
         self.caltype = 'trace'
         self.header = fits.Header()
         self.header['OBSTYPE'] = 'LAMPFLAT'
-        # Note: Image must be at least 400x400 for enough traces to populate to test 'global-meta' procedure
         self.nx = 500
         self.ny = 502
         self.bpm = np.zeros((self.ny, self.nx), dtype=np.uint8)
@@ -82,10 +88,55 @@ def differences_between_found_and_generated_trace_vals(found_coefficients, image
     return trace_values_2 - trace_values_1
 
 
+def array_with_two_peaks():
+    """
+    :return: generates a fake line cut down the ccd with traces present.
+    """
+    centroids = (15, 30)
+    x = np.linspace(0, 50, num=100)
+    vectorized_gaussian = np.vectorize(gaussian)
+    y = vectorized_gaussian(x, 1, centroids[0], 1.5) + vectorized_gaussian(x, 1, centroids[1], 1.5)
+    return y, x, centroids
+
+
+def test_finding_first_statistically_significant_maxima():
+    """
+    test type: Unit Test.
+    info: tests the function which generates an approximate initial guess for the location of the next trace for
+    the blind trace maker.
+    """
+    intensity_line_cut_across_two_traces, x_coords, centroids = array_with_two_peaks()
+    approximate_maximum_flux = np.max(intensity_line_cut_across_two_traces)
+    index_of_first_maximum = trace_utils.maxima(intensity_line_cut_across_two_traces, 5, 1 / 20, approximate_maximum_flux)[0]
+    assert np.isclose(x_coords[index_of_first_maximum], centroids[0], atol=3, rtol=0)
+
+
+def test_finding_total_flux_across_a_trace():
+    """
+    test type: Unit Test.
+    info: tests the function which evaluates the negative sum of the fluxes across a trace of given coefficients
+    across the image.
+    """
+    size_of_test_image = 3
+    image_data = np.zeros((size_of_test_image, size_of_test_image))
+    image_data[1] = np.ones(size_of_test_image)
+
+    x_pixel_coords = np.arange(size_of_test_image)
+    legendre_polynomial_array = np.ones((1, size_of_test_image))
+    legendre_polynomial_coefficients = np.array([1])
+    expected_value = -1 * np.sum(image_data[1])
+
+    image_filt = ndimage.spline_filter(image_data)
+    found_value = trace_utils.crosscoef(legendre_polynomial_coefficients, image_filt,
+                                        x_pixel_coords, legendre_polynomial_array)
+    assert np.isclose(found_value, expected_value)
+
+
 @mock.patch('banzai_nres.traces.Image')
 def test_blind_trace_maker(mock_images):
     """
-    This tests blind trace making (which involves blind trace making and then refining via meta-fit).
+    test type: Integration Test.
+    info: This tests blind trace making (which involves blind trace making and then refining via meta-fit).
     Note: The fake images made here must have enough orders N such that N > order_of_meta_fit + 1.
     Currently it creates ~20 traces so 10 orders. A bigger image would have more traces, but expanding the
     image size may cause the created traces to be unrealistic. My suggestion is to never change the fake_image size

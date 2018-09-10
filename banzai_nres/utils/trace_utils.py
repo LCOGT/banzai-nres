@@ -6,7 +6,6 @@ Authors
 
     Tim Brandt (tbrandt@physics.ucsb.edu)
 """
-import time
 
 import numpy as np
 from scipy import ndimage, optimize, interpolate
@@ -61,7 +60,6 @@ def crosscoef(p, imfilt, x, arr):
 
     for i in range(len(p)):
         y += arr[i] * p[i]
-
     val = np.sum(ndimage.map_coordinates(imfilt, [y, x], prefilter=False))
     return -1 * val
 
