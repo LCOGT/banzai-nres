@@ -172,6 +172,61 @@ def findorder(image, imfilt, x, evaluated_legendre_polynomials, order=2, second_
     return p1, val, maximum_exists
 
 
+def validate_fit_and_trim_erroneous_fits(coef, allcoef, loop_counter, length, maximum_exists, done, direction='up'):
+    num_of_orders_found = None
+    # March up in the orders.
+
+    # the search stops if the 0th order coefficient computed is less than 0 or is less than the previous coefficient computed (i.e. down step).
+    # Or is within a pixel of the previous two computed coefficients.
+    # So 3 zero-order coefficients are equal. In the latter case, we delete two of the last fits, and then stop the search.
+    # if the sum across the trace for the found order k is less than 1/10 of the sum of the k-2 order (belonging
+    # to the same fiber, then we stop the search.
+    if direction == 'up':
+        if coef[0] < allcoef[-2][1] or coef[0] > length and maximum_exists:
+            allcoef = allcoef[:-1]  # delete bad fit
+            num_of_orders_found = loop_counter - 1
+            done = True
+    # Now march down to the bottom of the array.  Resume from the
+    # initial coefficients from earlier.
+
+    # the search stops if the 0th order coefficient computed is less than 0 or is greater than the previous coefficient computed (i.e. up step).
+    # Or is within a pixel of the previous two computed coefficients,
+    # So 3 zero-order coefficients are equal. In the latter case, we delete two of the last fits, and then stop the search.
+    if direction == 'down':
+        if coef[0] < 0 or coef[0] > allcoef[-2][1] and maximum_exists:
+            allcoef = allcoef[:-1]  # delete bad fit
+            num_of_orders_found = loop_counter - 1
+            done = True
+
+    if loop_counter >= 2 and maximum_exists and not done:
+        if abs(coef[0] - allcoef[-2][1]) < 1 and abs(coef[0] - allcoef[-3][1]) < 1:
+            allcoef = allcoef[:-2]  # delete repeated fits
+            num_of_orders_found = loop_counter - 2
+            done = True
+    if not maximum_exists:
+        done = True
+        allcoef = allcoef[:-1]  # delete duplicate fit
+        num_of_orders_found = loop_counter - 1
+    return num_of_orders_found, allcoef, done
+
+
+def find_all_traces_marching_up_or_down(image, imfilt, x, vals, evaluated_legendre_polynomials, length, order_of_poly_fit, coef, allcoef, direction='up'):
+    done = False
+    i = 1
+    while not done:
+        coef, val, maximum_exists = findorder(image, imfilt, x, evaluated_legendre_polynomials, order=order_of_poly_fit,
+                                     lastcoef=coef, direction=direction)
+        vals += [val]
+        if direction == 'up':
+            allcoef += [[i] + list(coef)]
+        if direction == 'down':
+            allcoef += [[-i] + list(coef)]
+        num_of_orders_found, allcoef, done = validate_fit_and_trim_erroneous_fits(coef, allcoef, i, length,
+                                                                                  maximum_exists, done, direction=direction)
+        i += 1
+    return num_of_orders_found, allcoef, coef, vals
+
+
 def tracesacrossccd(image, imfilt, order_of_poly_fit, second_order_coefficient_guess):
     """
     :param image: banzai image object
@@ -202,67 +257,14 @@ def tracesacrossccd(image, imfilt, order_of_poly_fit, second_order_coefficient_g
     initcoef = copy.deepcopy(coef)
     allcoef = [[0] + list(coef)]
 
-    # March up in the orders.
+    ordersabove, allcoef, coef, vals = find_all_traces_marching_up_or_down(image, imfilt, x, vals,
+                                                                           evaluated_legendre_polynomials, length,
+                                        order_of_poly_fit, coef, allcoef, direction='up')
 
-    # the search stops if the 0th order coefficient computed is less than 0 or is less than the previous coefficient computed (i.e. down step).
-    # Or is within a pixel of the previous two computed coefficients.
-    # So 3 zero-order coefficients are equal. In the latter case, we delete two of the last fits, and then stop the search.
-    # if the sum across the trace for the found order k is less than 1/10 of the sum of the k-2 order (belonging
-    # to the same fiber, then we stop the search.
 
-    done = 0
-    i = 1
-    while done == 0:
-        coef, val, maximum_exists = findorder(image, imfilt, x, evaluated_legendre_polynomials, order=order_of_poly_fit,
-                                     lastcoef=coef, direction='up')
-        vals += [val]
-        allcoef += [[i] + list(coef)]
-        if coef[0] < allcoef[-2][1] or coef[0] > length and maximum_exists:
-            allcoef = allcoef[:-1]  # delete bad fit
-            ordersabove = i - 1
-            done = 1
-        if i >= 2 and done == 0:
-            if abs(coef[0] - allcoef[-2][1]) < 1 and abs(coef[0] - allcoef[-3][1]) < 1 and maximum_exists:
-                allcoef = allcoef[:-2]  # delete repeated fits
-                ordersabove = i - 2
-                done = 1
-        if not maximum_exists:
-            done = 1
-            allcoef = allcoef[:-1]  # delete duplicate fit
-            ordersabove = i - 1
-        i += 1
-
-    # Now march down to the bottom of the array.  Resume from the
-    # initial coefficients from earlier.
-
-    # the search stops if the 0th order coefficient computed is less than 0 or is greater than the previous coefficient computed (i.e. up step).
-    # Or is within a pixel of the previous two computed coefficients,
-    # So 3 zero-order coefficients are equal. In the latter case, we delete two of the last fits, and then stop the search.
-
-    done = 0
-    i = 1
-    coef = initcoef
-    while done == 0:
-        coef, val, maximum_exists = findorder(image, imfilt, x, evaluated_legendre_polynomials,
-                                     order=order_of_poly_fit, lastcoef=coef,
-                                     direction='down')
-        vals += [val]
-        allcoef += [[-i] + list(coef)]
-
-        if coef[0] < 0 or coef[0] > allcoef[-2][1] and maximum_exists:
-            allcoef = allcoef[:-1]  # delete bad fit
-            ordersbelow = i - 1
-            done = 1
-        if i >= 2 and done == 0 and maximum_exists:
-            if abs(coef[0] - allcoef[-2][1]) < 1 and abs(coef[0] - allcoef[-3][1]) < 1:
-                allcoef = allcoef[:-2]  # delete repeated fits
-                ordersbelow = i - 2
-                done = 1
-        if not maximum_exists:
-            done = 1
-            allcoef = allcoef[:-1]  # delete duplicate fit
-            ordersbelow = i - 1
-        i += 1
+    ordersbelow, allcoef, coef, vals = find_all_traces_marching_up_or_down(image, imfilt, x, vals,
+                                                                           evaluated_legendre_polynomials, length,
+                                        order_of_poly_fit, initcoef, allcoef, direction='down')
 
     return allcoef, vals, ordersabove + ordersbelow + 1
 
