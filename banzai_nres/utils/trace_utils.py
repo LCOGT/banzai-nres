@@ -48,43 +48,43 @@ def maxima(A, s, k, ref):
     return firstmax
 
 
-def crosscoef(p, imfilt, x, arr):
+def crosscoef(legendre_polynomial_coefficients, imfilt, x, evaluated_legendre_polynomials):
     """
-    :param p: list of legendre polynomial coefficients
-    :param imfilt: ndattay, image.data passed through ndimage.spline_filter
+    :param legendre_polynomial_coefficients: list of legendre polynomial coefficients
+    :param imfilt: ndarray, image.data passed through ndimage.spline_filter
     :param x: array of the x pixels from [0,1,2,...,im.shape[1]]
-    :param arr: Legendre polynomial array.
+    :param evaluated_legendre_polynomials: Legendre polynomial evaluated over -1 to 1 , ndarray.
     :return: The negative of the total flux summed across the trace.
     """
     y = x * 0.
 
-    for i in range(len(p)):
-        y += arr[i] * p[i]
+    for i in range(len(legendre_polynomial_coefficients)):
+        y += evaluated_legendre_polynomials[i] * legendre_polynomial_coefficients[i]
     val = np.sum(ndimage.map_coordinates(imfilt, [y, x], prefilter=False))
     return -1 * val
 
 
-def fluxvalues(testpoints, p, imfilt, x, arr):
+def fluxvalues(testpoints, legendre_polynomial_coefficients, imfilt, x, evaluated_legendre_polynomials):
     """
-    :param p: list of legendre polynomial coefficients excluding 0th order coefficients
-    :param imfilt: ndattay, image.data passed through ndimage.spline_filter
+    :param legendre_polynomial_coefficients: list of legendre polynomial coefficients excluding 0th order coefficients
+    :param imfilt: ndarray, image.data passed through ndimage.spline_filter
     :param x: array of the x pixels from [0,1,2,...,im.shape[1]]
-    :param arr: Legendre polynomial array.
+    :param evaluated_legendre_polynomials: Legendre polynomial evaluated over -1 to 1 , ndarray.
     :return: The positive total flux at each point in testpoints
     """
     values = np.zeros_like(testpoints)
     for i in range(0, len(values)):
-        coeffguesses = list([testpoints[i]] + p)
-        values[i] = (-1) * crosscoef(coeffguesses, imfilt, x, arr)
+        coeffguesses = list([testpoints[i]] + legendre_polynomial_coefficients)
+        values[i] = (-1) * crosscoef(coeffguesses, imfilt, x, evaluated_legendre_polynomials)
     return values
 
 
-def findorder(im, imfilt, x, arr, order=2, second_order_coefficient_guess=90, lastcoef=None, direction='up'):
+def findorder(im, imfilt, x, evaluated_legendre_polynomials, order=2, second_order_coefficient_guess=90, lastcoef=None, direction='up'):
     """
     :param im: ndarray, data of the image
-    :param imfilt: ndattay, image.data passed through ndimage.spline_filter
+    :param imfilt: ndarray, image.data passed through ndimage.spline_filter
     :param x: array of the x pixels from [0,1,2,...,im.shape[1]]
-    :param arr: Legendre polynomial array.
+    :param evaluated_legendre_polynomials: Legendre polynomial evaluated over -1 to 1 , ndarray.
     :param order: order of the legendre polynomial fit
     :param second_order_coefficient_guess: coefficient guess for the second order legendre polynomial which
     describe the traces across the ccd. The 70-100 works well for all LCOGT NRES instruments as of 2018/09/07
@@ -126,8 +126,8 @@ def findorder(im, imfilt, x, arr, order=2, second_order_coefficient_guess=90, la
         elif direction == 'inplace':
             testpoints = list(range(p0 - 10, p0 + 10))
 
-        fluxvals = fluxvalues(testpoints, p, im, x, arr)
-        refflux = max((-1)*crosscoef(lastcoef, im, x, arr), max(fluxvals))
+        fluxvals = fluxvalues(testpoints, p, im, x, evaluated_legendre_polynomials)
+        refflux = max((-1) * crosscoef(lastcoef, im, x, evaluated_legendre_polynomials), max(fluxvals))
 
         deltap0guess = maxima(fluxvals, 5, 1 / 20, refflux)[0]
 
@@ -141,9 +141,9 @@ def findorder(im, imfilt, x, arr, order=2, second_order_coefficient_guess=90, la
         coeffsguess = [p0] + list(p)
 
     if deltap0guess != -1337:  # if deltap0guess == -1337, no next order exists.
-        p1 = optimize.minimize(crosscoef, coeffsguess, (imfilt, x, arr), method='Powell').x
+        p1 = optimize.minimize(crosscoef, coeffsguess, (imfilt, x, evaluated_legendre_polynomials), method='Powell').x
 
-        val = -1 * crosscoef(p1, imfilt, x, arr)
+        val = -1 * crosscoef(p1, imfilt, x, evaluated_legendre_polynomials)
 
         return p1, val, 0
     else:
@@ -153,7 +153,7 @@ def findorder(im, imfilt, x, arr, order=2, second_order_coefficient_guess=90, la
 def tracesacrossccd(im, imfilt, order, second_order_coefficient_guess):
     """
     :param im: ndarray, data of the image
-    :param imfilt: ndattay, image.data passed through ndimage.spline_filter
+    :param imfilt: ndarray, image.data passed through ndimage.spline_filter
     :param order: order of the polynomial fit.
     :param second_order_coefficient_guess: coefficient guess for the second order legendre polynomial which
     describe the traces across the ccd.
