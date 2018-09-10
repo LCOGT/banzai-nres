@@ -107,7 +107,8 @@ def test_finding_first_statistically_significant_maxima():
     """
     intensity_line_cut_across_two_traces, x_coords, centroids = array_with_two_peaks()
     approximate_maximum_flux = np.max(intensity_line_cut_across_two_traces)
-    index_of_first_maximum = trace_utils.maxima(intensity_line_cut_across_two_traces, 5, 1 / 20, approximate_maximum_flux)[0]
+    index_of_first_maximum, maximum_exists = trace_utils.maxima(intensity_line_cut_across_two_traces, 5, 1 / 20,
+                                                                approximate_maximum_flux)[0]
     assert np.isclose(x_coords[index_of_first_maximum], centroids[0], atol=3, rtol=0)
 
 

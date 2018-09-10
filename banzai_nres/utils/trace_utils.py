@@ -26,14 +26,16 @@ def maxima(A, s, k, ref):
               as a maximum.
     :param k: multiplicative constant which qualifies a point as a real maxima (not just noise)
     :param ref: the reference value which k*r defines the value any real maximal point must exceed
-    :return: The index of the a point near a maximum and the value at the maximum
+    :return: The index of the a point near a maximum and the value at the maximum, and a boolean for whether or not
+            a valid maximum exists.
     """
 
     i = s - 1
     l, r = 0, 0
     A = A - np.ones_like(A) * np.min(A)
     threshold = k * ref
-    firstmax = [-1337, 0]
+    firstmax = [0, 0]
+    maximum_exists = False
     while i < len(A) - s and int(l + r) != 2:
         l, r = 1, 1
         for j in range(1, s + 1):
@@ -43,9 +45,9 @@ def maxima(A, s, k, ref):
                 l, j = 0, s + 1
         if int(l + r) == 2:
             firstmax = [i, A[i]]
-
+            maximum_exists = True
         i += 1
-    return firstmax
+    return firstmax, maximum_exists
 
 
 def crosscoef(legendre_polynomial_coefficients, imfilt, x, evaluated_legendre_polynomials):
@@ -79,9 +81,65 @@ def fluxvalues(testpoints, legendre_polynomial_coefficients, imfilt, x, evaluate
     return values
 
 
-def findorder(im, imfilt, x, evaluated_legendre_polynomials, order=2, second_order_coefficient_guess=90, lastcoef=None, direction='up'):
+def generate_initial_guess_for_trace_polynomial(image, imfilt, x, evaluated_legendre_polynomials, order=2, second_order_coefficient_guess=90, lastcoef=None, direction='up'):
     """
-    :param im: ndarray, data of the image
+    :param image:
+    :param imfilt:
+    :param x:
+    :param evaluated_legendre_polynomials:
+    :param order:
+    :param second_order_coefficient_guess:
+    :param lastcoef:
+    :param direction:
+    :return: guess for the coefficient of the polynomial fit for the following trace.
+
+    If the last set of coefficients are None, then we use a manual guess for the first order to fit set by the extent
+    of a trace across the detector.
+
+    If a previous fit exists, we find a new zero-th order term for the polynomial fit by
+    stepping along either up or down the grid until we find
+    a point which is a maximum and nearest to the last order.
+    bnds = [[None,None]]*(order+1)
+    """
+
+    if lastcoef is None:
+        p = [0. for i in range(order + 1)]
+        p[0] = int(imfilt.shape[0]/3)
+        if order >= 2:
+            p[2] = second_order_coefficient_guess
+        coeffsguess = copy.deepcopy(p)
+    else:
+
+        p = list(lastcoef[1:])
+        p0 = int(lastcoef[0])
+
+        if direction == 'up':
+            testpoints = list(range(p0 + 6, p0 + 100))
+        elif direction == 'down':
+            testpoints = list(range(p0 - 100, p0 - 6))
+            testpoints = testpoints[::-1]
+        elif direction == 'inplace':
+            testpoints = list(range(p0 - 10, p0 + 10))
+
+        fluxvals = fluxvalues(testpoints, p, image.data, x, evaluated_legendre_polynomials)
+        refflux = max((-1) * crosscoef(lastcoef, image.data, x, evaluated_legendre_polynomials), max(fluxvals))
+
+        deltap0guess, maximum_exists = maxima(fluxvals, 5, 1 / 20, refflux)[0]
+
+        if direction == 'up':
+            p0 = deltap0guess + min(testpoints)
+        elif direction == 'down':
+            p0 = max(testpoints) - deltap0guess
+        elif direction == 'inplace':
+            p0 = deltap0guess + min(testpoints)
+
+        coeffsguess = [p0] + list(p)
+    return coeffsguess, maximum_exists, refflux
+
+
+def findorder(image, imfilt, x, evaluated_legendre_polynomials, order=2, second_order_coefficient_guess=90, lastcoef=None, direction='up'):
+    """
+    :param image: banzai image object.
     :param imfilt: ndarray, image.data passed through ndimage.spline_filter
     :param x: array of the x pixels from [0,1,2,...,im.shape[1]]
     :param evaluated_legendre_polynomials: Legendre polynomial evaluated over -1 to 1 , ndarray.
@@ -97,79 +155,33 @@ def findorder(im, imfilt, x, evaluated_legendre_polynomials, order=2, second_ord
     become further spaced, we will have to change the two instances of 100 here to that larger value. Although 100
     is like 10x the current trace spacing, so I do not forsee any issues.
     """
+    coeffsguess, maximum_exists, refflux = generate_initial_guess_for_trace_polynomial(image, imfilt, x,
+                                                evaluated_legendre_polynomials, order=order,
+                                                second_order_coefficient_guess=second_order_coefficient_guess,
+                                                lastcoef=lastcoef, direction=direction)
 
-    # Manual guess for the first order to fit--basically just choose a
-    # position in the detector and give a good guess for the quadratic
-    # coefficient. In this cases 80-100 is good.
-    deltap0guess = 0
-    if lastcoef is None:
-        # bnds = [[None,None]]*(order+1)
-        p = [0. for i in range(order + 1)]
-        p[0] = int(imfilt.shape[0]/3)
-        if order >= 2:
-            p[2] = second_order_coefficient_guess
-        coeffsguess = copy.deepcopy(p)
-    else:
-        # Find a new zero-th order term for the polynomial fit by
-        # stepping along either up or down the grid until we find
-        # a point which is a maximum and nearest to the last order.
-        # bnds = [[None,None]]*(order+1)
-        p = list(lastcoef[1:])
-        p0 = int(lastcoef[0])
-
-        if direction == 'up':
-            testpoints = list(range(p0 + 6, p0 + 100))
-        elif direction == 'down':
-            testpoints = list(range(p0 - 100, p0 - 6))
-            testpoints = testpoints[
-                         ::-1]  # important that we reverse list to make it greatest to smallest for this down sweep (needed in maxima func)
-        elif direction == 'inplace':
-            testpoints = list(range(p0 - 10, p0 + 10))
-
-        fluxvals = fluxvalues(testpoints, p, im, x, evaluated_legendre_polynomials)
-        refflux = max((-1) * crosscoef(lastcoef, im, x, evaluated_legendre_polynomials), max(fluxvals))
-
-        deltap0guess = maxima(fluxvals, 5, 1 / 20, refflux)[0]
-
-        if direction == 'up':
-            p0 = deltap0guess + min(testpoints)
-        elif direction == 'down':
-            p0 = max(testpoints) - deltap0guess
-        elif direction == 'inplace':
-            p0 = deltap0guess + min(testpoints)
-
-        coeffsguess = [p0] + list(p)
-
-    if deltap0guess != -1337:  # if deltap0guess == -1337, no next order exists.
+    if maximum_exists:
         p1 = optimize.minimize(crosscoef, coeffsguess, (imfilt, x, evaluated_legendre_polynomials), method='Powell').x
 
         val = -1 * crosscoef(p1, imfilt, x, evaluated_legendre_polynomials)
-
-        return p1, val, 0
     else:
-        return lastcoef, refflux, 1
+        p1, val = lastcoef, refflux
+
+    return p1, val, maximum_exists
 
 
-def tracesacrossccd(im, imfilt, order, second_order_coefficient_guess):
+def tracesacrossccd(image, imfilt, order_of_poly_fit, second_order_coefficient_guess):
     """
-    :param im: ndarray, data of the image
+    :param image: banzai image object
     :param imfilt: ndarray, image.data passed through ndimage.spline_filter
-    :param order: order of the polynomial fit.
+    :param order_of_poly_fit: order of the polynomial fit.
     :param second_order_coefficient_guess: coefficient guess for the second order legendre polynomial which
     describe the traces across the ccd.
     :return:
     """
-    length, width = im.shape
+    length, width = image.data.shape
 
-    x = np.arange(imfilt.shape[1])
-    xnorm = x * 2. / x[-1] - 1  # x normalized to run from -1 to 1
-
-    # Set up Legendre polynomials to avoid roundoff error from
-    # explicitly computing polynomials from their coefficients
-
-    arr = np.ones((order + 1, x.shape[0]))
-    for i in range(1, order + 1):
-        arr[i] = np.polynomial.legendre.legval(xnorm, [0 for j in range(i)] + [1])
+    evaluated_legendre_polynomials, x, xnorm = generate_legendre_array(image, order_of_poly_fit)
 
     # For the first coefficients, fit a quadratic
     # unconstrained.  Use this fitted quadratic to fit higher order
@@ -177,10 +189,10 @@ def tracesacrossccd(im, imfilt, order, second_order_coefficient_guess):
     # demands as possible on the optimization routine. Future orders are fit with the full
     # nth order polynomial (using the last fit as the initial guess) all at once.
     coef = None
-    for i in range(2, order + 1):
+    for i in range(2, order_of_poly_fit + 1):
         if coef is not None:
             coef = list(coef) + [0]
-        coef, val, nomax = findorder(im, imfilt, x, arr, order=i,
+        coef, val, maximum_exists = findorder(image, imfilt, x, evaluated_legendre_polynomials, order=i,
                                      second_order_coefficient_guess=second_order_coefficient_guess, lastcoef=coef,
                                      direction='inplace')
 
@@ -199,20 +211,21 @@ def tracesacrossccd(im, imfilt, order, second_order_coefficient_guess):
     done = 0
     i = 1
     while done == 0:
-        coef, val, nomax = findorder(im, imfilt, x, arr, order=order, lastcoef=coef, direction='up')
+        coef, val, maximum_exists = findorder(image, imfilt, x, evaluated_legendre_polynomials, order=order_of_poly_fit,
+                                     lastcoef=coef, direction='up')
         vals += [val]
         allcoef += [[i] + list(coef)]
-        if coef[0] < allcoef[-2][1] or coef[0] > length and nomax == 0:
+        if coef[0] < allcoef[-2][1] or coef[0] > length and maximum_exists:
             allcoef = allcoef[:-1]  # delete bad fit
             ordersabove = i - 1
             done = 1
         if i >= 2 and done == 0:
-            if abs(coef[0] - allcoef[-2][1]) < 1 and abs(coef[0] - allcoef[-3][1]) < 1 and nomax == 0:
+            if abs(coef[0] - allcoef[-2][1]) < 1 and abs(coef[0] - allcoef[-3][1]) < 1 and maximum_exists:
                 allcoef = allcoef[:-2]  # delete repeated fits
                 print(allcoef[-1][1], coef[0])
                 ordersabove = i - 2
                 done = 1
-        if nomax == 1:
+        if not maximum_exists:
             done = 1
             allcoef = allcoef[:-1]  # delete duplicate fit
             ordersabove = i - 1
@@ -229,22 +242,23 @@ def tracesacrossccd(im, imfilt, order, second_order_coefficient_guess):
     i = 1
     coef = initcoef
     while done == 0:
-        coef, val, nomax = findorder(im, imfilt, x, arr, order=order, lastcoef=coef,
+        coef, val, maximum_exists = findorder(image, imfilt, x, evaluated_legendre_polynomials,
+                                     order=order_of_poly_fit, lastcoef=coef,
                                      direction='down')
         vals += [val]
         allcoef += [[-i] + list(coef)]
 
-        if coef[0] < 0 or coef[0] > allcoef[-2][1] and nomax == 0:
+        if coef[0] < 0 or coef[0] > allcoef[-2][1] and maximum_exists:
             allcoef = allcoef[:-1]  # delete bad fit
             ordersbelow = i - 1
             done = 1
-        if i >= 2 and done == 0 and nomax == 0:
+        if i >= 2 and done == 0 and maximum_exists:
             if abs(coef[0] - allcoef[-2][1]) < 1 and abs(coef[0] - allcoef[-3][1]) < 1:
                 allcoef = allcoef[:-2]  # delete repeated fits
                 print(allcoef[-1][1], coef[0])
                 ordersbelow = i - 2
                 done = 1
-        if nomax == 1:
+        if not maximum_exists:
             done = 1
             allcoef = allcoef[:-1]  # delete duplicate fit
             ordersbelow = i - 1
@@ -571,12 +585,10 @@ def extract_coeffs_entire_lampflat_frame(image, order_of_poly_fits, second_order
         describe the traces across the ccd.
 
     """
-
-    image_data = image.data
-    imagefiltered = ndimage.spline_filter(image_data)
+    imagefiltered = ndimage.spline_filter(image.data)
 
     # finding coefficients of traces which fit the echelle orders across the CCD.
-    allcoef, vals, totalnumberoforders = tracesacrossccd(image_data, imagefiltered, order_of_poly_fits, second_order_coefficient_guess)
+    allcoef, vals, totalnumberoforders = tracesacrossccd(image, imagefiltered, order_of_poly_fits, second_order_coefficient_guess)
     sortedallcoefs = np.array(allcoef)[np.array(allcoef)[:, 0].argsort()]
     order_indices = np.arange(totalnumberoforders)
     # appending indices 0,1,2...,totalnumberoforders as the first column. prior it is indexed from negative numbers.
