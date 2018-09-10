@@ -108,6 +108,8 @@ def generate_initial_guess_for_trace_polynomial(image, imfilt, x, evaluated_lege
         if order >= 2:
             p[2] = second_order_coefficient_guess
         coeffsguess = copy.deepcopy(p)
+        maximum_exists = True
+        refflux = 0
     else:
 
         p = list(lastcoef[1:])
@@ -222,7 +224,6 @@ def tracesacrossccd(image, imfilt, order_of_poly_fit, second_order_coefficient_g
         if i >= 2 and done == 0:
             if abs(coef[0] - allcoef[-2][1]) < 1 and abs(coef[0] - allcoef[-3][1]) < 1 and maximum_exists:
                 allcoef = allcoef[:-2]  # delete repeated fits
-                print(allcoef[-1][1], coef[0])
                 ordersabove = i - 2
                 done = 1
         if not maximum_exists:
@@ -255,7 +256,6 @@ def tracesacrossccd(image, imfilt, order_of_poly_fit, second_order_coefficient_g
         if i >= 2 and done == 0 and maximum_exists:
             if abs(coef[0] - allcoef[-2][1]) < 1 and abs(coef[0] - allcoef[-3][1]) < 1:
                 allcoef = allcoef[:-2]  # delete repeated fits
-                print(allcoef[-1][1], coef[0])
                 ordersbelow = i - 2
                 done = 1
         if not maximum_exists:
