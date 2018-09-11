@@ -764,17 +764,8 @@ def optimize_coeffs_entire_lampflat_frame(coefficients_and_indices, image, num_o
     return all_optimized_coefficients_and_indices
 
 
-def get_number_of_lit_fibers(coefficients_and_indices):
-    #this will be replaced quite soon with a different function so it is not unit tested.
-    """
-    :param coefficients_and_indices: trace coefficients with indices (0,...,67,0,,..67) as the first column
-    :return: the number of lit fibers. This works only if the trace coefficients are all in one array as described.
-    This is a temporary function and should be replaced by len(fiber_order) at some point (when we have fiber_order)
-    figured out.
-    """
-    unique, counts = np.unique(coefficients_and_indices[:, 0], return_counts=True)
-    number_of_traces = coefficients_and_indices[:, 0].shape[0]
-    assert (counts == counts[0]).all()
-    num_lit_fibers = int(counts[0])
-    assert number_of_traces % num_lit_fibers == 0
+def get_number_of_lit_fibers(image):
+    fiber_info = image.header.get('OBJECTS').split('&')
+    num_unlit_fibers = fiber_info.count('none')
+    num_lit_fibers = int(len(fiber_info) - num_unlit_fibers)
     return num_lit_fibers

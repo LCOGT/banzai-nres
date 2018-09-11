@@ -124,9 +124,9 @@ class TraceUpdater(Stage):
     def do_stage(self, images):
         add_class_as_attribute(images, 'trace', Trace)
         for image in images:
+            num_lit_fibers = get_number_of_lit_fibers(image)
             # getting coefficients from master trace file
             coefficients_and_indices_initial, fiber_order = get_trace_coefficients(image, self)
-            num_lit_fibers = get_number_of_lit_fibers(coefficients_and_indices_initial)
             # once we write fiber_order correctly this should turn into len(fiber_order) or maybe assert
             # num_lit_fibers = len(fiber_order)
             image.trace.coefficients = coefficients_and_indices_initial
@@ -178,18 +178,18 @@ def make_master_traces(images, maker_object, image_config, logging_tags, method,
             images_to_try = [images[counter]]
         counter += 1
         for image in images_to_try:
+            num_lit_fibers = get_number_of_lit_fibers(image)
             if method == 'order-by-order':
                 logger.debug('fitting order by order on %s' % image.filename)
                 second_order_coefficient_guess = maker_object.average_trace_vertical_extent
                 coefficients_and_indices_initial = fit_traces_order_by_order(image, second_order_coefficient_guess,
                                                                              order_of_poly_fits=order_of_poly_fits,
-                                                                             num_lit_fibers=2)
+                                                                             num_lit_fibers=num_lit_fibers)
                 fiber_order = None
             if method == 'global-meta':
                 logger.debug('importing master coeffs and refining fit on %s' % image.filename)
                 coefficients_and_indices_initial, fiber_order = get_trace_coefficients(image, maker_object)
 
-            num_lit_fibers = get_number_of_lit_fibers(coefficients_and_indices_initial)
             # once we write fiber_order correctly this should turn into len(fiber_order) or maybe assert
             # num_lit_fibers = len(fiber_order)
 

@@ -27,6 +27,7 @@ class FakeTraceImage(FakeImage):
         self.caltype = 'trace'
         self.header = fits.Header()
         self.header['OBSTYPE'] = 'LAMPFLAT'
+        self.header['OBJECTS'] = 'tung&tung&none'
         self.nx = 500
         self.ny = 502
         self.bpm = np.zeros((self.ny, self.nx), dtype=np.uint8)
