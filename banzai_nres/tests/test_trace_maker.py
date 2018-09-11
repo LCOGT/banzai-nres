@@ -145,6 +145,45 @@ class TestFindingTotalFluxAcrossTraces:
         assert np.isclose(found_value, tiny_image.expected_value)
 
 
+class TestImageSplinesClassMethods:
+    """
+    Tests the methods which generate the spline 0th, 1st and second derivatives inside the class
+    trace_utils.ImageSplines
+    """
+    def test_generates_with_none_bpm(self):
+        image = FakeImage(nx=12, ny=10, overscan_size=2)
+        trim_image(image, trimmed_shape=(10, 10))
+        image.bpm = None
+        image_splines = trace_utils.ImageSplines()
+        image_splines.calculate_spline_derivatives_and_populate_attributes(image, image.bpm)
+        for attribute in ['spline', 'first_derivative', 'second_derivative']:
+            assert getattr(image_splines, attribute) is not None
+
+    def test_generates_with_zeros_bpm(self):
+        image = FakeImage(nx=12, ny=10, overscan_size=2)
+        trim_image(image, trimmed_shape=(10, 10))
+        image_splines = trace_utils.ImageSplines()
+        image_splines.calculate_spline_derivatives_and_populate_attributes(image, image.bpm)
+        for attribute in ['spline', 'first_derivative', 'second_derivative']:
+            assert getattr(image_splines, attribute) is not None
+
+    def test_spline_skips_bad_pixel(self):
+        image1 = FakeImage(nx=12, ny=10, overscan_size=2)
+        image2 = FakeImage(nx=12, ny=10, overscan_size=2)
+        trim_image(image1, trimmed_shape=(10, 10))
+        trim_image(image2, trimmed_shape=(10, 10))
+        image_splines1 = trace_utils.ImageSplines()
+        image_splines2 = trace_utils.ImageSplines()
+
+        # creating a bad pixel in one of the clone images
+        image1.data[4, 4] = 10000
+        image1.bpm[4, 4] = 1
+
+        image_splines1.calculate_spline_derivatives_and_populate_attributes(image1, image1.bpm)
+        image_splines2.calculate_spline_derivatives_and_populate_attributes(image2, image2.bpm)
+        for attribute in ['spline', 'first_derivative', 'second_derivative']:
+            assert np.isclose(getattr(image_splines1, attribute)[4](4), getattr(image_splines2, attribute)[4](4))
+
 class TestTransformationsToAndFromMetaCoeffstoTraceCoeffs:
     """
     Tests initial fits of trace coeffs which generates the meta coefficients and the transformation from meta

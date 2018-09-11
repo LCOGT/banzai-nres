@@ -385,15 +385,15 @@ class ImageSplines(object):
         self.first_derivative = first_derivative
         self.second_derivative = second_derivative
 
-    def calculate_and_fill_spline_derivative_attributes(self, image, bpm):
-        if bpm == None:
-            bpm = np.ones_like(image.data)
+    def calculate_spline_derivatives_and_populate_attributes(self, image, bpm):
+        if bpm is None:
+            bpm = np.zeros_like(image.data)
 
         pixel_x_array = np.arange(image.data.shape[0])
         pixel_y_array = np.arange(image.data.shape[1])
 
         # generating spline interpolations which incorporate only the good pixels
-        f = [interpolate.UnivariateSpline(pixel_y_array[bpm[:, xx] != 0], image.data[:, xx][bpm[:, xx] != 0],
+        f = [interpolate.UnivariateSpline(pixel_y_array[bpm[:, xx] != 1], image.data[:, xx][bpm[:, xx] != 1],
                                           k=3, s=0, ext=1) for xx in pixel_x_array]
         self.first_derivative = [f[xx].derivative(n=1) for xx in pixel_x_array]
         self.second_derivative = [f[xx].derivative(n=2) for xx in pixel_x_array]
@@ -714,7 +714,7 @@ def optimize_coeffs_entire_lampflat_frame(coefficients_and_indices, image, num_o
     number_of_traces, trace_poly_order = coeflen, coefwidth - 2
 
     image_splines = ImageSplines()
-    image_splines.calculate_and_fill_spline_derivative_attributes(image, bpm)
+    image_splines.calculate_spline_derivatives_and_populate_attributes(image, bpm)
 
     legendre_polynomial_array, x, xnorm = generate_legendre_array(image, trace_poly_order)
 
