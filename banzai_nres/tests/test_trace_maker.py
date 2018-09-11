@@ -115,6 +115,17 @@ def array_with_two_peaks():
     return y, x, centroids
 
 
+def test_generating_blank_evaluated_legendre_array():
+    tiny_image = TinyFakeImageWithTraces()
+    x_coords = np.arange(tiny_image.data.shape[1])
+    xnorm = x_coords * 2. / x_coords[-1] - 1
+    legendre_polynomial_array, x_coords_2, xnorm_2 = trace_utils.generate_legendre_array(tiny_image,
+                                                                                         order_of_poly_fits=0)
+    assert (legendre_polynomial_array[0] == 1).all()
+    assert np.array_equal(x_coords_2, x_coords)
+    assert np.array_equal(xnorm, xnorm_2)
+
+
 def test_finding_first_statistically_significant_maxima():
     """
     test type: Unit Test.

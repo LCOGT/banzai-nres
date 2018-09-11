@@ -279,18 +279,18 @@ def tracesacrossccd(image, imfilt, order_of_poly_fit, second_order_coefficient_g
 
     ordersabove, allcoef, coef, vals = find_all_traces_marching_up_or_down(image, imfilt, x, vals,
                                                                            evaluated_legendre_polynomials, length,
-                                        order_of_poly_fit, coef, allcoef, direction='up')
-
+                                                                           order_of_poly_fit, coef, allcoef,
+                                                                           direction='up')
 
     ordersbelow, allcoef, coef, vals = find_all_traces_marching_up_or_down(image, imfilt, x, vals,
                                                                            evaluated_legendre_polynomials, length,
-                                        order_of_poly_fit, initcoef, allcoef, direction='down')
+                                                                           order_of_poly_fit, initcoef, allcoef,
+                                                                           direction='down')
 
     return allcoef, vals, ordersabove + ordersbelow + 1
 
 
 def generate_legendre_array(image, order_of_poly_fits):
-    # TODO: unit test this.
     """
     :param image: Banzai image object.
     :param order_of_poly_fits: order of the polynomials used to fit the traces across the CCD.
