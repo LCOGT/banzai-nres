@@ -380,10 +380,24 @@ class ImageSplines(object):
     Stores the arrays of scipy-spline objects which give the derivatives and values at points
     in the image.
     """
-    def __init__(self, spline, first_derivative, second_derivative):
+    def __init__(self, spline=None, first_derivative=None, second_derivative=None):
         self.spline = spline
         self.first_derivative = first_derivative
         self.second_derivative = second_derivative
+
+    def calculate_and_fill_spline_derivative_attributes(self, image, bpm):
+        if bpm == None:
+            bpm = np.ones_like(image.data)
+
+        pixel_x_array = np.arange(image.data.shape[0])
+        pixel_y_array = np.arange(image.data.shape[1])
+
+        # generating spline interpolations which incorporate only the good pixels
+        f = [interpolate.UnivariateSpline(pixel_y_array[bpm[:, xx] != 0], image.data[:, xx][bpm[:, xx] != 0],
+                                          k=3, s=0, ext=1) for xx in pixel_x_array]
+        self.first_derivative = [f[xx].derivative(n=1) for xx in pixel_x_array]
+        self.second_derivative = [f[xx].derivative(n=2) for xx in pixel_x_array]
+        self.spline = f
 
 
 def get_coefficients_from_meta(allmetacoeffs, stpolyarr):
@@ -699,18 +713,8 @@ def optimize_coeffs_entire_lampflat_frame(coefficients_and_indices, image, num_o
     coeflen, coefwidth = coefficients_and_indices.shape
     number_of_traces, trace_poly_order = coeflen, coefwidth - 2
 
-    if bpm == None:
-        bpm = np.ones_like(image.data)
-
-    pixel_x_array = np.arange(image.data.shape[0])
-    pixel_y_array = np.arange(image.data.shape[1])
-
-    # generating spline interpolations which incorporate only the good pixels
-    f = [interpolate.UnivariateSpline(pixel_y_array[bpm[:, xx] != 0], image.data[:, xx][bpm[:, xx] != 0],
-                                      k=3, s=0, ext=1) for xx in pixel_x_array]
-    fp = [f[xx].derivative(n=1) for xx in pixel_x_array]
-    fpp = [f[xx].derivative(n=2) for xx in pixel_x_array]
-    image_splines = ImageSplines(f, fp, fpp)
+    image_splines = ImageSplines()
+    image_splines.calculate_and_fill_spline_derivative_attributes(image, bpm)
 
     legendre_polynomial_array, x, xnorm = generate_legendre_array(image, trace_poly_order)
 
