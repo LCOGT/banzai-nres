@@ -82,7 +82,7 @@ matrix:
 
 
 install:
-  - if [[ "$INSTALL_NUMPY" == 1 ]]; then pip install numpy==NUMPY_VERSION; fi
+  - if [[ "$INSTALL_NUMPY" == 1 ]]; then pip install numpy==$NUMPY_VERSION; fi
   - $PYTHON_INSTALL_COMMAND
 
 script:
