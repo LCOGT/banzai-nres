@@ -622,7 +622,11 @@ def split_and_sort_coefficients_for_each_fiber(coefficients_and_indices, num_lit
     fiber_coefficients = (coefficients_no_indices[::num_lit_fibers],)
     for i in range(1, num_lit_fibers):
         fiber_coefficients += (coefficients_no_indices[i::num_lit_fibers],)
-    return fiber_coefficients, order_indices
+
+    ordered_coefficients = np.vstack(fiber_coefficients)
+    coefficients_and_indices = np.insert(ordered_coefficients, obj=0, values=order_indices, axis=1)
+
+    return coefficients_and_indices
 
 
 def split_already_sorted_coefficients_into_each_fiber(coefficients_and_indices, num_lit_fibers):
@@ -647,9 +651,8 @@ def fit_traces_order_by_order(image, second_order_coefficient_guess, order_of_po
                                                                                           second_order_coefficient_guess)
 
     coefficients_and_indices = exclude_traces_which_jet_off_detector(coefficients_and_indices, image)
-    coeffs_per_fiber, order_indices = split_and_sort_coefficients_for_each_fiber(coefficients_and_indices, num_lit_fibers)
-    ordered_coefficients = np.vstack(coeffs_per_fiber)
-    coefficients_and_indices = np.insert(ordered_coefficients, obj=0, values=order_indices, axis=1)
+    coefficients_and_indices = split_and_sort_coefficients_for_each_fiber(coefficients_and_indices, num_lit_fibers)
+
     logger.info('%s traces found' % coefficients_and_indices.shape[0])
 
     return coefficients_and_indices

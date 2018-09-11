@@ -138,7 +138,17 @@ def test_finding_total_flux_across_a_trace():
 
 
 def test_first_sorting_of_coefficients_from_blind_fit():
-    assert True
+    fake_coefficients = np.array([[0, 1],
+                                  [1, 3],
+                                  [2, 2],
+                                  [3, 4]])
+    coefficients_and_indices = trace_utils.split_and_sort_coefficients_for_each_fiber(fake_coefficients,
+                                                                                      num_lit_fibers=2)
+    expected_coefficients_and_indices = np.array([[0, 1],
+                                                  [1, 2],
+                                                  [0, 3],
+                                                  [1, 4]])
+    assert np.equal(coefficients_and_indices, expected_coefficients_and_indices).all()
 
 
 def test_splitting_coefficients_per_fiber():
