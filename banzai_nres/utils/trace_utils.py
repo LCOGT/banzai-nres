@@ -350,8 +350,7 @@ def check_for_close_fit(coefficients_and_indices_list, images, num_lit_fibers, m
         return False
 
 
-def check_flux_change(coefficients_and_indices_new, coefficients_and_indices_initial, image):
-    # TODO: unit test this.
+def check_flux_change(coefficients_and_indices_new, coefficients_and_indices_initial, image, relative_tolerance=1E-2):
     """
     :param coefficients_and_indices_new: polynomial fit to traces that is new
     :param coefficients_and_indices_initial: polynomial fit to traces that is old (e.g. from a master file)
@@ -361,14 +360,13 @@ def check_flux_change(coefficients_and_indices_new, coefficients_and_indices_ini
     initial_flux = totalflux_all_traces(coefficients_and_indices_initial, image)
     delta_fraction_flux = (totalflux_all_traces(coefficients_and_indices_new, image) - initial_flux)/initial_flux
     logger.debug('(new_flux - master_cal_flux)/master_cal_flux) = %s' % delta_fraction_flux)
-    if np.abs(delta_fraction_flux) < 1E-2:
+    if np.abs(delta_fraction_flux) < relative_tolerance:
         return True
     else:
         return False
 
 
 def get_trace_centroids_from_coefficients(coefficients_and_indices, image):
-    # TODO: unit test this.
     """
     :param coefficients_and_indices: polynomial fit to traces
     :param image: banzai image object

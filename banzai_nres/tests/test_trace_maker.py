@@ -33,6 +33,9 @@ class FakeTraceImage(FakeImage):
 
 
 class TinyFakeImageWithTraces(object):
+    """
+    A tiny image with one fake trace running down the center (just a single row of bright pixels)
+    """
     def __init__(self):
         size_of_test_image = 3
         self.data = np.zeros((size_of_test_image, size_of_test_image))
@@ -123,6 +126,18 @@ def test_finding_first_statistically_significant_maxima():
     index_of_first_maximum, maximum_exists = trace_utils.maxima(intensity_line_cut_across_two_traces, 5, 1 / 20,
                                                                 approximate_maximum_flux)[0]
     assert np.isclose(x_coords[index_of_first_maximum], centroids[0], atol=3, rtol=0)
+
+
+def test_for_flux_change_between_two_fits():
+    tiny_image = TinyFakeImageWithTraces()
+    coefficients_and_indices_init = np.array([[0, 1]])
+    no_flux_change = trace_utils.check_flux_change(coefficients_and_indices_init, coefficients_and_indices_init,
+                                  tiny_image, relative_tolerance=1E-2)
+    assert no_flux_change
+    coefficients_and_indices_new = np.array([[0, 0]])
+    no_flux_change = trace_utils.check_flux_change(coefficients_and_indices_new, coefficients_and_indices_init,
+                                  tiny_image, relative_tolerance=1E-2)
+    assert not no_flux_change
 
 
 def test_getting_trace_centroids_from_coefficients():
