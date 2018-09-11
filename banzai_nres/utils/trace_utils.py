@@ -98,7 +98,7 @@ def totalflux_all_traces(coefficients_and_indices, image):
 
 
 def generate_initial_guess_for_trace_polynomial(image, imfilt, x, evaluated_legendre_polynomials, order=2, second_order_coefficient_guess=90, lastcoef=None, direction='up'):
-    # TODO: unit test this.
+    # TODO: unit test this. In progress...
     """
     :param image:
     :param imfilt:
@@ -248,6 +248,7 @@ def find_all_traces_marching_up_or_down(image, imfilt, x, vals, evaluated_legend
 
 
 def tracesacrossccd(image, imfilt, order_of_poly_fit, second_order_coefficient_guess):
+    # this is tested as part of the integration test.
     """
     :param image: banzai image object
     :param imfilt: ndarray, image.data passed through ndimage.spline_filter
