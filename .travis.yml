@@ -36,10 +36,10 @@ matrix:
     fast_finish: true
 
     include:
-        - env: SETUP_CMD='egg_info' RUN_TESTS=0 PYTHON_INSTALL_COMMAND='true'
+        - env: SETUP_CMD='egg_info' RUN_TESTS=0 PYTHON_INSTALL_COMMAND='true' INSTALL_NUMPY=0
 
         - python: 3.5
-          env: SETUP_CMD='egg_info' RUN_TESTS=0 PYTHON_INSTALL_COMMAND='true'
+          env: SETUP_CMD='egg_info' RUN_TESTS=0 PYTHON_INSTALL_COMMAND='true' INSTALL_NUMPY=0
 
         - env: RUN_TESTS=1
 
