@@ -464,6 +464,19 @@ def p_q_j_k_element_of_meta_hessian(p, q, j, k, stpolyarr, array_of_individual_h
     return np.sum(stpolyarr[p] * stpolyarr[q] * array_of_individual_hessians[:, j, k])
 
 
+def j_k_element_of_meta_gradient(p, k, stpolyarr, array_of_individual_gradients):
+    return np.sum(stpolyarr[p] * array_of_individual_gradients[:, k])
+
+
+def evaluate_meta_gradient(stpolyarr, array_of_individual_gradients, tracepolyorder, metapolyorder, element_generating_function=j_k_element_of_meta_gradient):
+    meta_gradient = []
+    for k in range(tracepolyorder + 1):
+        for p in range(metapolyorder + 1):
+            meta_gradient += [element_generating_function(p, k, stpolyarr, array_of_individual_gradients)]
+    meta_gradient = np.array(meta_gradient)
+    return meta_gradient
+
+
 def evaluate_list_of_elements_of_hessian(stpolyarr, array_of_individual_hessians, tracepolyorder, metapolyorder, element_generating_function=p_q_j_k_element_of_meta_hessian):
     """
     :param stpolyarr:
@@ -557,13 +570,11 @@ def NegativeGradient(coeffs_vector, *args):
 
     firstd = np.array([image_splines.first_derivative[i](traces[:, i]) for i in pixelyarray]).T
 
+
+    array_of_individual_gradients = np.dot(firstd, legpolyarr.T)  # evaluating the gradient for all traces
     # construct the filled gradient
-    gradients = np.dot(firstd, legpolyarr.T)  # evaluating the gradient for all traces
-    grad = []
-    for k in range(tracepolyorder + 1):
-        for j in range(metapolyorder + 1):
-            grad += [np.sum(stpolyarr[j] * gradients[:, k])]
-    grad = np.array(grad)
+    grad = evaluate_meta_gradient(stpolyarr, array_of_individual_gradients, tracepolyorder, metapolyorder,
+                                  element_generating_function=j_k_element_of_meta_gradient)
     return (-1) * grad
 
 

@@ -156,6 +156,9 @@ class TestMetaHessianandMetaGradientEvaluation:
     def dummy_meta_hessian_element(self, p, q, j, k, *extraargs):
         return '{0}, {1}, {2}, {3}'.format(p, j, q, k)
 
+    def dummy_meta_gradient_element(self, p, k, *extraargs):
+        return '{0}, {1}'.format(p, k)
+
     def test_generating_meta_hessian(self):
 
         meta_hessian_elements = trace_utils.evaluate_list_of_elements_of_hessian(stpolyarr=None,
@@ -174,6 +177,9 @@ class TestMetaHessianandMetaGradientEvaluation:
         list_of_hessians = np.ones((2, 2, 2))
         stpolyarr = np.ones((2, 2))
         assert np.isclose(trace_utils.p_q_j_k_element_of_meta_hessian(0, 0, 0, 0, stpolyarr, list_of_hessians), 2)
+
+    def test_generating_gradient(self):
+        assert True
 
 
 class TestMakingPairsofLampflatstoFit:
