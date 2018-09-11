@@ -448,7 +448,6 @@ def fit_trace_coeffs_to_generate_meta_coeffs(orderarray, trace_coefficients, met
 
 
 def neg_totalflux_for_scipy(coeffs_vector, *extraargs):
-    # TODO: unit test this.
     """
     :param coeffs_vector: Vector of meta coefficients.
     :param extraargs: (image_splines, stpolyarr, legpolyarr, pixelxarray, x)

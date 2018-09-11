@@ -35,14 +35,14 @@ class FakeTraceImage(FakeImage):
 class TinyFakeImageWithTraces(object):
     def __init__(self):
         size_of_test_image = 3
-        self.image_data = np.zeros((size_of_test_image, size_of_test_image))
-        self.image_data[1] = np.ones(size_of_test_image)
+        self.data = np.zeros((size_of_test_image, size_of_test_image))
+        self.data[1] = np.ones(size_of_test_image)
 
         self.x_pixel_coords = np.arange(size_of_test_image)
         self.legendre_polynomial_array = np.ones((1, size_of_test_image))
         self.legendre_polynomial_coefficients = np.array([1])
-        self.expected_value = -1 * np.sum(self.image_data[1])
-        self.image_filt = ndimage.spline_filter(self.image_data)
+        self.expected_sum_along_trace = -1 * np.sum(self.data[1])
+        self.image_filt = ndimage.spline_filter(self.data)
 
 
 def munge_coefficients(even_coefficients, odd_coefficients):
@@ -125,6 +125,16 @@ def test_finding_first_statistically_significant_maxima():
     assert np.isclose(x_coords[index_of_first_maximum], centroids[0], atol=3, rtol=0)
 
 
+def test_getting_trace_centroids_from_coefficients():
+    tiny_image = TinyFakeImageWithTraces()
+    coefficients_and_indices = np.array([[0, 1]])
+    trace_values_versus_xpixel, num_traces, x_coord_array = \
+        trace_utils.get_trace_centroids_from_coefficients(coefficients_and_indices, tiny_image)
+    assert np.array_equal(x_coord_array, np.arange(tiny_image.data.shape[1]))
+    assert num_traces == 1
+    assert np.array_equal(trace_values_versus_xpixel, np.array([np.ones_like(x_coord_array)]))
+
+
 class TestFindingTotalFluxAcrossTraces:
     """
     test type: Unit Test.
@@ -135,14 +145,14 @@ class TestFindingTotalFluxAcrossTraces:
         tiny_image = TinyFakeImageWithTraces()
         found_value = trace_utils.crosscoef(tiny_image.legendre_polynomial_coefficients, tiny_image.image_filt,
                                             tiny_image.x_pixel_coords, tiny_image.legendre_polynomial_array)
-        assert np.isclose(found_value, tiny_image.expected_value)
+        assert np.isclose(found_value, tiny_image.expected_sum_along_trace)
 
     def test_finding_flux_across_single_trace_at_many_points(self):
         tiny_image = TinyFakeImageWithTraces()
         testpoints = np.array([1])
         found_value = (-1) * trace_utils.fluxvalues(testpoints, [], tiny_image.image_filt, tiny_image.x_pixel_coords,
                                                     tiny_image.legendre_polynomial_array)[0]
-        assert np.isclose(found_value, tiny_image.expected_value)
+        assert np.isclose(found_value, tiny_image.expected_sum_along_trace)
 
 
 class TestImageSplinesClassMethods:
@@ -267,11 +277,11 @@ class TestMetaHessianandMetaGradientandTotalFluxEvaluation:
         image_splines.calculate_spline_derivatives_and_populate_attributes(image, image.bpm)
         evaluated_polynomials_for_meta = np.array([[1, 1]])
         evaluated_polynomials_for_traces = np.array([np.ones(image.data.shape[1])])
-        x_pixel_array = np.arange(image.data.shape[1])
+        x_coord_array = np.arange(image.data.shape[1])
 
         total_positive_flux = -1 * trace_utils.neg_totalflux_for_scipy(coeffs_vector, image_splines,
                                                                        evaluated_polynomials_for_meta,
-                                                                       evaluated_polynomials_for_traces, x_pixel_array)
+                                                                       evaluated_polynomials_for_traces, x_coord_array)
         assert np.isclose(2 * np.sum(evaluated_polynomials_for_traces), total_positive_flux)
 
 
