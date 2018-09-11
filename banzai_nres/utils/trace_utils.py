@@ -769,7 +769,9 @@ def get_number_of_lit_fibers(image):
     :param image: banzai image w
     :return:
     """
-    assert image.header.get('OBJECTS') is not None
+    if image.header.get('OBJECTS') is None:
+        logger.error('header keyword OBJECTS not found, cannot get the number of lit fibers.')
+        raise KeyError
     fiber_info = image.header.get('OBJECTS').split('&')
     num_unlit_fibers = fiber_info.count('none')
     num_lit_fibers = int(len(fiber_info) - num_unlit_fibers)
