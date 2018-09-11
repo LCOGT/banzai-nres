@@ -74,6 +74,9 @@ matrix:
         - os: linux
           env: MAIN_CMD='pycodestyle banzai --count' RUN_TESTS=0
 
+before_install:
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; security set-key-partition-list -S 'apple-tool:,apple:' -s -k keychainPass keychainName; fi
+
 
 install:
   - if [[ "$INSTALL_NUMPY" == 1 ]]; then pip install numpy==$NUMPY_VERSION; fi
