@@ -460,6 +460,40 @@ def neg_totalflux_for_scipy(coeffs_vector, *extraargs):
     return (-1) * np.sum(flux_values_along_traces)
 
 
+def p_q_j_k_element_of_meta_hessian(p, q, j, k, stpolyarr, array_of_individual_hessians):
+    return np.sum(stpolyarr[p] * stpolyarr[q] * array_of_individual_hessians[:, j, k])
+
+
+def evaluate_list_of_elements_of_hessian(stpolyarr, array_of_individual_hessians, tracepolyorder, metapolyorder, element_generating_function=p_q_j_k_element_of_meta_hessian):
+    """
+    :param stpolyarr:
+    :param array_of_individual_hessians:
+    :param tracepolyorder:
+    :param metapolyorder:
+    :param element_generating_function: function which takes 4 indices and returns the appropriate element of the
+            meta hessian.
+    :return:
+    NOTE: one could save a factor of two here by only calculating the elements needed to construct the upper diagonal,
+    but then we would have to rethink the reshape_hessian_elements_into_twod_matrix function.
+    """
+    meta_hessian_elements = []
+    for j in range(tracepolyorder + 1):
+        for p in range(metapolyorder + 1):
+            for k in range(tracepolyorder + 1):
+                for q in range(metapolyorder + 1):
+                    meta_hessian_elements += [element_generating_function(p, q, j, k, stpolyarr, array_of_individual_hessians)]
+                    # note: from np.dot, there is an absolute error of 1e-9
+                    # between some Hessians[:,j,k] - Hessians[:,k,j]
+    return meta_hessian_elements
+
+
+def reshape_hessian_elements_into_twod_matrix(list_of_hessian_elements, tracepolyorder, metapolyorder):
+    list_of_hessian_elements = np.array(list_of_hessian_elements)
+    Hessian = list_of_hessian_elements.reshape((metapolyorder + 1) * (tracepolyorder + 1),
+                                               (metapolyorder + 1) * (tracepolyorder + 1))
+    return Hessian
+
+
 def NegativeHessian(coeffs_vector, *args):
     """
     :param coeffs_vector: nd-array list of the n-meta coefficients
@@ -485,24 +519,18 @@ def NegativeHessian(coeffs_vector, *args):
     secd = np.array([image_splines.second_derivative[i](traces[:, i]) for i in pixelyarray]).T
 
     # construct the filled Hessian for all traces
-    Hessians = np.array([np.dot(legpolyarr * secd[i], legpolyarr.T) for i in
+    array_of_individual_hessians = np.array([np.dot(legpolyarr * secd[i], legpolyarr.T) for i in
                          range(traces.shape[0])])
 
-    Hessian = []
-    for j in range(tracepolyorder + 1):
-        for p in range(metapolyorder + 1):
-            for k in range(tracepolyorder + 1):
-                for q in range(metapolyorder + 1):
-                    Hessian += [np.sum(stpolyarr[p] * stpolyarr[q] * Hessians[:, j, k])]
-                    # note: from np.dot, there is an absolute error of 1e-9
-                    # between some Hessians[:,j,k] - Hessians[:,k,j]
+    meta_hessian_elements = evaluate_list_of_elements_of_hessian(stpolyarr, array_of_individual_hessians,
+                                                                 tracepolyorder, metapolyorder,
+                                                                 element_generating_function=p_q_j_k_element_of_meta_hessian)
 
-    Hessian = np.array(Hessian)
-    Hessian = Hessian.reshape((metapolyorder + 1) * (tracepolyorder + 1), (metapolyorder + 1) * (tracepolyorder + 1))
+    Hessian = reshape_hessian_elements_into_twod_matrix(meta_hessian_elements, tracepolyorder, metapolyorder)
 
-    # Setting so that the Hessian is perfectly symmetric.
+    # Setting the Hessian to be perfectly symmetric. I.e. munging away small numerical errors.
     Hessian = np.tril(Hessian, k=0)  # zero the elements in the upper triangle - they differ due to np.dot errors.
-    Hessian = Hessian + Hessian.T - np.diag(np.diag(Hessian))  # calculate the fully symmetric Hessian.
+    Hessian = Hessian + Hessian.T - np.diag(np.diag(Hessian))  # recalculate the fully symmetric Hessian.
     return (-1) * Hessian
 
 
@@ -547,6 +575,9 @@ def meta_fit(metacoeffs, stpolyarr, legpolyarr, image_splines, pixelxarray):
     and 5 ms to evaluate the gradient. It calls the grad and hessian ~5 and ~20 times respectively, and evalutes the
     function ~20 times. function evaluations take about 5 ms.
     The total meta fit time is roughly 150 ms on said test frame.
+
+    #NOTE: The meta fit hessian and gradient construction are described here: https://v2.overleaf.com/read/jtckthqsdttj
+    The same file can be found in docs/algorithm_docs/Newton_s_method_and_meta_fits.pdf
     """
     metacoeffsinitial = np.copy(metacoeffs).reshape(metacoeffs.size)
     extraargs = (image_splines, stpolyarr, legpolyarr, pixelxarray)

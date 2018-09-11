@@ -145,6 +145,32 @@ class TestFindingTotalFluxAcrossTraces:
         assert np.isclose(found_value, tiny_image.expected_value)
 
 
+class TestMetaHessianEvaluation:
+    """
+    Testing Hessian creation for the meta fit and reorganization of the hessian into a matrix.
+    This tests whether the elements which fill the hessian have the correct ordering, these are the p,j,q,k elements
+    ordered in the same way as here: https://v2.overleaf.com/read/jtckthqsdttj
+    The same file can be found in docs/algorithm_docs/Newton_s_method_and_meta_fits.pdf
+    Note: np.equal(a,b) is depriciated for element wise string comparison.
+    """
+    def dummy_meta_hessian_element(self, p, q, j, k, *extraargs):
+        return '{0}, {1}, {2}, {3}'.format(p, j, q, k)
+
+    def generating_meta_hessian(self):
+
+        meta_hessian_elements = trace_utils.evaluate_list_of_elements_of_hessian(stpolyarr=None,
+                                                                                 array_of_individual_hessians=None,
+                                                                                 tracepolyorder=1, metapolyorder=0,
+                                                                                 element_generating_function=
+                                                                                 self.dummy_meta_hessian_element)
+        meta_hessian = trace_utils.reshape_hessian_elements_into_twod_matrix(meta_hessian_elements,
+                                                                             tracepolyorder=1, metapolyorder=0)
+        correct_hessian = np.array([['0, 0, 0, 0', '0, 0, 0, 1'],
+                                    ['0, 1, 0, 0', '0, 1, 0, 1']])
+        equally_correct_hessian = correct_hessian.T
+        assert (meta_hessian == correct_hessian).all() or (meta_hessian == equally_correct_hessian).all()
+
+
 class TestMakingPairsofLampflatstoFit:
     """
     test type: Unit Test.
