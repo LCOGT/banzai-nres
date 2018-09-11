@@ -309,7 +309,6 @@ def generate_legendre_array(image, order_of_poly_fits):
 
 
 def check_for_close_fit(coefficients_and_indices_list, images, num_lit_fibers, max_pixel_error=1E-1):
-    # TODO: unit test this.
     """
     :param coefficients_and_indices_list: list of trace_coefficients across the detector for multiple different fits
      . I.e. a list of ndarray with the first column 0,1,2,..66,0,1.. the fiber indexes, and the second column
@@ -345,8 +344,8 @@ def check_for_close_fit(coefficients_and_indices_list, images, num_lit_fibers, m
     if max_error_between_fits < max_pixel_error:
         return True
     else:
-        print('warning! central trace centroids between test lampflats disagreed \n '
-              'beyond max allowed error of %s pixels'%max_pixel_error)
+        logger.warning('warning! central trace centroids between test lampflats disagreed \n '
+                       'beyond max allowed error of {0} pixels'.format(max_pixel_error))
         return False
 
 

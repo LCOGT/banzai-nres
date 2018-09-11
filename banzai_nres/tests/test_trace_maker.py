@@ -128,7 +128,24 @@ def test_finding_first_statistically_significant_maxima():
     assert np.isclose(x_coords[index_of_first_maximum], centroids[0], atol=3, rtol=0)
 
 
-def test_for_flux_change_between_two_fits():
+def test_checking_for_close_fit_between_two_fits():
+    image = FakeImage(nx=102, ny=100, overscan_size=2)
+    trim_image(image, trimmed_shape=(100, 100))
+    indices = np.array([np.concatenate((np.arange(6), np.arange(6)))])
+    coefficients = np.ones_like(indices.T)*50
+    coefficients_and_indices = np.hstack((indices.T, coefficients))
+    images = [image, image]
+    a_close_fit = trace_utils.check_for_close_fit([coefficients_and_indices, coefficients_and_indices],
+                                                  images, num_lit_fibers=2, max_pixel_error=1E-1)
+    assert a_close_fit
+    coefficients_and_indices_new = np.copy(coefficients_and_indices)
+    coefficients_and_indices_new[:, 1] += 5
+    a_close_fit = trace_utils.check_for_close_fit([coefficients_and_indices_new, coefficients_and_indices],
+                                                  images, num_lit_fibers=2, max_pixel_error=1E-1)
+    assert not a_close_fit
+
+
+def test_checking_for_flux_change_between_two_fits():
     tiny_image = TinyFakeImageWithTraces()
     coefficients_and_indices_init = np.array([[0, 1]])
     no_flux_change = trace_utils.check_flux_change(coefficients_and_indices_init, coefficients_and_indices_init,
