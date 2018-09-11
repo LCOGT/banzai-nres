@@ -179,7 +179,11 @@ class TestMetaHessianandMetaGradientEvaluation:
         assert np.isclose(trace_utils.p_q_j_k_element_of_meta_hessian(0, 0, 0, 0, stpolyarr, list_of_hessians), 2)
 
     def test_generating_gradient(self):
-        assert True
+        meta_gradient = trace_utils.evaluate_meta_gradient(stpolyarr=None, array_of_individual_gradients=None,
+                                                           tracepolyorder=1, metapolyorder=0,
+                                                           element_generating_function=self.dummy_meta_gradient_element)
+        correct_gradient = np.array(['0, 0', '0, 1'])
+        assert (correct_gradient == meta_gradient).all()
 
 
 class TestMakingPairsofLampflatstoFit:
