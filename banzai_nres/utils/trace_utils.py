@@ -611,17 +611,17 @@ def exclude_traces_which_jet_off_detector(coefficients_and_indices, image):
 
 def split_and_sort_coefficients_for_each_fiber(coefficients_and_indices, num_lit_fibers):
     # cutting of order index column
-    coefficients_and_indices = coefficients_and_indices[:, 1:]
+    coefficients_no_indices = coefficients_and_indices[:, 1:]
 
     # ensuring an even number of traces in the coefficients so that they can be split easily
-    while coefficients_and_indices.shape[0] % num_lit_fibers != 0:
-        coefficients_and_indices = coefficients_and_indices[:-1]
-    num_orders = int(coefficients_and_indices.shape[0] / num_lit_fibers)
+    while coefficients_no_indices.shape[0] % num_lit_fibers != 0:
+        coefficients_no_indices = coefficients_no_indices[:-1]
+    num_orders = int(coefficients_no_indices.shape[0] / num_lit_fibers)
     order_indices = [i for i in range(num_orders)]*num_lit_fibers
 
-    fiber_coefficients = (coefficients_and_indices[::num_lit_fibers],)
+    fiber_coefficients = (coefficients_no_indices[::num_lit_fibers],)
     for i in range(1, num_lit_fibers):
-        fiber_coefficients += (coefficients_and_indices[i::num_lit_fibers],)
+        fiber_coefficients += (coefficients_no_indices[i::num_lit_fibers],)
     return fiber_coefficients, order_indices
 
 

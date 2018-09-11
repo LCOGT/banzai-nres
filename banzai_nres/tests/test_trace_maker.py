@@ -137,7 +137,19 @@ def test_finding_total_flux_across_a_trace():
     assert np.isclose(found_value, expected_value)
 
 
+def test_first_sorting_of_coefficients_from_blind_fit():
 
+
+
+def test_splitting_coefficients_per_fiber():
+    fake_coefficients_and_indices = np.array([[0, 1],
+                                              [1, 2],
+                                              [0, 3],
+                                              [1, 4]])
+    per_fiber_coeffs = trace_utils.split_already_sorted_coefficients_into_each_fiber(fake_coefficients_and_indices,
+                                                                  num_lit_fibers=2)
+    assert np.equal(per_fiber_coeffs[0], fake_coefficients_and_indices[:2]).all()
+    assert np.equal(per_fiber_coeffs[1], fake_coefficients_and_indices[2:]).all()
 
 
 @mock.patch('banzai_nres.traces.Image')
