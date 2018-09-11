@@ -112,43 +112,60 @@ def test_finding_first_statistically_significant_maxima():
     assert np.isclose(x_coords[index_of_first_maximum], centroids[0], atol=3, rtol=0)
 
 
-def test_finding_total_flux_across_a_trace():
+class TestFindingTotalFluxAcrossTraces(object):
     """
     test type: Unit Test.
     info: tests the two closely tied functions which evaluate
     the negative sum of the fluxes across a trace of given coefficients across the image.
     """
-    size_of_test_image = 3
-    image_data = np.zeros((size_of_test_image, size_of_test_image))
-    image_data[1] = np.ones(size_of_test_image)
+    def __init__(self):
+        size_of_test_image = 3
+        self.image_data = np.zeros((size_of_test_image, size_of_test_image))
+        self.image_data[1] = np.ones(size_of_test_image)
 
-    x_pixel_coords = np.arange(size_of_test_image)
-    legendre_polynomial_array = np.ones((1, size_of_test_image))
-    legendre_polynomial_coefficients = np.array([1])
-    expected_value = -1 * np.sum(image_data[1])
+        self.x_pixel_coords = np.arange(size_of_test_image)
+        self.legendre_polynomial_array = np.ones((1, size_of_test_image))
+        self.legendre_polynomial_coefficients = np.array([1])
+        self.expected_value = -1 * np.sum(self.image_data[1])
+        self.image_filt = ndimage.spline_filter(self.image_data)
 
-    image_filt = ndimage.spline_filter(image_data)
-    found_value = trace_utils.crosscoef(legendre_polynomial_coefficients, image_filt,
-                                        x_pixel_coords, legendre_polynomial_array)
-    assert np.isclose(found_value, expected_value)
+    def test_finding_flux_across_single_trace(self):
+        image_filt = ndimage.spline_filter(self.image_data)
+        found_value = trace_utils.crosscoef(self.legendre_polynomial_coefficients, self.image_filt,
+                                            self.x_pixel_coords, self.legendre_polynomial_array)
+        assert np.isclose(found_value, self.expected_value)
 
-    testpoints = np.array([1])
-    found_value = (-1) * trace_utils.fluxvalues(testpoints, [], image_filt, x_pixel_coords, legendre_polynomial_array)[0]
-    assert np.isclose(found_value, expected_value)
+    def test_finding_flux_across_single_trace_at_many_points(self):
+        testpoints = np.array([1])
+        found_value = (-1) * trace_utils.fluxvalues(testpoints, [], self.image_filt, self.x_pixel_coords,
+                                                    self.legendre_polynomial_array)[0]
+        assert np.isclose(found_value, self.expected_value)
+
+
+def test_making_list_of_pairs_of_lampflats_to_fit():
+    images = [1]*3
+
+
+def test_excluding_traces_which_are_cut_in_half_by_detector():
+    fake_image = FakeImage(nx=12, ny=10)
+    coefficients = np.array([[0, -5],
+                             [1, 3]])
+    trimmed_coeffs = trace_utils.exclude_traces_which_jet_off_detector(coefficients, fake_image)
+    assert np.array_equal(trimmed_coeffs, coefficients[1:])
 
 
 def test_first_sorting_of_coefficients_from_blind_fit():
-    fake_coefficients = np.array([[0, 1],
-                                  [1, 3],
-                                  [2, 2],
-                                  [3, 4]])
-    coefficients_and_indices = trace_utils.split_and_sort_coefficients_for_each_fiber(fake_coefficients,
+    fake_coefficients_and_indices = np.array([[0, 1],
+                                              [1, 3],
+                                              [2, 2],
+                                              [3, 4]])
+    coefficients_and_indices = trace_utils.split_and_sort_coefficients_for_each_fiber(fake_coefficients_and_indices,
                                                                                       num_lit_fibers=2)
     expected_coefficients_and_indices = np.array([[0, 1],
                                                   [1, 2],
                                                   [0, 3],
                                                   [1, 4]])
-    assert np.equal(coefficients_and_indices, expected_coefficients_and_indices).all()
+    assert np.array_equal(coefficients_and_indices, expected_coefficients_and_indices)
 
 
 def test_splitting_coefficients_per_fiber():
@@ -157,9 +174,9 @@ def test_splitting_coefficients_per_fiber():
                                               [0, 3],
                                               [1, 4]])
     per_fiber_coeffs = trace_utils.split_already_sorted_coefficients_into_each_fiber(fake_coefficients_and_indices,
-                                                                  num_lit_fibers=2)
-    assert np.equal(per_fiber_coeffs[0], fake_coefficients_and_indices[:2]).all()
-    assert np.equal(per_fiber_coeffs[1], fake_coefficients_and_indices[2:]).all()
+                                                                                     num_lit_fibers=2)
+    assert np.array_equal(per_fiber_coeffs[0], fake_coefficients_and_indices[:2])
+    assert np.array_equal(per_fiber_coeffs[1], fake_coefficients_and_indices[2:])
 
 
 @mock.patch('banzai_nres.traces.Image')

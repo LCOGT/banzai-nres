@@ -564,7 +564,6 @@ def cross_correlate_image_indices(images, cross_correlate_num):
     :param cross_correlate_num: Number of images to pair together in the list of combinations
     :return: All unique combinations of the indices of images from image
     """
-    assert len(images) >= 1
 
     image_indices_to_try = list(range(len(images)))
     try_combinations_of_images = False
