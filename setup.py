@@ -19,7 +19,7 @@ setup(name='banzai_nres',
       packages=find_packages(),
       package_dir={'banzai_nres': 'banzai_nres'},
       setup_requires=['pytest-runner'],
-      install_requires=['banzai', 'numpy>=1.12'],
+      install_requires=['lco-banzai==0.9.9', 'numpy>=1.12'],
       tests_require=['pytest>=3.5'],
       entry_points = {'console_scripts': ['make_master_bias=banzai_nres.main:make_master_bias_console',
                                           'make_master_dark=banzai_nres.main:make_master_dark_console']})

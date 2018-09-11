@@ -27,7 +27,7 @@ env:
         - PYTHON_INSTALL_COMMAND='python setup.py install'
         - SETUP_CMD = ''
         - RUN_TESTS=1
-        - INSTALL_NUMPY=1
+        - INSTALL_DEPS=1
         - MAIN_CMD='python setup.py'
 
 matrix:
@@ -36,10 +36,10 @@ matrix:
     fast_finish: true
 
     include:
-        - env: SETUP_CMD='egg_info' RUN_TESTS=0 PYTHON_INSTALL_COMMAND='true' INSTALL_NUMPY=0
+        - env: SETUP_CMD='egg_info' RUN_TESTS=0 PYTHON_INSTALL_COMMAND='true' INSTALL_DEPS=0
 
         - python: 3.5
-          env: SETUP_CMD='egg_info' RUN_TESTS=0 PYTHON_INSTALL_COMMAND='true' INSTALL_NUMPY=0
+          env: SETUP_CMD='egg_info' RUN_TESTS=0 PYTHON_INSTALL_COMMAND='true' INSTALL_DEPS=0
 
         - env: RUN_TESTS=1
 
@@ -79,7 +79,7 @@ before_install:
 
 
 install:
-  - if [[ "$INSTALL_NUMPY" == 1 ]]; then pip install numpy==$NUMPY_VERSION; fi
+  - if [[ "$INSTALL_DEPS" == 1 ]]; then pip install numpy==$NUMPY_VERSION coverage pycodestyle; fi
   - $PYTHON_INSTALL_COMMAND
 
 script:
