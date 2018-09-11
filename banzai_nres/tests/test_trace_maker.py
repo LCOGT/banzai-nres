@@ -8,6 +8,7 @@ import numpy as np
 from banzai import logs
 from banzai_nres.utils.trace_utils import get_coefficients_from_meta, generate_legendre_array, get_trace_centroids_from_coefficients
 from banzai_nres.tests.utils import FakeImage, noisify_image, trim_image, gaussian
+from banzai_nres.tests.adding_traces_to_images_utils import generate_image_with_two_flat_traces
 from banzai_nres.tests.adding_traces_to_images_utils import trim_coefficients_to_fit_image, fill_image_with_traces
 
 from banzai_nres.utils import trace_utils
@@ -115,6 +116,22 @@ def array_with_two_peaks():
     return y, x, centroids
 
 
+def test_finding_first_statistically_significant_maxima():
+    """
+    test type: Unit Test.
+    info: tests the function which generates an approximate initial guess for the location of the next trace for
+    the blind trace maker. Also tests its ability to determine that no statistally significant maximum exists.
+    """
+    intensity_line_cut_across_two_traces, x_coords, centroids = array_with_two_peaks()
+    approximate_maximum_flux = np.max(intensity_line_cut_across_two_traces)
+    index_of_first_maximum, maximum_exists = trace_utils.maxima(intensity_line_cut_across_two_traces, 5, 1 / 20,
+                                                                approximate_maximum_flux)
+    assert np.isclose(x_coords[index_of_first_maximum], centroids[0], atol=3, rtol=0)
+    index_of_first_maximum, maximum_exists = trace_utils.maxima(np.ones_like(x_coords), 5, 1 / 20,
+                                                                approximate_maximum_flux)
+    assert not maximum_exists
+
+
 class TestUnitBlindFitAlgorithms:
     """
     Unit tests for various algorithms involved with blind-fitting via the order-by-order technique.
@@ -131,8 +148,23 @@ class TestUnitBlindFitAlgorithms:
         assert coeff_guess == expected_coefficient_guess
 
     def test_generating_initial_guess_for_next_blind_fit(self):
-        lastcoef = []
-        assert True
+        image = generate_image_with_two_flat_traces(nx=100, ny=100)
+
+        image_data_filtered = ndimage.spline_filter(image.data)
+
+        start_locations = [1/2, 1/2, 1/3]
+        expected_0th_order_next_guesses = [1/3, 2/3, 1/3]
+        directions = ['down', 'up', 'inplace']
+        for start_location, expected_guess, direction in zip(start_locations, expected_0th_order_next_guesses, directions):
+            coefficients_of_last_fit = [int(image.data.shape[0] * start_location), 0]
+            evaluated_legendre_polynomials, x_coords, xnorm = trace_utils.generate_legendre_array(image, order_of_poly_fits=1)
+            coeff_guess, max_exists, refflux = trace_utils.generate_initial_guess_for_trace_polynomial(image=image,
+                                                                    imfilt=image_data_filtered, x=x_coords,
+                                                                    evaluated_legendre_polynomials=evaluated_legendre_polynomials,
+                                                                    order=1, lastcoef=coefficients_of_last_fit,
+                                                                    direction=direction)
+            assert max_exists
+            assert np.isclose(coeff_guess[0], expected_guess * image.data.shape[0], atol=5, rtol=0)
 
 
 def test_generating_blank_evaluated_legendre_array():
@@ -144,19 +176,6 @@ def test_generating_blank_evaluated_legendre_array():
     assert (legendre_polynomial_array[0] == 1).all()
     assert np.array_equal(x_coords_2, x_coords)
     assert np.array_equal(xnorm, xnorm_2)
-
-
-def test_finding_first_statistically_significant_maxima():
-    """
-    test type: Unit Test.
-    info: tests the function which generates an approximate initial guess for the location of the next trace for
-    the blind trace maker.
-    """
-    intensity_line_cut_across_two_traces, x_coords, centroids = array_with_two_peaks()
-    approximate_maximum_flux = np.max(intensity_line_cut_across_two_traces)
-    index_of_first_maximum, maximum_exists = trace_utils.maxima(intensity_line_cut_across_two_traces, 5, 1 / 20,
-                                                                approximate_maximum_flux)[0]
-    assert np.isclose(x_coords[index_of_first_maximum], centroids[0], atol=3, rtol=0)
 
 
 def test_checking_for_close_fit_between_two_fits():

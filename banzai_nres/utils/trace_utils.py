@@ -26,7 +26,7 @@ def maxima(A, s, k, ref):
               as a maximum.
     :param k: multiplicative constant which qualifies a point as a real maxima (not just noise)
     :param ref: the reference value which k*r defines the value any real maximal point must exceed
-    :return: The index of the a point near a maximum and the value at the maximum, and a boolean for whether or not
+    :return: The index of the a point near a maximum  and a boolean for whether or not
             a valid maximum exists.
     """
 
@@ -34,7 +34,7 @@ def maxima(A, s, k, ref):
     l, r = 0, 0
     A = A - np.ones_like(A) * np.min(A)
     threshold = k * ref
-    firstmax = [0, 0]
+    first_max_index = 0
     maximum_exists = False
     while i < len(A) - s and int(l + r) != 2:
         l, r = 1, 1
@@ -44,10 +44,10 @@ def maxima(A, s, k, ref):
             if A[i] < A[i - j] or A[i] < threshold:
                 l, j = 0, s + 1
         if int(l + r) == 2:
-            firstmax = [i, A[i]]
+            first_max_index = i
             maximum_exists = True
         i += 1
-    return firstmax, maximum_exists
+    return first_max_index, maximum_exists
 
 
 def crosscoef(legendre_polynomial_coefficients, imfilt, x, evaluated_legendre_polynomials):
@@ -143,7 +143,7 @@ def generate_initial_guess_for_trace_polynomial(image, imfilt, x, evaluated_lege
         fluxvals = fluxvalues(testpoints, p, image.data, x, evaluated_legendre_polynomials)
         refflux = max((-1) * crosscoef(lastcoef, image.data, x, evaluated_legendre_polynomials), max(fluxvals))
 
-        deltap0guess, maximum_exists = maxima(fluxvals, 5, 1 / 20, refflux)[0]
+        deltap0guess, maximum_exists = maxima(fluxvals, 5, 1 / 20, refflux)
 
         if direction == 'up':
             p0 = deltap0guess + min(testpoints)
