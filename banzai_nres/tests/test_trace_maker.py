@@ -138,7 +138,7 @@ def test_finding_total_flux_across_a_trace():
 
 
 def test_first_sorting_of_coefficients_from_blind_fit():
-
+    assert True
 
 
 def test_splitting_coefficients_per_fiber():
