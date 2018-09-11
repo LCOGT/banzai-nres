@@ -75,7 +75,7 @@ matrix:
           env: MAIN_CMD='pycodestyle banzai --count' RUN_TESTS=0
 
 before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; security set-key-partition-list -S 'apple-tool:,apple:' -s -k keychainPass keychainName; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then security set-key-partition-list -S 'apple-tool:,apple:' -s -k keychainPass keychainName; fi
 
 
 install:
