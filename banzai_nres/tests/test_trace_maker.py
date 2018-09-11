@@ -131,6 +131,7 @@ class TestUnitBlindFitAlgorithms:
         assert coeff_guess == expected_coefficient_guess
 
     def test_generating_initial_guess_for_next_blind_fit(self):
+        lastcoef = []
         assert True
 
 
