@@ -451,7 +451,7 @@ def neg_totalflux_for_scipy(coeffs_vector, *extraargs):
     # TODO: unit test this.
     """
     :param coeffs_vector: Vector of meta coefficients.
-    :param extraargs: (image_splines, stpolyarr, legpolyarr, pixelxarray, imfilt)
+    :param extraargs: (image_splines, stpolyarr, legpolyarr, pixelxarray, x)
     :returns
         the negative of the total flux. Calculated using the scipy spline object stored in image_splines. Not ndimage
         like totalflux_all_traces.
@@ -522,7 +522,7 @@ def reshape_hessian_elements_into_twod_matrix(list_of_hessian_elements, tracepol
 
 
 def NegativeHessian(coeffs_vector, *args):
-    # TODO: unit test this.
+    # TODO: unit test this, albeit this is covered in the integration test
     """
     :param coeffs_vector: nd-array list of the n-meta coefficients
     :param args: tuple type, (image_splines, stpolyarr, legpolyarr, pixelxarray) .
@@ -563,7 +563,7 @@ def NegativeHessian(coeffs_vector, *args):
 
 
 def NegativeGradient(coeffs_vector, *args):
-    # TODO: unit test this.
+    # TODO: unit test this, albeit this is covered in the integration test
     """
     :param coeffs_vector: nd-array list of the n-meta coefficients
     :param args: tuple type, (image_splines, stpolyarr, legpolyarr, pixelxarray) .

@@ -212,7 +212,7 @@ class TestTransformationsToAndFromMetaCoeffstoTraceCoeffs:
         assert np.allclose(trace_coefficients_this_order, np.array([1,1]))
 
 
-class TestMetaHessianandMetaGradientEvaluation:
+class TestMetaHessianandMetaGradientandTotalFluxEvaluation:
     """
     Testing Hessian creation for the meta fit and reorganization of the hessian into a matrix.
     This tests whether the elements which fill the hessian have the correct ordering, these are the p,j,q,k elements
@@ -242,8 +242,9 @@ class TestMetaHessianandMetaGradientEvaluation:
 
     def test_generating_meta_hessian_elements(self):
         list_of_hessians = np.ones((2, 2, 2))
-        stpolyarr = np.ones((2, 2))
-        assert np.isclose(trace_utils.p_q_j_k_element_of_meta_hessian(0, 0, 0, 0, stpolyarr, list_of_hessians), 2)
+        evaluated_polynomials_for_meta = np.ones((2, 2))
+        assert np.isclose(trace_utils.p_q_j_k_element_of_meta_hessian(0, 0, 0, 0, evaluated_polynomials_for_meta,
+                                                                      list_of_hessians), 2)
 
     def test_generating_gradient(self):
         meta_gradient = trace_utils.evaluate_meta_gradient(stpolyarr=None, array_of_individual_gradients=None,
@@ -254,8 +255,24 @@ class TestMetaHessianandMetaGradientEvaluation:
 
     def test_generating_meta_gradient_elements(self):
         array_of_gradients = np.ones((2, 2))
-        stpolyarr = np.ones((2, 2))
-        assert np.isclose(trace_utils.j_k_element_of_meta_gradient(0, 0, stpolyarr, array_of_gradients), 2)
+        evaluated_polynomials_for_meta = np.ones((2, 2))
+        assert np.isclose(trace_utils.j_k_element_of_meta_gradient(0, 0, evaluated_polynomials_for_meta, array_of_gradients), 2)
+
+    def test_finding_total_flux_from_meta_coefficients(self):
+        meta_fit_coefficients = np.array([[1]])
+        coeffs_vector = meta_fit_coefficients.reshape(meta_fit_coefficients.size)
+        image = FakeImage(nx=12, ny=10, overscan_size=2)
+        trim_image(image, trimmed_shape=(10, 10))
+        image_splines = trace_utils.ImageSplines()
+        image_splines.calculate_spline_derivatives_and_populate_attributes(image, image.bpm)
+        evaluated_polynomials_for_meta = np.array([[1, 1]])
+        evaluated_polynomials_for_traces = np.array([np.ones(image.data.shape[1])])
+        x_pixel_array = np.arange(image.data.shape[1])
+
+        total_positive_flux = -1 * trace_utils.neg_totalflux_for_scipy(coeffs_vector, image_splines,
+                                                                       evaluated_polynomials_for_meta,
+                                                                       evaluated_polynomials_for_traces, x_pixel_array)
+        assert np.isclose(2 * np.sum(evaluated_polynomials_for_traces), total_positive_flux)
 
 
 class TestMakingPairsofLampflatstoFit:

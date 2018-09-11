@@ -21,6 +21,8 @@ logger = logs.get_logger(__name__)
 
 
 class Trace(object):
+    # TODO: add generate trace y values as a method of this class.- including image width and all necessary attributes
+    # to do so.
     """
     Object for storing all the trace related attributes. This gets appended to each Image instance.
     """
@@ -63,11 +65,11 @@ class BlindTraceMaker(CalibrationMaker):
     Fits traces order by order. Only use if you want to generate a new master
     trace file without loading any trace locations from the data-base
     :param average_trace_vertical_extent : should in no instance ever be changed unless the detector drastically
-    changes. This is the approximate (good to within \pm 30 pixels) difference between the position of the bottom
+    changes. This should be the approximate (good to within \pm 30 pixels) difference between the position of the bottom
     of the trace and its position when it contacts the edge of the detector. E.g. if you were to surround a trace in
     the minimum sized box possible, this is the y-height of the box (parallel to increasing order direction). Sign matters
     the convention is that if the traces curve upwards then this is positive. Negative if they curve downwards. Sign matters
-    because this is exactly the guess for the second order coefficient of the blind trace-trace fit.
+    because this is the guess for the second order coefficient of the blind order-by-order trace fit.
     """
     def __init__(self, pipeline_context):
         super(BlindTraceMaker, self).__init__(pipeline_context)
