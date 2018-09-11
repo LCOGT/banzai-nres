@@ -435,6 +435,16 @@ def test_splitting_coefficients_per_fiber():
     assert np.array_equal(per_fiber_coeffs[1], fake_coefficients_and_indices[2:])
 
 
+def test_getting_number_of_lit_fibers():
+    image = FakeImage(nx=7, ny=5, overscan_size=2)
+    real_num_lit_fibers_list = [0, 1, 2, 3]
+    objects_list = ['none&none&none', 'none&tung&none', 'tung&tung&none', 'tung&tung&tung']
+    for objects_string, real_num_lit_fibers in zip(objects_list, real_num_lit_fibers_list):
+        image.header = {'OBJECTS': objects_string}
+        num_lit_fibers = trace_utils.get_number_of_lit_fibers(image)
+        assert num_lit_fibers == real_num_lit_fibers
+
+
 @mock.patch('banzai_nres.traces.Image')
 def test_blind_trace_maker(mock_images):
     """
