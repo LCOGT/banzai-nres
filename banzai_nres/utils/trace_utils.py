@@ -765,6 +765,11 @@ def optimize_coeffs_entire_lampflat_frame(coefficients_and_indices, image, num_o
 
 
 def get_number_of_lit_fibers(image):
+    """
+    :param image: banzai image w
+    :return:
+    """
+    assert image.header.get('OBJECTS') is not None
     fiber_info = image.header.get('OBJECTS').split('&')
     num_unlit_fibers = fiber_info.count('none')
     num_lit_fibers = int(len(fiber_info) - num_unlit_fibers)
