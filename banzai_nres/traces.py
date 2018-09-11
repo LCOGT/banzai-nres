@@ -133,7 +133,7 @@ class TraceUpdater(Stage):
             # optimizing master traces on this frame in particular
             coefficients_and_indices_new = optimize_coeffs_entire_lampflat_frame(
                 coefficients_and_indices_initial, image, num_of_lit_fibers=num_lit_fibers,
-                order_of_meta_fit=self.order_of_meta_fit)
+                order_of_meta_fit=self.order_of_meta_fit, bpm=None)
             logger.debug('refining trace coefficients on %s' % image.filename)
 
             close_fit = check_for_close_fit([coefficients_and_indices_new, coefficients_and_indices_initial],
@@ -192,7 +192,8 @@ def make_master_traces(images, maker_object, image_config, logging_tags, method,
             # num_lit_fibers = len(fiber_order)
 
             coefficients_and_indices_list += [optimize_coeffs_entire_lampflat_frame(
-                coefficients_and_indices_initial, image, num_of_lit_fibers=num_lit_fibers, order_of_meta_fit=order_of_meta_fit)]
+                coefficients_and_indices_initial, image, num_of_lit_fibers=num_lit_fibers,
+                order_of_meta_fit=order_of_meta_fit, bpm=None)]
 
         satisfactory_fit = check_for_close_fit(coefficients_and_indices_list, images_to_try, num_lit_fibers,
                                                max_pixel_error=1E-1)
