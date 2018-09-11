@@ -184,6 +184,7 @@ class TestImageSplinesClassMethods:
         for attribute in ['spline', 'first_derivative', 'second_derivative']:
             assert np.isclose(getattr(image_splines1, attribute)[4](4), getattr(image_splines2, attribute)[4](4))
 
+
 class TestTransformationsToAndFromMetaCoeffstoTraceCoeffs:
     """
     Tests initial fits of trace coeffs which generates the meta coefficients and the transformation from meta

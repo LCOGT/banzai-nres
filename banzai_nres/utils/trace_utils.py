@@ -81,7 +81,24 @@ def fluxvalues(testpoints, legendre_polynomial_coefficients, imfilt, x, evaluate
     return values
 
 
+def totalflux_all_traces(coefficients_and_indices, image):
+    #TODO: unit test this.
+    """
+    :param coefficients_and_indices: polynomial fit to traces
+    :param image: banzai image object
+    :return: total flux summed across all traces.
+    """
+    order_of_poly_fits = coefficients_and_indices.shape[1]-2
+    legendre_array, x, xnorm = generate_legendre_array(image, order_of_poly_fits)
+    X = list(x)*(coefficients_and_indices.shape[0])
+    #  X = [0,1,...,4095,0,1,..,4095,..]
+    TraceYvals = np.dot(coefficients_and_indices[:, 1:], legendre_array).flatten()
+    totalflux = np.sum(ndimage.map_coordinates(image.data.astype(np.float64), [TraceYvals, X], prefilter=True))
+    return totalflux
+
+
 def generate_initial_guess_for_trace_polynomial(image, imfilt, x, evaluated_legendre_polynomials, order=2, second_order_coefficient_guess=90, lastcoef=None, direction='up'):
+    # TODO: unit test this.
     """
     :param image:
     :param imfilt:
@@ -140,6 +157,7 @@ def generate_initial_guess_for_trace_polynomial(image, imfilt, x, evaluated_lege
 
 
 def findorder(image, imfilt, x, evaluated_legendre_polynomials, order=2, second_order_coefficient_guess=90, lastcoef=None, direction='up'):
+    # TODO: unit test this.
     """
     :param image: banzai image object.
     :param imfilt: ndarray, image.data passed through ndimage.spline_filter
@@ -173,6 +191,7 @@ def findorder(image, imfilt, x, evaluated_legendre_polynomials, order=2, second_
 
 
 def validate_fit_and_trim_erroneous_fits(coef, allcoef, loop_counter, length, maximum_exists, done, direction='up'):
+    # TODO: unit test this.
     num_of_orders_found = None
     # March up in the orders.
 
@@ -211,6 +230,7 @@ def validate_fit_and_trim_erroneous_fits(coef, allcoef, loop_counter, length, ma
 
 
 def find_all_traces_marching_up_or_down(image, imfilt, x, vals, evaluated_legendre_polynomials, length, order_of_poly_fit, coef, allcoef, direction='up'):
+    # TODO: unit test this.
     done = False
     i = 1
     while not done:
@@ -270,6 +290,7 @@ def tracesacrossccd(image, imfilt, order_of_poly_fit, second_order_coefficient_g
 
 
 def generate_legendre_array(image, order_of_poly_fits):
+    # TODO: unit test this.
     """
     :param image: Banzai image object.
     :param order_of_poly_fits: order of the polynomials used to fit the traces across the CCD.
@@ -288,6 +309,7 @@ def generate_legendre_array(image, order_of_poly_fits):
 
 
 def check_for_close_fit(coefficients_and_indices_list, images, num_lit_fibers, max_pixel_error=1E-1):
+    # TODO: unit test this.
     """
     :param coefficients_and_indices_list: list of trace_coefficients across the detector for multiple different fits
      . I.e. a list of ndarray with the first column 0,1,2,..66,0,1.. the fiber indexes, and the second column
@@ -329,6 +351,7 @@ def check_for_close_fit(coefficients_and_indices_list, images, num_lit_fibers, m
 
 
 def check_flux_change(coefficients_and_indices_new, coefficients_and_indices_initial, image):
+    # TODO: unit test this.
     """
     :param coefficients_and_indices_new: polynomial fit to traces that is new
     :param coefficients_and_indices_initial: polynomial fit to traces that is old (e.g. from a master file)
@@ -344,22 +367,8 @@ def check_flux_change(coefficients_and_indices_new, coefficients_and_indices_ini
         return False
 
 
-def totalflux_all_traces(coefficients_and_indices, image):
-    """
-    :param coefficients_and_indices: polynomial fit to traces
-    :param image: banzai image object
-    :return: total flux summed across all traces.
-    """
-    order_of_poly_fits = coefficients_and_indices.shape[1]-2
-    legendre_array, x, xnorm = generate_legendre_array(image, order_of_poly_fits)
-    X = list(x)*(coefficients_and_indices.shape[0])
-    #  X = [0,1,...,4095,0,1,..,4095,..]
-    TraceYvals = np.dot(coefficients_and_indices[:, 1:], legendre_array).flatten()
-    totalflux = np.sum(ndimage.map_coordinates(image.data.astype(np.float64), [TraceYvals, X], prefilter=True))
-    return totalflux
-
-
 def get_trace_centroids_from_coefficients(coefficients_and_indices, image):
+    # TODO: unit test this.
     """
     :param coefficients_and_indices: polynomial fit to traces
     :param image: banzai image object
@@ -439,6 +448,7 @@ def fit_trace_coeffs_to_generate_meta_coeffs(orderarray, trace_coefficients, met
 
 
 def neg_totalflux_for_scipy(coeffs_vector, *extraargs):
+    # TODO: unit test this.
     """
     :param coeffs_vector: Vector of meta coefficients.
     :param extraargs: (image_splines, stpolyarr, legpolyarr, pixelxarray, imfilt)
@@ -512,6 +522,7 @@ def reshape_hessian_elements_into_twod_matrix(list_of_hessian_elements, tracepol
 
 
 def NegativeHessian(coeffs_vector, *args):
+    # TODO: unit test this.
     """
     :param coeffs_vector: nd-array list of the n-meta coefficients
     :param args: tuple type, (image_splines, stpolyarr, legpolyarr, pixelxarray) .
@@ -552,6 +563,7 @@ def NegativeHessian(coeffs_vector, *args):
 
 
 def NegativeGradient(coeffs_vector, *args):
+    # TODO: unit test this.
     """
     :param coeffs_vector: nd-array list of the n-meta coefficients
     :param args: tuple type, (image_splines, stpolyarr, legpolyarr, pixelxarray) .
@@ -583,6 +595,7 @@ def NegativeGradient(coeffs_vector, *args):
 
 
 def meta_fit(metacoeffs, stpolyarr, legpolyarr, image_splines, pixelxarray):
+    # this is tested under an integration test for the Do_stage of global-meta fitting
     """
     Evaluates meta-coefficients which optimize the flux across the entire detector.
     Best method is Newton-CG because it is well suited theoretically to this problem.
@@ -621,6 +634,7 @@ def cross_correlate_image_indices(images, cross_correlate_num):
 
 
 def extract_coeffs_entire_lampflat_frame(image, order_of_poly_fits, second_order_coefficient_guess):
+    # this is tested under an integration test for the Do_stage of order-by-order fitting
     """
     This extracts the trace coefficients for each bright order of a frame. This is only stable for lampflat frames.
     It returns a list of the coefficients, ordered arbitrarily (fibers are not separated). It also returns the summed fluxed across each order
@@ -684,6 +698,7 @@ def split_already_sorted_coefficients_into_each_fiber(coefficients_and_indices, 
 
 
 def fit_traces_order_by_order(image, second_order_coefficient_guess, order_of_poly_fits=4, num_lit_fibers=2):
+    # this is tested under an integration test for the Do_stage of order-by-order fitting
     """
     :param image: Banzai image object
     :param second_order_coefficient_guess: guess for the coefficient of the second order legendre polynomial for
@@ -704,6 +719,7 @@ def fit_traces_order_by_order(image, second_order_coefficient_guess, order_of_po
 
 
 def optimize_coeffs_entire_lampflat_frame(coefficients_and_indices, image, num_of_lit_fibers=2, order_of_meta_fit=6, bpm=None):
+    # this is tested under an integration test for the Do_stage of order-by-order fitting
     """
     coefficients which are loaded must be in the format where the first 0,1,2,3,N rows are for the first fiber, and the
     next set for the second fiber. The first column must be the order number designation.
@@ -752,6 +768,7 @@ def optimize_coeffs_entire_lampflat_frame(coefficients_and_indices, image, num_o
 
 
 def get_number_of_lit_fibers(coefficients_and_indices):
+    #this will be replaced quite soon with a different function so it is not unit tested.
     """
     :param coefficients_and_indices: trace coefficients with indices (0,...,67,0,,..67) as the first column
     :return: the number of lit fibers. This works only if the trace coefficients are all in one array as described.
