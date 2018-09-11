@@ -153,13 +153,24 @@ class TestTransformationsToAndFromMetaCoeffstoTraceCoeffs:
     def test_generating_meta_coefficients(self):
         order_indices = np.array([0, 1])
         trace_coefficients = np.array([[1],
-                                       [2]])
+                                       [1]])
         meta_fit_coefficients = trace_utils.fit_trace_coeffs_to_generate_meta_coeffs(order_indices, trace_coefficients,
-                                                                                     metapolyorder=1)
-        assert np.allclose(meta_fit_coefficients, np.array([[1, 1]]))
+                                                                                     metapolyorder=0)
+        assert np.allclose(meta_fit_coefficients, np.array([[1]]))
 
     def test_transforming_from_meta_to_trace_coeffs(self):
-        assert True
+        trace_coeffs = trace_utils.get_coefficients_from_meta(allmetacoeffs=np.array([[1]]), stpolyarr=np.array([[1, 1]]))
+        expected_trace_coeffs = np.array([[1],
+                                          [1]])
+        assert np.allclose(trace_coeffs, expected_trace_coeffs)
+
+    def test_generating_legendre_polynomial_for_generating_meta_coefficients(self):
+        order_indices = np.array([0, 1])
+        order_norm = order_indices * 2. / order_indices[-1] - 1
+        meta_coefficients = (1,)
+        trace_coefficients_this_order = trace_utils.legpolynomial(order_norm, *meta_coefficients)
+        assert np.allclose(trace_coefficients_this_order, np.array([1,1]))
+
 
 class TestMetaHessianandMetaGradientEvaluation:
     """
