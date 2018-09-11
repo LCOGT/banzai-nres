@@ -173,7 +173,7 @@ class TestMetaHessianandMetaGradientEvaluation:
     def test_generating_meta_hessian_elements(self):
         list_of_hessians = np.ones((2, 2, 2))
         stpolyarr = np.ones((2, 2))
-        assert np.close(trace_utils.p_q_j_k_element_of_meta_hessian(0, 0, 0, 0, stpolyarr, list_of_hessians), 2)
+        assert np.isclose(trace_utils.p_q_j_k_element_of_meta_hessian(0, 0, 0, 0, stpolyarr, list_of_hessians), 2)
 
 
 class TestMakingPairsofLampflatstoFit:
