@@ -45,7 +45,7 @@ class TinyFakeImageWithTraces(object):
         self.x_pixel_coords = np.arange(size_of_test_image)
         self.legendre_polynomial_array = np.ones((1, size_of_test_image))
         self.legendre_polynomial_coefficients = np.array([1])
-        self.expected_sum_along_trace = -1 * np.sum(self.data[1])
+        self.negative_expected_sum_along_trace = -1 * np.sum(self.data[1])
         self.image_filt = ndimage.spline_filter(self.data)
 
 
@@ -220,21 +220,27 @@ def test_getting_trace_centroids_from_coefficients():
 class TestFindingTotalFluxAcrossTraces:
     """
     test type: Unit Test.
-    info: tests the two closely tied functions which evaluate
+    info: tests the three closely tied functions which evaluate
     the negative sum of the fluxes across a trace of given coefficients across the image.
     """
     def test_finding_flux_across_single_trace(self):
         tiny_image = TinyFakeImageWithTraces()
         found_value = trace_utils.crosscoef(tiny_image.legendre_polynomial_coefficients, tiny_image.image_filt,
                                             tiny_image.x_pixel_coords, tiny_image.legendre_polynomial_array)
-        assert np.isclose(found_value, tiny_image.expected_sum_along_trace)
+        assert np.isclose(found_value, tiny_image.negative_expected_sum_along_trace)
 
     def test_finding_flux_across_single_trace_at_many_points(self):
         tiny_image = TinyFakeImageWithTraces()
         testpoints = np.array([1])
         found_value = (-1) * trace_utils.fluxvalues(testpoints, [], tiny_image.image_filt, tiny_image.x_pixel_coords,
                                                     tiny_image.legendre_polynomial_array)[0]
-        assert np.isclose(found_value, tiny_image.expected_sum_along_trace)
+        assert np.isclose(found_value, tiny_image.negative_expected_sum_along_trace)
+
+    def test_finding_total_flux_without_filtered_image_data(self):
+        tiny_image = TinyFakeImageWithTraces()
+        coefficients_and_indices = np.array([[0, 1]])
+        flux = trace_utils.totalflux_all_traces(coefficients_and_indices, tiny_image)
+        assert np.isclose(-1 * flux, tiny_image.negative_expected_sum_along_trace)
 
 
 class TestImageSplinesClassMethods:

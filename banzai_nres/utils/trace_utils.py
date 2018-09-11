@@ -57,6 +57,7 @@ def crosscoef(legendre_polynomial_coefficients, imfilt, x, evaluated_legendre_po
     :param x: array of the x pixels from [0,1,2,...,im.shape[1]]
     :param evaluated_legendre_polynomials: Legendre polynomial evaluated over -1 to 1 , ndarray.
     :return: The negative of the total flux summed across the trace.
+    NOTE: This requires that the input filtered_image_data has been spline filtered by ndimage.spline_filter
     """
     y = x * 0.
 
@@ -81,24 +82,7 @@ def fluxvalues(testpoints, legendre_polynomial_coefficients, imfilt, x, evaluate
     return values
 
 
-def totalflux_all_traces(coefficients_and_indices, image):
-    #TODO: unit test this.
-    """
-    :param coefficients_and_indices: polynomial fit to traces
-    :param image: banzai image object
-    :return: total flux summed across all traces.
-    """
-    order_of_poly_fits = coefficients_and_indices.shape[1]-2
-    legendre_array, x, xnorm = generate_legendre_array(image, order_of_poly_fits)
-    X = list(x)*(coefficients_and_indices.shape[0])
-    #  X = [0,1,...,4095,0,1,..,4095,..]
-    TraceYvals = np.dot(coefficients_and_indices[:, 1:], legendre_array).flatten()
-    totalflux = np.sum(ndimage.map_coordinates(image.data.astype(np.float64), [TraceYvals, X], prefilter=True))
-    return totalflux
-
-
 def generate_initial_guess_for_trace_polynomial(image, imfilt, x, evaluated_legendre_polynomials, order=2, second_order_coefficient_guess=90, lastcoef=None, direction='up'):
-    # TODO: unit test this. In progress...
     """
     :param image:
     :param imfilt:
@@ -348,6 +332,22 @@ def check_for_close_fit(coefficients_and_indices_list, images, num_lit_fibers, m
         logger.warning('warning! central trace centroids between test lampflats disagreed \n '
                        'beyond max allowed error of {0} pixels'.format(max_pixel_error))
         return False
+
+
+def totalflux_all_traces(coefficients_and_indices, image):
+    """
+    :param coefficients_and_indices: polynomial fit to traces
+    :param image: banzai image object
+    :return: total flux summed across all traces.
+    The exact same thing as crosscoef except it generates the polynomial array in here and prefilters the image.
+    """
+    order_of_poly_fits = coefficients_and_indices.shape[1]-2
+    legendre_array, x, xnorm = generate_legendre_array(image, order_of_poly_fits)
+    X = list(x)*(coefficients_and_indices.shape[0])
+    #  X = [0,1,...,4095,0,1,..,4095,..]
+    TraceYvals = np.dot(coefficients_and_indices[:, 1:], legendre_array).flatten()
+    totalflux = np.sum(ndimage.map_coordinates(image.data.astype(np.float64), [TraceYvals, X], prefilter=True))
+    return totalflux
 
 
 def check_flux_change(coefficients_and_indices_new, coefficients_and_indices_initial, image, relative_tolerance=1E-2):
