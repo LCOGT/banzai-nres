@@ -146,9 +146,31 @@ class TestFindingTotalFluxAcrossTraces:
 
 
 class TestMakingPairsofLampflatstoFit:
+    """
+    test type: Unit Test.
+    info: tests the cross correlate images function for meta fits.
+    """
+    def test_making_list_of_pairs_of_lampflats_to_fit(self):
+        list_of_images = [0, 1, 2]
+        indices_to_try, try_combinations_of_images = trace_utils.cross_correlate_image_indices(list_of_images,
+                                                                                               cross_correlate_num=2)
+        assert try_combinations_of_images
+        for pair in [(0, 1), (1, 2), (0, 2)]:
+            assert pair in indices_to_try
+        assert len(indices_to_try) == 3
 
-    def test_making_list_of_pairs_of_lampflats_to_fit():
-        assert True
+    def test_zero_cross_correlate_returns_entry_list(self):
+        list_of_images = [0, 1, 2]
+        indices_to_try, try_combinations_of_images = trace_utils.cross_correlate_image_indices(list_of_images,
+                                                                                               cross_correlate_num=0)
+        assert indices_to_try == list_of_images
+        assert not try_combinations_of_images
+
+    def test_empty_list_returns_empty_list(self):
+        indices_to_try, try_combinations_of_images = trace_utils.cross_correlate_image_indices(images=[],
+                                                                                               cross_correlate_num=2)
+        assert indices_to_try == []
+        assert not try_combinations_of_images
 
 
 def test_excluding_traces_which_are_cut_in_half_by_detector():
