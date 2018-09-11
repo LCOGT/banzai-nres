@@ -32,6 +32,19 @@ class FakeTraceImage(FakeImage):
         self.data = np.zeros((self.ny, self.nx))
 
 
+class TinyFakeImageWithTraces(object):
+    def __init__(self):
+        size_of_test_image = 3
+        self.image_data = np.zeros((size_of_test_image, size_of_test_image))
+        self.image_data[1] = np.ones(size_of_test_image)
+
+        self.x_pixel_coords = np.arange(size_of_test_image)
+        self.legendre_polynomial_array = np.ones((1, size_of_test_image))
+        self.legendre_polynomial_coefficients = np.array([1])
+        self.expected_value = -1 * np.sum(self.image_data[1])
+        self.image_filt = ndimage.spline_filter(self.image_data)
+
+
 def munge_coefficients(even_coefficients, odd_coefficients):
     if even_coefficients.shape[0] != odd_coefficients.shape[0]:
         min_shape = min(odd_coefficients.shape[0], even_coefficients.shape[0]) - 1
@@ -112,42 +125,31 @@ def test_finding_first_statistically_significant_maxima():
     assert np.isclose(x_coords[index_of_first_maximum], centroids[0], atol=3, rtol=0)
 
 
-class TestFindingTotalFluxAcrossTraces(object):
+class TestFindingTotalFluxAcrossTraces:
     """
     test type: Unit Test.
     info: tests the two closely tied functions which evaluate
     the negative sum of the fluxes across a trace of given coefficients across the image.
     """
-    def setup_images_with_traces(self):
-        size_of_test_image = 3
-        self.image_data = np.zeros((size_of_test_image, size_of_test_image))
-        self.image_data[1] = np.ones(size_of_test_image)
-
-        self.x_pixel_coords = np.arange(size_of_test_image)
-        self.legendre_polynomial_array = np.ones((1, size_of_test_image))
-        self.legendre_polynomial_coefficients = np.array([1])
-        self.expected_value = -1 * np.sum(self.image_data[1])
-        self.image_filt = ndimage.spline_filter(self.image_data)
-
     def test_finding_flux_across_single_trace(self):
-        found_value = trace_utils.crosscoef(self.legendre_polynomial_coefficients, self.image_filt,
-                                            self.x_pixel_coords, self.legendre_polynomial_array)
-        assert np.isclose(found_value, self.expected_value)
+        tiny_image = TinyFakeImageWithTraces()
+        found_value = trace_utils.crosscoef(tiny_image.legendre_polynomial_coefficients, tiny_image.image_filt,
+                                            tiny_image.x_pixel_coords, tiny_image.legendre_polynomial_array)
+        assert np.isclose(found_value, tiny_image.expected_value)
 
     def test_finding_flux_across_single_trace_at_many_points(self):
+        tiny_image = TinyFakeImageWithTraces()
         testpoints = np.array([1])
-        found_value = (-1) * trace_utils.fluxvalues(testpoints, [], self.image_filt, self.x_pixel_coords,
-                                                    self.legendre_polynomial_array)[0]
-        assert np.isclose(found_value, self.expected_value)
+        found_value = (-1) * trace_utils.fluxvalues(testpoints, [], tiny_image.image_filt, tiny_image.x_pixel_coords,
+                                                    tiny_image.legendre_polynomial_array)[0]
+        assert np.isclose(found_value, tiny_image.expected_value)
 
-"""
-class TestMakingPairsofLampflatstoFit(object):
-    def __init__(self):
-        self.list_of_images = [1]*3
+
+class TestMakingPairsofLampflatstoFit:
 
     def test_making_list_of_pairs_of_lampflats_to_fit():
         assert True
-"""
+
 
 def test_excluding_traces_which_are_cut_in_half_by_detector():
     fake_image = FakeImage(nx=12, ny=10)
