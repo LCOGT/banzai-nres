@@ -141,7 +141,7 @@ def generate_initial_guess_for_trace_polynomial(image, imfilt, x, evaluated_lege
 
 
 def findorder(image, imfilt, x, evaluated_legendre_polynomials, order=2, second_order_coefficient_guess=90, lastcoef=None, direction='up'):
-    # TODO: unit test this.
+    # this is tested as part of the integration test.
     """
     :param image: banzai image object.
     :param imfilt: ndarray, image.data passed through ndimage.spline_filter
@@ -214,7 +214,7 @@ def validate_fit_and_trim_erroneous_fits(coef, allcoef, loop_counter, length, ma
 
 
 def find_all_traces_marching_up_or_down(image, imfilt, x, vals, evaluated_legendre_polynomials, length, order_of_poly_fit, coef, allcoef, direction='up'):
-    # TODO: unit test this.
+    # this is tested as part of the integration test.
     done = False
     i = 1
     while not done:
@@ -766,8 +766,8 @@ def optimize_coeffs_entire_lampflat_frame(coefficients_and_indices, image, num_o
 
 def get_number_of_lit_fibers(image):
     """
-    :param image: banzai image w
-    :return:
+    :param image: banzai image
+    :return: the number of lit fibers (e.g. the number of entries in tung&tung&.... which are not 'none')
     """
     if image.header.get('OBJECTS') is None:
         logger.error('header keyword OBJECTS not found, cannot get the number of lit fibers.')
