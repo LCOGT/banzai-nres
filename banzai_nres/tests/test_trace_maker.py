@@ -145,6 +145,22 @@ class TestFindingTotalFluxAcrossTraces:
         assert np.isclose(found_value, tiny_image.expected_value)
 
 
+class TestTransformationsToAndFromMetaCoeffstoTraceCoeffs:
+    """
+    Tests initial fits of trace coeffs which generates the meta coefficients and the transformation from meta
+    coefficients back to trace coefficients.
+    """
+    def test_generating_meta_coefficients(self):
+        order_indices = np.array([0, 1])
+        trace_coefficients = np.array([[1],
+                                       [2]])
+        meta_fit_coefficients = trace_utils.fit_trace_coeffs_to_generate_meta_coeffs(order_indices, trace_coefficients,
+                                                                                     metapolyorder=1)
+        assert np.allclose(meta_fit_coefficients, np.array([[1, 1]]))
+
+    def test_transforming_from_meta_to_trace_coeffs(self):
+        assert True
+
 class TestMetaHessianandMetaGradientEvaluation:
     """
     Testing Hessian creation for the meta fit and reorganization of the hessian into a matrix.

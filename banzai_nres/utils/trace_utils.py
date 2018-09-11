@@ -375,16 +375,6 @@ def get_trace_centroids_from_coefficients(coefficients_and_indices, image):
     return trace_values_versus_xpixel, num_traces, x
 
 
-def find_nearest(array, value):
-    """
-    :param array: 1d numpy array or list.
-    :param value: value with which you wish to find the i such that array[i] is closest to value
-    """
-    array = np.asarray(array)
-    idx = (np.abs(array - value)).argmin()
-    return idx
-
-
 class ImageSplines(object):
     """
     Stores the arrays of scipy-spline objects which give the derivatives and values at points
@@ -394,6 +384,15 @@ class ImageSplines(object):
         self.spline = spline
         self.first_derivative = first_derivative
         self.second_derivative = second_derivative
+
+
+def get_coefficients_from_meta(allmetacoeffs, stpolyarr):
+    """
+    :param allmetacoeffs: meta coefficients
+    :param stpolyarr: The poly array which is the basis for the meta fit. Should be a legendre polynomial array.
+    :return:
+    """
+    return np.dot(allmetacoeffs, stpolyarr).T
 
 
 def legpolynomial(normxaxis, *metacoeffs):
@@ -410,16 +409,7 @@ def legpolynomial(normxaxis, *metacoeffs):
     return y
 
 
-def get_coefficients_from_meta(allmetacoeffs, stpolyarr):
-    """
-    :param allmetacoeffs: meta coefficients
-    :param stpolyarr: The poly array which is the basis for the meta fit. Should be a legendre polynomial array.
-    :return:
-    """
-    return np.dot(allmetacoeffs, stpolyarr).T
-
-
-def metacoefficients(orderarray, trace_coefficients, metapolyorder):
+def fit_trace_coeffs_to_generate_meta_coeffs(orderarray, trace_coefficients, metapolyorder):
     """
     :param orderarray: The order index list, nd array
     :param trace_coefficients: Coefficients (without  the order index list as first column)
@@ -733,8 +723,7 @@ def optimize_coeffs_entire_lampflat_frame(coefficients_and_indices, image, num_o
         order_norm = np.arange(single_fiber_coeffs.shape[0])
         order_norm = order_norm * 2. / order_norm[-1] - 1
 
-        # initial meta-fit
-        meta_coefficients = metacoefficients(order_norm, single_fiber_coeffs, order_of_meta_fit)
+        meta_coefficients = fit_trace_coeffs_to_generate_meta_coeffs(order_norm, single_fiber_coeffs, order_of_meta_fit)
 
         #  building legendre polynomial arrays to use for the meta-fit basis.
         legendre_polynomial_array_meta = np.ones((order_of_meta_fit + 1, order_norm.shape[0]))
