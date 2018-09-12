@@ -573,9 +573,6 @@ class TestTraceRefine:
     """
     @mock.patch('banzai_nres.traces.Image')
     def test_trace_refine_converges(self, mock_images):
-        """
-        test type: Unit Test. tests that TraceRefine stage converges to true traces.
-        """
         readnoise = 11.0
         order_of_meta_fit = 6
         order_of_poly_fit = 4

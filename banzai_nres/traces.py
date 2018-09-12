@@ -161,6 +161,8 @@ class TraceRefine(Stage):
         return images
 
     def refit_if_necessary(self, image, num_lit_fibers, refined_trace_coefficients, absolute_pixel_tolerance=1.0):
+        # TODO: See if there is a way to have this trigger a flag to resend the object through the blind_fit stage
+        # , so that you do not have to rewrite what blind_trace_maker_does here.
         """
         If the new coefficients differ by more than absolute_pixel_tolerance on average compared to the
         as loaded coefficients, then we
@@ -186,6 +188,7 @@ class TraceRefine(Stage):
         else:
             fiber_order = image.trace.fiber_order
         return fiber_order, refined_trace_coefficients
+
 
 class GenerateInitialGuessForTraceFitFromScratch(Stage):
     """
