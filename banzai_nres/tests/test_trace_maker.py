@@ -567,39 +567,70 @@ def test_getting_number_of_lit_fibers():
         assert num_lit_fibers == real_num_lit_fibers
 
 
-@mock.patch('banzai_nres.traces.Image')
-def test_trace_refine_converges(mock_images):
+class TestTraceRefine:
     """
-    test type: Unit Test. tests that TraceRefine stage converges to true traces.
+    Unit tests for trace refine
     """
-    readnoise = 11.0
-    order_of_meta_fit = 6
-    order_of_poly_fit = 4
+    @mock.patch('banzai_nres.traces.Image')
+    def test_trace_refine_converges(self, mock_images):
+        """
+        test type: Unit Test. tests that TraceRefine stage converges to true traces.
+        """
+        readnoise = 11.0
+        order_of_meta_fit = 6
+        order_of_poly_fit = 4
 
-    images = [FakeTraceImage()]
-    images[0].readnoise = readnoise
+        images = [FakeTraceImage()]
+        images[0].readnoise = readnoise
 
-    make_random_yet_realistic_trace_coefficients(images[0], order_of_poly_fit=order_of_poly_fit)
-    fill_image_with_traces(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
-    noisify_image(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
-    trim_image(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
+        make_random_yet_realistic_trace_coefficients(images[0], order_of_poly_fit=order_of_poly_fit)
+        fill_image_with_traces(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
+        noisify_image(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
+        trim_image(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
 
-    pristine_image = FakeTraceImage()
-    pristine_image.trace.coefficients = images[0].trace.coefficients
+        original_coefficents = images[0].trace.coefficients
 
-    trace_refiner = TraceRefine(FakeContext())
-    trace_refiner.order_of_meta_fit = order_of_meta_fit
-    images = trace_refiner.do_stage(images)
+        trace_refiner = TraceRefine(FakeContext())
+        trace_refiner.order_of_meta_fit = order_of_meta_fit
+        images = trace_refiner.do_stage(images)
 
-    difference = differences_between_found_and_generated_trace_vals(images[0].trace.coefficients, pristine_image)
-    logger.debug('error in unit-test trace fitting is less than {0} of a pixel'
-                 .format(np.median(np.abs(difference - np.median(difference)))))
-    logger.debug('worst error in unit-test trace fitting is {0} pixels'.format(np.max(np.abs(difference))))
-    logger.debug('systematic error (median difference) in unit-test trace fitting is less than {0} of a pixel'
-                 .format(np.abs(np.median(difference))))
+        difference = differences_between_found_and_generated_trace_vals(original_coefficents, images[0])
+        logger.debug('error in unit-test trace fitting is less than {0} of a pixel'
+                     .format(np.median(np.abs(difference - np.median(difference)))))
+        logger.debug('worst error in unit-test trace fitting is {0} pixels'.format(np.max(np.abs(difference))))
+        logger.debug('systematic error (median difference) in unit-test trace fitting is less than {0} of a pixel'
+                     .format(np.abs(np.median(difference))))
 
-    assert np.median(np.abs(difference - np.median(difference))) < 2/100
-    assert np.abs(np.median(difference)) < 2/100
+        assert np.median(np.abs(difference - np.median(difference))) < 2/100
+        assert np.abs(np.median(difference)) < 2/100
+
+    def test_trace_refine_refits_if_traces_shifted_too_much(self):
+        readnoise = 11.0
+        order_of_meta_fit = 6
+        order_of_poly_fit = 4
+
+        image = FakeTraceImage()
+        image.readnoise = readnoise
+
+        make_random_yet_realistic_trace_coefficients(image, order_of_poly_fit=order_of_poly_fit)
+        fill_image_with_traces(image, trimmed_shape=tuple([min(image.data.shape)] * 2))
+        noisify_image(image, trimmed_shape=tuple([min(image.data.shape)] * 2))
+        trim_image(image, trimmed_shape=tuple([min(image.data.shape)] * 2))
+
+        shifted_coefficents = np.copy(image.trace.coefficients)
+        shifted_coefficents[:, 1] -= 3/4  # shifting 'found traces' by 3/4 of a pixel.
+
+        trace_refiner = TraceRefine(FakeContext())
+        trace_refiner.order_of_meta_fit = order_of_meta_fit
+        fiber_order, refit_coefficients = trace_refiner.refit_if_necessary(image, num_lit_fibers=2,
+                                                refined_trace_coefficients=shifted_coefficents,
+                                                absolute_pixel_tolerance=1/2)
+
+        difference = differences_between_found_and_generated_trace_vals(refit_coefficients, image)
+
+        assert fiber_order is None
+        assert np.median(np.abs(difference - np.median(difference))) < 2/100
+        assert np.abs(np.median(difference)) < 2/100
 
 
 @mock.patch('banzai_nres.traces.Image')
@@ -629,8 +660,7 @@ def test_blind_trace_maker(mock_images):
         noisify_image(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
         trim_image(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
 
-        pristine_image = FakeTraceImage()
-        pristine_image.trace.coefficients = images[0].trace.coefficients
+        original_coefficents = images[0].trace.coefficients
 
         blind_trace_maker = GenerateInitialGuessForTraceFitFromScratch(FakeContext())
         blind_trace_maker.order_of_poly_fit = order_of_poly_fit
@@ -645,8 +675,9 @@ def test_blind_trace_maker(mock_images):
         args, kwargs = mock_images.call_args
         master_trace = kwargs['data']
         logger.debug(master_trace.shape)
+        images[0].trace.coefficients = master_trace
 
-        difference = differences_between_found_and_generated_trace_vals(master_trace, pristine_image)
+        difference = differences_between_found_and_generated_trace_vals(original_coefficents, images[0])
         logger.debug('error in unit-test trace fitting is less than {0} of a pixel'
                      .format(np.median(np.abs(difference - np.median(difference)))))
         logger.debug('worst error in unit-test trace fitting is {0} pixels'.format(np.max(np.abs(difference))))

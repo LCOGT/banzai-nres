@@ -320,14 +320,18 @@ def generate_legendre_array(image, order_of_poly_fits):
 
 
 def check_for_close_fit(coefficients_and_indices_list, images, num_lit_fibers, max_pixel_error=1E-1):
+    #TODO: this works for two fibers only, change this so the number of fibers don't matter.
     """
     :param coefficients_and_indices_list: list of trace_coefficients across the detector for multiple different fits
      . I.e. a list of ndarray with the first column 0,1,2,..66,0,1.. the fiber indexes, and the second column
             the 0th order coefficients for that order trace. The fibers are arranged fiber_order[0] then fiber_order[1].
             as listed in the attribute Image().fiber_order
     :param images: List of Banzai Image objects
-    :param max_pixel_error: Max allowed y pixel error between the two sets of traces. Computed at every x value But only for
-                        the central orders. E.g. orders 10-50 for 67 orders per fiber.
+    :param max_pixel_error: Max allowed y pixel deviation between the traces from their mean at every point.
+        Computed at every x value But only for the central orders. E.g. orders 10-50 for 67 orders per fiber. I.e. if
+        two traces give values of 10 and 15 at a certain x,y value, then the half error is 2.5 = 15 - mean(10, 15).
+        Which we double to find the max_error_between_fits of 2.5 * 2 = 5.
+        Using the deviation from the mean allows one to compare the spread of many fits at once.
     :return: True if close, False if not.
     """
 
@@ -351,7 +355,7 @@ def check_for_close_fit(coefficients_and_indices_list, images, num_lit_fibers, m
     select_errors_first_fiber = error_between_fits[:, order_buffer:(num_orders-order_buffer), x_buffer:(image_shape[1] - x_buffer)]
     select_errors_second_fiber = error_between_fits[:, num_orders + order_buffer:(num_traces-order_buffer), x_buffer:(image_shape[1] - x_buffer)]
 
-    max_error_between_fits = max(np.max(select_errors_first_fiber), np.max(select_errors_second_fiber))
+    max_error_between_fits = 2 * max(np.max(select_errors_first_fiber), np.max(select_errors_second_fiber))
     if max_error_between_fits < max_pixel_error:
         close_enough_fit = True
     else:
@@ -359,6 +363,7 @@ def check_for_close_fit(coefficients_and_indices_list, images, num_lit_fibers, m
                        'beyond max allowed error of {0} pixels'.format(max_pixel_error))
         close_enough_fit = False
     return close_enough_fit
+
 
 def totalflux_all_traces(coefficients_and_indices, image):
     """
