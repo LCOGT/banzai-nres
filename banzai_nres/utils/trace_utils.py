@@ -353,12 +353,12 @@ def check_for_close_fit(coefficients_and_indices_list, images, num_lit_fibers, m
 
     max_error_between_fits = max(np.max(select_errors_first_fiber), np.max(select_errors_second_fiber))
     if max_error_between_fits < max_pixel_error:
-        return True
+        close_enough_fit = True
     else:
-        logger.warning('warning! central trace centroids between test lampflats disagreed \n '
+        logger.warning('warning! central trace centroids between reference and new fit disagreed \n '
                        'beyond max allowed error of {0} pixels'.format(max_pixel_error))
-        return False
-
+        close_enough_fit = False
+    return close_enough_fit
 
 def totalflux_all_traces(coefficients_and_indices, image):
     """

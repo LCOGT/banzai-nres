@@ -127,6 +127,7 @@ class TraceRefine(Stage):
         self.pipeline_context = pipeline_context
         self.order_of_meta_fit = 6
         self.max_number_of_images_to_refine = 1
+        self.refit_if_traces_shifted_substantially = True
 
     @property
     def group_by_keywords(self):
@@ -140,17 +141,51 @@ class TraceRefine(Stage):
         add_class_as_attribute(images, 'trace', Trace)
         for i, image in enumerate(images):
             num_lit_fibers = get_number_of_lit_fibers(image)
+
             if i < self.max_number_of_images_to_refine:
                 logger.debug('refining with global meta on {0}'.format(image.filename))
                 refined_trace_coefficients = optimize_coeffs_entire_lampflat_frame(
                     image.trace.coefficients, image, num_of_lit_fibers=num_lit_fibers,
                     order_of_meta_fit=self.order_of_meta_fit, bpm=image.bpm)
+                fiber_order, refined_trace_coefficients = self.refit_if_necessary(image,
+                                                                                  num_lit_fibers,
+                                                                                  refined_trace_coefficients,
+                                                                                  absolute_pixel_tolerance=1.0)
             else:
                 logger.debug('adopting last global-meta fit onto {0}'.format(image.filename))
                 refined_trace_coefficients = images[self.max_number_of_images_to_refine - 1].trace.coefficients
+                fiber_order = images[self.max_number_of_images_to_refine - 1].trace.fiber_order
+
             image.trace.coefficients = refined_trace_coefficients
+            image.trace.fiber_order = fiber_order
         return images
 
+    def refit_if_necessary(self, image, num_lit_fibers, refined_trace_coefficients, absolute_pixel_tolerance=1.0):
+        """
+        If the new coefficients differ by more than absolute_pixel_tolerance on average compared to the
+        as loaded coefficients, then we
+        refit the traces on image order-by-order then redoes the global-meta on those new coefficients.
+
+        Note that because this can come after the order-by-order fitting, too small of a pixel tolerance will
+        just cause us to redo fits every time. A pixel tolerance of 1 is good because standard NRES shifts are on the
+        order of less than a pixel.
+        """
+        coefficients_to_compare = [refined_trace_coefficients, image.trace.coefficients]
+        traces_did_not_shift_substantially = check_for_close_fit(coefficients_to_compare,
+                                                                 [image, image], num_lit_fibers,
+                                                                 max_pixel_error=absolute_pixel_tolerance)
+
+        if self.refit_if_traces_shifted_substantially and (not traces_did_not_shift_substantially):
+            logger.warning('traces shifted beyond allowable amount, refitting lampflat order-by-order.')
+            blind_fit_maker = GenerateInitialGuessForTraceFitFromScratch(pipeline_context=self.pipeline_context)
+            image = blind_fit_maker.do_stage([image])[0]
+            refined_trace_coefficients = optimize_coeffs_entire_lampflat_frame(
+                image.trace.coefficients, image, num_of_lit_fibers=num_lit_fibers,
+                order_of_meta_fit=self.order_of_meta_fit, bpm=image.bpm)
+            fiber_order = None
+        else:
+            fiber_order = image.trace.fiber_order
+        return fiber_order, refined_trace_coefficients
 
 class GenerateInitialGuessForTraceFitFromScratch(Stage):
     """
@@ -244,6 +279,3 @@ class LoadInitialGuessForTraceFit(Stage):
             raise MasterCalibrationDoesNotExist
 
         return coefficients_and_indices, fiber_order
-
-
-
