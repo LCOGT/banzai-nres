@@ -50,5 +50,5 @@ def noisify_image(image, trimmed_shape):
 
 def trim_image(image, trimmed_shape):
     image.data = image.data[:trimmed_shape[0], :trimmed_shape[1]]
-    image.bpm = image.data[:trimmed_shape[0], :trimmed_shape[1]]
+    image.bpm = image.bpm[:trimmed_shape[0], :trimmed_shape[1]]
     image.ny, image.nx = trimmed_shape
