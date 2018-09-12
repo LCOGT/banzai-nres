@@ -543,7 +543,6 @@ def NegativeHessian(coeffs_vector, *args):
     # construct the filled Hessian for all traces
     array_of_individual_hessians = np.array([np.dot(legpolyarr * secd[i], legpolyarr.T) for i in
                          range(traces.shape[0])])
-
     meta_hessian_elements = evaluate_list_of_elements_of_hessian(stpolyarr, array_of_individual_hessians,
                                                                  tracepolyorder, metapolyorder,
                                                                  element_generating_function=p_q_j_k_element_of_meta_hessian)
@@ -578,9 +577,9 @@ def NegativeGradient(coeffs_vector, *args):
     firstd = np.array([image_splines.first_derivative[i](traces[:, i]) for i in pixelyarray]).T
     array_of_individual_gradients = np.dot(firstd, legpolyarr.T)  # evaluating the gradient for all traces
     # construct the filled gradient
-    grad = evaluate_meta_gradient(stpolyarr, array_of_individual_gradients, tracepolyorder, metapolyorder,
-                                  element_generating_function=p_k_element_of_meta_gradient)
-    return (-1) * grad
+    meta_gradient = evaluate_meta_gradient(stpolyarr, array_of_individual_gradients, tracepolyorder, metapolyorder,
+                                           element_generating_function=p_k_element_of_meta_gradient)
+    return (-1) * meta_gradient
 
 
 def meta_fit(metacoeffs, stpolyarr, legpolyarr, image_splines, pixelxarray):

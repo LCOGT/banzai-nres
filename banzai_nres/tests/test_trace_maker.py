@@ -414,7 +414,7 @@ class TestMetaHessianandMetaGradientandTotalFluxEvaluation:
     Note: np.equal(a,b) is depriciated for element wise string comparison.
     """
     def constant_function(self, x):
-        return 1
+        return np.ones_like(x)
 
     def dummy_meta_hessian_element(self, p, q, j, k, *extraargs):
         return '{0}, {1}, {2}, {3}'.format(p, j, q, k)
@@ -455,7 +455,6 @@ class TestMetaHessianandMetaGradientandTotalFluxEvaluation:
         assert np.isclose(trace_utils.p_k_element_of_meta_gradient(0, 0, evaluated_polynomials_for_meta, array_of_gradients), 2)
 
     def test_end_to_end_building_of_meta_hessian_and_meta_gradient(self):
-        # TODO: meta gradient building fails.
         meta_fit_coefficients = np.array([[1],
                                           [1]])
         coeffs_vector = meta_fit_coefficients.reshape(meta_fit_coefficients.size)
@@ -476,11 +475,10 @@ class TestMetaHessianandMetaGradientandTotalFluxEvaluation:
 
         meta_hessian = (-1) * trace_utils.NegativeHessian(coeffs_vector, *meta_fit_extra_args)
         assert np.isclose(meta_hessian, image.data.shape[0] * evaluated_polynomials_for_meta.shape[1]).all()
-        """
+
         meta_gradient = (-1) * trace_utils.NegativeGradient(coeffs_vector, *meta_fit_extra_args)
-        print(meta_gradient)
-        assert np.isclose(meta_gradient, image.data.shape[0]).all()
-        """
+        assert np.isclose(meta_gradient, image.data.shape[0] * evaluated_polynomials_for_meta.shape[1]).all()
+
     def test_finding_total_flux_from_meta_coefficients(self):
         meta_fit_coefficients = np.array([[1]])
         coeffs_vector = meta_fit_coefficients.reshape(meta_fit_coefficients.size)
