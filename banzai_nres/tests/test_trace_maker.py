@@ -1,6 +1,6 @@
 import pytest
 import mock
-from banzai_nres.traces import BlindTraceMaker
+from banzai_nres.traces import GenerateInitialGuessForTraceFitFromScratch, TraceRefine, TraceSaver
 from banzai.tests.utils import FakeContext
 
 from scipy import ndimage
@@ -568,6 +568,41 @@ def test_getting_number_of_lit_fibers():
 
 
 @mock.patch('banzai_nres.traces.Image')
+def test_trace_refine_converges(mock_images):
+    """
+    test type: Unit Test. tests that TraceRefine stage converges to true traces.
+    """
+    readnoise = 11.0
+    order_of_meta_fit = 6
+    order_of_poly_fit = 4
+
+    images = [FakeTraceImage()]
+    images[0].readnoise = readnoise
+
+    make_random_yet_realistic_trace_coefficients(images[0], order_of_poly_fit=order_of_poly_fit)
+    fill_image_with_traces(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
+    noisify_image(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
+    trim_image(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
+
+    pristine_image = FakeTraceImage()
+    pristine_image.trace.coefficients = images[0].trace.coefficients
+
+    trace_refiner = TraceRefine(FakeContext())
+    trace_refiner.order_of_meta_fit = order_of_meta_fit
+    images = trace_refiner.do_stage(images)
+
+    difference = differences_between_found_and_generated_trace_vals(images[0].trace.coefficients, pristine_image)
+    logger.debug('error in unit-test trace fitting is less than {0} of a pixel'
+                 .format(np.median(np.abs(difference - np.median(difference)))))
+    logger.debug('worst error in unit-test trace fitting is {0} pixels'.format(np.max(np.abs(difference))))
+    logger.debug('systematic error (median difference) in unit-test trace fitting is less than {0} of a pixel'
+                 .format(np.abs(np.median(difference))))
+
+    assert np.median(np.abs(difference - np.median(difference))) < 2/100
+    assert np.abs(np.median(difference)) < 2/100
+
+
+@mock.patch('banzai_nres.traces.Image')
 def test_blind_trace_maker(mock_images):
     """
     test type: Integration Test.
@@ -583,6 +618,7 @@ def test_blind_trace_maker(mock_images):
     num_trials = 2
     readnoise = 11.0
     order_of_poly_fit = 4
+    order_of_meta_fit = 6
 
     for x in range(num_trials):
         images = [FakeTraceImage()]
@@ -593,20 +629,29 @@ def test_blind_trace_maker(mock_images):
         noisify_image(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
         trim_image(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
 
-        maker = BlindTraceMaker(FakeContext())
-        maker.order_of_poly_fit = order_of_poly_fit
-        maker.do_stage(images)
+        pristine_image = FakeTraceImage()
+        pristine_image.trace.coefficients = images[0].trace.coefficients
+
+        blind_trace_maker = GenerateInitialGuessForTraceFitFromScratch(FakeContext())
+        blind_trace_maker.order_of_poly_fit = order_of_poly_fit
+        images = blind_trace_maker.do_stage(images)
+
+        trace_refiner = TraceRefine(FakeContext())
+        trace_refiner.order_of_meta_fit = order_of_meta_fit
+        images = trace_refiner.do_stage(images)
+        master_cal_maker = TraceSaver(FakeContext())
+        master_cal_maker.do_stage(images)
 
         args, kwargs = mock_images.call_args
         master_trace = kwargs['data']
         logger.debug(master_trace.shape)
 
-        difference = differences_between_found_and_generated_trace_vals(master_trace, images[0])
-        logger.debug('error in unit-test trace fitting is less than %s of a pixel' %
-                    np.median(np.abs(difference - np.median(difference))))
-        logger.debug('worst error in unit-test trace fitting is %s pixels'%np.max(np.abs(difference)))
-        logger.debug('systematic error (median difference) in unit-test trace fitting is less than %s of a pixel' %
-                    np.abs(np.median(difference)))
+        difference = differences_between_found_and_generated_trace_vals(master_trace, pristine_image)
+        logger.debug('error in unit-test trace fitting is less than {0} of a pixel'
+                     .format(np.median(np.abs(difference - np.median(difference)))))
+        logger.debug('worst error in unit-test trace fitting is {0} pixels'.format(np.max(np.abs(difference))))
+        logger.debug('systematic error (median difference) in unit-test trace fitting is less than {0} of a pixel'
+                     .format(np.abs(np.median(difference))))
 
         assert np.median(np.abs(difference - np.median(difference))) < 2/100
         assert np.abs(np.median(difference)) < 2/100

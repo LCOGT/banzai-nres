@@ -31,14 +31,16 @@ class Trace(object):
         self.fiber_order = None
 
 
-class TraceMaker(CalibrationMaker):
+class TraceSaver(CalibrationMaker):
     """
     Updates the master calibration trace file.
     """
     def __init__(self, pipeline_context):
-        super(TraceMaker, self).__init__(pipeline_context)
+        super(TraceSaver, self).__init__(pipeline_context)
         self.pipeline_context = pipeline_context
-        self.order_of_meta_fit = 6
+        self.try_combinations_of_images = False
+        self.cross_correlate_num = 1
+        # if self.try_combinations_of_images, this is the number of images you compare to see if their trace fits agree
 
     @property
     def group_by_keywords(self):
@@ -53,30 +55,78 @@ class TraceMaker(CalibrationMaker):
         return 1
 
     def make_master_calibration_frame(self, images, image_config, logging_tags):
-        master_traces = make_master_traces(images, self, image_config, logging_tags,
-                                           'global-meta', cross_correlate_num=1,
-                                           order_of_meta_fit=self.order_of_meta_fit)
+        """
+        :param images:
+        :param image_config:
+        :param logging_tags:
+        :return: frame with trace coefficients appended as the primary data object.
+        This function cross correlates image.trace.coefficients between different fits (self.try_combinations_of_images)
+        and saves the trace information for the set of images which agree the most.
+        """
+        master_trace_filename = self.get_calibration_filename(image_config)
+        logs.add_tag(logging_tags, 'master_trace', os.path.basename(master_trace_filename))
 
-        return [master_traces]
+        satisfactory_fit = False
+        image_indices_to_try, try_combinations_of_images = cross_correlate_image_indices(images,
+                                                                                         self.cross_correlate_num)
+        counter = 0
+        num_lit_fibers = get_number_of_lit_fibers(images[0])
+        while not satisfactory_fit:
+            if self.try_combinations_of_images:
+                images_to_try = [images[i] for i in image_indices_to_try[counter]]
+            else:
+                images_to_try = [images[counter]]
+            counter += 1
+
+            coefficients_and_indices_list = [image.trace.coefficients for image in images_to_try]
+
+            satisfactory_fit = check_for_close_fit(coefficients_and_indices_list, images_to_try, num_lit_fibers,
+                                                   max_pixel_error=1E-1)
+
+            if not satisfactory_fit:
+                logger.warning(
+                    "Too much disagreement between the master trace fits on this subset of lampflats"
+                    ". Trying a new set of lampflats. {0} sets exist".format(len(image_indices_to_try)))
+
+            if counter >= len(image_indices_to_try) and not satisfactory_fit:
+                raise "No set of {0} master meta-fits agree enough. Master Trace fitting failed on this batch {1} ! " \
+                      "Try generating order by order. This set of lamp flat frames possibly disagree." .format(
+                          self.cross_correlate_num, images_to_try[0].filename)
+
+        good_frame = images_to_try[0]
+
+        header = fits_utils.create_master_calibration_header(images)
+        header['FIBRORDR'] = good_frame.trace.fiber_order
+        header['FITFLAT'] = good_frame.filename
+        header['OBSTYPE'] = 'TRACE'
+        header['DATE-OBS'] = good_frame.header.get('DATE-OBS')
+        header['DAY-OBS'] = good_frame.header.get('DAY-OBS')
+        header['INSTRUME'] = good_frame.header.get('TELESCOP')
+        header['OBJECTS'] = good_frame.header.get('OBJECTS')
+
+        logger.info(os.path.basename(master_trace_filename))
+
+        master_trace_coefficients = Image(pipeline_context=self.pipeline_context,
+                                          data=good_frame.trace.coefficients, header=header)
+
+        master_trace_coefficients.filename = master_trace_filename
+
+        return [master_trace_coefficients]
 
 
-class BlindTraceMaker(CalibrationMaker):
+class TraceRefine(Stage):
     """
-    Fits traces order by order. Only use if you want to generate a new master
-    trace file without loading any trace locations from the data-base
-    :param average_trace_vertical_extent : should in no instance ever be changed unless the detector drastically
-    changes. This should be the approximate (good to within \pm 30 pixels) difference between the position of the bottom
-    of the trace and its position when it contacts the edge of the detector. E.g. if you were to surround a trace in
-    the minimum sized box possible, this is the y-height of the box (parallel to increasing order direction). Sign matters
-    the convention is that if the traces curve upwards then this is positive. Negative if they curve downwards. Sign matters
-    because this is the guess for the second order coefficient of the blind order-by-order trace fit.
+    Updates image.trace.coefficients via global-meta fitting. This procedure is robust enough that
+    one can run this one arc or science frames if they so wished to refine their traces.
+    :param max_number_of_images_to_refine : the number of images from the larger list images that you wish to actually fit.
+    For instance if 1, we do one fit then we adopt that fit onto all other images in the list. Must be at least 1. Set to
+    some large number if you want to always fit every frame in images.
     """
     def __init__(self, pipeline_context):
-        super(BlindTraceMaker, self).__init__(pipeline_context)
+        super(TraceRefine, self).__init__(pipeline_context)
         self.pipeline_context = pipeline_context
         self.order_of_meta_fit = 6
-        self.order_of_poly_fit = 4
-        self.average_trace_vertical_extent = 90  # do NOT haphazardly change this.
+        self.max_number_of_images_to_refine = 1
 
     @property
     def group_by_keywords(self):
@@ -86,32 +136,75 @@ class BlindTraceMaker(CalibrationMaker):
     def calibration_type(self):
         return 'trace'
 
-    @property
-    def min_images(self):
-        return 1
+    def do_stage(self, images):
+        add_class_as_attribute(images, 'trace', Trace)
+        for i, image in enumerate(images):
+            num_lit_fibers = get_number_of_lit_fibers(image)
+            if i < self.max_number_of_images_to_refine:
+                logger.debug('refining with global meta on {0}'.format(image.filename))
+                refined_trace_coefficients = optimize_coeffs_entire_lampflat_frame(
+                    image.trace.coefficients, image, num_of_lit_fibers=num_lit_fibers,
+                    order_of_meta_fit=self.order_of_meta_fit, bpm=image.bpm)
+            else:
+                logger.debug('adopting last global-meta fit onto {0}'.format(image.filename))
+                refined_trace_coefficients = images[self.max_number_of_images_to_refine - 1].trace.coefficients
+            image.trace.coefficients = refined_trace_coefficients
+        return images
 
-    def make_master_calibration_frame(self, images, image_config, logging_tags):
-        master_traces = make_master_traces(images, self, image_config, logging_tags,
-                                           'order-by-order', cross_correlate_num=1,
-                                           order_of_poly_fits=self.order_of_poly_fit,
-                                           order_of_meta_fit=self.order_of_meta_fit)
-        return [master_traces]
 
-
-class TraceUpdater(Stage):
+class GenerateInitialGuessForTraceFitFromScratch(Stage):
     """
-    Loads the most recent master trace file and stores it on the image under trace.coefficients and trace.fiber_order.
-    Updates the trace centroid locations for a frame of any observation type.
-    Will keep the as-imported master_trace locations if the reasonable criterion which indicate a good fit are not met.
-    Right now, any updating of traces away from the recent master calibration file is not allowed. So technically,
-    this stage only serves the purpose of loading the loading the master calibration traces. One can enable on the
-    fly updating by allow_on_the_fly_updating = False, however that may pose issues downstream.
+    Generates an initial guess for the trace global-meta fitting by fitting the traces order by order.
+    :param average_trace_vertical_extent : should in no instance ever be changed unless the detector drastically
+    changes. This should be the approximate (good to within \pm 30 pixels) difference between the position of the bottom
+    of the trace and its position when it contacts the edge of the detector. E.g. if you were to surround a trace in
+    the minimum sized box possible, this is the y-height of the box (parallel to increasing order direction). Sign matters
+    the convention is that if the traces curve upwards then this is positive. Negative if they curve downwards. Sign matters
+    because this is the guess for the second order coefficient of the blind order-by-order trace fit.
+
+    :param max_number_of_images_to_fit : the number of images from the larger list images that you wish to actually fit.
+    For instance if 1, we do one fit then we adopt that fit onto all other images in the list.
     """
     def __init__(self, pipeline_context):
-        super(TraceUpdater, self).__init__(pipeline_context)
+        super(GenerateInitialGuessForTraceFitFromScratch, self).__init__(pipeline_context)
         self.pipeline_context = pipeline_context
-        self.order_of_meta_fit = 6
-        self.allow_on_the_fly_updating = False
+        self.order_of_poly_fit = 4
+        self.average_trace_vertical_extent = 90  # do NOT haphazardly change this.
+        self.max_number_of_images_to_fit = 1
+
+    @property
+    def group_by_keywords(self):
+        return ['ccdsum']
+
+    @property
+    def calibration_type(self):
+        return 'trace'
+
+    def do_stage(self, images):
+        add_class_as_attribute(images, 'trace', Trace)
+        for i, image in enumerate(images):
+            num_lit_fibers = get_number_of_lit_fibers(image)
+            if i < self.max_number_of_images_to_fit:
+                logger.debug('fitting order by order on {0}'.format(image.filename))
+                second_order_coefficient_guess = self.average_trace_vertical_extent
+                coefficients_and_indices_initial = fit_traces_order_by_order(image, second_order_coefficient_guess,
+                                                                             order_of_poly_fits=self.order_of_poly_fit,
+                                                                             num_lit_fibers=num_lit_fibers)
+            else:
+                logger.debug('adopting last order-order fit onto {0}'.format(image.filename))
+                coefficients_and_indices_initial = images[self.max_number_of_images_to_fit - 1].trace.coefficients
+            image.trace.fiber_order = None
+            image.trace.coefficients = coefficients_and_indices_initial
+        return images
+
+
+class LoadInitialGuessForTraceFit(Stage):
+    """
+    Loads trace coefficients from file and appends them onto the image object.
+    """
+    def __init__(self, pipeline_context):
+        super(LoadInitialGuessForTraceFit, self).__init__(pipeline_context)
+        self.pipeline_context = pipeline_context
 
     @property
     def group_by_keywords(self):
@@ -124,131 +217,33 @@ class TraceUpdater(Stage):
     def do_stage(self, images):
         add_class_as_attribute(images, 'trace', Trace)
         for image in images:
-            num_lit_fibers = get_number_of_lit_fibers(image)
-            # getting coefficients from master trace file
-            coefficients_and_indices_initial, fiber_order = get_trace_coefficients(image, self)
-            # once we write fiber_order correctly this should turn into len(fiber_order) or maybe assert
-            # num_lit_fibers = len(fiber_order)
-            image.trace.coefficients = coefficients_and_indices_initial
+            logger.debug('importing master coeffs from %s' % image.filename)
+            coefficients_and_indices_initial, fiber_order = self.get_trace_coefficients(image)
             image.trace.fiber_order = fiber_order
-
-            # optimizing master traces on this frame in particular
-            coefficients_and_indices_new = optimize_coeffs_entire_lampflat_frame(
-                coefficients_and_indices_initial, image, num_of_lit_fibers=num_lit_fibers,
-                order_of_meta_fit=self.order_of_meta_fit, bpm=None)
-            logger.debug('refining trace coefficients on %s' % image.filename)
-
-            close_fit = check_for_close_fit([coefficients_and_indices_new, coefficients_and_indices_initial],
-                                            [image, image], num_lit_fibers, max_pixel_error=3)
-            reasonable_flux_change = check_flux_change(coefficients_and_indices_new, coefficients_and_indices_initial,
-                                                       image)
-            # keeping the optimized traces only if they satisfy certain conditions
-            if close_fit and reasonable_flux_change and self.allow_on_the_fly_updating:
-                image.trace.coefficients = coefficients_and_indices_new
-                logger.debug('New trace fit accepted on %s' % image.filename)
-            if not close_fit or not reasonable_flux_change:
-                logger.warning('Either 1. orders have possibly shifted drastically on %s, or it is very low S/N \n'
-                               'resorting to as imported coefficients.' % image.filename)
+            image.trace.coefficients = coefficients_and_indices_initial
         return images
 
+    def get_trace_coefficients(self, image):
+        """
+        :param image: Banzai Image
+        :return: The coefficients and indices (ndarray), and fiber order tuple from the nearest master trace file.
+        """
+        coefficients_and_indices, fiber_order = None, None
+        master_trace_full_path = dbs.get_master_calibration_image(image, self.calibration_type,
+                                                                  self.group_by_keywords,
+                                                                  db_address=self.pipeline_context.db_address)
+        if image.header['OBSTYPE'] != 'TRACE' and os.path.isfile(master_trace_full_path):
+            fiber_order = fits.getheader(master_trace_full_path).get('FIBRORDR')
+            coefficients_and_indices = fits.getdata(master_trace_full_path)
 
-def make_master_traces(images, maker_object, image_config, logging_tags, method,
-                       cross_correlate_num=2, order_of_poly_fits=4, order_of_meta_fit=6):
-    """
-    :param images: List of banzai Image classes
-    :param method: 'order-by-order' or 'global-meta'. Order by order should only be used when making a brand new Master
-                if the current master traces have floated too far away.
-    :param cross_correlate_num: number of frames to cross correlate trace solutions if there are sufficient number of
-                frames. cross_correlate_num must be at least 1. If =1, no cross correlation will be done.
-    :param maker_object: CalibrationMaker object.
-    :return: Banzai image object where image.data are the trace coefficients. with order indices as the first column.
-    """
-    add_class_as_attribute(images, 'trace', Trace)
-    master_trace_filename = maker_object.get_calibration_filename(image_config)
-    logs.add_tag(logging_tags, method + 'master_trace', os.path.basename(master_trace_filename))
+            logger.debug('Imported master trace coefficients shape: ' + str(coefficients_and_indices.shape))
+            assert coefficients_and_indices is not None
+            assert fiber_order is not None
 
-    satisfactory_fit = False
-    image_indices_to_try, try_combinations_of_images = cross_correlate_image_indices(images, cross_correlate_num)
-    coefficients_and_indices_list = []
-    counter = 0
-    while not satisfactory_fit:
-        if try_combinations_of_images:
-            images_to_try = [images[i] for i in image_indices_to_try[counter]]
-        else:
-            images_to_try = [images[counter]]
-        counter += 1
-        for image in images_to_try:
-            num_lit_fibers = get_number_of_lit_fibers(image)
-            if method == 'order-by-order':
-                logger.debug('fitting order by order on %s' % image.filename)
-                second_order_coefficient_guess = maker_object.average_trace_vertical_extent
-                coefficients_and_indices_initial = fit_traces_order_by_order(image, second_order_coefficient_guess,
-                                                                             order_of_poly_fits=order_of_poly_fits,
-                                                                             num_lit_fibers=num_lit_fibers)
-                fiber_order = None
-            if method == 'global-meta':
-                logger.debug('importing master coeffs and refining fit on %s' % image.filename)
-                coefficients_and_indices_initial, fiber_order = get_trace_coefficients(image, maker_object)
+        if image.header['OBSTYPE'] != 'LAMPFLAT' and not os.path.isfile(master_trace_full_path):
+            raise MasterCalibrationDoesNotExist
 
-            # once we write fiber_order correctly this should turn into len(fiber_order) or maybe assert
-            # num_lit_fibers = len(fiber_order)
-
-            coefficients_and_indices_list += [optimize_coeffs_entire_lampflat_frame(
-                coefficients_and_indices_initial, image, num_of_lit_fibers=num_lit_fibers,
-                order_of_meta_fit=order_of_meta_fit, bpm=None)]
-
-        satisfactory_fit = check_for_close_fit(coefficients_and_indices_list, images_to_try, num_lit_fibers,
-                                               max_pixel_error=1E-1)
-
-        assert coefficients_and_indices_initial.shape == coefficients_and_indices_list[0].shape
-
-        if not satisfactory_fit:
-            logger.warning(
-                "Unsatisfactory master fit. Trying a new set of lampflats. %s sets exist" % len(image_indices_to_try))
-
-        if counter >= len(image_indices_to_try) and not satisfactory_fit:
-            raise "No set of %s master meta-fits agree enough. Master Trace fitting failed on this batch%s ! " \
-                  "Try generating order by order. This set of lamp flat frames possibly disagree." % (
-                      cross_correlate_num, images_to_try[0].filename)
-
-    header = fits_utils.create_master_calibration_header(images)
-    header['FIBRORDR'] = fiber_order
-    header['FITFLAT'] = images[0].filename
-    header['OBSTYPE'] = 'TRACE'
-    header['DATE-OBS'] = images[0].header.get('DATE-OBS')
-    header['DAY-OBS'] = images[0].header.get('DAY-OBS')
-    header['INSTRUME'] = images[0].header.get('TELESCOP')
-
-    logger.info(os.path.basename(master_trace_filename))
-
-    master_trace_coefficients = Image(pipeline_context=maker_object.pipeline_context,
-                                      data=coefficients_and_indices_list[0], header=header)
-
-    master_trace_coefficients.filename = master_trace_filename
-    assert master_trace_coefficients.data.shape is not None
-
-    return master_trace_coefficients
+        return coefficients_and_indices, fiber_order
 
 
-def get_trace_coefficients(image, maker_object):
-    """
-    :param image: Banzai Image
-    :param maker_object: CalibrationMaker or Stage object - must have attribute pipeline context
-    :return: The coefficients and indices (ndarray), and fiber order tuple from the nearest master trace file.
-    """
-    coefficients_and_indices, fiber_order = None, None
-    master_trace_full_path = dbs.get_master_calibration_image(image, maker_object.calibration_type,
-                                                              maker_object.group_by_keywords,
-                                                              db_address=maker_object.pipeline_context.db_address)
-    if image.header['OBSTYPE'] != 'TRACE' and os.path.isfile(master_trace_full_path):
-        fiber_order = fits.getheader(master_trace_full_path).get('FIBRORDR')
-        coefficients_and_indices = fits.getdata(master_trace_full_path)
 
-        logger.debug('Imported master trace coefficients shape: ' + str(coefficients_and_indices.shape))
-        assert coefficients_and_indices is not None
-        assert fiber_order is not None
-
-    if image.header['OBSTYPE'] != 'LAMPFLAT' and not os.path.isfile(master_trace_full_path):
-        raise MasterCalibrationDoesNotExist
-
-    return coefficients_and_indices, fiber_order

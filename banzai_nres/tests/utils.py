@@ -49,10 +49,6 @@ def noisify_image(image, trimmed_shape):
 
 
 def trim_image(image, trimmed_shape):
-    """
-    :param image:
-    Squares up the image, thus fake images which are not square are a bad idea.
-    this trim_image may be unneccessary.
-    """
     image.data = image.data[:trimmed_shape[0], :trimmed_shape[1]]
+    image.bpm = image.data[:trimmed_shape[0], :trimmed_shape[1]]
     image.ny, image.nx = trimmed_shape

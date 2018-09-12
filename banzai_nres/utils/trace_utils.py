@@ -20,6 +20,8 @@ logger = logs.get_logger(__name__)
 
 
 def maxima(A, s, k, ref):
+    # TODO: replace this with a function from a package. This works fine, but for maintainability reasons we
+    # want a function from a package, like scipy signal peak finder.
     """
     A procedure for finding maxima which are not just peaks in the noise floor. E.g. searches for statistically
     significant maxima.
@@ -730,7 +732,7 @@ def fit_traces_order_by_order(image, second_order_coefficient_guess, order_of_po
     coefficients_and_indices = exclude_traces_which_jet_off_detector(coefficients_and_indices, image)
     coefficients_and_indices = split_and_sort_coefficients_for_each_fiber(coefficients_and_indices, num_lit_fibers)
 
-    logger.info('%s traces found' % coefficients_and_indices.shape[0])
+    logger.debug('%s traces found' % coefficients_and_indices.shape[0])
 
     return coefficients_and_indices
 
