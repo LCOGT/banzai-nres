@@ -167,6 +167,98 @@ class TestUnitBlindFitAlgorithms:
             assert max_exists
             assert np.isclose(coeff_guess[0], expected_guess * image.data.shape[0], atol=5, rtol=0)
 
+    def test_trimming_bad_fits_on_way_up(self):
+        length = 12
+        all_coefficients_and_indices_init = [[1, 3], [2, 8], [3, 11]]
+        loop_counter = len(all_coefficients_and_indices_init) + 1
+
+        coef = [length+1]
+        all_coefficients_and_indices = all_coefficients_and_indices_init + [[4] + coef]
+        num_orders_found, trimmed_all_coefficients, done = trace_utils.validate_fit_and_trim_erroneous_fits(coef, all_coefficients_and_indices,
+                                                                                                loop_counter, length,
+                                                                                                maximum_exists=True, done=False,
+                                                                                                direction='up')
+        assert done
+        assert trimmed_all_coefficients == all_coefficients_and_indices_init
+        assert num_orders_found == len(trimmed_all_coefficients)
+
+        coef = [all_coefficients_and_indices_init[-1][1] - 3]
+        all_coefficients_and_indices = all_coefficients_and_indices_init + [[4] + coef]
+        num_orders_found, trimmed_all_coefficients, done = trace_utils.validate_fit_and_trim_erroneous_fits(coef, all_coefficients_and_indices,
+                                                                                                loop_counter, length,
+                                                                                                maximum_exists=True, done=False,
+                                                                                                direction='up')
+        assert done
+        assert trimmed_all_coefficients == all_coefficients_and_indices_init
+        assert num_orders_found == len(trimmed_all_coefficients)
+
+        coef = [all_coefficients_and_indices_init[-1][1] - 3]
+        all_coefficients_and_indices = all_coefficients_and_indices_init + [[4] + coef]
+        num_orders_found, trimmed_all_coefficients, done = trace_utils.validate_fit_and_trim_erroneous_fits(coef, all_coefficients_and_indices,
+                                                                                                loop_counter, length,
+                                                                                                maximum_exists=False, done=False,
+                                                                                                direction='up')
+        assert done
+        assert trimmed_all_coefficients == all_coefficients_and_indices_init
+        assert num_orders_found == len(trimmed_all_coefficients)
+
+    def test_trimming_bad_fits_on_way_down(self):
+        length = 12
+        all_coefficients_and_indices_init = [[1, 11], [2, 8], [3, 3]]
+        loop_counter = len(all_coefficients_and_indices_init) + 1
+
+        coef = [-2]
+        all_coefficients_and_indices = all_coefficients_and_indices_init + [[4] + coef]
+        num_orders_found, trimmed_all_coefficients, done = trace_utils.validate_fit_and_trim_erroneous_fits(coef, all_coefficients_and_indices,
+                                                                                                loop_counter, length,
+                                                                                                maximum_exists=True, done=False,
+                                                                                                direction='down')
+        assert done
+        assert trimmed_all_coefficients == all_coefficients_and_indices_init
+        assert num_orders_found == len(trimmed_all_coefficients)
+
+        coef = [all_coefficients_and_indices_init[-1][1] + 3]
+        all_coefficients_and_indices = all_coefficients_and_indices_init + [[4] + coef]
+        num_orders_found, trimmed_all_coefficients, done = trace_utils.validate_fit_and_trim_erroneous_fits(coef, all_coefficients_and_indices,
+                                                                                                loop_counter, length,
+                                                                                                maximum_exists=True, done=False,
+                                                                                                direction='down')
+        assert done
+        assert trimmed_all_coefficients == all_coefficients_and_indices_init
+        assert num_orders_found == len(trimmed_all_coefficients)
+        coef = [all_coefficients_and_indices_init[-1][1] - 3]
+        all_coefficients_and_indices = all_coefficients_and_indices_init + [[4] + coef]
+        num_orders_found, trimmed_all_coefficients, done = trace_utils.validate_fit_and_trim_erroneous_fits(coef, all_coefficients_and_indices,
+                                                                                                loop_counter, length,
+                                                                                                maximum_exists=False, done=False,
+                                                                                                direction='down')
+        assert done
+        assert trimmed_all_coefficients == all_coefficients_and_indices_init
+        assert num_orders_found == len(trimmed_all_coefficients)
+
+    def test_removing_repeated_fits(self):
+        length = 12
+        all_coefficients_and_indices_init = [[1, 11], [2, 8], [3, 3], [4, 3]]
+        loop_counter = len(all_coefficients_and_indices_init) + 1
+
+        coef = [all_coefficients_and_indices_init[-1][1]]
+        all_coefficients_and_indices = all_coefficients_and_indices_init + [[5] + coef]
+        num_orders_found, trimmed_all_coefficients, done = trace_utils.validate_fit_and_trim_erroneous_fits(coef, all_coefficients_and_indices,
+                                                                                                loop_counter, length,
+                                                                                                maximum_exists=True, done=False,
+                                                                                                direction='down')
+        assert done
+        assert trimmed_all_coefficients == all_coefficients_and_indices_init[:-1]
+        assert num_orders_found == len(trimmed_all_coefficients)
+
+        num_orders_found, trimmed_all_coefficients, done = trace_utils.validate_fit_and_trim_erroneous_fits(coef, all_coefficients_and_indices,
+                                                                                                loop_counter, length,
+                                                                                                maximum_exists=True, done=False,
+                                                                                                direction='up')
+        assert done
+        assert trimmed_all_coefficients == all_coefficients_and_indices_init[:-1]
+        assert num_orders_found == len(trimmed_all_coefficients)
+
 
 def test_generating_blank_evaluated_legendre_array():
     tiny_image = TinyFakeImageWithTraces()
@@ -298,7 +390,8 @@ class TestTransformationsToAndFromMetaCoeffstoTraceCoeffs:
         assert np.allclose(meta_fit_coefficients, np.array([[1]]))
 
     def test_transforming_from_meta_to_trace_coeffs(self):
-        trace_coeffs = trace_utils.get_coefficients_from_meta(allmetacoeffs=np.array([[1]]), stpolyarr=np.array([[1, 1]]))
+        trace_coeffs = trace_utils.get_coefficients_from_meta(allmetacoeffs=np.array([[1]]),
+                                                              stpolyarr=np.array([[1, 1]]))
         expected_trace_coeffs = np.array([[1],
                                           [1]])
         assert np.allclose(trace_coeffs, expected_trace_coeffs)
@@ -313,12 +406,16 @@ class TestTransformationsToAndFromMetaCoeffstoTraceCoeffs:
 
 class TestMetaHessianandMetaGradientandTotalFluxEvaluation:
     """
-    Testing Hessian creation for the meta fit and reorganization of the hessian into a matrix.
+    Testing Hessian and gradient creation for the meta fit and reorganization of the hessian into a matrix.
+    This class tests all of the main functions needed to perform the global meta fit on traces.
     This tests whether the elements which fill the hessian have the correct ordering, these are the p,j,q,k elements
     ordered in the same way as here: https://v2.overleaf.com/read/jtckthqsdttj
     The same file can be found in docs/algorithm_docs/Newton_s_method_and_meta_fits.pdf
     Note: np.equal(a,b) is depriciated for element wise string comparison.
     """
+    def constant_function(self, x):
+        return 1
+
     def dummy_meta_hessian_element(self, p, q, j, k, *extraargs):
         return '{0}, {1}, {2}, {3}'.format(p, j, q, k)
 
@@ -355,8 +452,35 @@ class TestMetaHessianandMetaGradientandTotalFluxEvaluation:
     def test_generating_meta_gradient_elements(self):
         array_of_gradients = np.ones((2, 2))
         evaluated_polynomials_for_meta = np.ones((2, 2))
-        assert np.isclose(trace_utils.j_k_element_of_meta_gradient(0, 0, evaluated_polynomials_for_meta, array_of_gradients), 2)
+        assert np.isclose(trace_utils.p_k_element_of_meta_gradient(0, 0, evaluated_polynomials_for_meta, array_of_gradients), 2)
 
+    def test_end_to_end_building_of_meta_hessian_and_meta_gradient(self):
+        # TODO: meta gradient building fails.
+        meta_fit_coefficients = np.array([[1],
+                                          [1]])
+        coeffs_vector = meta_fit_coefficients.reshape(meta_fit_coefficients.size)
+
+        image = FakeImage(nx=12, ny=10, overscan_size=2)
+        trim_image(image, trimmed_shape=(10, 10))
+        constant_spline_functions = [self.constant_function] * image.data.shape[1]
+        image_splines = trace_utils.ImageSplines(spline=constant_spline_functions,
+                                                 first_derivative=constant_spline_functions,
+                                                 second_derivative=constant_spline_functions)
+        x_coord_array = np.arange(image.data.shape[1])
+        evaluated_polynomials_for_meta = np.array([[1, 1]])
+        evaluated_polynomials_for_traces = np.array([np.ones(image.data.shape[1]),
+                                                     np.ones(image.data.shape[1])])
+
+        meta_fit_extra_args = (image_splines, evaluated_polynomials_for_meta,
+                               evaluated_polynomials_for_traces, x_coord_array)
+
+        meta_hessian = (-1) * trace_utils.NegativeHessian(coeffs_vector, *meta_fit_extra_args)
+        assert np.isclose(meta_hessian, image.data.shape[0] * evaluated_polynomials_for_meta.shape[1]).all()
+        """
+        meta_gradient = (-1) * trace_utils.NegativeGradient(coeffs_vector, *meta_fit_extra_args)
+        print(meta_gradient)
+        assert np.isclose(meta_gradient, image.data.shape[0]).all()
+        """
     def test_finding_total_flux_from_meta_coefficients(self):
         meta_fit_coefficients = np.array([[1]])
         coeffs_vector = meta_fit_coefficients.reshape(meta_fit_coefficients.size)

@@ -175,7 +175,6 @@ def findorder(image, imfilt, x, evaluated_legendre_polynomials, order=2, second_
 
 
 def validate_fit_and_trim_erroneous_fits(coef, allcoef, loop_counter, length, maximum_exists, done, direction='up'):
-    # TODO: unit test this.
     num_of_orders_found = None
     # March up in the orders.
 
@@ -185,7 +184,7 @@ def validate_fit_and_trim_erroneous_fits(coef, allcoef, loop_counter, length, ma
     # if the sum across the trace for the found order k is less than 1/10 of the sum of the k-2 order (belonging
     # to the same fiber, then we stop the search.
     if direction == 'up':
-        if coef[0] < allcoef[-2][1] or coef[0] > length and maximum_exists:
+        if (coef[0] < allcoef[-2][1] or coef[0] > length) and maximum_exists:
             allcoef = allcoef[:-1]  # delete bad fit
             num_of_orders_found = loop_counter - 1
             done = True
@@ -196,7 +195,7 @@ def validate_fit_and_trim_erroneous_fits(coef, allcoef, loop_counter, length, ma
     # Or is within a pixel of the previous two computed coefficients,
     # So 3 zero-order coefficients are equal. In the latter case, we delete two of the last fits, and then stop the search.
     if direction == 'down':
-        if coef[0] < 0 or coef[0] > allcoef[-2][1] and maximum_exists:
+        if (coef[0] < 0 or coef[0] > allcoef[-2][1]) and maximum_exists:
             allcoef = allcoef[:-1]  # delete bad fit
             num_of_orders_found = loop_counter - 1
             done = True
@@ -475,11 +474,11 @@ def p_q_j_k_element_of_meta_hessian(p, q, j, k, stpolyarr, array_of_individual_h
     return np.sum(stpolyarr[p] * stpolyarr[q] * array_of_individual_hessians[:, j, k])
 
 
-def j_k_element_of_meta_gradient(p, k, stpolyarr, array_of_individual_gradients):
+def p_k_element_of_meta_gradient(p, k, stpolyarr, array_of_individual_gradients):
     return np.sum(stpolyarr[p] * array_of_individual_gradients[:, k])
 
 
-def evaluate_meta_gradient(stpolyarr, array_of_individual_gradients, tracepolyorder, metapolyorder, element_generating_function=j_k_element_of_meta_gradient):
+def evaluate_meta_gradient(stpolyarr, array_of_individual_gradients, tracepolyorder, metapolyorder, element_generating_function=p_k_element_of_meta_gradient):
     meta_gradient = []
     for k in range(tracepolyorder + 1):
         for p in range(metapolyorder + 1):
@@ -519,11 +518,9 @@ def reshape_hessian_elements_into_twod_matrix(list_of_hessian_elements, tracepol
 
 
 def NegativeHessian(coeffs_vector, *args):
-    # TODO: unit test this, albeit this is covered in the integration test
     """
     :param coeffs_vector: nd-array list of the n-meta coefficients
     :param args: tuple type, (image_splines, stpolyarr, legpolyarr, pixelxarray) .
-    See Newtonssmethod_meta_fit below for parameter designations
     :return: the negative of the Hessian, an nd array shape (n,n)
     """
     image_splines, stpolyarr, legpolyarr, pixelxarray = args
@@ -560,11 +557,9 @@ def NegativeHessian(coeffs_vector, *args):
 
 
 def NegativeGradient(coeffs_vector, *args):
-    # TODO: unit test this, albeit this is covered in the integration test
     """
     :param coeffs_vector: nd-array list of the n-meta coefficients
     :param args: tuple type, (image_splines, stpolyarr, legpolyarr, pixelxarray) .
-    See Newtonssmethod_meta_fit below for parameter designations
     :return: the negative of the gradient.
     """
     image_splines, stpolyarr, legpolyarr, pixelxarray = args
@@ -580,14 +575,11 @@ def NegativeGradient(coeffs_vector, *args):
     # evaluate each trace at every x pixel
     traces = np.dot(tracecoeffs, legpolyarr)
     pixelyarray = np.copy(pixelxarray)
-
     firstd = np.array([image_splines.first_derivative[i](traces[:, i]) for i in pixelyarray]).T
-
-
     array_of_individual_gradients = np.dot(firstd, legpolyarr.T)  # evaluating the gradient for all traces
     # construct the filled gradient
     grad = evaluate_meta_gradient(stpolyarr, array_of_individual_gradients, tracepolyorder, metapolyorder,
-                                  element_generating_function=j_k_element_of_meta_gradient)
+                                  element_generating_function=p_k_element_of_meta_gradient)
     return (-1) * grad
 
 
