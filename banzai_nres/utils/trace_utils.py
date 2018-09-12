@@ -5,6 +5,8 @@ Authors
     G. Mirek Brandt (gmbrandt@ucsb.edu)
 
     Tim Brandt (tbrandt@physics.ucsb.edu)
+
+Every function here is covered by either a unit test or an integration test inside of tests/test_trace_maker.py
 """
 
 import numpy as np
@@ -141,7 +143,6 @@ def generate_initial_guess_for_trace_polynomial(image, imfilt, x, evaluated_lege
 
 
 def findorder(image, imfilt, x, evaluated_legendre_polynomials, order=2, second_order_coefficient_guess=90, lastcoef=None, direction='up'):
-    # this is tested as part of the integration test.
     """
     :param image: banzai image object.
     :param imfilt: ndarray, image.data passed through ndimage.spline_filter
@@ -158,6 +159,9 @@ def findorder(image, imfilt, x, evaluated_legendre_polynomials, order=2, second_
     WARNING: It is hardcoded that the traces are spaced by no more than 100 pixels. If for some future detector they
     become further spaced, we will have to change the two instances of 100 here to that larger value. Although 100
     is like 10x the current trace spacing, so I do not forsee any issues.
+
+    NOTE: there is no unit test for this, rather this is tested under an integration test for
+    the do_stage of order-by-order fitting
     """
     coeffsguess, maximum_exists, refflux = generate_initial_guess_for_trace_polynomial(image, imfilt, x,
                                                 evaluated_legendre_polynomials, order=order,
@@ -175,25 +179,28 @@ def findorder(image, imfilt, x, evaluated_legendre_polynomials, order=2, second_
 
 
 def validate_fit_and_trim_erroneous_fits(coef, allcoef, loop_counter, length, maximum_exists, done, direction='up'):
+    """
+    :param coef: coefficients for the trace fit (without index) of the last fit.
+    :param allcoef: list of coefficients for all the previous fits (with index).
+    :param loop_counter: the counter i inside of find_all_traces_marching_up_or_down
+    :param length: the height of the image.data (i.e. vertical extent of the image)
+    :param maximum_exists: True or False whether generate_initial_guess_for_trace_polynomial decided there exists
+                        another trace to fit at all
+    :param done: whether we are done searching and fitting for traces.
+    :param direction: the direction we are heading along in the detector. increasing y corresponds to 'up'.
+    :return: the number of orders found (length of allcoefs after trimming), the trimmed coefficients which have:
+            1. repeated fits removed
+            2. fits which fall off the detector removed
+            3. fits which fell backwards removed
+    and done = True if we are indeed done.
+    """
     num_of_orders_found = None
-    # March up in the orders.
-
-    # the search stops if the 0th order coefficient computed is less than 0 or is less than the previous coefficient computed (i.e. down step).
-    # Or is within a pixel of the previous two computed coefficients.
-    # So 3 zero-order coefficients are equal. In the latter case, we delete two of the last fits, and then stop the search.
-    # if the sum across the trace for the found order k is less than 1/10 of the sum of the k-2 order (belonging
-    # to the same fiber, then we stop the search.
     if direction == 'up':
         if (coef[0] < allcoef[-2][1] or coef[0] > length) and maximum_exists:
             allcoef = allcoef[:-1]  # delete bad fit
             num_of_orders_found = loop_counter - 1
             done = True
-    # Now march down to the bottom of the array.  Resume from the
-    # initial coefficients from earlier.
 
-    # the search stops if the 0th order coefficient computed is less than 0 or is greater than the previous coefficient computed (i.e. up step).
-    # Or is within a pixel of the previous two computed coefficients,
-    # So 3 zero-order coefficients are equal. In the latter case, we delete two of the last fits, and then stop the search.
     if direction == 'down':
         if (coef[0] < 0 or coef[0] > allcoef[-2][1]) and maximum_exists:
             allcoef = allcoef[:-1]  # delete bad fit
@@ -213,7 +220,22 @@ def validate_fit_and_trim_erroneous_fits(coef, allcoef, loop_counter, length, ma
 
 
 def find_all_traces_marching_up_or_down(image, imfilt, x, vals, evaluated_legendre_polynomials, length, order_of_poly_fit, coef, allcoef, direction='up'):
-    # this is tested as part of the integration test.
+    """
+    :param image:
+    :param imfilt:
+    :param x:
+    :param vals:
+    :param evaluated_legendre_polynomials:
+    :param length:
+    :param order_of_poly_fit:
+    :param coef:
+    :param allcoef:
+    :param direction:
+    :return:
+
+    NOTE: there is no unit test for this, rather this is tested under an integration test for
+    the do_stage of order-by-order fitting
+    """
     done = False
     i = 1
     while not done:
@@ -231,7 +253,7 @@ def find_all_traces_marching_up_or_down(image, imfilt, x, vals, evaluated_legend
 
 
 def tracesacrossccd(image, imfilt, order_of_poly_fit, second_order_coefficient_guess):
-    # this is tested as part of the integration test.
+
     """
     :param image: banzai image object
     :param imfilt: ndarray, image.data passed through ndimage.spline_filter
@@ -239,6 +261,9 @@ def tracesacrossccd(image, imfilt, order_of_poly_fit, second_order_coefficient_g
     :param second_order_coefficient_guess: coefficient guess for the second order legendre polynomial which
     describe the traces across the ccd.
     :return:
+
+    NOTE: there is no unit test for this, rather this is tested under an integration test for
+    the do_stage of order-by-order fitting
     """
     length, width = image.data.shape
 
@@ -583,7 +608,6 @@ def NegativeGradient(coeffs_vector, *args):
 
 
 def meta_fit(metacoeffs, stpolyarr, legpolyarr, image_splines, pixelxarray):
-    # this is tested under an integration test for the Do_stage of global-meta fitting
     """
     Evaluates meta-coefficients which optimize the flux across the entire detector.
     Best method is Newton-CG because it is well suited theoretically to this problem.
@@ -594,6 +618,9 @@ def meta_fit(metacoeffs, stpolyarr, legpolyarr, image_splines, pixelxarray):
 
     #NOTE: The meta fit hessian and gradient construction are described here: https://v2.overleaf.com/read/jtckthqsdttj
     The same file can be found in docs/algorithm_docs/Newton_s_method_and_meta_fits.pdf
+
+    NOTE: there is no unit test for this, rather this is tested under an integration test for
+    the do_stage of order-by-order fitting
     """
     metacoeffsinitial = np.copy(metacoeffs).reshape(metacoeffs.size)
     extraargs = (image_splines, stpolyarr, legpolyarr, pixelxarray)
@@ -622,7 +649,6 @@ def cross_correlate_image_indices(images, cross_correlate_num):
 
 
 def extract_coeffs_entire_lampflat_frame(image, order_of_poly_fits, second_order_coefficient_guess):
-    # this is tested under an integration test for the Do_stage of order-by-order fitting
     """
     This extracts the trace coefficients for each bright order of a frame. This is only stable for lampflat frames.
     It returns a list of the coefficients, ordered arbitrarily (fibers are not separated). It also returns the summed fluxed across each order
@@ -632,6 +658,9 @@ def extract_coeffs_entire_lampflat_frame(image, order_of_poly_fits, second_order
         order_of_poly_fits : order of the polynomial fit per trace.
         second_order_coefficient_guess : coefficient guess for the second order legendre polynomial which
         describe the traces across the ccd.
+
+    NOTE: there is no unit test for this, rather this is tested under an integration test for
+    the do_stage of order-by-order fitting
 
     """
     imagefiltered = ndimage.spline_filter(image.data)
