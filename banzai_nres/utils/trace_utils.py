@@ -320,7 +320,6 @@ def generate_legendre_array(image, order_of_poly_fits):
 
 
 def check_for_close_fit(coefficients_and_indices_list, images, num_lit_fibers, max_pixel_error=1E-1):
-    #TODO: this works for two fibers only, change this so the number of fibers don't matter.
     """
     :param coefficients_and_indices_list: list of trace_coefficients across the detector for multiple different fits
      . I.e. a list of ndarray with the first column 0,1,2,..66,0,1.. the fiber indexes, and the second column
@@ -345,17 +344,18 @@ def check_for_close_fit(coefficients_and_indices_list, images, num_lit_fibers, m
     assert num_traces_list[1:] == num_traces_list[:-1]
     assert num_traces % num_lit_fibers == 0
     num_orders = int(num_traces/num_lit_fibers)
+
     order_buffer = int(num_orders/5)
     x_buffer = int(image_shape[1]/4)
-
     # computing absolute differences between the trace centroid locations at every x value.
     trace_values_versus_xpixel_arr = np.array(trace_values_versus_xpixel_list)
     error_between_fits = np.abs((trace_values_versus_xpixel_arr - np.mean(trace_values_versus_xpixel_arr, axis=0)))
     # restricting region where we care about differences (center of detector)
-    select_errors_first_fiber = error_between_fits[:, order_buffer:(num_orders-order_buffer), x_buffer:(image_shape[1] - x_buffer)]
-    select_errors_second_fiber = error_between_fits[:, num_orders + order_buffer:(num_traces-order_buffer), x_buffer:(image_shape[1] - x_buffer)]
-
-    max_error_between_fits = 2 * max(np.max(select_errors_first_fiber), np.max(select_errors_second_fiber))
+    select_orders_mask = ((coefficients_and_indices_list[0][:, 0] >= order_buffer) * \
+                         (coefficients_and_indices_list[0][:, 0] - num_orders < -order_buffer)).astype(int)
+    select_order_indices = np.where(select_orders_mask == 1)[0]
+    select_errors = error_between_fits[:, select_order_indices][:, :, x_buffer:(image_shape[1] - x_buffer)]
+    max_error_between_fits = 2 * np.max(select_errors)
     if max_error_between_fits < max_pixel_error:
         close_enough_fit = True
     else:
