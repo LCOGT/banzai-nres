@@ -5,7 +5,7 @@ Authors
     G. Mirek Brandt (gmbrandt@ucsb.edu)
 """
 
-from banzai_nres.utils.trace_utils import check_for_close_fit, check_flux_change, cross_correlate_image_indices, \
+from banzai_nres.utils.trace_utils import check_for_close_fit, cross_correlate_image_indices, \
     optimize_coeffs_entire_lampflat_frame, fit_traces_order_by_order, get_number_of_lit_fibers, Trace
 from banzai_nres.utils.NRES_class_utils import add_class_as_attribute
 from banzai_nres.images import Image

@@ -29,10 +29,10 @@ class Trace(object):
         self.coefficients = None
         self.fiber_order = None
 
-    def get_trace_centroids_from_coefficients(self, image, coefficients_and_indices=None):
+    def get_trace_centroids_from_coefficients(self, image_width, coefficients_and_indices=None):
         """
         :param coefficients_and_indices: polynomial fit to traces
-        :param image: banzai image object
+        :param image_width: image.data.shape[1]
         :return: trace centroids for each trace, versus x pixel. E.g. trace_values_versus_xpixel[2,5] is the 3rd orders value
                 at x=5.
                 num_traces = num_orders*Num_fibers
@@ -42,7 +42,7 @@ class Trace(object):
             coefficients_and_indices = self.coefficients
         coeflen, coefwidth = coefficients_and_indices.shape
         num_traces, order_of_poly_fits = coeflen, coefwidth - 2
-        legendre_polynomial_array, x, xnorm = generate_legendre_array(image, order_of_poly_fits)
+        legendre_polynomial_array, x, xnorm = generate_legendre_array(image_width, order_of_poly_fits)
         trace_values_versus_xpixel = np.dot(coefficients_and_indices[:, 1:], legendre_polynomial_array)
         return trace_values_versus_xpixel, num_traces, x
 
@@ -323,7 +323,7 @@ def tracesacrossccd(image, imfilt, order_of_poly_fit, second_order_coefficient_g
     """
     length, width = image.data.shape
 
-    evaluated_legendre_polynomials, x, xnorm = generate_legendre_array(image, order_of_poly_fit)
+    evaluated_legendre_polynomials, x, xnorm = generate_legendre_array(width, order_of_poly_fit)
 
     # For the first coefficients, fit a quadratic
     # unconstrained.  Use this fitted quadratic to fit higher order
@@ -355,13 +355,13 @@ def tracesacrossccd(image, imfilt, order_of_poly_fit, second_order_coefficient_g
     return allcoef, vals, ordersabove + ordersbelow + 1
 
 
-def generate_legendre_array(image, order_of_poly_fits):
+def generate_legendre_array(image_width, order_of_poly_fits):
     """
-    :param image: Banzai image object.
+    :param image_width: image.data.shape[1], x_extent of pixels.
     :param order_of_poly_fits: order of the polynomials used to fit the traces across the CCD.
     :return:
     """
-    x = np.arange(image.data.shape[1])
+    x = np.arange(image_width)
     xnorm = x * 2. / x[-1] - 1  # x normalized to run from -1 to 1
 
     # Set up Legendre polynomials to avoid roundoff error from
@@ -391,7 +391,7 @@ def check_for_close_fit(coefficients_and_indices_list, images, num_lit_fibers, m
     trace_values_versus_xpixel_list = []
     num_traces_list = []
     for coefficients, image in zip(coefficients_and_indices_list, images):
-        trace_values_versus_xpixel, num_traces, x = image.trace.get_trace_centroids_from_coefficients(image,
+        trace_values_versus_xpixel, num_traces, x = image.trace.get_trace_centroids_from_coefficients(image.data.shape[1],
                                                                                                       coefficients_and_indices=coefficients)
         num_traces_list += [num_traces]
         trace_values_versus_xpixel_list += [trace_values_versus_xpixel]
@@ -428,7 +428,7 @@ def totalflux_all_traces(coefficients_and_indices, image):
     The exact same thing as crosscoef except it generates the polynomial array in here and prefilters the image.
     """
     order_of_poly_fits = coefficients_and_indices.shape[1]-2
-    legendre_array, x, xnorm = generate_legendre_array(image, order_of_poly_fits)
+    legendre_array, x, xnorm = generate_legendre_array(image.data.shape[1], order_of_poly_fits)
     X = list(x)*(coefficients_and_indices.shape[0])
     #  X = [0,1,...,4095,0,1,..,4095,..]
     TraceYvals = np.dot(coefficients_and_indices[:, 1:], legendre_array).flatten()
@@ -699,7 +699,8 @@ def extract_coeffs_entire_lampflat_frame(image, order_of_poly_fits, second_order
 
 def exclude_traces_which_jet_off_detector(coefficients_and_indices, image):
     order_of_poly_fits = coefficients_and_indices.shape[1] - 2
-    legendre_polynomial_array, not_needed, not_needed_2 = generate_legendre_array(image, order_of_poly_fits)
+    legendre_polynomial_array, not_needed, not_needed_2 = generate_legendre_array(image.data.shape[1],
+                                                                                  order_of_poly_fits)
     trace_values_versus_xpixel = np.dot(coefficients_and_indices[:, 1:], legendre_polynomial_array)
     # trim any traces which are not contiguously on the detector.
     coefficients_and_indices = coefficients_and_indices[np.all(trace_values_versus_xpixel > 0, axis=1)]
@@ -770,7 +771,7 @@ def optimize_coeffs_entire_lampflat_frame(coefficients_and_indices, image, num_o
     image_splines = ImageSplines()
     image_splines.calculate_spline_derivatives_and_populate_attributes(image, bpm)
 
-    legendre_polynomial_array, x, xnorm = generate_legendre_array(image, trace_poly_order)
+    legendre_polynomial_array, x, xnorm = generate_legendre_array(image.data.shape[1], trace_poly_order)
 
     order_indices = coefficients_and_indices[:, 0]
     fiber_coefficients = split_already_sorted_coefficients_into_each_fiber(coefficients_and_indices, num_of_lit_fibers)

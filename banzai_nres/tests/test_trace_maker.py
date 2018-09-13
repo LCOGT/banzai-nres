@@ -81,7 +81,7 @@ def make_random_yet_realistic_trace_coefficients(image, order_of_poly_fit=4):
         meta_coefficients_even[i] += noise
         meta_coefficients_odd[i] += noise
 
-    meta_legendre_array, x, xnorm = generate_legendre_array(image, order_of_poly_fits=meta_coefficients_even.shape[1]-1)
+    meta_legendre_array, x, xnorm = generate_legendre_array(image.data.shape[1], order_of_poly_fits=meta_coefficients_even.shape[1]-1)
     trace_coefficients_odd = get_coefficients_from_meta(meta_coefficients_odd, meta_legendre_array)
     trace_coefficients_even = get_coefficients_from_meta(meta_coefficients_even, meta_legendre_array)
 
@@ -101,9 +101,9 @@ def differences_between_found_and_generated_trace_vals(found_coefficients, image
     :param image: banzai image object with trace_Fit_coefficients not None
     :return: ndarray, the difference between the y values of the found traces and the old traces at each x value.
     """
-    trace_values_1, num_traces_1, x = image.trace.get_trace_centroids_from_coefficients(image,
+    trace_values_1, num_traces_1, x = image.trace.get_trace_centroids_from_coefficients(image.data.shape[1],
                                                                                         coefficients_and_indices=found_coefficients)
-    trace_values_2, num_traces_2, x = image.trace.get_trace_centroids_from_coefficients(image)
+    trace_values_2, num_traces_2, x = image.trace.get_trace_centroids_from_coefficients(image.data.shape[1])
     assert num_traces_1 == num_traces_2
     return trace_values_2 - trace_values_1
 
@@ -160,7 +160,8 @@ class TestUnitBlindFitAlgorithms:
         directions = ['down', 'up', 'inplace']
         for start_location, expected_guess, direction in zip(start_locations, expected_0th_order_next_guesses, directions):
             coefficients_of_last_fit = [int(image.data.shape[0] * start_location), 0]
-            evaluated_legendre_polynomials, x_coords, xnorm = trace_utils.generate_legendre_array(image, order_of_poly_fits=1)
+            evaluated_legendre_polynomials, x_coords, xnorm = trace_utils.generate_legendre_array(image.data.shape[1],
+                                                                                                  order_of_poly_fits=1)
             coeff_guess, max_exists, refflux = trace_utils.generate_initial_guess_for_trace_polynomial(image=image,
                                                                     imfilt=image_data_filtered, x=x_coords,
                                                                     evaluated_legendre_polynomials=evaluated_legendre_polynomials,
@@ -266,7 +267,7 @@ def test_generating_blank_evaluated_legendre_array():
     tiny_image = TinyFakeImageWithTraces()
     x_coords = np.arange(tiny_image.data.shape[1])
     xnorm = x_coords * 2. / x_coords[-1] - 1
-    legendre_polynomial_array, x_coords_2, xnorm_2 = trace_utils.generate_legendre_array(tiny_image,
+    legendre_polynomial_array, x_coords_2, xnorm_2 = trace_utils.generate_legendre_array(tiny_image.data.shape[1],
                                                                                          order_of_poly_fits=0)
     assert (legendre_polynomial_array[0] == 1).all()
     assert np.array_equal(x_coords_2, x_coords)
@@ -307,7 +308,7 @@ def test_getting_trace_centroids_from_coefficients():
     tiny_image = TinyFakeImageWithTraces()
     tiny_image.trace.coefficients = np.array([[0, 1]])
     trace_values_versus_xpixel, num_traces, x_coord_array = \
-        tiny_image.trace.get_trace_centroids_from_coefficients(tiny_image)
+        tiny_image.trace.get_trace_centroids_from_coefficients(tiny_image.data.shape[1])
     assert np.array_equal(x_coord_array, np.arange(tiny_image.data.shape[1]))
     assert num_traces == 1
     assert np.array_equal(trace_values_versus_xpixel, np.array([np.ones_like(x_coord_array)]))
