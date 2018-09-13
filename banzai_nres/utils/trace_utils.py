@@ -29,6 +29,20 @@ class Trace(object):
         self.coefficients = None
         self.fiber_order = None
 
+    def get_trace_centroids_from_coefficients(self, image):
+        """
+        :param coefficients_and_indices: polynomial fit to traces
+        :param image: banzai image object
+        :return: trace centroids for each trace, versus x pixel. E.g. trace_values_versus_xpixel[2,5] is the 3rd orders value
+                at x=5.
+                num_traces = num_orders*Num_fibers
+                x = [0,1,2,...,image.data.shape[1]-1]
+        """
+        coeflen, coefwidth = self.coefficients.shape
+        num_traces, order_of_poly_fits = coeflen, coefwidth - 2
+        legendre_polynomial_array, x, xnorm = generate_legendre_array(image, order_of_poly_fits)
+        trace_values_versus_xpixel = np.dot(self.coefficients[:, 1:], legendre_polynomial_array)
+        return trace_values_versus_xpixel, num_traces, x
 
 
 class ImageSplines(object):
@@ -374,7 +388,7 @@ def check_for_close_fit(coefficients_and_indices_list, images, num_lit_fibers, m
     trace_values_versus_xpixel_list = []
     num_traces_list = []
     for coefficients, image in zip(coefficients_and_indices_list, images):
-        trace_values_versus_xpixel, num_traces, x = get_trace_centroids_from_coefficients(coefficients, image)
+        trace_values_versus_xpixel, num_traces, x = image.trace.get_trace_centroids_from_coefficients(image)
         num_traces_list += [num_traces]
         trace_values_versus_xpixel_list += [trace_values_versus_xpixel]
         image_shape = image.data.shape
@@ -432,22 +446,6 @@ def check_flux_change(coefficients_and_indices_new, coefficients_and_indices_ini
         return True
     else:
         return False
-
-
-def get_trace_centroids_from_coefficients(coefficients_and_indices, image):
-    """
-    :param coefficients_and_indices: polynomial fit to traces
-    :param image: banzai image object
-    :return: trace centroids for each trace, versus x pixel. E.g. trace_values_versus_xpixel[2,5] is the 3rd orders value
-            at x=5.
-            num_traces = num_orders*Num_fibers
-            x = [0,1,2,...,image.data.shape[1]-1]
-    """
-    coeflen, coefwidth = coefficients_and_indices.shape
-    num_traces, order_of_poly_fits = coeflen, coefwidth - 2
-    legendre_polynomial_array, x, xnorm = generate_legendre_array(image, order_of_poly_fits)
-    trace_values_versus_xpixel = np.dot(coefficients_and_indices[:, 1:], legendre_polynomial_array)
-    return trace_values_versus_xpixel, num_traces, x
 
 
 def get_coefficients_from_meta(allmetacoeffs, stpolyarr):

@@ -6,7 +6,7 @@ from banzai.tests.utils import FakeContext
 from scipy import ndimage
 import numpy as np
 from banzai import logs
-from banzai_nres.utils.trace_utils import get_coefficients_from_meta, generate_legendre_array, get_trace_centroids_from_coefficients
+from banzai_nres.utils.trace_utils import get_coefficients_from_meta, generate_legendre_array
 from banzai_nres.tests.utils import FakeImage, noisify_image, trim_image, gaussian
 from banzai_nres.tests.adding_traces_to_images_utils import generate_image_with_two_flat_traces
 from banzai_nres.tests.adding_traces_to_images_utils import trim_coefficients_to_fit_image, fill_image_with_traces
@@ -100,8 +100,8 @@ def differences_between_found_and_generated_trace_vals(found_coefficients, image
     :param image: banzai image object with trace_Fit_coefficients not None
     :return: ndarray, the difference between the y values of the found traces and the old traces at each x value.
     """
-    trace_values_1, num_traces_1, x = get_trace_centroids_from_coefficients(image.trace.coefficients, image)
-    trace_values_2, num_traces_2, x = get_trace_centroids_from_coefficients(found_coefficients, image)
+    trace_values_1, num_traces_1, x = image.trace.get_trace_centroids_from_coefficients(image)
+    trace_values_2, num_traces_2, x = image.trace.get_trace_centroids_from_coefficients(image)
     assert num_traces_1 == num_traces_2
     return trace_values_2 - trace_values_1
 
@@ -302,9 +302,9 @@ def test_checking_for_flux_change_between_two_fits():
 
 def test_getting_trace_centroids_from_coefficients():
     tiny_image = TinyFakeImageWithTraces()
-    coefficients_and_indices = np.array([[0, 1]])
+    tiny_image.trace.coefficients = np.array([[0, 1]])
     trace_values_versus_xpixel, num_traces, x_coord_array = \
-        trace_utils.get_trace_centroids_from_coefficients(coefficients_and_indices, tiny_image)
+        tiny_image.trace.get_trace_centroids_from_coefficients(tiny_image)
     assert np.array_equal(x_coord_array, np.arange(tiny_image.data.shape[1]))
     assert num_traces == 1
     assert np.array_equal(trace_values_versus_xpixel, np.array([np.ones_like(x_coord_array)]))

@@ -1,4 +1,3 @@
-from banzai_nres.utils.trace_utils import get_trace_centroids_from_coefficients
 from banzai_nres.tests.utils import gaussian, noisify_image, trim_image, FakeImage
 import numpy as np
 
@@ -17,7 +16,7 @@ def fill_image_with_traces(image, trimmed_shape, order_width=1.25, odd_fiber_int
     even_fiber = np.zeros(trimmed_shape)
     odd_fiber = np.zeros(trimmed_shape)
 
-    trace_values_versus_xpixel, num_traces, x = get_trace_centroids_from_coefficients(image.trace.coefficients, image)
+    trace_values_versus_xpixel, num_traces, x = image.trace.get_trace_centroids_from_coefficients(image)
     vgauss = np.vectorize(gaussian)  # prepare guassian for evaluation along a slice centered at each trace point.
     # these are realistic intensity values according to a 120 sec LSC exposure.
     for x_pixel in range(even_fiber.shape[1]):
@@ -39,7 +38,8 @@ def trim_coefficients_to_fit_image(image, trace_fit_coefficients_no_indices):
     min_y, max_y = 0, image.data.shape[0]
     order_indices = np.array([i for i in range(0, trace_fit_coefficients_no_indices.shape[0])])
     trace_fit_coefficients = np.insert(trace_fit_coefficients_no_indices, obj=0, values=order_indices, axis=1)
-    trace_values_versus_xpixel, num_traces, x = get_trace_centroids_from_coefficients(trace_fit_coefficients, image)
+    image.trace.coefficients = trace_fit_coefficients
+    trace_values_versus_xpixel, num_traces, x = image.trace.get_trace_centroids_from_coefficients(image)
     good_indices = []
     for i in range(trace_values_versus_xpixel.shape[0]):
         if 1.1*np.mean(trace_values_versus_xpixel[i, :]) < max_y and (trace_values_versus_xpixel[i, :] > min_y).all():
