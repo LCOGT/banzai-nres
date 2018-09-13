@@ -1,7 +1,7 @@
 from datetime import datetime
 import numpy as np
 
-from banzai_nres.traces import Trace
+from banzai_nres.utils.trace_utils import Trace
 from banzai_nres.images import Image
 
 

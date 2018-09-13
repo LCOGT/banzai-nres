@@ -19,6 +19,43 @@ from banzai import logs
 logger = logs.get_logger(__name__)
 
 
+class Trace(object):
+    # TODO: add generate trace y values as a method of this class.- including image width and all necessary attributes
+    # to do so.
+    """
+    Object for storing all the trace related attributes. This gets appended to each Image instance.
+    """
+    def __init__(self):
+        self.coefficients = None
+        self.fiber_order = None
+
+
+
+class ImageSplines(object):
+    """
+    Stores the arrays of scipy-spline objects which give the derivatives and values at points
+    in the image.
+    """
+    def __init__(self, spline=None, first_derivative=None, second_derivative=None):
+        self.spline = spline
+        self.first_derivative = first_derivative
+        self.second_derivative = second_derivative
+
+    def calculate_spline_derivatives_and_populate_attributes(self, image, bpm):
+        if bpm is None:
+            bpm = np.zeros_like(image.data)
+
+        pixel_x_array = np.arange(image.data.shape[0])
+        pixel_y_array = np.arange(image.data.shape[1])
+
+        # generating spline interpolations which incorporate only the good pixels
+        f = [interpolate.UnivariateSpline(pixel_y_array[bpm[:, xx] != 1], image.data[:, xx][bpm[:, xx] != 1],
+                                          k=3, s=0, ext=1) for xx in pixel_x_array]
+        self.first_derivative = [f[xx].derivative(n=1) for xx in pixel_x_array]
+        self.second_derivative = [f[xx].derivative(n=2) for xx in pixel_x_array]
+        self.spline = f
+
+
 def maxima(A, s, k, ref):
     # TODO: replace this with a function from a package. This works fine, but for maintainability reasons we
     # want a function from a package, like scipy signal peak finder.
@@ -411,31 +448,6 @@ def get_trace_centroids_from_coefficients(coefficients_and_indices, image):
     legendre_polynomial_array, x, xnorm = generate_legendre_array(image, order_of_poly_fits)
     trace_values_versus_xpixel = np.dot(coefficients_and_indices[:, 1:], legendre_polynomial_array)
     return trace_values_versus_xpixel, num_traces, x
-
-
-class ImageSplines(object):
-    """
-    Stores the arrays of scipy-spline objects which give the derivatives and values at points
-    in the image.
-    """
-    def __init__(self, spline=None, first_derivative=None, second_derivative=None):
-        self.spline = spline
-        self.first_derivative = first_derivative
-        self.second_derivative = second_derivative
-
-    def calculate_spline_derivatives_and_populate_attributes(self, image, bpm):
-        if bpm is None:
-            bpm = np.zeros_like(image.data)
-
-        pixel_x_array = np.arange(image.data.shape[0])
-        pixel_y_array = np.arange(image.data.shape[1])
-
-        # generating spline interpolations which incorporate only the good pixels
-        f = [interpolate.UnivariateSpline(pixel_y_array[bpm[:, xx] != 1], image.data[:, xx][bpm[:, xx] != 1],
-                                          k=3, s=0, ext=1) for xx in pixel_x_array]
-        self.first_derivative = [f[xx].derivative(n=1) for xx in pixel_x_array]
-        self.second_derivative = [f[xx].derivative(n=2) for xx in pixel_x_array]
-        self.spline = f
 
 
 def get_coefficients_from_meta(allmetacoeffs, stpolyarr):

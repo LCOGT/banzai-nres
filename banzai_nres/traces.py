@@ -6,7 +6,7 @@ Authors
 """
 
 from banzai_nres.utils.trace_utils import check_for_close_fit, check_flux_change, cross_correlate_image_indices, \
-    optimize_coeffs_entire_lampflat_frame, fit_traces_order_by_order, get_number_of_lit_fibers
+    optimize_coeffs_entire_lampflat_frame, fit_traces_order_by_order, get_number_of_lit_fibers, Trace
 from banzai_nres.utils.NRES_class_utils import add_class_as_attribute
 from banzai_nres.images import Image
 from banzai.stages import CalibrationMaker, Stage, MasterCalibrationDoesNotExist
@@ -18,17 +18,6 @@ import os
 
 
 logger = logs.get_logger(__name__)
-
-
-class Trace(object):
-    # TODO: add generate trace y values as a method of this class.- including image width and all necessary attributes
-    # to do so.
-    """
-    Object for storing all the trace related attributes. This gets appended to each Image instance.
-    """
-    def __init__(self):
-        self.coefficients = None
-        self.fiber_order = None
 
 
 class TraceSaver(CalibrationMaker):
