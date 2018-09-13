@@ -17,6 +17,8 @@ import copy
 import itertools
 from banzai import logs
 
+from banzai_nres.utils.array_utils import unique_elements_unordered
+
 logger = logs.get_logger(__name__)
 
 
@@ -70,9 +72,9 @@ class Trace(object):
         for column in range(coefficients[:, 1:].shape[1]):
             this_poly_orders_coefficients = list(coefficients_per_poly_order_per_trace[column].T[0])
             coefficients_list_per_poly_order_per_order_per_fiber.append(this_poly_orders_coefficients)
-        names = ('fiber name', 'arbitrary order number',)
+        names = ('fiber_name', 'relative_order_number',)
         for poly_order in range(coefficients[:, 1:].shape[1]):
-            names += ('{0} order legendre polynomial coefficient'.format(str(poly_order)),)
+            names += ('legendre_coefficient_{0}'.format(str(poly_order)),)
         coefficients_table = Table([fiber_designations, order_numbers,
                                     *coefficients_list_per_poly_order_per_order_per_fiber],
                                    names=names)
@@ -86,10 +88,8 @@ class Trace(object):
             coefficients_this_poly_order = np.array([np.array(astropy_table_of_coefficients[coefficient_column_name])]).T
             coefficients_per_poly_order_per_trace += (coefficients_this_poly_order,)
         columns_to_regenerate_coefficients_from = (np.array([order_numbers]).T,) + coefficients_per_poly_order_per_trace
-        print(columns_to_regenerate_coefficients_from)
         coefficients_and_indices = np.hstack(columns_to_regenerate_coefficients_from)
-        print(coefficients_and_indices)
-        fiber_order = tuple(np.unique(np.array(astropy_table_of_coefficients[column_names[0]])))
+        fiber_order = tuple(unique_elements_unordered(list(astropy_table_of_coefficients[column_names[0]])))
         if fiber_order == self.construct_undesignated_fiber_order(num_lit_fibers=len(fiber_order)):
             fiber_order = None
         return coefficients_and_indices, fiber_order

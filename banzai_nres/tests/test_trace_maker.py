@@ -303,7 +303,19 @@ def test_checking_for_flux_change_between_two_fits():
                                   tiny_image, relative_tolerance=1E-2)
     assert not no_flux_change
 
-class TestTraceMethods:
+
+class TestTraceClassMethods:
+    def generate_sample_astropy_coefficients_table(self, fiber_order=None):
+        test_trace = Trace()
+        indices = np.array([np.concatenate((np.arange(2), np.arange(2)))])
+        coefficients = np.ones((4, 4))
+        coefficients_and_indices = np.hstack((indices.T, coefficients))
+        test_trace.coefficients = coefficients_and_indices
+        test_trace.fiber_order = fiber_order
+        coefficients_table = test_trace.convert_numpy_array_coefficients_to_astropy_table(num_lit_fibers=2,
+                                                                                          fiber_order=fiber_order)
+        return test_trace, coefficients_and_indices, coefficients_table
+
     def test_getting_trace_centroids_from_coefficients(self):
         tiny_image = TinyFakeImageWithTraces()
         tiny_image.trace.coefficients = np.array([[0, 1]])
@@ -314,10 +326,20 @@ class TestTraceMethods:
         assert np.array_equal(trace_values_versus_xpixel, np.array([np.ones_like(x_coord_array)]))
 
     def test_converting_coefficients_array_to_astropy_table(self):
+        self.generate_sample_astropy_coefficients_table(fiber_order=None)
+        assert True
+        self.generate_sample_astropy_coefficients_table(fiber_order=(1,2))
         assert True
 
     def test_converting_astropy_table_to_coefficients_array_and_fiber_order(self):
-        assert True
+        fiber_orders_to_try = [None, (1, 2), (2, 1)]
+        for fiber_order in fiber_orders_to_try:
+            test_trace, coefficients_and_indices, coefficients_table = self.generate_sample_astropy_coefficients_table(
+                                                                            fiber_order=fiber_order)
+            load_coefficients, load_fiber_order = test_trace.convert_astropy_table_coefficients_to_numpy_array(
+                                                                            coefficients_table)
+            assert np.array_equal(load_coefficients, coefficients_and_indices)
+            assert load_fiber_order == fiber_order
 
 class TestFindingTotalFluxAcrossTraces:
     """
