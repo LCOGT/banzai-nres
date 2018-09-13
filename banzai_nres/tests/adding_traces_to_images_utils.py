@@ -38,8 +38,8 @@ def trim_coefficients_to_fit_image(image, trace_fit_coefficients_no_indices):
     min_y, max_y = 0, image.data.shape[0]
     order_indices = np.array([i for i in range(0, trace_fit_coefficients_no_indices.shape[0])])
     trace_fit_coefficients = np.insert(trace_fit_coefficients_no_indices, obj=0, values=order_indices, axis=1)
-    image.trace.coefficients = trace_fit_coefficients
-    trace_values_versus_xpixel, num_traces, x = image.trace.get_trace_centroids_from_coefficients(image)
+    trace_values_versus_xpixel, num_traces, x = image.trace.get_trace_centroids_from_coefficients(image,
+                                                                                                  coefficients_and_indices=trace_fit_coefficients)
     good_indices = []
     for i in range(trace_values_versus_xpixel.shape[0]):
         if 1.1*np.mean(trace_values_versus_xpixel[i, :]) < max_y and (trace_values_versus_xpixel[i, :] > min_y).all():

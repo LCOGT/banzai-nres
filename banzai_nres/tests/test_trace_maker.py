@@ -100,7 +100,8 @@ def differences_between_found_and_generated_trace_vals(found_coefficients, image
     :param image: banzai image object with trace_Fit_coefficients not None
     :return: ndarray, the difference between the y values of the found traces and the old traces at each x value.
     """
-    trace_values_1, num_traces_1, x = image.trace.get_trace_centroids_from_coefficients(image)
+    trace_values_1, num_traces_1, x = image.trace.get_trace_centroids_from_coefficients(image,
+                                                                                        coefficients_and_indices=found_coefficients)
     trace_values_2, num_traces_2, x = image.trace.get_trace_centroids_from_coefficients(image)
     assert num_traces_1 == num_traces_2
     return trace_values_2 - trace_values_1

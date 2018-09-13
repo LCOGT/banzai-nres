@@ -29,7 +29,7 @@ class Trace(object):
         self.coefficients = None
         self.fiber_order = None
 
-    def get_trace_centroids_from_coefficients(self, image):
+    def get_trace_centroids_from_coefficients(self, image, coefficients_and_indices=None):
         """
         :param coefficients_and_indices: polynomial fit to traces
         :param image: banzai image object
@@ -38,10 +38,12 @@ class Trace(object):
                 num_traces = num_orders*Num_fibers
                 x = [0,1,2,...,image.data.shape[1]-1]
         """
-        coeflen, coefwidth = self.coefficients.shape
+        if coefficients_and_indices is None:
+            coefficients_and_indices = self.coefficients
+        coeflen, coefwidth = coefficients_and_indices.shape
         num_traces, order_of_poly_fits = coeflen, coefwidth - 2
         legendre_polynomial_array, x, xnorm = generate_legendre_array(image, order_of_poly_fits)
-        trace_values_versus_xpixel = np.dot(self.coefficients[:, 1:], legendre_polynomial_array)
+        trace_values_versus_xpixel = np.dot(coefficients_and_indices[:, 1:], legendre_polynomial_array)
         return trace_values_versus_xpixel, num_traces, x
 
 
@@ -65,9 +67,10 @@ class ImageSplines(object):
         # generating spline interpolations which incorporate only the good pixels
         f = [interpolate.UnivariateSpline(pixel_y_array[bpm[:, xx] != 1], image.data[:, xx][bpm[:, xx] != 1],
                                           k=3, s=0, ext=1) for xx in pixel_x_array]
+        self.spline = f
         self.first_derivative = [f[xx].derivative(n=1) for xx in pixel_x_array]
         self.second_derivative = [f[xx].derivative(n=2) for xx in pixel_x_array]
-        self.spline = f
+
 
 
 def maxima(A, s, k, ref):
@@ -388,7 +391,8 @@ def check_for_close_fit(coefficients_and_indices_list, images, num_lit_fibers, m
     trace_values_versus_xpixel_list = []
     num_traces_list = []
     for coefficients, image in zip(coefficients_and_indices_list, images):
-        trace_values_versus_xpixel, num_traces, x = image.trace.get_trace_centroids_from_coefficients(image)
+        trace_values_versus_xpixel, num_traces, x = image.trace.get_trace_centroids_from_coefficients(image,
+                                                                                                      coefficients_and_indices=coefficients)
         num_traces_list += [num_traces]
         trace_values_versus_xpixel_list += [trace_values_versus_xpixel]
         image_shape = image.data.shape
