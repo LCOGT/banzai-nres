@@ -46,10 +46,6 @@ matrix:
         - python: 3.5
           env: RUN_TESTS=1
 
-        # Try MacOS X
-        - os: osx
-          env: RUN_TESTS=1
-
         # Do a coverage test.
         - os: linux
           env: SETUP_CMD='--coverage'
