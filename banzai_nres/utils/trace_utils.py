@@ -12,6 +12,7 @@ Every function here is covered by either a unit test or an integration test insi
 import numpy as np
 from scipy import ndimage, optimize, interpolate
 from scipy.optimize import curve_fit
+from astropy.table import Table
 import copy
 import itertools
 from banzai import logs
@@ -31,7 +32,8 @@ class Trace(object):
 
     def get_trace_centroids_from_coefficients(self, image_width, coefficients_and_indices=None):
         """
-        :param coefficients_and_indices: polynomial fit to traces
+        :param coefficients_and_indices: polynomial fit coefficients which describe the traces. Legendre polynomials
+                                        normalized between -1 and 1.
         :param image_width: image.data.shape[1]
         :return: trace centroids for each trace, versus x pixel. E.g. trace_values_versus_xpixel[2,5] is the 3rd orders value
                 at x=5.
@@ -45,6 +47,52 @@ class Trace(object):
         legendre_polynomial_array, x, xnorm = generate_legendre_array(image_width, order_of_poly_fits)
         trace_values_versus_xpixel = np.dot(coefficients_and_indices[:, 1:], legendre_polynomial_array)
         return trace_values_versus_xpixel, num_traces, x
+
+    def construct_undesignated_fiber_order(self, num_lit_fibers):
+        alphabetical_list = ['a', 'b', 'c', 'd', 'e', 'f', 'g']
+        fiber_order = tuple(alphabetical_list[:num_lit_fibers])
+        return fiber_order
+
+    def convert_numpy_array_coefficients_to_astropy_table(self, num_lit_fibers, fiber_order=None, coefficients=None):
+        if fiber_order is None:
+            fiber_order = self.fiber_order
+        if fiber_order is None:
+            fiber_order = self.construct_undesignated_fiber_order(num_lit_fibers)
+        if coefficients is None:
+            coefficients = self.coefficients
+        order_numbers = list(coefficients[:, 0].astype(np.int))
+        total_num_of_orders = int(np.max(coefficients[:, 0]) + 1)
+        fiber_designations = []
+        coefficients_list_per_poly_order_per_order_per_fiber = []
+        for fiber_name in fiber_order:
+            fiber_designations.extend([fiber_name] * total_num_of_orders)
+        coefficients_per_poly_order_per_trace = np.split(coefficients[:, 1:], coefficients[:, 1:].shape[1], axis=1)
+        for column in range(coefficients[:, 1:].shape[1]):
+            this_poly_orders_coefficients = list(coefficients_per_poly_order_per_trace[column].T[0])
+            coefficients_list_per_poly_order_per_order_per_fiber.append(this_poly_orders_coefficients)
+        names = ('fiber name', 'arbitrary order number',)
+        for poly_order in range(coefficients[:, 1:].shape[1]):
+            names += ('{0} order legendre polynomial coefficient'.format(str(poly_order)),)
+        coefficients_table = Table([fiber_designations, order_numbers,
+                                    *coefficients_list_per_poly_order_per_order_per_fiber],
+                                   names=names)
+        return coefficients_table
+
+    def convert_astropy_table_coefficients_to_numpy_array(self, astropy_table_of_coefficients):
+        column_names = astropy_table_of_coefficients.colnames
+        order_numbers = np.array(astropy_table_of_coefficients[column_names[1]])
+        coefficients_per_poly_order_per_trace = (np.array([np.array(astropy_table_of_coefficients[column_names[2]])]).T,)
+        for coefficient_column_name in column_names[3:]:
+            coefficients_this_poly_order = np.array([np.array(astropy_table_of_coefficients[coefficient_column_name])]).T
+            coefficients_per_poly_order_per_trace += (coefficients_this_poly_order,)
+        columns_to_regenerate_coefficients_from = (np.array([order_numbers]).T,) + coefficients_per_poly_order_per_trace
+        print(columns_to_regenerate_coefficients_from)
+        coefficients_and_indices = np.hstack(columns_to_regenerate_coefficients_from)
+        print(coefficients_and_indices)
+        fiber_order = tuple(np.unique(np.array(astropy_table_of_coefficients[column_names[0]])))
+        if fiber_order == self.construct_undesignated_fiber_order(num_lit_fibers=len(fiber_order)):
+            fiber_order = None
+        return coefficients_and_indices, fiber_order
 
 
 class ImageSplines(object):

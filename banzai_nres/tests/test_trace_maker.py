@@ -303,16 +303,21 @@ def test_checking_for_flux_change_between_two_fits():
                                   tiny_image, relative_tolerance=1E-2)
     assert not no_flux_change
 
+class TestTraceMethods:
+    def test_getting_trace_centroids_from_coefficients(self):
+        tiny_image = TinyFakeImageWithTraces()
+        tiny_image.trace.coefficients = np.array([[0, 1]])
+        trace_values_versus_xpixel, num_traces, x_coord_array = \
+            tiny_image.trace.get_trace_centroids_from_coefficients(tiny_image.data.shape[1])
+        assert np.array_equal(x_coord_array, np.arange(tiny_image.data.shape[1]))
+        assert num_traces == 1
+        assert np.array_equal(trace_values_versus_xpixel, np.array([np.ones_like(x_coord_array)]))
 
-def test_getting_trace_centroids_from_coefficients():
-    tiny_image = TinyFakeImageWithTraces()
-    tiny_image.trace.coefficients = np.array([[0, 1]])
-    trace_values_versus_xpixel, num_traces, x_coord_array = \
-        tiny_image.trace.get_trace_centroids_from_coefficients(tiny_image.data.shape[1])
-    assert np.array_equal(x_coord_array, np.arange(tiny_image.data.shape[1]))
-    assert num_traces == 1
-    assert np.array_equal(trace_values_versus_xpixel, np.array([np.ones_like(x_coord_array)]))
+    def test_converting_coefficients_array_to_astropy_table(self):
+        assert True
 
+    def test_converting_astropy_table_to_coefficients_array_and_fiber_order(self):
+        assert True
 
 class TestFindingTotalFluxAcrossTraces:
     """
