@@ -1,5 +1,4 @@
-ARG BANZAI_VERSION
-FROM docker.lco.global/banzai:${BANZAI_VERSION}
+FROM python:3.6.6-slim-jessie
 ENTRYPOINT  ["/bin/bash", "-c", "while true; do sleep 100; done"]
 USER root
 

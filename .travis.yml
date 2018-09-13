@@ -48,7 +48,7 @@ matrix:
 
         # Do a coverage test.
         - os: linux
-          env: MAIN_CMD='coverage'
+          env: MAIN_CMD='coverage run setup.py'
 
         # Check for sphinx doc build warnings - we do this first because it
         # may run for a long time
@@ -83,4 +83,4 @@ script:
    - $MAIN_CMD "${SETUP_ARRAY[@]}" $SETUP_CMD
 
 after_success:
-    - if [[ "$SETUP_CMD" == '--coverage' ]]; then coveralls --rcfile='banzai_nres/tests/coveragerc'; fi
+    - if [[ "$MAIN_CMD" == 'coverage run setup.py' ]]; then coveralls --rcfile='banzai_nres/tests/coveragerc'; fi
