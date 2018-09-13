@@ -48,12 +48,12 @@ matrix:
 
         # Do a coverage test.
         - os: linux
-          env: SETUP_CMD='--coverage'
+          env: MAIN_CMD='coverage'
 
         # Check for sphinx doc build warnings - we do this first because it
         # may run for a long time
         - os: linux
-          env: SETUP_CMD='build_docs -w'
+          env: SETUP_CMD='build_sphinx -w'
 
         # Try all python versions and Numpy versions. Since we can assume that
         # the Numpy developers have taken care of testing Numpy with different
@@ -68,7 +68,7 @@ matrix:
 
         # Do a PEP8 test with pycodestyle
         - os: linux
-          env: MAIN_CMD='pycodestyle banzai --count' RUN_TESTS=0
+          env: MAIN_CMD='pycodestyle banzai_nres --count' RUN_TESTS=0
 
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then security set-key-partition-list -S 'apple-tool:,apple:' -s -k keychainPass keychainName; fi
