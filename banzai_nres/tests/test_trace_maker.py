@@ -6,7 +6,7 @@ from banzai.tests.utils import FakeContext
 from scipy import ndimage
 import numpy as np
 from banzai import logs
-from banzai_nres.utils.trace_utils import get_coefficients_from_meta, generate_legendre_array
+from banzai_nres.utils.trace_utils import get_coefficients_from_meta, generate_legendre_array, Trace
 from banzai_nres.tests.utils import FakeImage, noisify_image, trim_image, gaussian
 from banzai_nres.tests.adding_traces_to_images_utils import generate_image_with_two_flat_traces
 from banzai_nres.tests.adding_traces_to_images_utils import trim_coefficients_to_fit_image, fill_image_with_traces
@@ -48,6 +48,7 @@ class TinyFakeImageWithTraces(object):
         self.legendre_polynomial_coefficients = np.array([1])
         self.negative_expected_sum_along_trace = -1 * np.sum(self.data[1])
         self.image_filt = ndimage.spline_filter(self.data)
+        self.trace = Trace()
 
 
 def munge_coefficients(even_coefficients, odd_coefficients):
