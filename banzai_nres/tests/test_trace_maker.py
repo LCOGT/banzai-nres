@@ -277,6 +277,7 @@ def test_checking_for_close_fit_between_two_fits():
     indices = np.array([np.concatenate((np.arange(6), np.arange(6)))])
     coefficients = np.ones_like(indices.T)*50
     coefficients_and_indices = np.hstack((indices.T, coefficients))
+    image.trace.coefficients = coefficients_and_indices
     images = [image, image]
     a_close_fit = trace_utils.check_for_close_fit([coefficients_and_indices, coefficients_and_indices],
                                                   images, num_lit_fibers=2, max_pixel_error=1E-1)
