@@ -2,7 +2,7 @@ FROM python:3.6.6-slim-jessie
 ENTRYPOINT  ["/bin/bash", "-c", "while true; do sleep 100; done"]
 USER root
 
-RUN apt-get update && apt-get -y --no-install-recommends install build-essential git && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get -y --no-install-recommends install build-essential git fpack && rm -rf /var/lib/apt/lists/*
 
 RUN pip install numpy Cython && rm -rf ~/.cache/pip
 
