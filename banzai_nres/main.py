@@ -37,15 +37,15 @@ def make_master_bias_console():
     """
     Console entry point which creates the master bias.
     """
-    run_end_of_night_from_console([bias.BiasMasterLevelSubtractor, make_master_bias], NRES_CRITERIA)
+    run_end_of_night_from_console([make_master_bias], NRES_CRITERIA)
 
 
 def make_master_dark_console():
-    run_end_of_night_from_console([dark.DarkNormalizer, make_master_dark], NRES_CRITERIA)
+    run_end_of_night_from_console([make_master_dark], NRES_CRITERIA)
 
 
 def make_master_bias(pipeline_context):
-    stages_to_do = get_stages_todo(trim.Trimmer, extra_stages=[nres_BiasMaker])
+    stages_to_do = get_stages_todo(trim.Trimmer, extra_stages=[bias.BiasMasterLevelSubtractor, nres_BiasMaker])
     run(stages_to_do, pipeline_context, image_types=['BIAS'], calibration_maker=True,
         log_message='Making Master BIAS')
 
