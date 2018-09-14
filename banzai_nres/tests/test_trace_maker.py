@@ -362,7 +362,8 @@ class TestTraceClassMethods:
             test_trace, values_and_indices, astropy_table = self.generate_sample_astropy_nres_values_table(
                                                                             fiber_order=fiber_order)
             loaded_values, load_fiber_order = test_trace.recombine_values_from_table_into_nd_array_with_order_indices(
-                                                                            astropy_table)
+                                                                            astropy_table,
+                                                                            name_of_values='coefficients')
             assert np.array_equal(loaded_values, values_and_indices)
             assert load_fiber_order == fiber_order
 
