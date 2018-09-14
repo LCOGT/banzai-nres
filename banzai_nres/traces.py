@@ -92,15 +92,16 @@ class TraceSaver(CalibrationMaker):
         header['DAY-OBS'] = good_frame.header.get('DAY-OBS')
         header['INSTRUME'] = good_frame.header.get('TELESCOP')
         header['OBJECTS'] = good_frame.header.get('OBJECTS')
-
         logger.info(os.path.basename(master_trace_filename))
 
-        master_trace_coefficients = Image(pipeline_context=self.pipeline_context,
-                                          data=good_frame.trace.coefficients, header=header)
+        master_trace_coefficients_table = good_frame.trace.convert_numpy_array_coefficients_to_astropy_table(num_lit_fibers)
 
-        master_trace_coefficients.filename = master_trace_filename
+        master_trace_calibration = Image(pipeline_context=self.pipeline_context,
+                                         data=master_trace_coefficients_table, header=header)
 
-        return [master_trace_coefficients]
+        master_trace_calibration.filename = master_trace_filename
+
+        return [master_trace_calibration]
 
 
 class TraceRefine(Stage):
@@ -262,11 +263,13 @@ class LoadInitialGuessForTraceFit(Stage):
                                                                   db_address=self.pipeline_context.db_address)
         if image.header['OBSTYPE'] != 'TRACE' and os.path.isfile(master_trace_full_path):
             fiber_order = fits.getheader(master_trace_full_path).get('FIBRORDR')
-            coefficients_and_indices = fits.getdata(master_trace_full_path)
+            coefficients_and_indices_table = fits.getdata(master_trace_full_path)
+            coefficients_and_indices, loaded_fiber_order = Trace().convert_astropy_table_coefficients_to_numpy_array(
+                                                                                        coefficients_and_indices_table)
 
-            logger.debug('Imported master trace coefficients shape: ' + str(coefficients_and_indices.shape))
             assert coefficients_and_indices is not None
-            assert fiber_order is not None
+            logger.debug('Imported master trace coefficients shape: ' + str(coefficients_and_indices.shape))
+            assert fiber_order == loaded_fiber_order
 
         if image.header['OBSTYPE'] != 'LAMPFLAT' and not os.path.isfile(master_trace_full_path):
             raise MasterCalibrationDoesNotExist
