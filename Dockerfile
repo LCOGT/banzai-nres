@@ -2,6 +2,8 @@ FROM python:3.6.6-slim-jessie
 ENTRYPOINT  ["/bin/bash", "-c", "while true; do sleep 100; done"]
 USER root
 
+RUN yum -y install gcc
+
 WORKDIR /lco/banzai-nres
 
 COPY . /lco/banzai-nres
