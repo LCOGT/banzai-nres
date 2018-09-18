@@ -39,7 +39,6 @@ def make_dummy_bpm(bpm_path, output_bpm_name_addition, fits_file_to_copy, date_m
 def setup_module(module):
     """
     :param module: Pytest placeholder argument.
-
     This function creates the sqlite database and populates it with
     telescopes and BPM's for the test data sets elp/nres02 and lsc/nres01.
     """
@@ -77,7 +76,6 @@ def test_e2e():
     expected_processed_path = os.path.join('/tmp', site, instrument, epoch, 'processed')
 
     # executing the master bias maker as one would from the command line.
-
     os.system('make_master_bias --db-address {0} --raw-path {1} '
               '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
 
@@ -86,7 +84,6 @@ def test_e2e():
         assert hdu_list['BPM'].data.shape == hdu_list[1].data.shape
 
     # executing the master dark maker as one would from the command line.
-
     os.system('make_master_dark --db-address {0} --raw-path {1} '
               '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
 
