@@ -1,10 +1,5 @@
-import os.path
-
-import numpy as np
-
 from banzai import logs
 from banzai.dark import DarkMaker as BanzaiDarkMaker
-from banzai.utils import stats, fits_utils
 
 
 logger = logs.get_logger(__name__)

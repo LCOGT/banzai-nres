@@ -11,16 +11,19 @@ July 2018
 from banzai_nres.bias import BiasMaker as nres_BiasMaker
 from banzai_nres.dark import DarkMaker as nres_DarkMaker
 
-
 from banzai import bias, trim, dark, gain
 from banzai import logs, qc
 from banzai.main import get_stages_todo, run_end_of_night_from_console, run
 from banzai import main as banzai_main
+from banzai.context import TelescopeCriterion
+import operator
 
 logger = logs.get_logger(__name__)
 
+NRES_CRITERIA = [TelescopeCriterion('camera_type', operator.contains, 'NRES'),
+                 TelescopeCriterion('schedulable', operator.eq, True)]
 
-banzai_main.ordered_stages = [qc.HeaderSanity,
+banzai_main.ORDERED_STAGES = [qc.HeaderSanity,
                               qc.ThousandsTest,
                               qc.SaturationTest,
                               bias.OverscanSubtractor,
@@ -34,15 +37,15 @@ def make_master_bias_console():
     """
     Console entry point which creates the master bias.
     """
-    run_end_of_night_from_console([make_master_bias])
+    run_end_of_night_from_console([make_master_bias], NRES_CRITERIA)
 
 
 def make_master_dark_console():
-    run_end_of_night_from_console([make_master_dark])
+    run_end_of_night_from_console([make_master_dark], NRES_CRITERIA)
 
 
 def make_master_bias(pipeline_context):
-    stages_to_do = get_stages_todo(trim.Trimmer, extra_stages=[nres_BiasMaker])
+    stages_to_do = get_stages_todo(trim.Trimmer, extra_stages=[bias.BiasMasterLevelSubtractor, nres_BiasMaker])
     run(stages_to_do, pipeline_context, image_types=['BIAS'], calibration_maker=True,
         log_message='Making Master BIAS')
 
