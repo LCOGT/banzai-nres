@@ -330,7 +330,7 @@ class TestTraceClassMethods:
         for fiber_order in fiber_orders_to_try:
             outputs = self.generate_sample_astropy_nres_values_table(fiber_order=fiber_order)
             coefficients_table = outputs[-1]
-            assert coefficients_table['relative_order_number'][0] == 0
+            assert coefficients_table['order'][0] == 0
 
     def test_converting_trace_y_values_array_array_to_astropy_table(self):
         fiber_orders_to_try = [None, (1, 2), (2, 1)]
@@ -344,7 +344,7 @@ class TestTraceClassMethods:
                                                                                                     trace_centroids=trace_centroids,
                                                                                                     coefficients=coefficients_and_indices,
                                                                                                     fiber_order=fiber_order)
-            assert trace_centroids_table['relative_order_number'][0] == 0
+            assert trace_centroids_table['order'][0] == 0
 
     def test_converting_astropy_table_to_coefficients_array_and_fiber_order(self):
         fiber_orders_to_try = [None, (1, 2), (2, 1)]
