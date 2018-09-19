@@ -1,5 +1,5 @@
 import pytest
-import mock
+from unittest import mock
 from banzai_nres.traces import GenerateInitialGuessForTraceFitFromScratch, TraceRefine, TraceSaver
 from banzai.tests.utils import FakeContext
 
