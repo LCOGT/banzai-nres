@@ -65,8 +65,8 @@ class Trace(object):
                                                                                      num_lit_fibers,
                                                                                      order_numbers,
                                                                                      coefficients[:, 1:], fiber_order)
-        coefficients_table[self.astropy_table_name_for_coefficients].unit = 'arbitrary'
-        coefficients_table[self.astropy_table_name_for_coefficients].description = 'normalized from -1 to 1 over the ' \
+        coefficients_table[self.astropy_table_name_for_coefficients].description = 'Legendre polynomials ' \
+                                                                                   'normalized from -1 to 1 over the ' \
                                                                                    'number of columns of the image, ' \
                                                                                    'usually 0 to 4095'
         return coefficients_table
@@ -111,7 +111,7 @@ class Trace(object):
         for two_d_array in array_of_array_values_per_trace:
             list_of_array_values_per_trace.append(list(two_d_array[0]))
 
-        names = ('fiber_name', 'relative_order_number', array_name)
+        names = ('fiber', 'order', array_name)
         coefficients_table = Table([fiber_designations, order_numbers_list,
                                     list_of_array_values_per_trace],
                                    names=names)
