@@ -16,7 +16,7 @@ def make_dummy_bpm(bpm_path, output_bpm_name_addition, fits_file_to_copy, date_m
     # building bpm folder
     os.makedirs(bpm_path)
     # unpacking a fits file via funpack. Astropy's unpack messes with the files.
-    os.system('funpack {}'.format(fits_file_to_copy + '.fz'))
+    os.system('funpack {0}'.format(fits_file_to_copy + '.fz'))
     # where to save the file
     output_filename = bpm_path + output_bpm_name_addition + date_marker + '.fits'
     # creating the bpm
@@ -67,7 +67,6 @@ def test_e2e():
     epoch = '20180307'
     instrument = 'nres01'
     site = 'lsc'
-
     raw_data_path = os.path.join('/archive/engineering/', site, instrument, epoch, 'raw')
 
     expected_bias_filename = 'bias_' + instrument + '_' + epoch + '_bin1x1.fits'

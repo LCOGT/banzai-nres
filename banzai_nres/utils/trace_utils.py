@@ -65,6 +65,10 @@ class Trace(object):
                                                                                      num_lit_fibers,
                                                                                      order_numbers,
                                                                                      coefficients[:, 1:], fiber_order)
+        coefficients_table[self.astropy_table_name_for_coefficients].unit = 'arbitrary'
+        coefficients_table[self.astropy_table_name_for_coefficients].description = 'normalized from -1 to 1 over the ' \
+                                                                                   'number of columns of the image, ' \
+                                                                                   'usually 0 to 4095'
         return coefficients_table
 
     def convert_numpy_array_trace_centroids_to_astropy_table(self, num_lit_fibers, trace_centroids, coefficients, fiber_order=None):
@@ -73,6 +77,11 @@ class Trace(object):
                                                                                      num_lit_fibers,
                                                                                      order_numbers,
                                                                                      trace_centroids, fiber_order)
+        trace_centroids_table[self.astropy_table_name_for_trace_centroids].unit = 'pixel'
+        trace_centroids_table[self.astropy_table_name_for_trace_centroids].description = 'y pixel position for trace' \
+                                                                                         'center at each x pixel' \
+                                                                                         'from 0 to number of columns' \
+                                                                                         'in the image'
         return trace_centroids_table
 
     def convert_astropy_table_coefficients_to_numpy_array(self, astropy_table_of_coefficients):
