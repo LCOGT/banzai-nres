@@ -102,8 +102,8 @@ class TraceSaver(CalibrationMaker):
                                                                                                              trace_centroids,
                                                                                                              good_frame.trace.coefficients,
                                                                                                              good_frame.trace.fiber_order)
-        master_cal_data_tables = {good_frame.trace.astropy_table_name_for_coefficients: master_trace_coefficients_table,
-                                  good_frame.trace.astropy_table_name_for_trace_centroids: master_trace_centroids_table}
+        master_cal_data_tables = {good_frame.trace.coefficients_table_name: master_trace_coefficients_table,
+                                  good_frame.trace.trace_center_table_name: master_trace_centroids_table}
         master_trace_calibration = Image(pipeline_context=self.pipeline_context,
                                          data=np.zeros((2, 2)), header=header, data_tables=master_cal_data_tables)
 
