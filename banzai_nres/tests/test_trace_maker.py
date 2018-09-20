@@ -614,6 +614,21 @@ def test_first_sorting_of_coefficients_from_blind_fit():
     assert np.array_equal(coefficients_and_indices, expected_coefficients_and_indices)
 
 
+def test_first_sorting_of_coefficients_from_blind_fit_with_odd_num_traces():
+    fake_coefficients_and_indices = np.array([[0, 1],
+                                              [1, 3],
+                                              [2, 2],
+                                              [3, 4],
+                                              [4, 5]])
+    coefficients_and_indices = trace_utils.split_and_sort_coefficients_for_each_fiber(fake_coefficients_and_indices,
+                                                                                      num_lit_fibers=2)
+    expected_coefficients_and_indices = np.array([[0, 1],
+                                                  [1, 2],
+                                                  [0, 3],
+                                                  [1, 4]])
+    assert np.array_equal(coefficients_and_indices, expected_coefficients_and_indices)
+
+
 def test_splitting_coefficients_per_fiber():
     fake_coefficients_and_indices = np.array([[0, 1],
                                               [1, 2],
@@ -627,8 +642,8 @@ def test_splitting_coefficients_per_fiber():
 
 def test_getting_number_of_lit_fibers():
     image = FakeImage(nx=7, ny=5, overscan_size=2)
-    real_num_lit_fibers_list = [0, 1, 2, 3]
-    objects_list = ['none&none&none', 'none&tung&none', 'tung&tung&none', 'tung&tung&tung']
+    real_num_lit_fibers_list = [0, 1, 2, 3, None]
+    objects_list = ['none&none&none', 'none&tung&none', 'tung&tung&none', 'tung&tung&tung', None]
     for objects_string, real_num_lit_fibers in zip(objects_list, real_num_lit_fibers_list):
         image.header = {'OBJECTS': objects_string}
         num_lit_fibers = trace_utils.get_number_of_lit_fibers(image)
