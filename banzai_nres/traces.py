@@ -13,6 +13,7 @@ from banzai.stages import CalibrationMaker, Stage, MasterCalibrationDoesNotExist
 from banzai.utils import fits_utils
 from banzai import logs
 from banzai import dbs
+from banzai.images import DataTable
 from astropy.io import fits
 import numpy as np
 import os
@@ -102,6 +103,9 @@ class TraceSaver(CalibrationMaker):
                                                                                                              trace_centroids,
                                                                                                              good_frame.trace.coefficients,
                                                                                                              good_frame.trace.fiber_order)
+
+        master_trace_coefficients_table = DataTable(data_table=master_trace_coefficients_table, name='TRCCOEFFS')
+        master_trace_centroids_table = DataTable(data_table=master_trace_centroids_table, name='TRCCENTERS')
         master_cal_data_tables = {good_frame.trace.coefficients_table_name: master_trace_coefficients_table,
                                   good_frame.trace.trace_center_table_name: master_trace_centroids_table}
         master_trace_calibration = Image(pipeline_context=self.pipeline_context,
