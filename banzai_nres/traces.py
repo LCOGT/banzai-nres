@@ -103,11 +103,20 @@ class TraceSaver(CalibrationMaker):
                                                                                                              trace_centroids,
                                                                                                              good_frame.trace.coefficients,
                                                                                                              good_frame.trace.fiber_order)
+        center_name = good_frame.trace.trace_center_table_name
+        coefficients_name = good_frame.trace.coefficients_table_name
 
-        master_trace_coefficients_table = DataTable(data_table=master_trace_coefficients_table, name='TRCCOEFFS')
-        master_trace_centroids_table = DataTable(data_table=master_trace_centroids_table, name='TRCCENTERS')
-        master_cal_data_tables = {good_frame.trace.coefficients_table_name: master_trace_coefficients_table,
-                                  good_frame.trace.trace_center_table_name: master_trace_centroids_table}
+        master_trace_centroids_table[center_name].description = 'The y position of the trace centers for each x pixel' \
+                                                                ' from 0 to the number of columns in the image'
+        master_trace_centroids_table[center_name].unit = 'pixel'
+        master_trace_coefficients_table[coefficients_name].description = 'Coefficients for the ' \
+        '0th, 1st,..., Nth order legendre polynomials which describe the trace center across the detector. The ' \
+        'Legendre polynomials are normalized from -1 to 1 over the range 0,..., 4096=number of columns of image.'
+
+        master_trace_coefficients_table = DataTable(data_table=master_trace_coefficients_table, name=coefficients_name)
+        master_trace_centroids_table = DataTable(data_table=master_trace_centroids_table, name=center_name)
+        master_cal_data_tables = {coefficients_name: master_trace_coefficients_table,
+                                  center_name: master_trace_centroids_table}
         master_trace_calibration = Image(pipeline_context=self.pipeline_context,
                                          data=np.zeros((2, 2)), header=header, data_tables=master_cal_data_tables)
 
