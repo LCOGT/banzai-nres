@@ -14,6 +14,7 @@ from banzai.utils import fits_utils
 from banzai import logs
 from banzai import dbs
 from astropy.io import fits
+import numpy as np
 import os
 
 
@@ -94,10 +95,17 @@ class TraceSaver(CalibrationMaker):
         header['OBJECTS'] = good_frame.header.get('OBJECTS')
         logger.info(os.path.basename(master_trace_filename))
 
-        master_trace_coefficients_table = good_frame.trace.convert_numpy_array_coefficients_to_astropy_table(num_lit_fibers)
-
+        master_trace_coefficients_table = good_frame.trace.convert_numpy_array_coefficients_to_astropy_table(num_lit_fibers,
+                                                                                                             fiber_order=good_frame.trace.fiber_order)
+        trace_centroids = good_frame.get_trace_centroids_from_coefficients(image_width=good_frame.data.shape[1])
+        master_trace_centroids_table = good_frame.trace.convert_numpy_array_trace_centroids_to_astropy_table(num_lit_fibers,
+                                                                                                             trace_centroids,
+                                                                                                             good_frame.trace.coefficients,
+                                                                                                             good_frame.trace.fiber_order)
+        master_cal_data_tables = {good_frame.trace.astropy_table_name_for_coefficients: master_trace_coefficients_table,
+                                  good_frame.trace.astropy_table_name_for_trace_centroids: master_trace_centroids_table}
         master_trace_calibration = Image(pipeline_context=self.pipeline_context,
-                                         data=master_trace_coefficients_table, header=header)
+                                         data=np.zeros((2, 2)), header=header, data_tables=master_cal_data_tables)
 
         master_trace_calibration.filename = master_trace_filename
 
