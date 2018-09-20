@@ -346,7 +346,7 @@ class TestTraceClassMethods:
                                                                                                     fiber_order=fiber_order)
             assert trace_centroids_table['order'][0] == 0
 
-    def test_converting_astropy_table_to_coefficients_array_and_fiber_order(self):
+    def test_converting_astropy_table_coefficients_to_array_and_fiber_order(self):
         fiber_orders_to_try = [None, (1, 2), (2, 1)]
         for fiber_order in fiber_orders_to_try:
             test_trace, coefficients_and_indices, coefficients_table = self.generate_sample_astropy_nres_values_table(
@@ -354,6 +354,16 @@ class TestTraceClassMethods:
             load_coefficients, load_fiber_order = test_trace.convert_astropy_table_coefficients_to_numpy_array(
                                                                             coefficients_table)
             assert np.array_equal(load_coefficients, coefficients_and_indices)
+            assert load_fiber_order == fiber_order
+
+    def test_converting_astropy_table_y_values_array_and_fiber_order(self):
+        fiber_orders_to_try = [None, (1, 2), (2, 1)]
+        for fiber_order in fiber_orders_to_try:
+            test_trace, y_values_with_indices, y_values_table = self.generate_sample_astropy_nres_values_table(
+                                                                            fiber_order=fiber_order)
+            load_y_values, load_fiber_order = test_trace.convert_astropy_table_trace_y_values_to_numpy_array(
+                                                                            y_values_table)
+            assert np.array_equal(load_y_values, y_values_with_indices[:, 1:])
             assert load_fiber_order == fiber_order
 
     def test_converting_any_astropy_table_to_values_and_fiber_order(self):

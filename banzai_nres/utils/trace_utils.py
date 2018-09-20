@@ -91,9 +91,10 @@ class Trace(object):
         return coefficients_and_indices, fiber_order
 
     def convert_astropy_table_trace_y_values_to_numpy_array(self, astropy_table_of_trace_centroids):
-        trace_values_versus_xpixel, fiber_order = self.recombine_values_from_table_into_nd_array_with_order_indices(
+        trace_values_with_indices, fiber_order = self.recombine_values_from_table_into_nd_array_with_order_indices(
                                                                                        astropy_table_of_trace_centroids,
                                                                                        self.trace_center_table_name)
+        trace_values_versus_xpixel = trace_values_with_indices[:, 1:]
         return trace_values_versus_xpixel, fiber_order
 
     def generate_astropy_table_from_numpy_array_and_orders(self, array_name, num_lit_fibers, order_numbers_list, array_of_values, fiber_order):
