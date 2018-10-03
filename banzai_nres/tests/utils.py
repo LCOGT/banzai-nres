@@ -42,8 +42,8 @@ def noisify_image(image, trimmed_shape):
     This adds poisson, readnoise to an image with traces already on it, in that order.
     """
     # poisson noise
-    poissonnoise_mask = np.random.poisson(image.data[:trimmed_shape[0], :trimmed_shape[1]])
-    image.data[:trimmed_shape[0], :trimmed_shape[1]] += poissonnoise_mask
+    image_with_poisson_noise = np.random.poisson(image.data[:trimmed_shape[0], :trimmed_shape[1]])
+    image.data[:trimmed_shape[0], :trimmed_shape[1]] = image_with_poisson_noise
     # read noise
     image.data += np.random.normal(0, image.readnoise, image.data.shape)
 

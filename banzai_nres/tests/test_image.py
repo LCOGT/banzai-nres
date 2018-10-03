@@ -19,7 +19,7 @@ def test_adding_class_as_attribute():
     images = [image]
     add_class_as_attribute(images, 'a_class', AClass)
     assert images[0].a_class.an_attribute is None
-    
+
     image = Image(pipeline_context=FakeContext())
     images = [image]
     add_class_as_attribute(images, 'a_class', AClass)
