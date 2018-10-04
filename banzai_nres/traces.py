@@ -13,7 +13,7 @@ from banzai.stages import CalibrationMaker, Stage, MasterCalibrationDoesNotExist
 from banzai.utils import fits_utils
 from banzai import logs
 from banzai import dbs
-from banzai.images import DataTable
+from banzai.images import DataTable, regenerate_data_table_from_fits_hdu_list
 from astropy.io import fits
 import numpy as np
 import os
@@ -284,7 +284,10 @@ class LoadInitialGuessForTraceFit(Stage):
                                                                   db_address=self.pipeline_context.db_address)
         if image.header['OBSTYPE'] != 'TRACE' and os.path.isfile(master_trace_full_path):
             fiber_order = fits.getheader(master_trace_full_path).get('FIBRORDR')
-            coefficients_and_indices_table = fits.open(master_trace_full_path)[Trace().coefficients_table_name].data
+            hdu_list = fits.open(master_trace_full_path)
+            coeffs_name = Trace().coefficients_table_name
+            dict_of_table = regenerate_data_table_from_fits_hdu_list(hdu_list,table_extension_name=coeffs_name)
+            coefficients_and_indices_table = dict_of_table[coeffs_name]
             coefficients_and_indices, loaded_fiber_order = Trace().convert_astropy_table_coefficients_to_numpy_array(
                                                                                         coefficients_and_indices_table)
 
