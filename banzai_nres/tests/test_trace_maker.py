@@ -758,6 +758,7 @@ def test_blind_trace_maker(mock_images):
 
         args, kwargs = mock_images.call_args
         master_trace_table = kwargs['data']
+        # this is in error, since this calls the zero's array which is saved, not the astropy table of coefffs
         master_trace, fiber_order = Trace().convert_astropy_table_coefficients_to_numpy_array(master_trace_table)
         logger.debug(master_trace.shape)
         images[0].trace.coefficients = master_trace
