@@ -98,7 +98,7 @@ class TraceSaver(CalibrationMaker):
 
         master_trace_coefficients_table = good_frame.trace.convert_numpy_array_coefficients_to_astropy_table(num_lit_fibers,
                                                                                                              fiber_order=good_frame.trace.fiber_order)
-        trace_centroids = good_frame.get_trace_centroids_from_coefficients(image_width=good_frame.data.shape[1])
+        trace_centroids = good_frame.trace.get_trace_centroids_from_coefficients(image_width=good_frame.data.shape[1])
         master_trace_centroids_table = good_frame.trace.convert_numpy_array_trace_centroids_to_astropy_table(num_lit_fibers,
                                                                                                              trace_centroids,
                                                                                                              good_frame.trace.coefficients,
