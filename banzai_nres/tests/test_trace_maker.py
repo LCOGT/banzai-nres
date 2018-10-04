@@ -305,7 +305,7 @@ def test_checking_for_flux_change_between_two_fits():
 
 
 class TestTraceClassMethods:
-    def generate_sample_astropy_nres_values_table(self, fiber_order=None):
+    def generate_sample_astropy_nres_values_table(self, fiber_order=None, table_name=None):
         test_trace = Trace()
         indices = np.array([np.concatenate((np.arange(2), np.arange(2)))])
         coefficients = np.arange(4) * np.ones((4, 4))
@@ -314,6 +314,8 @@ class TestTraceClassMethods:
         test_trace.fiber_order = fiber_order
         coefficients_table = test_trace.convert_numpy_array_coefficients_to_astropy_table(num_lit_fibers=2,
                                                                                           fiber_order=fiber_order)
+        if table_name is not None:
+            coefficients_table[test_trace.coefficients_table_name] = table_name
         return test_trace, coefficients_and_indices, coefficients_table
 
     def test_getting_trace_centroids_from_coefficients(self):
@@ -358,9 +360,11 @@ class TestTraceClassMethods:
 
     def test_converting_astropy_table_y_values_array_and_fiber_order(self):
         fiber_orders_to_try = [None, (1, 2), (2, 1)]
+        test_trace = Trace()
         for fiber_order in fiber_orders_to_try:
             test_trace, y_values_with_indices, y_values_table = self.generate_sample_astropy_nres_values_table(
-                                                                            fiber_order=fiber_order)
+                                                                            fiber_order=fiber_order,
+                                                                            table_name=test_trace.trace_center_table_name)
             load_y_values, load_fiber_order = test_trace.convert_astropy_table_trace_y_values_to_numpy_array(
                                                                             y_values_table)
             assert np.array_equal(load_y_values, y_values_with_indices[:, 1:])
