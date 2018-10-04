@@ -315,7 +315,7 @@ class TestTraceClassMethods:
         coefficients_table = test_trace.convert_numpy_array_coefficients_to_astropy_table(num_lit_fibers=2,
                                                                                           fiber_order=fiber_order)
         if table_name is not None:
-            coefficients_table[test_trace.coefficients_table_name] = table_name
+            coefficients_table[test_trace.coefficients_table_name].name = table_name
         return test_trace, coefficients_and_indices, coefficients_table
 
     def test_getting_trace_centroids_from_coefficients(self):
