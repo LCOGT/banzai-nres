@@ -716,7 +716,6 @@ class TestTraceRefine:
         assert np.median(np.abs(difference - np.median(difference))) < 2/100
         assert np.abs(np.median(difference)) < 2/100
 
-
 @mock.patch('banzai_nres.traces.Image')
 def test_blind_trace_maker(mock_images):
     """
@@ -754,14 +753,16 @@ def test_blind_trace_maker(mock_images):
         trace_refiner.order_of_meta_fit = order_of_meta_fit
         images = trace_refiner.do_stage(images)
         master_cal_maker = TraceSaver(FakeContext())
-        master_cal_maker.do_stage(images)
+        master_trace_image_object = master_cal_maker.do_stage(images)[0]
 
-        args, kwargs = mock_images.call_args
-        master_trace_table = kwargs['data']
-        # this is in error, since this calls the zero's array which is saved, not the astropy table of coefffs
-        master_trace, fiber_order = Trace().convert_astropy_table_coefficients_to_numpy_array(master_trace_table)
-        logger.debug(master_trace.shape)
-        images[0].trace.coefficients = master_trace
+        trace_coefficients_data_table_name = Trace().coefficients_table_name
+        master_trace_table = master_trace_image_object.data_tables[trace_coefficients_data_table_name]
+        print(master_trace_table)
+
+        coefficients_array, fiber_order = Trace().convert_astropy_table_coefficients_to_numpy_array(master_trace_table)
+        print(coefficients_array)
+        logger.debug(coefficients_array.shape)
+        images[0].trace.coefficients = coefficients_array
 
         difference = differences_between_found_and_generated_trace_vals(original_coefficents, images[0])
         logger.debug('error in unit-test trace fitting is less than {0} of a pixel'
