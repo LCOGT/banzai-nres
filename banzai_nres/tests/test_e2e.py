@@ -1,5 +1,6 @@
 import pytest
 from banzai.dbs import create_db, populate_bpm_table
+from banzai_nres.traces import Trace
 import os
 import numpy as np
 import shutil
@@ -95,9 +96,12 @@ def test_e2e():
     os.system('make_master_trace_blind --db-address {0} --raw-path {1} '
               '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
 
+    coefficient_table_name = Trace().coefficients_table_name
+    centroids_table_name = Trace().trace_center_table_name
+
     with fits.open(os.path.join(expected_processed_path, expected_trace_filename)) as hdu_list:
-        assert hdu_list[0].data.shape is not None
-        assert hdu_list[0].data.shape[1] == 6  # the trace_fit poly order + 2
+        assert hdu_list[coefficient_table_name] is not None
+        assert hdu_list[centroids_table_name] is not None
 
     # executing the master trace maker, using global-meta fit, as one would from the command line.
 
@@ -105,5 +109,5 @@ def test_e2e():
               '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
 
     with fits.open(os.path.join(expected_processed_path, expected_trace_filename)) as hdu_list:
-        assert hdu_list[0].data.shape is not None
-        assert hdu_list[0].data.shape[1] == 6  # the trace_fit poly order + 2
+        assert hdu_list[coefficient_table_name] is not None
+        assert hdu_list[centroids_table_name] is not None
