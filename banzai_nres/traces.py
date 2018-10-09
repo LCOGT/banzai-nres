@@ -22,12 +22,12 @@ import os
 logger = logs.get_logger(__name__)
 
 
-class TraceSaver(CalibrationMaker):
+class TraceMaker(CalibrationMaker):
     """
     Updates the master calibration trace file.
     """
     def __init__(self, pipeline_context):
-        super(TraceSaver, self).__init__(pipeline_context)
+        super(TraceMaker, self).__init__(pipeline_context)
         self.pipeline_context = pipeline_context
         self.try_combinations_of_images = False
         self.cross_correlate_num = 1
@@ -94,7 +94,7 @@ class TraceSaver(CalibrationMaker):
         header['DAY-OBS'] = good_frame.header.get('DAY-OBS')
         header['INSTRUME'] = good_frame.header.get('TELESCOP')
         header['OBJECTS'] = good_frame.header.get('OBJECTS')
-        logger.debug('master calibration filename in TraceSaver is {0}'.format(os.path.basename(master_trace_filename)))
+        logger.debug('master calibration filename in TraceMaker is {0}'.format(os.path.basename(master_trace_filename)))
 
         master_trace_coefficients_table = good_frame.trace.convert_numpy_array_coefficients_to_astropy_table(num_lit_fibers,
                                                                                                              fiber_order=good_frame.trace.fiber_order)
