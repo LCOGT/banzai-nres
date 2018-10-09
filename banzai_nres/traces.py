@@ -120,8 +120,6 @@ class TraceSaver(CalibrationMaker):
         master_trace_calibration = Image(pipeline_context=self.pipeline_context,
                                          data=np.zeros((2, 2)), header=header, data_tables=master_cal_data_tables)
 
-        print('in trace savero nly')
-        print(master_trace_calibration.data_tables[coefficients_name])
         master_trace_calibration.filename = master_trace_filename
 
         return [master_trace_calibration]
