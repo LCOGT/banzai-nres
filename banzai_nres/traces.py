@@ -121,11 +121,12 @@ class TraceMaker(CalibrationMaker):
                                          data=np.zeros((2, 2)), header=header, data_tables=master_cal_data_tables)
 
         master_trace_calibration.filename = master_trace_filename
-        logger.debug('trace debug stuff coeff shape, centroids shape, data shape, data tables')
-        logger.debug(str(good_frame.trace.coefficients.shape))
-        logger.debug(str(trace_centroids.shape))
-        logger.debug(str(master_trace_calibration.data.shape))
+        logger.debug('trace debug stuff ')
         logger.debug(master_trace_calibration.data_tables)
+        logger.debug(master_trace_calibration.data_tables[coefficients_name].info)
+        logger.debug(master_trace_calibration.data_tables[center_name].info)
+        logger.debug(master_trace_calibration.data_tables[coefficients_name].shape)
+        logger.debug(master_trace_calibration.data_tables[center_name].info.shape)
         logger.debug('--------------')
         return [master_trace_calibration]
 
