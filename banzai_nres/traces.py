@@ -123,10 +123,10 @@ class TraceMaker(CalibrationMaker):
         master_trace_calibration.filename = master_trace_filename
         logger.debug('trace debug stuff ')
         logger.debug(master_trace_calibration.data_tables)
-        logger.debug(master_trace_calibration.data_tables[coefficients_name].info)
-        logger.debug(master_trace_calibration.data_tables[center_name].info)
-        logger.debug(master_trace_calibration.data_tables[coefficients_name].shape)
-        logger.debug(master_trace_calibration.data_tables[center_name].info.shape)
+        logger.debug(master_trace_calibration.data_tables[coefficients_name]._data_table.info)
+        logger.debug(master_trace_calibration.data_tables[center_name]._data_table.info)
+        logger.debug(master_trace_calibration.data_tables[coefficients_name]._data_table.shape)
+        logger.debug(master_trace_calibration.data_tables[center_name]._data_table.info.shape)
         logger.debug('--------------')
         return [master_trace_calibration]
 
