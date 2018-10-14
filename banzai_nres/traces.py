@@ -125,8 +125,10 @@ class TraceMaker(CalibrationMaker):
         logger.debug(master_trace_calibration.data_tables)
         logger.debug(master_trace_calibration.data_tables[coefficients_name]._data_table.info)
         logger.debug(master_trace_calibration.data_tables[center_name]._data_table.info)
-        logger.debug(master_trace_calibration.data_tables[coefficients_name]._data_table.shape)
-        logger.debug(master_trace_calibration.data_tables[center_name]._data_table.info.shape)
+        logger.debug('actual tables, coefficients first')
+        logger.debug(master_trace_calibration.data_tables[coefficients_name]._data_table)
+        logger.debug('--------------')
+        logger.debug(master_trace_calibration.data_tables[center_name]._data_table)
         logger.debug('--------------')
         return [master_trace_calibration]
 
