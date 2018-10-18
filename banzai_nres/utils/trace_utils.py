@@ -455,7 +455,7 @@ def generate_legendre_array(image_width, order_of_poly_fits):
     return legendre_polynomial_array, x, xnorm
 
 
-def check_for_close_fit(coefficients_and_indices_list, images, num_lit_fibers, max_pixel_error=1E-1):
+def is_a_close_fit(coefficients_and_indices_list, images, num_lit_fibers, max_pixel_error=1E-1):
     """
     :param coefficients_and_indices_list: list of trace_coefficients across the detector for multiple different fits
      . I.e. a list of ndarray with the first column 0,1,2,..66,0,1.. the fiber indexes, and the second column

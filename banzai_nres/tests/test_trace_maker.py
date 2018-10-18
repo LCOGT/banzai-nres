@@ -282,13 +282,13 @@ def test_checking_for_close_fit_between_two_fits():
     coefficients_and_indices = np.hstack((indices.T, coefficients))
     image.trace.coefficients = coefficients_and_indices
     images = [image, image]
-    a_close_fit = trace_utils.check_for_close_fit([coefficients_and_indices, coefficients_and_indices],
-                                                  images, num_lit_fibers=2, max_pixel_error=1E-1)
+    a_close_fit = trace_utils.is_a_close_fit([coefficients_and_indices, coefficients_and_indices],
+                                             images, num_lit_fibers=2, max_pixel_error=1E-1)
     assert a_close_fit
     coefficients_and_indices_new = np.copy(coefficients_and_indices)
     coefficients_and_indices_new[:, 1] += 5
-    a_close_fit = trace_utils.check_for_close_fit([coefficients_and_indices_new, coefficients_and_indices],
-                                                  images, num_lit_fibers=2, max_pixel_error=1E-1)
+    a_close_fit = trace_utils.is_a_close_fit([coefficients_and_indices_new, coefficients_and_indices],
+                                             images, num_lit_fibers=2, max_pixel_error=1E-1)
     assert not a_close_fit
 
 
