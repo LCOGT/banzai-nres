@@ -44,7 +44,7 @@ class TraceMaker(CalibrationMaker):
     def min_images(self):
         return 1
 
-    def make_master_calibration_frame(self, images, image_config, logging_tags):
+    def make_master_calibration_frame(self, images, image_config):
         """
         :param images:
         :param image_config:
@@ -60,7 +60,7 @@ class TraceMaker(CalibrationMaker):
             return []
 
         master_trace_filename = self.get_calibration_filename(image_config)
-        logs.add_tag(logging_tags, 'master_trace', os.path.basename(master_trace_filename))
+        logger.debug('master_trace', os.path.basename(master_trace_filename))
 
         satisfactory_fit = False
         image_indices_to_try, try_combinations_of_images = cross_correlate_image_indices(images,
