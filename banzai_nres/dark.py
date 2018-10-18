@@ -1,8 +1,8 @@
-from banzai import logs
 from banzai.dark import DarkMaker as BanzaiDarkMaker
 
+import logging
 
-logger = logs.get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class DarkMaker(BanzaiDarkMaker):

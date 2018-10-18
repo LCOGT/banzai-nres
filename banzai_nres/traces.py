@@ -11,15 +11,14 @@ from banzai_nres.utils.NRES_class_utils import add_class_as_attribute
 from banzai_nres.images import Image
 from banzai.stages import CalibrationMaker, Stage, MasterCalibrationDoesNotExist
 from banzai.utils import fits_utils
-from banzai import logs
 from banzai import dbs
 from banzai.images import DataTable, regenerate_data_table_from_fits_hdu_list
 from astropy.io import fits
 import numpy as np
 import os
+import logging
 
-
-logger = logs.get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class TraceMaker(CalibrationMaker):
@@ -163,10 +162,10 @@ class TraceRefine(Stage):
                 refined_trace_coefficients = optimize_coeffs_entire_lampflat_frame(
                     image.trace.coefficients, image, num_of_lit_fibers=num_lit_fibers,
                     order_of_meta_fit=self.order_of_meta_fit, bpm=image.bpm)
-                fiber_order, refined_trace_coefficients = self.refit_if_necessary(image,
-                                                                                  num_lit_fibers,
-                                                                                  refined_trace_coefficients,
-                                                                                  absolute_pixel_tolerance=1.0)
+                fiber_order, refined_trace_coefficients = self.refit_and_check(image,
+                                                                               num_lit_fibers,
+                                                                               refined_trace_coefficients,
+                                                                               absolute_pixel_tolerance=2.0)
             else:
                 logger.debug('adopting last global-meta fit onto {0}'.format(image.filename))
                 refined_trace_coefficients = images[self.max_number_of_images_to_refine - 1].trace.coefficients
@@ -176,10 +175,7 @@ class TraceRefine(Stage):
             image.trace.fiber_order = fiber_order
         return images
 
-    def refit_if_necessary(self, image, num_lit_fibers, refined_trace_coefficients, absolute_pixel_tolerance=1.0):
-        # consider using an independent function to see if traces have shifted. However this may be bad
-        # because getting under a pixel accuracy with just a peak finder is quite hard. Might just be worth it
-        # to use the algorithm which we have already developed which does so with extremely high accuracy.
+    def refit_and_check(self, image, num_lit_fibers, refined_trace_coefficients, absolute_pixel_tolerance=2.0):
         """
         If the new coefficients differ by more than absolute_pixel_tolerance on average compared to the
         as loaded coefficients, then we

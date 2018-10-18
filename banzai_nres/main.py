@@ -13,13 +13,14 @@ from banzai_nres.dark import DarkMaker as nres_DarkMaker
 from banzai_nres import traces
 
 from banzai import bias, trim, dark, gain
-from banzai import logs, qc
+from banzai import qc
 from banzai.main import get_stages_todo, run_end_of_night_from_console, run
 from banzai import main as banzai_main
 from banzai.context import TelescopeCriterion
 import operator
+import logging
 
-logger = logs.get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 NRES_CRITERIA = [TelescopeCriterion('camera_type', operator.contains, 'NRES'),
                  TelescopeCriterion('schedulable', operator.eq, True)]

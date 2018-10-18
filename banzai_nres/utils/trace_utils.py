@@ -15,11 +15,11 @@ from scipy.optimize import curve_fit
 from astropy.table import Table
 import copy
 import itertools
-from banzai import logs
 
 from banzai_nres.utils.array_utils import unique_elements_unordered
+import logging
 
-logger = logs.get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class Trace(object):

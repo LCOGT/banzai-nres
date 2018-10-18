@@ -5,7 +5,6 @@ from banzai.tests.utils import FakeContext
 
 from scipy import ndimage
 import numpy as np
-from banzai import logs
 from banzai_nres.utils.trace_utils import get_coefficients_from_meta, generate_legendre_array, Trace
 from banzai_nres.tests.utils import FakeImage, noisify_image, trim_image, gaussian
 from banzai_nres.tests.adding_traces_to_images_utils import generate_image_with_two_flat_traces
@@ -13,9 +12,9 @@ from banzai_nres.tests.adding_traces_to_images_utils import trim_coefficients_to
 
 from banzai_nres.utils import trace_utils
 from astropy.io import fits
+import logging
 
-
-logger = logs.get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class FakeTraceImage(FakeImage):
@@ -706,9 +705,9 @@ class TestTraceRefine:
 
         trace_refiner = TraceRefine(FakeContext())
         trace_refiner.order_of_meta_fit = order_of_meta_fit
-        fiber_order, refit_coefficients = trace_refiner.refit_if_necessary(image, num_lit_fibers=2,
-                                                refined_trace_coefficients=shifted_coefficents,
-                                                absolute_pixel_tolerance=1/2)
+        fiber_order, refit_coefficients = trace_refiner.refit_and_check(image, num_lit_fibers=2,
+                                                                        refined_trace_coefficients=shifted_coefficents,
+                                                                        absolute_pixel_tolerance=1/2)
 
         difference = differences_between_found_and_generated_trace_vals(refit_coefficients, image)
 
