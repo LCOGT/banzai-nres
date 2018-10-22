@@ -3,4 +3,3 @@ from banzai.logs import BanzaiLogger
 
 
 logging.setLoggerClass(BanzaiLogger)
-

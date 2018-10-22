@@ -24,13 +24,14 @@ logger = logging.getLogger(__name__)
 class TraceMaker(CalibrationMaker):
     """
     Updates the master calibration trace file.
+
+    Note:  if self.try_combinations_of_images, cross_correlate_num is the
+    number of images you compare to see if their trace fits agree
     """
     def __init__(self, pipeline_context):
         super(TraceMaker, self).__init__(pipeline_context)
         self.pipeline_context = pipeline_context
         self.try_combinations_of_images = False
-        self.cross_correlate_num = 1
-        # if self.try_combinations_of_images, this is the number of images you compare to see if their trace fits agree
 
     @property
     def group_by_keywords(self):
@@ -46,9 +47,8 @@ class TraceMaker(CalibrationMaker):
 
     def make_master_calibration_frame(self, images, image_config):
         """
-        :param images:
+        :param images: list of Banzai-NRES Image objects.
         :param image_config:
-        :param logging_tags:
         :return: frame with trace coefficients appended as the primary data object.
         This function cross correlates image.trace.coefficients between different fits (self.try_combinations_of_images)
         and saves the trace information for the set of images which agree the most.

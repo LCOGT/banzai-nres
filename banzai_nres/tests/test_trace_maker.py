@@ -653,9 +653,24 @@ def test_getting_number_of_lit_fibers():
         assert num_lit_fibers == real_num_lit_fibers
 
 
+class TestTraceMaker:
+    """
+    Unit tests for TraceMaker class
+    """
+
+    @mock.patch('banzai_nres.traces.Image')
+    def test_trace_maker_returns_empty_list_if_no_coeffs(self, mock_images):
+        images = [FakeTraceImage()]
+        images[0].trace.coefficients = None
+        images[0].trace.fiber_order = None
+        master_cal_maker = TraceMaker(FakeContext())
+        output = master_cal_maker.do_stage(images)
+        assert output == []
+
+
 class TestTraceRefine:
     """
-    Unit tests for trace refine
+    Unit tests for TraceRefine Class
     """
     @mock.patch('banzai_nres.traces.Image')
     def test_trace_refine_converges(self, mock_images):
@@ -728,7 +743,7 @@ def test_blind_trace_maker(mock_images):
     the x axis of the image further, then the traces bend more drastically. Thus it is recommended you do not change the
     size of the FakeTraceImage.
     """
-    num_trials = 2
+    num_trials = 1
     readnoise = 11.0
     order_of_poly_fit = 4
     order_of_meta_fit = 6
