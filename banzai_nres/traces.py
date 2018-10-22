@@ -203,7 +203,7 @@ class TraceRefine(Stage):
             if not blind_fit_and_refine_agree:
                 logger.error('{0} trace blind fitting and trace refine disagree on image {0} \n which required'
                              'a refit in the first place. Likely a bad frame.'.format(image.filename))
-                self.save_qc_results(qc_results={'Trace blind and refine failed':True}, image=image)
+                self.save_qc_results(qc_results={'Trace blind and refine failed': True}, image=image)
                 refined_trace_coefficients = None
                 fiber_order = None
 
