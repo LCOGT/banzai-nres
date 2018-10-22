@@ -32,6 +32,7 @@ class TraceMaker(CalibrationMaker):
         super(TraceMaker, self).__init__(pipeline_context)
         self.pipeline_context = pipeline_context
         self.try_combinations_of_images = False
+        self.cross_correlate_num = 1
 
     @property
     def group_by_keywords(self):
