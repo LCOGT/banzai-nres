@@ -33,7 +33,7 @@ banzai_main.ORDERED_STAGES = [qc.HeaderSanity,
                               trim.Trimmer,
                               bias.BiasSubtractor,
                               dark.DarkSubtractor,
-                              traces.LoadInitialGuessForTraceFit]
+                              traces.GenerateInitialGuessForTraceFit]
 
 
 def make_master_bias_console():
@@ -68,8 +68,8 @@ def make_master_dark(pipeline_context):
 
 
 def make_master_trace(pipeline_context):
-    stages_to_do = get_stages_todo(traces.LoadInitialGuessForTraceFit, extra_stages=[traces.TraceRefine,
-                                                                                     traces.TraceMaker])
+    stages_to_do = get_stages_todo(traces.GenerateInitialGuessForTraceFit, extra_stages=[traces.TraceRefine,
+                                                                                         traces.TraceMaker])
     run(stages_to_do, pipeline_context, image_types=['LAMPFLAT'], calibration_maker=True,
         log_message='Making Master Trace by Updating Previous Master with global-meta Technique')
 

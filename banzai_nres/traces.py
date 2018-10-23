@@ -259,13 +259,14 @@ class GenerateInitialGuessForTraceFitFromScratch(Stage):
         return images
 
 
-class LoadInitialGuessForTraceFit(Stage):
+class GenerateInitialGuessForTraceFit(Stage):
     """
     Loads trace coefficients from file and appends them onto the image object.
     """
     def __init__(self, pipeline_context):
-        super(LoadInitialGuessForTraceFit, self).__init__(pipeline_context)
+        super(GenerateInitialGuessForTraceFit, self).__init__(pipeline_context)
         self.pipeline_context = pipeline_context
+        self.generate_traces_from_scratch = False
 
     @property
     def group_by_keywords(self):
@@ -276,12 +277,16 @@ class LoadInitialGuessForTraceFit(Stage):
         return 'trace'
 
     def do_stage(self, images):
-        add_class_as_attribute(images, 'trace', Trace)
-        for image in images:
-            logger.debug('importing master coeffs from %s' % image.filename)
-            coefficients_and_indices_initial, fiber_order = self.get_trace_coefficients(image)
-            image.trace.fiber_order = fiber_order
-            image.trace.coefficients = coefficients_and_indices_initial
+        if self.generate_traces_from_scratch:
+            blind_fit_stage = GenerateInitialGuessForTraceFitFromScratch(self.pipeline_context)
+            images = blind_fit_stage.do_stage(images)
+        else:
+            for image in images:
+                add_class_as_attribute(images, 'trace', Trace)
+                logger.debug('importing master coeffs from %s' % image.filename)
+                coefficients_and_indices_initial, fiber_order = self.get_trace_coefficients(image)
+                image.trace.fiber_order = fiber_order
+                image.trace.coefficients = coefficients_and_indices_initial
         return images
 
     def get_trace_coefficients(self, image):
