@@ -657,6 +657,10 @@ class TestTraceMaker:
     """
     Unit tests for TraceMaker class
     """
+    def test_trace_maker_properties(self):
+        trace_maker = TraceMaker(FakeContext())
+        assert trace_maker.group_by_keywords == ['ccdsum']
+        assert trace_maker.calibration_type == 'trace'
 
     @mock.patch('banzai_nres.traces.Image')
     def test_trace_maker_returns_empty_list_if_no_coeffs(self, mock_images):
@@ -672,6 +676,11 @@ class TestTraceRefine:
     """
     Unit tests for TraceRefine Class
     """
+    def test_trace_refine_properties(self):
+        trace_refiner = TraceRefine(FakeContext())
+        assert trace_refiner.group_by_keywords == ['ccdsum']
+        assert trace_refiner.calibration_type == 'trace'
+
     @mock.patch('banzai_nres.traces.Image')
     def test_trace_refine_converges(self, mock_images):
         readnoise = 11.0
