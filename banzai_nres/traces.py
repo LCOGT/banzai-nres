@@ -9,7 +9,7 @@ from banzai_nres.utils.trace_utils import is_a_close_fit, cross_correlate_image_
     optimize_coeffs_entire_lampflat_frame, fit_traces_order_by_order, get_number_of_lit_fibers, Trace
 from banzai_nres.utils.NRES_class_utils import add_class_as_attribute
 from banzai_nres.images import Image
-from banzai.stages import CalibrationMaker, Stage, MasterCalibrationDoesNotExist
+from banzai.stages import CalibrationMaker, Stage
 from banzai.utils import fits_utils
 from banzai import dbs
 from banzai.images import DataTable, regenerate_data_table_from_fits_hdu_list
@@ -33,6 +33,7 @@ class TraceMaker(CalibrationMaker):
         self.pipeline_context = pipeline_context
         self.try_combinations_of_images = False
         self.cross_correlate_num = 1
+        self.fiber_order_header_name = 'FIBRORDR'
 
     @property
     def group_by_keywords(self):
@@ -93,7 +94,7 @@ class TraceMaker(CalibrationMaker):
         good_frame = images_to_try[0]
 
         header = fits_utils.create_master_calibration_header(images)
-        header['FIBRORDR'] = good_frame.trace.fiber_order
+        header[self.fiber_order_header_name] = good_frame.trace.fiber_order
         header['FITFLAT'] = good_frame.filename
         header['OBSTYPE'] = 'TRACE'
         header['DATE-OBS'] = good_frame.header.get('DATE-OBS')
@@ -262,11 +263,27 @@ class GenerateInitialGuessForTraceFitFromScratch(Stage):
 class GenerateInitialGuessForTraceFit(Stage):
     """
     Loads trace coefficients from file and appends them onto the image object.
+    If no master file is found or self.always_generate_traces_from_scratch, then it will do a blind fit:
+
+    Generates an initial guess for the trace global-meta fitting by fitting the traces order by order.
+    :param average_trace_vertical_extent : should in no instance ever be changed unless the detector drastically
+    changes. This should be the approximate (good to within \pm 30 pixels) difference between the position of the bottom
+    of the trace and its position when it contacts the edge of the detector. E.g. if you were to surround a trace in
+    the minimum sized box possible, this is the y-height of the box (parallel to increasing order direction). Sign matters
+    the convention is that if the traces curve upwards then this is positive. Negative if they curve downwards. Sign matters
+    because this is the guess for the second order coefficient of the blind order-by-order trace fit.
+
+    :param max_number_of_images_to_fit : the number of images from the larger list images that you wish to actually fit.
+    For instance if 1, we do one fit then we adopt that fit onto all other images in the list. Set to some large number
+    if you want to do a fit onto every image in the stack.
     """
     def __init__(self, pipeline_context):
         super(GenerateInitialGuessForTraceFit, self).__init__(pipeline_context)
         self.pipeline_context = pipeline_context
-        self.generate_traces_from_scratch = False
+        self.always_generate_traces_from_scratch = False
+        self.order_of_poly_fit = 4
+        self.average_trace_vertical_extent = 90  # do NOT haphazardly change this.
+        self.max_number_of_images_to_fit = 1
 
     @property
     def group_by_keywords(self):
@@ -277,16 +294,37 @@ class GenerateInitialGuessForTraceFit(Stage):
         return 'trace'
 
     def do_stage(self, images):
-        if self.generate_traces_from_scratch:
-            blind_fit_stage = GenerateInitialGuessForTraceFitFromScratch(self.pipeline_context)
-            images = blind_fit_stage.do_stage(images)
-        else:
+        add_class_as_attribute(images, 'trace', Trace)
+        if self.always_generate_traces_from_scratch:
+            images = self.blind_fit_traces_on_images(images)
+        if not self.always_generate_traces_from_scratch:
             for image in images:
-                add_class_as_attribute(images, 'trace', Trace)
                 logger.debug('importing master coeffs from %s' % image.filename)
                 coefficients_and_indices_initial, fiber_order = self.get_trace_coefficients(image)
                 image.trace.fiber_order = fiber_order
                 image.trace.coefficients = coefficients_and_indices_initial
+                if image.trace.coefficients is None:
+                    logger.error('No master trace file found for {0}'.format(image.filename))
+
+        if any(image.trace.coefficients is None for image in images):
+            images = self.blind_fit_traces_on_images(images)
+            logger.error('No master calibration found for at least one image, refitting all images')
+        return images
+
+    def blind_fit_traces_on_images(self, images):
+        for i, image in enumerate(images):
+            num_lit_fibers = get_number_of_lit_fibers(image)
+            if i < self.max_number_of_images_to_fit:
+                logger.debug('fitting order by order on {0}'.format(image.filename))
+                second_order_coefficient_guess = self.average_trace_vertical_extent
+                coefficients_and_indices_initial = fit_traces_order_by_order(image, second_order_coefficient_guess,
+                                                                             order_of_poly_fits=self.order_of_poly_fit,
+                                                                             num_lit_fibers=num_lit_fibers)
+            else:
+                logger.debug('adopting last order-order fit onto {0}'.format(image.filename))
+                coefficients_and_indices_initial = images[self.max_number_of_images_to_fit - 1].trace.coefficients
+            image.trace.fiber_order = None
+            image.trace.coefficients = coefficients_and_indices_initial
         return images
 
     def get_trace_coefficients(self, image):
@@ -298,8 +336,14 @@ class GenerateInitialGuessForTraceFit(Stage):
         master_trace_full_path = dbs.get_master_calibration_image(image, self.calibration_type,
                                                                   self.group_by_keywords,
                                                                   db_address=self.pipeline_context.db_address)
-        if image.header['OBSTYPE'] != 'TRACE' and os.path.isfile(master_trace_full_path):
-            fiber_order = fits.getheader(master_trace_full_path).get('FIBRORDR')
+
+        if not os.path.isfile(master_trace_full_path):
+            logger.error('Master trace fit file not found, will '
+                         'attempt a blind fit on file {0}.'.format(image.filename))
+
+        else:
+            fiber_order_header_name = TraceMaker(self.pipeline_context).fiber_order_header_name
+            fiber_order = fits.getheader(master_trace_full_path).get(fiber_order_header_name)
             hdu_list = fits.open(master_trace_full_path)
             coeffs_name = Trace().coefficients_table_name
             dict_of_table = regenerate_data_table_from_fits_hdu_list(hdu_list, table_extension_name=coeffs_name)
@@ -308,10 +352,8 @@ class GenerateInitialGuessForTraceFit(Stage):
                                                                                         coefficients_and_indices_table)
 
             assert coefficients_and_indices is not None
-            logger.debug('Imported master trace coefficients shape: ' + str(coefficients_and_indices.shape))
+            logger.info('Imported master trace coefficients array with '
+                        'shape {0}'.format(str(coefficients_and_indices.shape)))
             assert fiber_order == loaded_fiber_order
-
-        if image.header['OBSTYPE'] != 'LAMPFLAT' and not os.path.isfile(master_trace_full_path):
-            raise MasterCalibrationDoesNotExist
 
         return coefficients_and_indices, fiber_order
