@@ -1,6 +1,6 @@
 import pytest
 from unittest import mock
-from banzai_nres.traces import GenerateInitialGuessForTraceFitFromScratch, TraceRefine, TraceMaker
+from banzai_nres.traces import GenerateInitialGuessForTraceFit, TraceRefine, TraceMaker
 from banzai.tests.utils import FakeContext
 
 from scipy import ndimage
@@ -768,7 +768,9 @@ def test_blind_trace_maker(mock_images):
 
         original_coefficents = images[0].trace.coefficients
 
-        blind_trace_maker = GenerateInitialGuessForTraceFitFromScratch(FakeContext())
+        blind_trace_maker = GenerateInitialGuessForTraceFit(FakeContext())
+        blind_trace_maker.always_generate_traces_from_scratch = True
+
         blind_trace_maker.order_of_poly_fit = order_of_poly_fit
         images = blind_trace_maker.do_stage(images)
 

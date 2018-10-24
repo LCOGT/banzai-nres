@@ -193,7 +193,8 @@ class TraceRefine(Stage):
 
         if self.refit_if_traces_shifted_substantially and (not trace_fits_are_close):
             logger.warning('traces shifted beyond allowable amount, refitting lampflat order-by-order.')
-            blind_fit_maker = GenerateInitialGuessForTraceFitFromScratch(pipeline_context=self.pipeline_context)
+            blind_fit_maker = GenerateInitialGuessForTraceFit(pipeline_context=self.pipeline_context)
+            blind_fit_maker.always_generate_traces_from_scratch = True
             image = blind_fit_maker.do_stage([image])[0]
             refined_trace_coefficients = optimize_coeffs_entire_lampflat_frame(
                 image.trace.coefficients, image, num_of_lit_fibers=num_lit_fibers,
@@ -212,52 +213,6 @@ class TraceRefine(Stage):
         else:
             fiber_order = image.trace.fiber_order
         return fiber_order, refined_trace_coefficients
-
-
-class GenerateInitialGuessForTraceFitFromScratch(Stage):
-    """
-    Generates an initial guess for the trace global-meta fitting by fitting the traces order by order.
-    :param average_trace_vertical_extent : should in no instance ever be changed unless the detector drastically
-    changes. This should be the approximate (good to within \pm 30 pixels) difference between the position of the bottom
-    of the trace and its position when it contacts the edge of the detector. E.g. if you were to surround a trace in
-    the minimum sized box possible, this is the y-height of the box (parallel to increasing order direction). Sign matters
-    the convention is that if the traces curve upwards then this is positive. Negative if they curve downwards. Sign matters
-    because this is the guess for the second order coefficient of the blind order-by-order trace fit.
-
-    :param max_number_of_images_to_fit : the number of images from the larger list images that you wish to actually fit.
-    For instance if 1, we do one fit then we adopt that fit onto all other images in the list.
-    """
-    def __init__(self, pipeline_context):
-        super(GenerateInitialGuessForTraceFitFromScratch, self).__init__(pipeline_context)
-        self.pipeline_context = pipeline_context
-        self.order_of_poly_fit = 4
-        self.average_trace_vertical_extent = 90  # do NOT haphazardly change this.
-        self.max_number_of_images_to_fit = 1
-
-    @property
-    def group_by_keywords(self):
-        return ['ccdsum']
-
-    @property
-    def calibration_type(self):
-        return 'trace'
-
-    def do_stage(self, images):
-        add_class_as_attribute(images, 'trace', Trace)
-        for i, image in enumerate(images):
-            num_lit_fibers = get_number_of_lit_fibers(image)
-            if i < self.max_number_of_images_to_fit:
-                logger.debug('fitting order by order on {0}'.format(image.filename))
-                second_order_coefficient_guess = self.average_trace_vertical_extent
-                coefficients_and_indices_initial = fit_traces_order_by_order(image, second_order_coefficient_guess,
-                                                                             order_of_poly_fits=self.order_of_poly_fit,
-                                                                             num_lit_fibers=num_lit_fibers)
-            else:
-                logger.debug('adopting last order-order fit onto {0}'.format(image.filename))
-                coefficients_and_indices_initial = images[self.max_number_of_images_to_fit - 1].trace.coefficients
-            image.trace.fiber_order = None
-            image.trace.coefficients = coefficients_and_indices_initial
-        return images
 
 
 class GenerateInitialGuessForTraceFit(Stage):

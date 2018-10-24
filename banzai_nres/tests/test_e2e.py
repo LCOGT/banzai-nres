@@ -91,19 +91,10 @@ def test_e2e():
         assert hdu_list[0].data.shape is not None
         assert hdu_list['BPM'].data.shape == hdu_list[1].data.shape
 
-    # executing the master trace maker, using order-order fit, as one would from the command line.
-
-    os.system('make_master_trace_blind --db-address {0} --raw-path {1} '
-              '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
+    # executing the master trace maker, using a blind fit then a global-meta fit, as one would from the command line.
 
     coefficient_table_name = Trace().coefficients_table_name
     centroids_table_name = Trace().trace_center_table_name
-
-    with fits.open(os.path.join(expected_processed_path, expected_trace_filename)) as hdu_list:
-        assert hdu_list[coefficient_table_name] is not None
-        assert hdu_list[centroids_table_name] is not None
-
-    # executing the master trace maker, using global-meta fit, as one would from the command line.
 
     os.system('make_master_trace --db-address {0} --raw-path {1} '
               '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
