@@ -753,24 +753,23 @@ def test_blind_trace_maker(mock_images):
     the x axis of the image further, then the traces bend more drastically. Thus it is recommended you do not change the
     size of the FakeTraceImage.
     """
-    num_trials = 1
     readnoise = 11.0
     order_of_poly_fit = 4
     order_of_meta_fit = 6
 
-    for x in range(num_trials):
-        images = [FakeTraceImage()]
-        images[0].readnoise = readnoise
+    images = [FakeTraceImage()]
+    images[0].readnoise = readnoise
 
-        make_random_yet_realistic_trace_coefficients(images[0], order_of_poly_fit=order_of_poly_fit)
-        fill_image_with_traces(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
-        noisify_image(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
-        trim_image(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
+    make_random_yet_realistic_trace_coefficients(images[0], order_of_poly_fit=order_of_poly_fit)
+    fill_image_with_traces(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
+    noisify_image(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
+    trim_image(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
 
-        original_coefficents = images[0].trace.coefficients
+    original_coefficents = images[0].trace.coefficients
 
+    for force_traces_from_scratch in [True, False]:
         blind_trace_maker = GenerateInitialGuessForTraceFit(FakeContext())
-        blind_trace_maker.always_generate_traces_from_scratch = True
+        blind_trace_maker.always_generate_traces_from_scratch = force_traces_from_scratch
 
         blind_trace_maker.order_of_poly_fit = order_of_poly_fit
         images = blind_trace_maker.do_stage(images)
