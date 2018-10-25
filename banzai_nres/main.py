@@ -51,10 +51,6 @@ def make_master_trace_console():
     run_end_of_night_from_console([make_master_trace], NRES_CRITERIA)
 
 
-def make_master_trace_blind_console():
-    run_end_of_night_from_console([make_master_trace_blind], NRES_CRITERIA)
-
-
 def make_master_bias(pipeline_context):
     stages_to_do = get_stages_todo(trim.Trimmer, extra_stages=[bias.BiasMasterLevelSubtractor, nres_BiasMaker])
     run(stages_to_do, pipeline_context, image_types=['BIAS'], calibration_maker=True,
