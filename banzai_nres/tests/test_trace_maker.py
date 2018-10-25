@@ -12,6 +12,7 @@ from banzai_nres.tests.adding_traces_to_images_utils import trim_coefficients_to
 
 from banzai_nres.utils import trace_utils
 from astropy.io import fits
+import os
 import logging
 
 logger = logging.getLogger(__name__)
@@ -767,8 +768,11 @@ def test_blind_trace_maker(mock_images):
 
     original_coefficents = images[0].trace.coefficients
 
+    fake_context_with_db = FakeContext()
+    setattr(fake_context_with_db, 'db_address', os.environ['DB_URL'])
+
     for force_traces_from_scratch in [True, False]:
-        blind_trace_maker = GenerateInitialGuessForTraceFit(FakeContext())
+        blind_trace_maker = GenerateInitialGuessForTraceFit(fake_context_with_db)
         blind_trace_maker.always_generate_traces_from_scratch = force_traces_from_scratch
 
         blind_trace_maker.order_of_poly_fit = order_of_poly_fit
