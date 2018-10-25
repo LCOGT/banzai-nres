@@ -23,7 +23,7 @@ class FakeTraceImage(FakeImage):
     """
     def __init__(self, *args, **kwargs):
         super(FakeTraceImage, self).__init__(*args, **kwargs)
-        self.caltype = 'trace'
+        self.caltype = 'TRACE'
         self.header = fits.Header()
         self.header['OBSTYPE'] = 'LAMPFLAT'
         self.header['OBJECTS'] = 'tung&tung&none'
@@ -660,7 +660,7 @@ class TestTraceMaker:
     def test_trace_maker_properties(self):
         trace_maker = TraceMaker(FakeContext())
         assert trace_maker.group_by_keywords == ['ccdsum']
-        assert trace_maker.calibration_type == 'trace'
+        assert trace_maker.calibration_type == 'TRACE'
 
     @mock.patch('banzai_nres.traces.Image')
     def test_trace_maker_returns_empty_list_if_no_coeffs(self, mock_images):
@@ -679,7 +679,7 @@ class TestTraceRefine:
     def test_trace_refine_properties(self):
         trace_refiner = TraceRefine(FakeContext())
         assert trace_refiner.group_by_keywords == ['ccdsum']
-        assert trace_refiner.calibration_type == 'trace'
+        assert trace_refiner.calibration_type == 'TRACE'
 
     @mock.patch('banzai_nres.traces.Image')
     def test_trace_refine_converges(self, mock_images):
@@ -738,6 +738,7 @@ class TestTraceRefine:
         assert fiber_order is None
         assert np.median(np.abs(difference - np.median(difference))) < 2/100
         assert np.abs(np.median(difference)) < 2/100
+
 
 @mock.patch('banzai_nres.traces.Image')
 def test_blind_trace_maker(mock_images):

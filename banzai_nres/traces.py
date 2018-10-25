@@ -152,7 +152,7 @@ class TraceRefine(Stage):
 
     @property
     def calibration_type(self):
-        return 'trace'
+        return 'TRACE'
 
     def do_stage(self, images):
         add_class_as_attribute(images, 'trace', Trace)
@@ -246,7 +246,7 @@ class GenerateInitialGuessForTraceFit(Stage):
 
     @property
     def calibration_type(self):
-        return 'trace'
+        return 'TRACE'
 
     def do_stage(self, images):
         add_class_as_attribute(images, 'trace', Trace)
