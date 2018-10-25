@@ -288,15 +288,12 @@ class GenerateInitialGuessForTraceFit(Stage):
         :return: The coefficients and indices (ndarray), and fiber order tuple from the nearest master trace file.
         """
         coefficients_and_indices, fiber_order = None, None
-        master_trace_does_not_exist = False
+        master_trace_does_not_exist = True
         master_trace_full_path = dbs.get_master_calibration_image(image, self.calibration_type,
                                                                   self.group_by_keywords,
                                                                   db_address=self.pipeline_context.db_address)
-        if master_trace_full_path is None:
-            master_trace_does_not_exist = True
-        else:
-            if not os.path.isfile(master_trace_full_path):
-                master_trace_does_not_exist = True
+        if master_trace_full_path is not None and os.path.exists(master_trace_full_path):
+            master_trace_does_not_exist = False
 
         if master_trace_does_not_exist:
             logger.error('Master trace fit file not found, will '

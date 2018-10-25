@@ -12,7 +12,6 @@ from banzai_nres.tests.adding_traces_to_images_utils import trim_coefficients_to
 
 from banzai_nres.utils import trace_utils
 from astropy.io import fits
-import os
 import logging
 
 logger = logging.getLogger(__name__)
@@ -742,10 +741,11 @@ class TestTraceRefine:
 
 
 @mock.patch('banzai_nres.traces.Image')
-def test_blind_trace_maker(mock_images):
+@mock.patch('banzai_nres.traces.dbs.get_master_calibration_image')
+def test_trace_maker(mock_cal, mock_images):
     """
     test type: Integration Test.
-    info: This tests blind trace making (which involves blind trace making and then refining via meta-fit).
+    info: This tests trace making (which involves blind trace making and then refining via meta-fit).
     Note: The fake images made here must have enough orders N such that N > order_of_meta_fit + 1.
     Currently it creates ~20 traces so 10 orders. A bigger image would have more traces, but expanding the
     image size may cause the created traces to be unrealistic. My suggestion is to never change the fake_image size
@@ -768,20 +768,21 @@ def test_blind_trace_maker(mock_images):
 
     original_coefficents = images[0].trace.coefficients
 
-    fake_context_with_db = FakeContext()
-    setattr(fake_context_with_db, 'db_address', os.environ['DB_URL'])
+    fake_context = FakeContext()
+    fake_context.db_address = ''
 
-    for force_traces_from_scratch in [True, False]:
-        blind_trace_maker = GenerateInitialGuessForTraceFit(fake_context_with_db)
+    for force_traces_from_scratch, value in zip([True, False], [None, '']):
+        blind_trace_maker = GenerateInitialGuessForTraceFit(fake_context)
         blind_trace_maker.always_generate_traces_from_scratch = force_traces_from_scratch
+        mock_cal.return_value = value
 
         blind_trace_maker.order_of_poly_fit = order_of_poly_fit
         images = blind_trace_maker.do_stage(images)
 
-        trace_refiner = TraceRefine(FakeContext())
+        trace_refiner = TraceRefine(fake_context)
         trace_refiner.order_of_meta_fit = order_of_meta_fit
         images = trace_refiner.do_stage(images)
-        master_cal_maker = TraceMaker(FakeContext())
+        master_cal_maker = TraceMaker(fake_context)
         master_cal_maker.do_stage(images)
 
         args, kwargs = mock_images.call_args
