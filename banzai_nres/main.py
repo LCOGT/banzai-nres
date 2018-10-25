@@ -13,7 +13,7 @@ from banzai_nres.dark import DarkMaker as nres_DarkMaker
 
 from banzai import bias, trim, dark, gain
 from banzai import logs, qc
-from banzai.main import get_stages_todo, run_end_of_night_from_console, run
+from banzai.main import get_stages_todo, process_directory, parse_directory_args
 from banzai import main as banzai_main
 from banzai.context import TelescopeCriterion
 import operator
@@ -33,24 +33,15 @@ banzai_main.ORDERED_STAGES = [qc.HeaderSanity,
                               dark.DarkSubtractor]
 
 
-def make_master_bias_console():
-    """
-    Console entry point which creates the master bias.
-    """
-    run_end_of_night_from_console([make_master_bias], NRES_CRITERIA)
+def make_master_bias(raw_path=None):
+    pipeline_context, raw_path = parse_directory_args(NRES_CRITERIA, parser_description='Reduce LCO NRES data.')
+    process_directory(pipeline_context, raw_path, ['BIAS'], last_stage=trim.Trimmer,
+                      extra_stages=[bias.BiasMasterLevelSubtractor, nres_BiasMaker],
+                      log_message='Making Master BIAS', calibration_maker=True)
 
 
-def make_master_dark_console():
-    run_end_of_night_from_console([make_master_dark], NRES_CRITERIA)
-
-
-def make_master_bias(pipeline_context):
-    stages_to_do = get_stages_todo(trim.Trimmer, extra_stages=[bias.BiasMasterLevelSubtractor, nres_BiasMaker])
-    run(stages_to_do, pipeline_context, image_types=['BIAS'], calibration_maker=True,
-        log_message='Making Master BIAS')
-
-
-def make_master_dark(pipeline_context):
-    stages_to_do = get_stages_todo(bias.BiasSubtractor, extra_stages=[dark.DarkNormalizer, nres_DarkMaker])
-    run(stages_to_do, pipeline_context, image_types=['DARK'], calibration_maker=True,
-        log_message='Making Master Dark')
+def make_master_dark(raw_path=None):
+    pipeline_context = parse_directory_args(NRES_CRITERIA, parser_description='Reduce LCO NRES data.')
+    process_directory(pipeline_context, raw_path, ['DARK'], last_stage=bias.BiasSubtractor,
+                      extra_stages=[dark.DarkNormalizer, nres_DarkMaker],
+                      log_message='Making Master Dark', calibration_maker=True)
