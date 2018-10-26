@@ -262,8 +262,8 @@ class GenerateInitialGuessForTraceFit(Stage):
                     logger.error('No master trace file found for {0}'.format(image.filename))
 
         if any(image.trace.coefficients is None for image in images):
-            images = self.blind_fit_traces_on_images(images)
             logger.error('No master calibration found for at least one image, refitting all images')
+            images = self.blind_fit_traces_on_images(images)
         return images
 
     def blind_fit_traces_on_images(self, images):
