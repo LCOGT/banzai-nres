@@ -33,15 +33,17 @@ banzai_main.ORDERED_STAGES = [qc.HeaderSanity,
                               dark.DarkSubtractor]
 
 
-def make_master_bias(raw_path=None):
-    pipeline_context, raw_path = parse_directory_args(NRES_CRITERIA, parser_description='Reduce LCO NRES data.')
+def make_master_bias(pipeline_context=None, raw_path=None):
+    pipeline_context, raw_path = parse_directory_args(pipeline_context, raw_path, NRES_CRITERIA,
+                                                      parser_description='Reduce LCO NRES data.')
     process_directory(pipeline_context, raw_path, ['BIAS'], last_stage=trim.Trimmer,
                       extra_stages=[bias.BiasMasterLevelSubtractor, nres_BiasMaker],
                       log_message='Making Master BIAS', calibration_maker=True)
 
 
-def make_master_dark(raw_path=None):
-    pipeline_context = parse_directory_args(NRES_CRITERIA, parser_description='Reduce LCO NRES data.')
+def make_master_dark(pipeline_context=None, raw_path=None):
+    pipeline_context = parse_directory_args(pipeline_context, raw_path, NRES_CRITERIA,
+                                            parser_description='Reduce LCO NRES data.')
     process_directory(pipeline_context, raw_path, ['DARK'], last_stage=bias.BiasSubtractor,
                       extra_stages=[dark.DarkNormalizer, nres_DarkMaker],
                       log_message='Making Master Dark', calibration_maker=True)
