@@ -13,7 +13,7 @@ from banzai_nres.dark import DarkMaker as nres_DarkMaker
 
 from banzai import bias, trim, dark, gain
 from banzai import qc
-from banzai.main import get_stages_todo, process_directory, parse_directory_args
+from banzai.main import process_directory, parse_directory_args
 from banzai import main as banzai_main
 from banzai.context import TelescopeCriterion
 import operator
@@ -44,5 +44,5 @@ def make_master_bias(pipeline_context=None, raw_path=None):
 def make_master_dark(pipeline_context=None, raw_path=None):
     pipeline_context = parse_directory_args(pipeline_context, raw_path, NRES_CRITERIA)
     process_directory(pipeline_context, raw_path, ['DARK'], last_stage=bias.BiasSubtractor,
-                      extra_stages=[dark.DarkNormalizer, nres_DarkMaker],
+                      extra_stages=[dark.DarkNormalizer, dark.DarkMaker],
                       log_message='Making Master Dark', calibration_maker=True)
