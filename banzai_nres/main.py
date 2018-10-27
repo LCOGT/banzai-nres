@@ -42,7 +42,7 @@ def make_master_bias(pipeline_context=None, raw_path=None):
 
 
 def make_master_dark(pipeline_context=None, raw_path=None):
-    pipeline_context = parse_directory_args(pipeline_context, raw_path, NRES_CRITERIA)
+    pipeline_context, raw_path = parse_directory_args(pipeline_context, raw_path, NRES_CRITERIA)
     process_directory(pipeline_context, raw_path, ['DARK'], last_stage=bias.BiasSubtractor,
                       extra_stages=[dark.DarkNormalizer, nres_DarkMaker],
                       log_message='Making Master Dark', calibration_maker=True)
