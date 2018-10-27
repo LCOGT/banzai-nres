@@ -83,6 +83,8 @@ def test_e2e():
         assert hdu_list['BPM'].data.shape == hdu_list[1].data.shape
 
     # executing the master dark maker as one would from the command line.
+    db_address = os.environ['DB_URL']
+    raw_data_path = '/archive/engineering/lsc/nres01/20180228/raw'
     os.system('make_master_dark --db-address {0} --raw-path {1} '
               '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
 
