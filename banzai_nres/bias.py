@@ -1,8 +1,7 @@
-from banzai import logs
 from banzai.bias import BiasMaker as BanzaiBiasMaker
+import logging
 
-
-logger = logs.get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class BiasMaker(BanzaiBiasMaker):
