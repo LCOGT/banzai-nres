@@ -154,7 +154,6 @@ class ImageSplines(object):
         self.second_derivative = [f[xx].derivative(n=2) for xx in pixel_x_array]
 
 
-
 def maxima(A, s, k, ref):
     # TODO: replace this with a function from a package. This works fine, but for maintainability reasons we
     # want a function from a package, like scipy signal peak finder.
