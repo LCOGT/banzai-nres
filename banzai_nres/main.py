@@ -40,7 +40,7 @@ def make_master_bias(pipeline_context=None, raw_path=None):
     pipeline_context, raw_path = parse_directory_args(pipeline_context, raw_path, NRES_CRITERIA)
     process_directory(pipeline_context, raw_path, ['BIAS'], last_stage=trim.Trimmer,
                       extra_stages=[bias.BiasMasterLevelSubtractor, nres_BiasMaker],
-                      log_message='Making Master BIAS', calibration_maker=True)
+                      log_message='Making Master Bias', calibration_maker=True)
 
 
 def make_master_dark(pipeline_context=None, raw_path=None):
@@ -50,16 +50,8 @@ def make_master_dark(pipeline_context=None, raw_path=None):
                       log_message='Making Master Dark', calibration_maker=True)
 
 
-def make_master_dark_console():
-    run_end_of_night_from_console([make_master_dark], NRES_CRITERIA)
-
-
-def make_master_trace_console():
-    run_end_of_night_from_console([make_master_trace], NRES_CRITERIA)
-
-
-def make_master_trace(pipeline_context):
-    stages_to_do = get_stages_todo(traces.GenerateInitialGuessForTraceFit, extra_stages=[traces.TraceRefine,
-                                                                                         traces.TraceMaker])
-    run(stages_to_do, pipeline_context, image_types=['LAMPFLAT'], calibration_maker=True,
-        log_message='Making Master Trace by Updating Previous Master with global-meta Technique')
+def make_master_trace(pipeline_context=None, raw_path=None):
+    pipeline_context, raw_path = parse_directory_args(pipeline_context, raw_path, NRES_CRITERIA)
+    process_directory(pipeline_context, raw_path, ['LAMPFLAT'], last_stage=traces.GenerateInitialGuessForTraceFit,
+                      extra_stages=[traces.TraceRefine, traces.TraceMaker],
+                      log_message='Making Master Trace', calibration_maker=True)
