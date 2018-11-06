@@ -1,10 +1,14 @@
-0.2.0 (2018-08-08)
+0.3.0 (2018-11-05)
 ------------------
 - End-to-end tests for all, and a unit test for updating traces
 - Updating traces on science frames
 - Updating master traces on new lampflats
 - Blind master traces from a single lampflat
 - Master bias and dark creation, subtraction, normalization
+
+0.2.0 (2018-10-30)
+------------------
+- Updated how the console entry points are called based on upstream updates.
 
 0.1.0 (2018-07-13)
 ------------------

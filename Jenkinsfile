@@ -12,6 +12,7 @@ pipeline {
 	}
 	options {
 		timeout(time: 3, unit: 'HOURS')
+	    lock resource: 'BANZAINRESLock'
 	}
 	stages {
 		stage('Build image') {

@@ -1,8 +1,5 @@
 from banzai.dark import DarkMaker as BanzaiDarkMaker
-
 import logging
-
-logger = logging.getLogger(__name__)
 
 
 class DarkMaker(BanzaiDarkMaker):
