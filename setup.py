@@ -15,11 +15,11 @@ from setuptools import setup, find_packages
 setup(name='lco-banzai-nres',
       author=['Curtis McCully', 'G. Mirek Brandt', 'Timothy D. Brandt'],
       author_email=['cmccully@lco.global', 'gmbrandt@ucsb.edu', 'tbrandt@physics.ucsb.edu'],
-      version='0.2.0',
+      version='0.3.0',
       packages=find_packages(),
       package_dir={'banzai_nres': 'banzai_nres'},
       setup_requires=['pytest-runner'],
-      install_requires=['lco-banzai==0.10.0', 'numpy>=1.12', 'sphinx', 'coveralls'],
+      install_requires=['lco-banzai==0.12.1', 'numpy>=1.12', 'sphinx', 'coveralls'],
       tests_require=['pytest>=3.5'],
       entry_points = {'console_scripts': ['make_master_bias=banzai_nres.main:make_master_bias',
                                           'make_master_dark=banzai_nres.main:make_master_dark']})
