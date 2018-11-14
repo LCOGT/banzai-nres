@@ -771,34 +771,41 @@ def test_trace_maker(mock_cal, mock_images):
     fake_context = FakeContext()
     fake_context.db_address = ''
 
-    for force_traces_from_scratch, value in zip([True, False], [None, '']):
-        blind_trace_maker = GenerateInitialGuessForTraceFit(fake_context)
-        blind_trace_maker.always_generate_traces_from_scratch = force_traces_from_scratch
-        mock_cal.return_value = value
+    for do_refine_stage in [False, True]:
+        for force_traces_from_scratch, value in zip([True, False], [None, '']):
+            blind_trace_maker = GenerateInitialGuessForTraceFit(fake_context)
+            blind_trace_maker.always_generate_traces_from_scratch = force_traces_from_scratch
+            mock_cal.return_value = value
 
-        blind_trace_maker.order_of_poly_fit = order_of_poly_fit
-        images = blind_trace_maker.do_stage(images)
+            blind_trace_maker.order_of_poly_fit = order_of_poly_fit
+            images = blind_trace_maker.do_stage(images)
 
-        trace_refiner = TraceRefine(fake_context)
-        trace_refiner.order_of_meta_fit = order_of_meta_fit
-        images = trace_refiner.do_stage(images)
-        master_cal_maker = TraceMaker(fake_context)
-        master_cal_maker.do_stage(images)
+            if do_refine_stage:
+                logger.debug('Running global-meta refine.')
+                trace_refiner = TraceRefine(fake_context)
+                trace_refiner.order_of_meta_fit = order_of_meta_fit
+                images = trace_refiner.do_stage(images)
 
-        args, kwargs = mock_images.call_args
-        trace_coefficients_data_table_name = Trace().coefficients_table_name
-        master_trace_table = kwargs['data_tables'][trace_coefficients_data_table_name]._data_table
+            master_cal_maker = TraceMaker(fake_context)
+            master_cal_maker.do_stage(images)
 
-        coefficients_array, fiber_order = Trace().convert_astropy_table_coefficients_to_numpy_array(master_trace_table)
-        logger.debug(coefficients_array.shape)
-        images[0].trace.coefficients = coefficients_array
+            args, kwargs = mock_images.call_args
+            trace_coefficients_data_table_name = Trace().coefficients_table_name
+            master_trace_table = kwargs['data_tables'][trace_coefficients_data_table_name]._data_table
 
-        difference = differences_between_found_and_generated_trace_vals(original_coefficents, images[0])
-        logger.debug('error in unit-test trace fitting is less than {0} of a pixel'
-                     .format(np.median(np.abs(difference - np.median(difference)))))
-        logger.debug('worst error in unit-test trace fitting is {0} pixels'.format(np.max(np.abs(difference))))
-        logger.debug('systematic error (median difference) in unit-test trace fitting is less than {0} of a pixel'
-                     .format(np.abs(np.median(difference))))
+            coefficients_array, fiber_order = Trace().convert_astropy_table_coefficients_to_numpy_array(master_trace_table)
+            logger.debug(coefficients_array.shape)
+            images[0].trace.coefficients = coefficients_array
 
-        assert np.median(np.abs(difference - np.median(difference))) < 2/100
-        assert np.abs(np.median(difference)) < 2/100
+            difference = differences_between_found_and_generated_trace_vals(original_coefficents, images[0])
+            logger.debug('median absolute deviation in unit-test trace fitting is {0} pixels'
+                         .format(np.median(np.abs(difference - np.median(difference)))))
+            logger.debug('standard deviation in unit-test trace fitting is {0} pixels'
+                         .format(np.std(difference)))
+            logger.debug('worst error (max of true minus found) in unit-test trace fitting is {0} pixels'
+                         .format(np.max(np.abs(difference))))
+            logger.debug('median error (median of true minus found) in unit-test trace fitting is {0} pixels'
+                         .format(np.abs(np.median(difference))))
+
+            assert np.median(np.abs(difference - np.median(difference))) < 2/100
+            assert np.abs(np.median(difference)) < 2/100
