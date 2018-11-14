@@ -10,7 +10,19 @@ class FibersState(object):
         fiber_states_match &= fiber_state.fiber2_lit == self.fiber2_lit
         return fiber_states_match
 
-    def encode_for_db(self):
+    def __gt__(self, other):
+        return self.encode_as_int() > other.encode_as_int()
+
+    def __ge__(self, other):
+        return self.encode_as_int() >= other.encode_as_int()
+
+    def __lt__(self, other):
+        return self.encode_as_int() < other.encode_as_int()
+
+    def __le__(self, other):
+        return self.encode_as_int() <= other.encode_as_int()
+
+    def encode_as_int(self):
         return (1 * self.fiber0_lit) | (2 * self.fiber1_lit) | (4 * self.fiber2_lit)
 
     @classmethod
