@@ -68,7 +68,7 @@ def test_e2e():
     raw_data_path = '/archive/engineering/lsc/nres01/20180311/raw'
     instrument = 'nres01'
     site = 'lsc'
-    epoch = '20180228'
+    epoch = '20180311'
 
     expected_bias_filename = 'bias_' + instrument + '_' + epoch + '_bin1x1.fits'
     expected_dark_filename = 'dark_' + instrument + '_' + epoch + '_bin1x1.fits'
