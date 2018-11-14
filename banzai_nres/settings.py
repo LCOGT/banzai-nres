@@ -2,8 +2,7 @@ from banzai_nres.images import NRESImage
 from banzai import settings
 from banzai.context import TelescopeCriterion
 import operator
-from banzai import bias, trim, dark, gain
-from banzai import qc
+from banzai import bias, trim, dark, gain, bpm, qc
 import banzai_nres.bias as nres_bias
 import banzai_nres.dark as nres_dark
 from banzai_nres.flats import FlatStacker
@@ -11,7 +10,8 @@ from banzai_nres.flats import FlatStacker
 NRES_CRITERIA = [TelescopeCriterion('camera_type', operator.contains, 'NRES'),
                  TelescopeCriterion('schedulable', operator.eq, True)]
 
-settings.ORDERED_STAGES = [qc.HeaderSanity,
+settings.ORDERED_STAGES = [bpm.BPMUpdater,
+                           qc.HeaderSanity,
                            qc.ThousandsTest,
                            qc.SaturationTest,
                            bias.OverscanSubtractor,

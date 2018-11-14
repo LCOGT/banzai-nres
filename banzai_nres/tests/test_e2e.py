@@ -27,7 +27,6 @@ def make_dummy_bpm(bpm_path, output_bpm_name_addition, fits_file_to_copy, date_m
         hdu_list[0].header['INSTRUME'] = telescope_name
         hdu_list[0].header['SITEID'] = site_name
         hdu_list[0].header['TELESCOP'] = telescope_name
-        hdu_list[0].header['TRIMSEC'] = '[1:4096,1:4096]'
         hdu_list.writeto(output_filename, overwrite=True)
 
     # fpack the file and delete the funpacked input.
