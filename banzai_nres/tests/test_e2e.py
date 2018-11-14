@@ -95,6 +95,6 @@ def test_e2e():
     os.system('make_master_flat --db-address {0} --raw-path {1} '
               '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
 
-    with fits.open(os.path.join(expected_processed_path, expected_dark_filename)) as hdu_list:
+    with fits.open(os.path.join(expected_processed_path, expected_flat_filename)) as hdu_list:
         assert hdu_list[0].data.shape is not None
         assert hdu_list['BPM'].data.shape == hdu_list[1].data.shape
