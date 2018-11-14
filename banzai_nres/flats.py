@@ -6,7 +6,7 @@ class FlatStacker(CalibrationStacker):
         super(FlatStacker, self).__init__(pipeline_context)
 
     @property
-    def group_by_keywords(self):
+    def group_by_attributes(self):
         return ['ccdsum', 'fibers_state']
 
     @property
