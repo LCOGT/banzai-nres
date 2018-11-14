@@ -65,7 +65,7 @@ def setup_module(module):
 @pytest.mark.e2e
 def test_e2e():
     db_address = os.environ['DB_URL']
-    raw_data_path = '/archive/engineering/lsc/nres01/20180228/raw'
+    raw_data_path = '/archive/engineering/lsc/nres01/20180311/raw'
     instrument = 'nres01'
     site = 'lsc'
     epoch = '20180228'
