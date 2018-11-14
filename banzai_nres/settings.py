@@ -11,7 +11,6 @@ from banzai_nres.flats import FlatStacker
 NRES_CRITERIA = [TelescopeCriterion('camera_type', operator.contains, 'NRES'),
                  TelescopeCriterion('schedulable', operator.eq, True)]
 
-
 settings.ORDERED_STAGES = [qc.HeaderSanity,
                            qc.ThousandsTest,
                            qc.SaturationTest,
