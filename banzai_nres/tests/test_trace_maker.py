@@ -1,6 +1,6 @@
 import pytest
 from unittest import mock
-from banzai_nres.traces import GenerateInitialGuessForTraceFit, TraceRefine, TraceMaker
+from banzai_nres.traces import GenerateInitialGuessForTraceFit, TraceMaker
 from banzai.tests.utils import FakeContext
 
 from scipy import ndimage
@@ -273,36 +273,6 @@ def test_generating_blank_evaluated_legendre_array():
     assert np.array_equal(xnorm, xnorm_2)
 
 
-def test_checking_for_close_fit_between_two_fits():
-    image = FakeImage(nx=102, ny=100, overscan_size=2)
-    trim_image(image, trimmed_shape=(100, 100))
-    indices = np.array([np.concatenate((np.arange(6), np.arange(6)))])
-    coefficients = np.ones_like(indices.T)*50
-    coefficients_and_indices = np.hstack((indices.T, coefficients))
-    image.trace.coefficients = coefficients_and_indices
-    images = [image, image]
-    a_close_fit = trace_utils.is_a_close_fit([coefficients_and_indices, coefficients_and_indices],
-                                             images, num_lit_fibers=2, max_pixel_error=1E-1)
-    assert a_close_fit
-    coefficients_and_indices_new = np.copy(coefficients_and_indices)
-    coefficients_and_indices_new[:, 1] += 5
-    a_close_fit = trace_utils.is_a_close_fit([coefficients_and_indices_new, coefficients_and_indices],
-                                             images, num_lit_fibers=2, max_pixel_error=1E-1)
-    assert not a_close_fit
-
-
-def test_checking_for_flux_change_between_two_fits():
-    tiny_image = TinyFakeImageWithTraces()
-    coefficients_and_indices_init = np.array([[0, 1]])
-    no_flux_change = trace_utils.check_flux_change(coefficients_and_indices_init, coefficients_and_indices_init,
-                                  tiny_image, relative_tolerance=1E-2)
-    assert no_flux_change
-    coefficients_and_indices_new = np.array([[0, 0]])
-    no_flux_change = trace_utils.check_flux_change(coefficients_and_indices_new, coefficients_and_indices_init,
-                                  tiny_image, relative_tolerance=1E-2)
-    assert not no_flux_change
-
-
 class TestTraceClassMethods:
     def generate_sample_astropy_nres_values_table(self, fiber_order=None, table_name=None):
         test_trace = Trace()
@@ -407,194 +377,6 @@ class TestFindingTotalFluxAcrossTraces:
         assert np.isclose(-1 * flux, tiny_image.negative_expected_sum_along_trace)
 
 
-class TestImageSplinesClassMethods:
-    """
-    Tests the methods which generate the spline 0th, 1st and second derivatives inside the class
-    trace_utils.ImageSplines
-    """
-    def test_generates_with_none_bpm(self):
-        image = FakeImage(nx=12, ny=10, overscan_size=2)
-        trim_image(image, trimmed_shape=(10, 10))
-        image.bpm = None
-        image_splines = trace_utils.ImageSplines()
-        image_splines.calculate_spline_derivatives_and_populate_attributes(image, image.bpm)
-        for attribute in ['spline', 'first_derivative', 'second_derivative']:
-            assert getattr(image_splines, attribute) is not None
-
-    def test_generates_with_zeros_bpm(self):
-        image = FakeImage(nx=12, ny=10, overscan_size=2)
-        trim_image(image, trimmed_shape=(10, 10))
-        image_splines = trace_utils.ImageSplines()
-        image_splines.calculate_spline_derivatives_and_populate_attributes(image, image.bpm)
-        for attribute in ['spline', 'first_derivative', 'second_derivative']:
-            assert getattr(image_splines, attribute) is not None
-
-    def test_spline_skips_bad_pixel(self):
-        image1 = FakeImage(nx=12, ny=10, overscan_size=2)
-        image2 = FakeImage(nx=12, ny=10, overscan_size=2)
-        trim_image(image1, trimmed_shape=(10, 10))
-        trim_image(image2, trimmed_shape=(10, 10))
-        image_splines1 = trace_utils.ImageSplines()
-        image_splines2 = trace_utils.ImageSplines()
-
-        # creating a bad pixel in one of the clone images
-        image1.data[4, 4] = 10000
-        image1.bpm[4, 4] = 1
-
-        image_splines1.calculate_spline_derivatives_and_populate_attributes(image1, image1.bpm)
-        image_splines2.calculate_spline_derivatives_and_populate_attributes(image2, image2.bpm)
-        for attribute in ['spline', 'first_derivative', 'second_derivative']:
-            assert np.isclose(getattr(image_splines1, attribute)[4](4), getattr(image_splines2, attribute)[4](4))
-
-
-class TestTransformationsToAndFromMetaCoeffstoTraceCoeffs:
-    """
-    Tests initial fits of trace coeffs which generates the meta coefficients and the transformation from meta
-    coefficients back to trace coefficients.
-    """
-    def test_generating_meta_coefficients(self):
-        order_indices = np.array([0, 1])
-        trace_coefficients = np.array([[1],
-                                       [1]])
-        meta_fit_coefficients = trace_utils.fit_trace_coeffs_to_generate_meta_coeffs(order_indices, trace_coefficients,
-                                                                                     metapolyorder=0)
-        assert np.allclose(meta_fit_coefficients, np.array([[1]]))
-
-    def test_transforming_from_meta_to_trace_coeffs(self):
-        trace_coeffs = trace_utils.get_coefficients_from_meta(allmetacoeffs=np.array([[1]]),
-                                                              stpolyarr=np.array([[1, 1]]))
-        expected_trace_coeffs = np.array([[1],
-                                          [1]])
-        assert np.allclose(trace_coeffs, expected_trace_coeffs)
-
-    def test_generating_legendre_polynomial_for_generating_meta_coefficients(self):
-        order_indices = np.array([0, 1])
-        order_norm = order_indices * 2. / order_indices[-1] - 1
-        meta_coefficients = (1,)
-        trace_coefficients_this_order = trace_utils.legpolynomial(order_norm, *meta_coefficients)
-        assert np.allclose(trace_coefficients_this_order, np.array([1,1]))
-
-
-class TestMetaHessianandMetaGradientandTotalFluxEvaluation:
-    """
-    Testing Hessian and gradient creation for the meta fit and reorganization of the hessian into a matrix.
-    This class tests all of the main functions needed to perform the global meta fit on traces.
-    This tests whether the elements which fill the hessian have the correct ordering, these are the p,j,q,k elements
-    ordered in the same way as here: https://v2.overleaf.com/read/jtckthqsdttj
-    The same file can be found in docs/algorithm_docs/Newton_s_method_and_meta_fits.pdf
-    Note: np.equal(a,b) is depriciated for element wise string comparison.
-    """
-    def constant_function(self, x):
-        return np.ones_like(x)
-
-    def dummy_meta_hessian_element(self, p, q, j, k, *extraargs):
-        return '{0}, {1}, {2}, {3}'.format(p, j, q, k)
-
-    def dummy_meta_gradient_element(self, p, k, *extraargs):
-        return '{0}, {1}'.format(p, k)
-
-    def test_generating_meta_hessian(self):
-
-        meta_hessian_elements = trace_utils.evaluate_list_of_elements_of_hessian(stpolyarr=None,
-                                                                                 array_of_individual_hessians=None,
-                                                                                 tracepolyorder=1, metapolyorder=0,
-                                                                                 element_generating_function=
-                                                                                 self.dummy_meta_hessian_element)
-        meta_hessian = trace_utils.reshape_hessian_elements_into_twod_matrix(meta_hessian_elements,
-                                                                             tracepolyorder=1, metapolyorder=0)
-        correct_hessian = np.array([['0, 0, 0, 0', '0, 0, 0, 1'],
-                                    ['0, 1, 0, 0', '0, 1, 0, 1']])
-        equally_correct_hessian = correct_hessian.T
-        assert (meta_hessian == correct_hessian).all() or (meta_hessian == equally_correct_hessian).all()
-
-    def test_generating_meta_hessian_elements(self):
-        list_of_hessians = np.ones((2, 2, 2))
-        evaluated_polynomials_for_meta = np.ones((2, 2))
-        assert np.isclose(trace_utils.p_q_j_k_element_of_meta_hessian(0, 0, 0, 0, evaluated_polynomials_for_meta,
-                                                                      list_of_hessians), 2)
-
-    def test_generating_gradient(self):
-        meta_gradient = trace_utils.evaluate_meta_gradient(stpolyarr=None, array_of_individual_gradients=None,
-                                                           tracepolyorder=1, metapolyorder=0,
-                                                           element_generating_function=self.dummy_meta_gradient_element)
-        correct_gradient = np.array(['0, 0', '0, 1'])
-        assert (correct_gradient == meta_gradient).all()
-
-    def test_generating_meta_gradient_elements(self):
-        array_of_gradients = np.ones((2, 2))
-        evaluated_polynomials_for_meta = np.ones((2, 2))
-        assert np.isclose(trace_utils.p_k_element_of_meta_gradient(0, 0, evaluated_polynomials_for_meta, array_of_gradients), 2)
-
-    def test_end_to_end_building_of_meta_hessian_and_meta_gradient(self):
-        meta_fit_coefficients = np.array([[1],
-                                          [1]])
-        coeffs_vector = meta_fit_coefficients.reshape(meta_fit_coefficients.size)
-
-        image = FakeImage(nx=12, ny=10, overscan_size=2)
-        trim_image(image, trimmed_shape=(10, 10))
-        constant_spline_functions = [self.constant_function] * image.data.shape[1]
-        image_splines = trace_utils.ImageSplines(spline=constant_spline_functions,
-                                                 first_derivative=constant_spline_functions,
-                                                 second_derivative=constant_spline_functions)
-        x_coord_array = np.arange(image.data.shape[1])
-        evaluated_polynomials_for_meta = np.array([[1, 1]])
-        evaluated_polynomials_for_traces = np.array([np.ones(image.data.shape[1]),
-                                                     np.ones(image.data.shape[1])])
-
-        meta_fit_extra_args = (image_splines, evaluated_polynomials_for_meta,
-                               evaluated_polynomials_for_traces, x_coord_array)
-
-        meta_hessian = (-1) * trace_utils.NegativeHessian(coeffs_vector, *meta_fit_extra_args)
-        assert np.isclose(meta_hessian, image.data.shape[0] * evaluated_polynomials_for_meta.shape[1]).all()
-
-        meta_gradient = (-1) * trace_utils.NegativeGradient(coeffs_vector, *meta_fit_extra_args)
-        assert np.isclose(meta_gradient, image.data.shape[0] * evaluated_polynomials_for_meta.shape[1]).all()
-
-    def test_finding_total_flux_from_meta_coefficients(self):
-        meta_fit_coefficients = np.array([[1]])
-        coeffs_vector = meta_fit_coefficients.reshape(meta_fit_coefficients.size)
-        image = FakeImage(nx=12, ny=10, overscan_size=2)
-        trim_image(image, trimmed_shape=(10, 10))
-        image_splines = trace_utils.ImageSplines()
-        image_splines.calculate_spline_derivatives_and_populate_attributes(image, image.bpm)
-        evaluated_polynomials_for_meta = np.array([[1, 1]])
-        evaluated_polynomials_for_traces = np.array([np.ones(image.data.shape[1])])
-        x_coord_array = np.arange(image.data.shape[1])
-
-        total_positive_flux = -1 * trace_utils.neg_totalflux_for_scipy(coeffs_vector, image_splines,
-                                                                       evaluated_polynomials_for_meta,
-                                                                       evaluated_polynomials_for_traces, x_coord_array)
-        assert np.isclose(2 * np.sum(evaluated_polynomials_for_traces), total_positive_flux)
-
-
-class TestMakingPairsofLampflatstoFit:
-    """
-    test type: Unit Test.
-    info: tests the cross correlate images function for meta fits.
-    """
-    def test_making_list_of_pairs_of_lampflats_to_fit(self):
-        list_of_images = [0, 1, 2]
-        indices_to_try, try_combinations_of_images = trace_utils.cross_correlate_image_indices(list_of_images,
-                                                                                               cross_correlate_num=2)
-        assert try_combinations_of_images
-        for pair in [(0, 1), (1, 2), (0, 2)]:
-            assert pair in indices_to_try
-        assert len(indices_to_try) == 3
-
-    def test_zero_cross_correlate_returns_entry_list(self):
-        list_of_images = [0, 1, 2]
-        indices_to_try, try_combinations_of_images = trace_utils.cross_correlate_image_indices(list_of_images,
-                                                                                               cross_correlate_num=0)
-        assert indices_to_try == list_of_images
-        assert not try_combinations_of_images
-
-    def test_empty_list_returns_empty_list(self):
-        indices_to_try, try_combinations_of_images = trace_utils.cross_correlate_image_indices(images=[],
-                                                                                               cross_correlate_num=2)
-        assert indices_to_try == []
-        assert not try_combinations_of_images
-
-
 def test_excluding_traces_which_are_cut_in_half_by_detector():
     fake_image = FakeImage(nx=12, ny=10)
     coefficients = np.array([[0, -5],
@@ -632,17 +414,6 @@ def test_first_sorting_of_coefficients_from_blind_fit_with_odd_num_traces():
     assert np.array_equal(coefficients_and_indices, expected_coefficients_and_indices)
 
 
-def test_splitting_coefficients_per_fiber():
-    fake_coefficients_and_indices = np.array([[0, 1],
-                                              [1, 2],
-                                              [0, 3],
-                                              [1, 4]])
-    per_fiber_coeffs = trace_utils.split_already_sorted_coefficients_into_each_fiber(fake_coefficients_and_indices,
-                                                                                     num_lit_fibers=2)
-    assert np.array_equal(per_fiber_coeffs[0], fake_coefficients_and_indices[:2])
-    assert np.array_equal(per_fiber_coeffs[1], fake_coefficients_and_indices[2:])
-
-
 def test_getting_number_of_lit_fibers():
     image = FakeImage(nx=7, ny=5, overscan_size=2)
     real_num_lit_fibers_list = [0, 1, 2, 3, None]
@@ -670,74 +441,6 @@ class TestTraceMaker:
         master_cal_maker = TraceMaker(FakeContext())
         output = master_cal_maker.do_stage(images)
         assert output == []
-
-
-class TestTraceRefine:
-    """
-    Unit tests for TraceRefine Class
-    """
-    def test_trace_refine_properties(self):
-        trace_refiner = TraceRefine(FakeContext())
-        assert trace_refiner.group_by_keywords == ['ccdsum']
-        assert trace_refiner.calibration_type == 'TRACE'
-
-    @mock.patch('banzai_nres.traces.Image')
-    def test_trace_refine_converges(self, mock_images):
-        readnoise = 11.0
-        order_of_meta_fit = 6
-        order_of_poly_fit = 4
-
-        images = [FakeTraceImage()]
-        images[0].readnoise = readnoise
-
-        make_random_yet_realistic_trace_coefficients(images[0], order_of_poly_fit=order_of_poly_fit)
-        fill_image_with_traces(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
-        noisify_image(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
-        trim_image(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
-
-        original_coefficents = images[0].trace.coefficients
-
-        trace_refiner = TraceRefine(FakeContext())
-        trace_refiner.order_of_meta_fit = order_of_meta_fit
-        images = trace_refiner.do_stage(images)
-
-        difference = differences_between_found_and_generated_trace_vals(original_coefficents, images[0])
-        logger.debug('error in unit-test trace fitting is less than {0} of a pixel'
-                     .format(np.median(np.abs(difference - np.median(difference)))))
-        logger.debug('worst error in unit-test trace fitting is {0} pixels'.format(np.max(np.abs(difference))))
-        logger.debug('systematic error (median difference) in unit-test trace fitting is less than {0} of a pixel'
-                     .format(np.abs(np.median(difference))))
-
-        assert np.median(np.abs(difference - np.median(difference))) < 2/100
-        assert np.abs(np.median(difference)) < 2/100
-
-    def test_trace_refine_refits_if_traces_shifted_too_much(self):
-        readnoise = 11.0
-        order_of_meta_fit = 6
-        order_of_poly_fit = 4
-
-        image = FakeTraceImage()
-        image.readnoise = readnoise
-
-        make_random_yet_realistic_trace_coefficients(image, order_of_poly_fit=order_of_poly_fit)
-        fill_image_with_traces(image, trimmed_shape=tuple([min(image.data.shape)] * 2))
-        noisify_image(image, trimmed_shape=tuple([min(image.data.shape)] * 2))
-        trim_image(image, trimmed_shape=tuple([min(image.data.shape)] * 2))
-
-        shifted_coefficents = np.copy(image.trace.coefficients)
-        shifted_coefficents[:, 1] -= 3/4  # shifting 'found traces' by 3/4 of a pixel.
-
-        trace_refiner = TraceRefine(FakeContext())
-        trace_refiner.order_of_meta_fit = order_of_meta_fit
-        fiber_order, refit_coefficients = trace_refiner.refit_and_check(image, num_lit_fibers=2,
-                                                                        refined_trace_coefficients=shifted_coefficents,
-                                                                        absolute_pixel_tolerance=1/2)
-
-        difference = differences_between_found_and_generated_trace_vals(refit_coefficients, image)
-
-        assert fiber_order is None
-        assert np.median(np.abs(difference - np.median(difference))) < 2/100
-        assert np.abs(np.median(difference)) < 2/100
 
 
 @mock.patch('banzai_nres.traces.Image')
@@ -771,41 +474,34 @@ def test_trace_maker(mock_cal, mock_images):
     fake_context = FakeContext()
     fake_context.db_address = ''
 
-    for do_refine_stage in [False, True]:
-        for force_traces_from_scratch, value in zip([True, False], [None, '']):
-            blind_trace_maker = GenerateInitialGuessForTraceFit(fake_context)
-            blind_trace_maker.always_generate_traces_from_scratch = force_traces_from_scratch
-            mock_cal.return_value = value
+    for force_traces_from_scratch, value in zip([True, False], [None, '']):
+        blind_trace_maker = GenerateInitialGuessForTraceFit(fake_context)
+        blind_trace_maker.always_generate_traces_from_scratch = force_traces_from_scratch
+        mock_cal.return_value = value
 
-            blind_trace_maker.order_of_poly_fit = order_of_poly_fit
-            images = blind_trace_maker.do_stage(images)
+        blind_trace_maker.order_of_poly_fit = order_of_poly_fit
+        images = blind_trace_maker.do_stage(images)
 
-            if do_refine_stage:
-                logger.debug('Running global-meta refine.')
-                trace_refiner = TraceRefine(fake_context)
-                trace_refiner.order_of_meta_fit = order_of_meta_fit
-                images = trace_refiner.do_stage(images)
+        master_cal_maker = TraceMaker(fake_context)
+        master_cal_maker.do_stage(images)
 
-            master_cal_maker = TraceMaker(fake_context)
-            master_cal_maker.do_stage(images)
+        args, kwargs = mock_images.call_args
+        trace_coefficients_data_table_name = Trace().coefficients_table_name
+        master_trace_table = kwargs['data_tables'][trace_coefficients_data_table_name]._data_table
 
-            args, kwargs = mock_images.call_args
-            trace_coefficients_data_table_name = Trace().coefficients_table_name
-            master_trace_table = kwargs['data_tables'][trace_coefficients_data_table_name]._data_table
+        coefficients_array, fiber_order = Trace().convert_astropy_table_coefficients_to_numpy_array(master_trace_table)
+        logger.debug(coefficients_array.shape)
+        images[0].trace.coefficients = coefficients_array
 
-            coefficients_array, fiber_order = Trace().convert_astropy_table_coefficients_to_numpy_array(master_trace_table)
-            logger.debug(coefficients_array.shape)
-            images[0].trace.coefficients = coefficients_array
+        difference = differences_between_found_and_generated_trace_vals(original_coefficents, images[0])
+        logger.debug('median absolute deviation in unit-test trace fitting is {0} pixels'
+                     .format(np.median(np.abs(difference - np.median(difference)))))
+        logger.debug('standard deviation in unit-test trace fitting is {0} pixels'
+                     .format(np.std(difference)))
+        logger.debug('worst error (max of true minus found) in unit-test trace fitting is {0} pixels'
+                     .format(np.max(np.abs(difference))))
+        logger.debug('median error (median of true minus found) in unit-test trace fitting is {0} pixels'
+                     .format(np.abs(np.median(difference))))
 
-            difference = differences_between_found_and_generated_trace_vals(original_coefficents, images[0])
-            logger.debug('median absolute deviation in unit-test trace fitting is {0} pixels'
-                         .format(np.median(np.abs(difference - np.median(difference)))))
-            logger.debug('standard deviation in unit-test trace fitting is {0} pixels'
-                         .format(np.std(difference)))
-            logger.debug('worst error (max of true minus found) in unit-test trace fitting is {0} pixels'
-                         .format(np.max(np.abs(difference))))
-            logger.debug('median error (median of true minus found) in unit-test trace fitting is {0} pixels'
-                         .format(np.abs(np.median(difference))))
-
-            assert np.median(np.abs(difference - np.median(difference))) < 2/100
-            assert np.abs(np.median(difference)) < 2/100
+        assert np.median(np.abs(difference - np.median(difference))) < 2/100
+        assert np.abs(np.median(difference)) < 2/100

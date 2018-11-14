@@ -53,5 +53,5 @@ def make_master_dark(pipeline_context=None, raw_path=None):
 def make_master_trace(pipeline_context=None, raw_path=None):
     pipeline_context, raw_path = parse_directory_args(pipeline_context, raw_path, NRES_CRITERIA)
     process_directory(pipeline_context, raw_path, ['LAMPFLAT'], last_stage=traces.GenerateInitialGuessForTraceFit,
-                      extra_stages=[traces.TraceRefine, traces.TraceMaker],
+                      extra_stages=[traces.TraceMaker],
                       log_message='Making Master Trace', calibration_maker=True)

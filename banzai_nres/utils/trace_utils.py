@@ -129,31 +129,6 @@ class Trace(object):
         return values_and_indices, fiber_order
 
 
-class ImageSplines(object):
-    """
-    Stores the arrays of scipy-spline objects which give the derivatives and values at points
-    in the image.
-    """
-    def __init__(self, spline=None, first_derivative=None, second_derivative=None):
-        self.spline = spline
-        self.first_derivative = first_derivative
-        self.second_derivative = second_derivative
-
-    def calculate_spline_derivatives_and_populate_attributes(self, image, bpm):
-        if bpm is None:
-            bpm = np.zeros_like(image.data)
-
-        pixel_x_array = np.arange(image.data.shape[0])
-        pixel_y_array = np.arange(image.data.shape[1])
-
-        # generating spline interpolations which incorporate only the good pixels
-        f = [interpolate.UnivariateSpline(pixel_y_array[bpm[:, xx] != 1], image.data[:, xx][bpm[:, xx] != 1],
-                                          k=3, s=0, ext=1) for xx in pixel_x_array]
-        self.spline = f
-        self.first_derivative = [f[xx].derivative(n=1) for xx in pixel_x_array]
-        self.second_derivative = [f[xx].derivative(n=2) for xx in pixel_x_array]
-
-
 def maxima(A, s, k, ref):
     # TODO: replace this with a function from a package. This works fine, but for maintainability reasons we
     # want a function from a package, like scipy signal peak finder.
@@ -454,53 +429,6 @@ def generate_legendre_array(image_width, order_of_poly_fits):
     return legendre_polynomial_array, x, xnorm
 
 
-def is_a_close_fit(coefficients_and_indices_list, images, num_lit_fibers, max_pixel_error=1E-1):
-    """
-    :param coefficients_and_indices_list: list of trace_coefficients across the detector for multiple different fits
-     . I.e. a list of ndarray with the first column 0,1,2,..66,0,1.. the fiber indexes, and the second column
-            the 0th order coefficients for that order trace. The fibers are arranged fiber_order[0] then fiber_order[1].
-            as listed in the attribute Image().fiber_order
-    :param images: List of Banzai Image objects
-    :param max_pixel_error: Max allowed y pixel deviation between the traces from their mean at every point.
-        Computed at every x value But only for the central orders. E.g. orders 10-50 for 67 orders per fiber. I.e. if
-        two traces give values of 10 and 15 at a certain x,y value, then the half error is 2.5 = 15 - mean(10, 15).
-        Which we double to find the max_error_between_fits of 2.5 * 2 = 5.
-        Using the deviation from the mean allows one to compare the spread of many fits at once.
-    :return: True if close, False if not.
-    """
-
-    trace_values_versus_xpixel_list = []
-    num_traces_list = []
-    for coefficients, image in zip(coefficients_and_indices_list, images):
-        trace_values_versus_xpixel, num_traces, x = image.trace.get_trace_centroids_from_coefficients(image.data.shape[1],
-                                                                                                      coefficients_and_indices=coefficients)
-        num_traces_list += [num_traces]
-        trace_values_versus_xpixel_list += [trace_values_versus_xpixel]
-        image_shape = image.data.shape
-    assert num_traces_list[1:] == num_traces_list[:-1]
-    assert num_traces % num_lit_fibers == 0
-    num_orders = int(num_traces/num_lit_fibers)
-
-    order_buffer = int(num_orders/5)
-    x_buffer = int(image_shape[1]/4)
-    # computing absolute differences between the trace centroid locations at every x value.
-    trace_values_versus_xpixel_arr = np.array(trace_values_versus_xpixel_list)
-    error_between_fits = np.abs((trace_values_versus_xpixel_arr - np.mean(trace_values_versus_xpixel_arr, axis=0)))
-    # restricting region where we care about differences (center of detector)
-    select_orders_mask = ((coefficients_and_indices_list[0][:, 0] >= order_buffer) * \
-                         (coefficients_and_indices_list[0][:, 0] - num_orders < -order_buffer)).astype(int)
-    select_order_indices = np.where(select_orders_mask == 1)[0]
-    select_errors = error_between_fits[:, select_order_indices][:, :, x_buffer:(image_shape[1] - x_buffer)]
-    max_error_between_fits = 2 * np.max(select_errors)
-    if max_error_between_fits < max_pixel_error:
-        close_enough_fit = True
-    else:
-        logger.warning('warning! central trace centroids between reference and new fit disagreed \n '
-                       'beyond max allowed error of {0} pixels'.format(max_pixel_error))
-        close_enough_fit = False
-    return close_enough_fit
-
-
 def totalflux_all_traces(coefficients_and_indices, image):
     """
     :param coefficients_and_indices: polynomial fit to traces
@@ -517,25 +445,12 @@ def totalflux_all_traces(coefficients_and_indices, image):
     return totalflux
 
 
-def check_flux_change(coefficients_and_indices_new, coefficients_and_indices_initial, image, relative_tolerance=1E-2):
-    """
-    :param coefficients_and_indices_new: polynomial fit to traces that is new
-    :param coefficients_and_indices_initial: polynomial fit to traces that is old (e.g. from a master file)
-    :param image: Banzai image object
-    :return: True if the flux change is less than 1 percent.
-    """
-    initial_flux = totalflux_all_traces(coefficients_and_indices_initial, image)
-    delta_fraction_flux = (totalflux_all_traces(coefficients_and_indices_new, image) - initial_flux)/initial_flux
-    logger.debug('(new_flux - master_cal_flux)/master_cal_flux) = %s' % delta_fraction_flux)
-    if np.abs(delta_fraction_flux) < relative_tolerance:
-        return True
-    else:
-        return False
-
-
 def get_coefficients_from_meta(allmetacoeffs, stpolyarr):
     """
-    :param allmetacoeffs: meta coefficients
+    NOTE: This is used in the suite of meta fit procedures (which are not implemented into Banzai-NRES as of
+     11/13/2018) AND for generating realistic test frames for unit tests.
+    :param allmetacoeffs: meta coefficients which describe the polynomial coefficients for each trace as a function
+    of order.
     :param stpolyarr: The poly array which is the basis for the meta fit. Should be a legendre polynomial array.
     :return:
     """
@@ -554,200 +469,6 @@ def legpolynomial(normxaxis, *metacoeffs):
     for i in range(polyorder):
         y += metacoeffs[i] * np.polynomial.legendre.legval(normxaxis, [0 for j in range(i)] + [1])
     return y
-
-
-def fit_trace_coeffs_to_generate_meta_coeffs(orderarray, trace_coefficients, metapolyorder):
-    """
-    :param orderarray: The order index list, nd array
-    :param trace_coefficients: Coefficients (without  the order index list as first column)
-    :param metapolyorder: order of the polynomial fit to how the coefficients vary as a function of order number
-    :return:
-    """
-    allmetacoeffs = []
-    metacoeffsinit = tuple([0] * (metapolyorder + 1))
-    for j in range(0, trace_coefficients.shape[1]):
-        popt, pcov = curve_fit(legpolynomial, orderarray, trace_coefficients[:, j], p0=metacoeffsinit)
-        allmetacoeffs += [list(popt)]
-    return np.array(allmetacoeffs)
-
-
-def neg_totalflux_for_scipy(coeffs_vector, *extraargs):
-    """
-    :param coeffs_vector: Vector of meta coefficients.
-    :param extraargs: (image_splines, stpolyarr, legpolyarr, pixelxarray, x)
-    :returns
-        the negative of the total flux. Calculated using the scipy spline object stored in image_splines. Not ndimage
-        like totalflux_all_traces.
-    """
-    image_splines, stpolyarr, legpolyarr, x = extraargs
-
-    # get order of poly coefficients.
-    tracepolyorder = legpolyarr.shape[0] - 1
-    metapolyorder = stpolyarr.shape[0] - 1
-
-    # reshape meta coeffs.
-    metacoeffs_temp = coeffs_vector.reshape((tracepolyorder + 1), (metapolyorder + 1))
-    # construct y values of the polynomial traces from the metacoefficients
-    tracecoeffs = get_coefficients_from_meta(metacoeffs_temp, stpolyarr)
-    # evaluate each trace at every x pixel
-    traces = np.dot(tracecoeffs, legpolyarr)
-    pixelyarray = np.copy(x)
-
-    flux_values_along_traces = np.array([image_splines.spline[i](traces[:, i]) for i in pixelyarray]).T
-    return (-1) * np.sum(flux_values_along_traces)
-
-
-def p_q_j_k_element_of_meta_hessian(p, q, j, k, stpolyarr, array_of_individual_hessians):
-    return np.sum(stpolyarr[p] * stpolyarr[q] * array_of_individual_hessians[:, j, k])
-
-
-def p_k_element_of_meta_gradient(p, k, stpolyarr, array_of_individual_gradients):
-    return np.sum(stpolyarr[p] * array_of_individual_gradients[:, k])
-
-
-def evaluate_meta_gradient(stpolyarr, array_of_individual_gradients, tracepolyorder, metapolyorder, element_generating_function=p_k_element_of_meta_gradient):
-    meta_gradient = []
-    for k in range(tracepolyorder + 1):
-        for p in range(metapolyorder + 1):
-            meta_gradient += [element_generating_function(p, k, stpolyarr, array_of_individual_gradients)]
-    meta_gradient = np.array(meta_gradient)
-    return meta_gradient
-
-
-def evaluate_list_of_elements_of_hessian(stpolyarr, array_of_individual_hessians, tracepolyorder, metapolyorder, element_generating_function=p_q_j_k_element_of_meta_hessian):
-    """
-    :param stpolyarr:
-    :param array_of_individual_hessians:
-    :param tracepolyorder:
-    :param metapolyorder:
-    :param element_generating_function: function which takes 4 indices and returns the appropriate element of the
-            meta hessian.
-    :return:
-    NOTE: one could save a factor of two here by only calculating the elements needed to construct the upper diagonal,
-    but then we would have to rethink the reshape_hessian_elements_into_twod_matrix function.
-    """
-    meta_hessian_elements = []
-    for j in range(tracepolyorder + 1):
-        for p in range(metapolyorder + 1):
-            for k in range(tracepolyorder + 1):
-                for q in range(metapolyorder + 1):
-                    meta_hessian_elements += [element_generating_function(p, q, j, k, stpolyarr, array_of_individual_hessians)]
-                    # note: from np.dot, there is an absolute error of 1e-9
-                    # between some Hessians[:,j,k] - Hessians[:,k,j]
-    return meta_hessian_elements
-
-
-def reshape_hessian_elements_into_twod_matrix(list_of_hessian_elements, tracepolyorder, metapolyorder):
-    list_of_hessian_elements = np.array(list_of_hessian_elements)
-    Hessian = list_of_hessian_elements.reshape((metapolyorder + 1) * (tracepolyorder + 1),
-                                               (metapolyorder + 1) * (tracepolyorder + 1))
-    return Hessian
-
-
-def NegativeHessian(coeffs_vector, *args):
-    """
-    :param coeffs_vector: nd-array list of the n-meta coefficients
-    :param args: tuple type, (image_splines, stpolyarr, legpolyarr, pixelxarray) .
-    :return: the negative of the Hessian, an nd array shape (n,n)
-    """
-    image_splines, stpolyarr, legpolyarr, pixelxarray = args
-
-    # get order of poly coefficients.
-    tracepolyorder = legpolyarr.shape[0] - 1
-    metapolyorder = stpolyarr.shape[0] - 1
-
-    # reshape meta coeffs.
-    metacoeffs_temp = coeffs_vector.reshape((tracepolyorder + 1), (metapolyorder + 1))  # first column is order number
-
-    # construct y values of the polynomial traces from the metacoefficients for this iteration
-    tracecoeffs = get_coefficients_from_meta(metacoeffs_temp, stpolyarr)  # first column is order number
-    # evaluate each trace at every x pixel
-    traces = np.dot(tracecoeffs, legpolyarr)
-    pixelyarray = np.copy(pixelxarray)
-
-    secd = np.array([image_splines.second_derivative[i](traces[:, i]) for i in pixelyarray]).T
-
-    # construct the filled Hessian for all traces
-    array_of_individual_hessians = np.array([np.dot(legpolyarr * secd[i], legpolyarr.T) for i in
-                         range(traces.shape[0])])
-    meta_hessian_elements = evaluate_list_of_elements_of_hessian(stpolyarr, array_of_individual_hessians,
-                                                                 tracepolyorder, metapolyorder,
-                                                                 element_generating_function=p_q_j_k_element_of_meta_hessian)
-
-    Hessian = reshape_hessian_elements_into_twod_matrix(meta_hessian_elements, tracepolyorder, metapolyorder)
-
-    # Setting the Hessian to be perfectly symmetric. I.e. munging away small numerical errors.
-    Hessian = np.tril(Hessian, k=0)  # zero the elements in the upper triangle - they differ due to np.dot errors.
-    Hessian = Hessian + Hessian.T - np.diag(np.diag(Hessian))  # recalculate the fully symmetric Hessian.
-    return (-1) * Hessian
-
-
-def NegativeGradient(coeffs_vector, *args):
-    """
-    :param coeffs_vector: nd-array list of the n-meta coefficients
-    :param args: tuple type, (image_splines, stpolyarr, legpolyarr, pixelxarray) .
-    :return: the negative of the gradient.
-    """
-    image_splines, stpolyarr, legpolyarr, pixelxarray = args
-
-    # get order of poly coefficients.
-    tracepolyorder = legpolyarr.shape[0] - 1
-    metapolyorder = stpolyarr.shape[0] - 1
-
-    # reshape meta coeffs.
-    metacoeffs_temp = coeffs_vector.reshape((tracepolyorder + 1), (metapolyorder + 1))
-    # construct y values of the polynomial traces from the metacoefficients
-    tracecoeffs = get_coefficients_from_meta(metacoeffs_temp, stpolyarr)
-    # evaluate each trace at every x pixel
-    traces = np.dot(tracecoeffs, legpolyarr)
-    pixelyarray = np.copy(pixelxarray)
-    firstd = np.array([image_splines.first_derivative[i](traces[:, i]) for i in pixelyarray]).T
-    array_of_individual_gradients = np.dot(firstd, legpolyarr.T)  # evaluating the gradient for all traces
-    # construct the filled gradient
-    meta_gradient = evaluate_meta_gradient(stpolyarr, array_of_individual_gradients, tracepolyorder, metapolyorder,
-                                           element_generating_function=p_k_element_of_meta_gradient)
-    return (-1) * meta_gradient
-
-
-def meta_fit(metacoeffs, stpolyarr, legpolyarr, image_splines, pixelxarray):
-    """
-    Evaluates meta-coefficients which optimize the flux across the entire detector.
-    Best method is Newton-CG because it is well suited theoretically to this problem.
-    Performance notes : On a 500x500 test frame with 20 traces, this function takes 10 ms to evaluate the Hessian,
-    and 5 ms to evaluate the gradient. It calls the grad and hessian ~5 and ~20 times respectively, and evalutes the
-    function ~20 times. function evaluations take about 5 ms.
-    The total meta fit time is roughly 150 ms on said test frame.
-
-    #NOTE: The meta fit hessian and gradient construction are described here: https://v2.overleaf.com/read/jtckthqsdttj
-    The same file can be found in docs/algorithm_docs/Newton_s_method_and_meta_fits.pdf
-
-    NOTE: there is no unit test for this, rather this is tested under an integration test for
-    the do_stage of order-by-order fitting
-    """
-    metacoeffsinitial = np.copy(metacoeffs).reshape(metacoeffs.size)
-    extraargs = (image_splines, stpolyarr, legpolyarr, pixelxarray)
-    tracepolyorder = legpolyarr.shape[0] - 1
-    metapolyorder = stpolyarr.shape[0] - 1
-    metacoeffsnew = optimize.minimize(neg_totalflux_for_scipy, metacoeffsinitial, args=extraargs, method='NEWTON-CG'
-                                      , jac=NegativeGradient, hess=NegativeHessian, options={'disp': False}).x
-
-    return metacoeffsnew.reshape((tracepolyorder + 1), (metapolyorder + 1))
-
-
-def cross_correlate_image_indices(images, cross_correlate_num):
-    """
-    :param images: Banzai image objects
-    :param cross_correlate_num: Number of images to pair together in the list of combinations
-    :return: All unique combinations of the indices of images from image
-    """
-
-    image_indices_to_try = list(range(len(images)))
-    try_combinations_of_images = False
-
-    if len(images) >= cross_correlate_num >= 2:
-        image_indices_to_try = list(itertools.combinations(range(len(images)), cross_correlate_num))
-        try_combinations_of_images = True
-    return image_indices_to_try, try_combinations_of_images
 
 
 def extract_coeffs_entire_lampflat_frame(image, order_of_poly_fits, second_order_coefficient_guess):
@@ -808,15 +529,6 @@ def split_and_sort_coefficients_for_each_fiber(coefficients_and_indices, num_lit
     return coefficients_and_indices
 
 
-def split_already_sorted_coefficients_into_each_fiber(coefficients_and_indices, num_lit_fibers):
-    split_indices = np.where(coefficients_and_indices[:, 0] == np.max(coefficients_and_indices[:, 0]))[0]
-    assert len(split_indices) == num_lit_fibers
-    fiber_coefficients = (coefficients_and_indices[:split_indices[0] + 1],)
-    for i in range(1, len(split_indices)):
-        fiber_coefficients += (coefficients_and_indices[split_indices[i-1]+1: split_indices[i]+1],)
-    return fiber_coefficients
-
-
 def fit_traces_order_by_order(image, second_order_coefficient_guess, order_of_poly_fits=4, num_lit_fibers=2):
     # this is tested under an integration test for the Do_stage of order-by-order fitting
     """
@@ -836,55 +548,6 @@ def fit_traces_order_by_order(image, second_order_coefficient_guess, order_of_po
     logger.debug('%s traces found' % coefficients_and_indices.shape[0])
 
     return coefficients_and_indices
-
-
-def optimize_coeffs_entire_lampflat_frame(coefficients_and_indices, image, num_of_lit_fibers=2, order_of_meta_fit=6, bpm=None):
-    # this is tested under an integration test for the Do_stage of order-by-order fitting
-    """
-    coefficients which are loaded must be in the format where the first 0,1,2,3,N rows are for the first fiber, and the
-    next set for the second fiber. The first column must be the order number designation.
-    :param bpm: The binary mask whereby bad pixels are set to 0.
-    """
-
-    coeflen, coefwidth = coefficients_and_indices.shape
-    number_of_traces, trace_poly_order = coeflen, coefwidth - 2
-
-    image_splines = ImageSplines()
-    image_splines.calculate_spline_derivatives_and_populate_attributes(image, bpm)
-
-    legendre_polynomial_array, x, xnorm = generate_legendre_array(image.data.shape[1], trace_poly_order)
-
-    order_indices = coefficients_and_indices[:, 0]
-    fiber_coefficients = split_already_sorted_coefficients_into_each_fiber(coefficients_and_indices, num_of_lit_fibers)
-    optimized_coeffs_per_fiber = []
-    for coefficients in fiber_coefficients:
-        #  simple order number arrays which are normalized from -1 to 1 to control numerical errors.
-        single_fiber_coeffs = coefficients[:, 1:]
-        order_norm = np.arange(single_fiber_coeffs.shape[0])
-        order_norm = order_norm * 2. / order_norm[-1] - 1
-
-        meta_coefficients = fit_trace_coeffs_to_generate_meta_coeffs(order_norm, single_fiber_coeffs, order_of_meta_fit)
-
-        #  building legendre polynomial arrays to use for the meta-fit basis.
-        legendre_polynomial_array_meta = np.ones((order_of_meta_fit + 1, order_norm.shape[0]))
-
-        for i in range(1, order_of_meta_fit + 1):
-            legendre_polynomial_array_meta[i] = np.polynomial.legendre.legval(order_norm, [0 for j in range(i)] + [1])
-
-        # optimizing the meta-fit
-        optimum_meta_coefficients = meta_fit(meta_coefficients, legendre_polynomial_array_meta,
-                                                   legendre_polynomial_array, image_splines, x)
-
-        # outputting optimized coeffs with order indices
-        optimized_coefficients_no_indices = get_coefficients_from_meta(optimum_meta_coefficients,
-                                                                       legendre_polynomial_array_meta)
-
-        optimized_coeffs_per_fiber.append(optimized_coefficients_no_indices)
-
-    all_optimized_coefficients_no_indices = np.vstack(optimized_coeffs_per_fiber)
-    all_optimized_coefficients_and_indices = np.insert(all_optimized_coefficients_no_indices, obj=0, values=order_indices,
-                                                   axis=1)
-    return all_optimized_coefficients_and_indices
 
 
 def get_number_of_lit_fibers(image):

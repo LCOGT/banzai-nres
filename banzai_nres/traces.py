@@ -5,8 +5,7 @@ Authors
     G. Mirek Brandt (gmbrandt@ucsb.edu)
 """
 
-from banzai_nres.utils.trace_utils import is_a_close_fit, cross_correlate_image_indices, \
-    optimize_coeffs_entire_lampflat_frame, fit_traces_order_by_order, get_number_of_lit_fibers, Trace
+from banzai_nres.utils.trace_utils import fit_traces_order_by_order, get_number_of_lit_fibers, Trace
 from banzai_nres.utils.NRES_class_utils import add_class_as_attribute
 from banzai_nres.images import Image
 from banzai.stages import CalibrationMaker, Stage
@@ -31,8 +30,6 @@ class TraceMaker(CalibrationMaker):
     def __init__(self, pipeline_context):
         super(TraceMaker, self).__init__(pipeline_context)
         self.pipeline_context = pipeline_context
-        self.try_combinations_of_images = False
-        self.cross_correlate_num = 1
         self.fiber_order_header_name = 'FIBRORDR'
 
     @property
@@ -51,47 +48,17 @@ class TraceMaker(CalibrationMaker):
         """
         :param images: list of Banzai-NRES Image objects.
         :param image_config:
-        :return: frame with trace coefficients appended as the primary data object.
-        This function cross correlates image.trace.coefficients between different fits (self.try_combinations_of_images)
-        and saves the trace information for the set of images which agree the most.
-        If one of the images in the list images has no trace coefficients, then that image is likely bad, so we exit
-        and throw a warning.
+        :return: frame with trace coefficients appended as astropy tables etc.
         """
         if all(image.trace.coefficients is None for image in images):
             logger.error('Each image in images are missing trace coefficients, aborting master trace calibration saving')
             return []
 
+        good_frame = images[0]
+        num_lit_fibers = get_number_of_lit_fibers(images[0])
+
         master_trace_filename = self.get_calibration_filename(image_config)
         logger.debug('master_trace', os.path.basename(master_trace_filename))
-
-        satisfactory_fit = False
-        image_indices_to_try, try_combinations_of_images = cross_correlate_image_indices(images,
-                                                                                         self.cross_correlate_num)
-        counter = 0
-        num_lit_fibers = get_number_of_lit_fibers(images[0])
-        while not satisfactory_fit:
-            if self.try_combinations_of_images:
-                images_to_try = [images[i] for i in image_indices_to_try[counter]]
-            else:
-                images_to_try = [images[counter]]
-            counter += 1
-
-            coefficients_and_indices_list = [image.trace.coefficients for image in images_to_try]
-
-            satisfactory_fit = is_a_close_fit(coefficients_and_indices_list, images_to_try, num_lit_fibers,
-                                              max_pixel_error=1E-1)
-
-            if not satisfactory_fit:
-                logger.warning(
-                    "Too much disagreement between the master trace fits on this subset of lampflats"
-                    ". Trying a new set of lampflats. {0} sets exist".format(len(image_indices_to_try)))
-
-            if counter >= len(image_indices_to_try) and not satisfactory_fit:
-                raise "No set of {0} master meta-fits agree enough. Master Trace fitting failed on this batch {1} ! " \
-                      "Try generating order by order. This set of lamp flat frames possibly disagree." .format(
-                          self.cross_correlate_num, images_to_try[0].filename)
-
-        good_frame = images_to_try[0]
 
         header = fits_utils.create_master_calibration_header(images)
         header[self.fiber_order_header_name] = good_frame.trace.fiber_order
@@ -129,90 +96,6 @@ class TraceMaker(CalibrationMaker):
 
         master_trace_calibration.filename = master_trace_filename
         return [master_trace_calibration]
-
-
-class TraceRefine(Stage):
-    """
-    Updates image.trace.coefficients via global-meta fitting. This procedure is robust enough that
-    one can run this one arc or science frames if they so wished to refine their traces.
-    :param max_number_of_images_to_refine : the number of images from the larger list images that you wish to actually fit.
-    For instance if 1, we do one fit then we adopt that fit onto all other images in the list. Must be at least 1. Set to
-    some large number if you want to always fit every frame in images.
-    """
-    def __init__(self, pipeline_context):
-        super(TraceRefine, self).__init__(pipeline_context)
-        self.pipeline_context = pipeline_context
-        self.order_of_meta_fit = 6
-        self.max_number_of_images_to_refine = 1
-        self.refit_if_traces_shifted_substantially = True
-
-    @property
-    def group_by_keywords(self):
-        return ['ccdsum']
-
-    @property
-    def calibration_type(self):
-        return 'TRACE'
-
-    def do_stage(self, images):
-        add_class_as_attribute(images, 'trace', Trace)
-        for i, image in enumerate(images):
-            num_lit_fibers = get_number_of_lit_fibers(image)
-
-            if i < self.max_number_of_images_to_refine:
-                logger.debug('refining with global meta on {0}'.format(image.filename))
-                refined_trace_coefficients = optimize_coeffs_entire_lampflat_frame(
-                    image.trace.coefficients, image, num_of_lit_fibers=num_lit_fibers,
-                    order_of_meta_fit=self.order_of_meta_fit, bpm=image.bpm)
-                fiber_order, refined_trace_coefficients = self.refit_and_check(image,
-                                                                               num_lit_fibers,
-                                                                               refined_trace_coefficients,
-                                                                               absolute_pixel_tolerance=2.0)
-            else:
-                logger.debug('adopting last global-meta fit onto {0}'.format(image.filename))
-                refined_trace_coefficients = images[self.max_number_of_images_to_refine - 1].trace.coefficients
-                fiber_order = images[self.max_number_of_images_to_refine - 1].trace.fiber_order
-
-            image.trace.coefficients = refined_trace_coefficients
-            image.trace.fiber_order = fiber_order
-        return images
-
-    def refit_and_check(self, image, num_lit_fibers, refined_trace_coefficients, absolute_pixel_tolerance=2.0):
-        """
-        If the new coefficients differ by more than absolute_pixel_tolerance on average compared to the
-        as loaded coefficients, then we
-        refit the traces on image order-by-order then redoes the global-meta on those new coefficients.
-
-        Note that because this can come after the order-by-order fitting, too small of a pixel tolerance will
-        just cause us to redo fits every time. A pixel tolerance of 1 is good because standard NRES shifts are on the
-        order of less than a pixel.
-        """
-        coefficients_to_compare = [refined_trace_coefficients, image.trace.coefficients]
-        trace_fits_are_close = is_a_close_fit(coefficients_to_compare, [image, image], num_lit_fibers,
-                                              max_pixel_error=absolute_pixel_tolerance)
-
-        if self.refit_if_traces_shifted_substantially and (not trace_fits_are_close):
-            logger.warning('traces shifted beyond allowable amount, refitting lampflat order-by-order.')
-            blind_fit_maker = GenerateInitialGuessForTraceFit(pipeline_context=self.pipeline_context)
-            blind_fit_maker.always_generate_traces_from_scratch = True
-            image = blind_fit_maker.do_stage([image])[0]
-            refined_trace_coefficients = optimize_coeffs_entire_lampflat_frame(
-                image.trace.coefficients, image, num_of_lit_fibers=num_lit_fibers,
-                order_of_meta_fit=self.order_of_meta_fit, bpm=image.bpm)
-            fiber_order = None
-            blind_fit_and_refine_agree = is_a_close_fit([refined_trace_coefficients, image.trace.coefficients],
-                                                        [image, image], num_lit_fibers,
-                                                        max_pixel_error=absolute_pixel_tolerance)
-            if not blind_fit_and_refine_agree:
-                logger.error('{0} trace blind fitting and trace refine disagree on image {0} \n which required'
-                             'a refit in the first place. Likely a bad frame.'.format(image.filename))
-                self.save_qc_results(qc_results={'Trace blind and refine failed': True}, image=image)
-                refined_trace_coefficients = None
-                fiber_order = None
-
-        else:
-            fiber_order = image.trace.fiber_order
-        return fiber_order, refined_trace_coefficients
 
 
 class GenerateInitialGuessForTraceFit(Stage):
