@@ -164,7 +164,7 @@ def maxima(A, s, k, ref):
     return first_max_index, maximum_exists
 
 
-def crosscoef(legendre_polynomial_coefficients, imfilt, x, evaluated_legendre_polynomials):
+def negative_flux_across_trace(legendre_polynomial_coefficients, imfilt, x, evaluated_legendre_polynomials):
     """
     :param legendre_polynomial_coefficients: list of legendre polynomial coefficients
     :param imfilt: ndarray, image.data passed through ndimage.spline_filter
@@ -181,7 +181,7 @@ def crosscoef(legendre_polynomial_coefficients, imfilt, x, evaluated_legendre_po
     return -1 * val
 
 
-def fluxvalues(testpoints, legendre_polynomial_coefficients, imfilt, x, evaluated_legendre_polynomials):
+def flux_across_trace_up_detector(testpoints, legendre_polynomial_coefficients, imfilt, x, evaluated_legendre_polynomials):
     """
     :param legendre_polynomial_coefficients: list of legendre polynomial coefficients excluding 0th order coefficients
     :param imfilt: ndarray, image.data passed through ndimage.spline_filter
@@ -192,7 +192,7 @@ def fluxvalues(testpoints, legendre_polynomial_coefficients, imfilt, x, evaluate
     values = np.zeros_like(testpoints)
     for i in range(0, len(values)):
         coeffguesses = list([testpoints[i]] + legendre_polynomial_coefficients)
-        values[i] = (-1) * crosscoef(coeffguesses, imfilt, x, evaluated_legendre_polynomials)
+        values[i] = (-1) * negative_flux_across_trace(coeffguesses, imfilt, x, evaluated_legendre_polynomials)
     return values
 
 
@@ -238,8 +238,8 @@ def generate_initial_guess_for_trace_polynomial(image, imfilt, x, evaluated_lege
         elif direction == 'inplace':
             testpoints = list(range(p0 - 10, p0 + 10))
 
-        fluxvals = fluxvalues(testpoints, p, image.data, x, evaluated_legendre_polynomials)
-        refflux = max((-1) * crosscoef(lastcoef, image.data, x, evaluated_legendre_polynomials), max(fluxvals))
+        fluxvals = flux_across_trace_up_detector(testpoints, p, image.data, x, evaluated_legendre_polynomials)
+        refflux = max((-1) * negative_flux_across_trace(lastcoef, image.data, x, evaluated_legendre_polynomials), max(fluxvals))
 
         deltap0guess, maximum_exists = maxima(fluxvals, 5, 1 / 20, refflux)
 
@@ -254,7 +254,7 @@ def generate_initial_guess_for_trace_polynomial(image, imfilt, x, evaluated_lege
     return coeffsguess, maximum_exists, refflux
 
 
-def findorder(image, imfilt, x, evaluated_legendre_polynomials, order=2, second_order_coefficient_guess=90, lastcoef=None, direction='up'):
+def find_order(image, imfilt, x, evaluated_legendre_polynomials, order=2, second_order_coefficient_guess=90, lastcoef=None, direction='up'):
     """
     :param image: banzai image object.
     :param imfilt: ndarray, image.data passed through ndimage.spline_filter
@@ -281,9 +281,9 @@ def findorder(image, imfilt, x, evaluated_legendre_polynomials, order=2, second_
                                                 lastcoef=lastcoef, direction=direction)
 
     if maximum_exists:
-        p1 = optimize.minimize(crosscoef, coeffsguess, (imfilt, x, evaluated_legendre_polynomials), method='Powell').x
+        p1 = optimize.minimize(negative_flux_across_trace, coeffsguess, (imfilt, x, evaluated_legendre_polynomials), method='Powell').x
 
-        val = -1 * crosscoef(p1, imfilt, x, evaluated_legendre_polynomials)
+        val = -1 * negative_flux_across_trace(p1, imfilt, x, evaluated_legendre_polynomials)
     else:
         p1, val = lastcoef, refflux
 
@@ -351,8 +351,8 @@ def find_all_traces_marching_up_or_down(image, imfilt, x, vals, evaluated_legend
     done = False
     i = 1
     while not done:
-        coef, val, maximum_exists = findorder(image, imfilt, x, evaluated_legendre_polynomials, order=order_of_poly_fit,
-                                     lastcoef=coef, direction=direction)
+        coef, val, maximum_exists = find_order(image, imfilt, x, evaluated_legendre_polynomials, order=order_of_poly_fit,
+                                               lastcoef=coef, direction=direction)
         vals += [val]
         if direction == 'up':
             allcoef += [[i] + list(coef)]
@@ -364,7 +364,7 @@ def find_all_traces_marching_up_or_down(image, imfilt, x, vals, evaluated_legend
     return num_of_orders_found, allcoef, coef, vals
 
 
-def tracesacrossccd(image, imfilt, order_of_poly_fit, second_order_coefficient_guess):
+def find_all_traces(image, imfilt, order_of_poly_fit, second_order_coefficient_guess):
 
     """
     :param image: banzai image object
@@ -390,9 +390,9 @@ def tracesacrossccd(image, imfilt, order_of_poly_fit, second_order_coefficient_g
     for i in range(2, order_of_poly_fit + 1):
         if coef is not None:
             coef = list(coef) + [0]
-        coef, val, maximum_exists = findorder(image, imfilt, x, evaluated_legendre_polynomials, order=i,
-                                     second_order_coefficient_guess=second_order_coefficient_guess, lastcoef=coef,
-                                     direction='inplace')
+        coef, val, maximum_exists = find_order(image, imfilt, x, evaluated_legendre_polynomials, order=i,
+                                               second_order_coefficient_guess=second_order_coefficient_guess, lastcoef=coef,
+                                               direction='inplace')
 
     vals = [val]
     initcoef = copy.deepcopy(coef)
@@ -489,7 +489,7 @@ def extract_coeffs_entire_lampflat_frame(image, order_of_poly_fits, second_order
     imagefiltered = ndimage.spline_filter(image.data)
 
     # finding coefficients of traces which fit the echelle orders across the CCD.
-    allcoef, vals, totalnumberoforders = tracesacrossccd(image, imagefiltered, order_of_poly_fits, second_order_coefficient_guess)
+    allcoef, vals, totalnumberoforders = find_all_traces(image, imagefiltered, order_of_poly_fits, second_order_coefficient_guess)
     sortedallcoefs = np.array(allcoef)[np.array(allcoef)[:, 0].argsort()]
     order_indices = np.arange(totalnumberoforders)
     # appending indices 0,1,2...,totalnumberoforders as the first column. prior it is indexed from negative numbers.

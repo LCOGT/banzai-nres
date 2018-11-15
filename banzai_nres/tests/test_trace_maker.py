@@ -359,15 +359,15 @@ class TestFindingTotalFluxAcrossTraces:
     """
     def test_finding_flux_across_single_trace(self):
         tiny_image = TinyFakeImageWithTraces()
-        found_value = trace_utils.crosscoef(tiny_image.legendre_polynomial_coefficients, tiny_image.image_filt,
-                                            tiny_image.x_pixel_coords, tiny_image.legendre_polynomial_array)
+        found_value = trace_utils.negative_flux_across_trace(tiny_image.legendre_polynomial_coefficients, tiny_image.image_filt,
+                                                             tiny_image.x_pixel_coords, tiny_image.legendre_polynomial_array)
         assert np.isclose(found_value, tiny_image.negative_expected_sum_along_trace)
 
     def test_finding_flux_across_single_trace_at_many_points(self):
         tiny_image = TinyFakeImageWithTraces()
         testpoints = np.array([1])
-        found_value = (-1) * trace_utils.fluxvalues(testpoints, [], tiny_image.image_filt, tiny_image.x_pixel_coords,
-                                                    tiny_image.legendre_polynomial_array)[0]
+        found_value = (-1) * trace_utils.flux_across_trace_up_detector(testpoints, [], tiny_image.image_filt, tiny_image.x_pixel_coords,
+                                                                       tiny_image.legendre_polynomial_array)[0]
         assert np.isclose(found_value, tiny_image.negative_expected_sum_along_trace)
 
     def test_finding_total_flux_without_filtered_image_data(self):
