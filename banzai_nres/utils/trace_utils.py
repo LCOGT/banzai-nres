@@ -10,11 +10,9 @@ Every function here is covered by either a unit test or an integration test insi
 """
 
 import numpy as np
-from scipy import ndimage, optimize, interpolate
-from scipy.optimize import curve_fit
+from scipy import ndimage, optimize
 from astropy.table import Table
 import copy
-import itertools
 
 from banzai_nres.utils.array_utils import unique_elements_unordered
 import logging
@@ -500,6 +498,11 @@ def extract_coeffs_entire_lampflat_frame(image, order_of_poly_fits, second_order
 
 
 def exclude_traces_which_jet_off_detector(coefficients_and_indices, image):
+    """
+    :param coefficients_and_indices: ndarray. list of trace polynomial coefficients
+    :param image: Banzai image object.
+    :return: coefficients_and_indices excluding any traces which have discontinuity because they fall off the detector.
+    """
     order_of_poly_fits = coefficients_and_indices.shape[1] - 2
     legendre_polynomial_array, not_needed, not_needed_2 = generate_legendre_array(image.data.shape[1],
                                                                                   order_of_poly_fits)
@@ -510,6 +513,12 @@ def exclude_traces_which_jet_off_detector(coefficients_and_indices, image):
 
 
 def split_and_sort_coefficients_for_each_fiber(coefficients_and_indices, num_lit_fibers):
+    """
+    :param coefficients_and_indices: ndarray. list of trace polynomial coefficients as-is from blind-fitting (e.g. 134 traces,
+    ordered by occurrence, starting from the bottom (red half) of the detector.
+    :param num_lit_fibers: Int. The number of fibers which are lit on the detector (e.g. 2)
+    :return:
+    """
     # cutting of order index column
     coefficients_no_indices = coefficients_and_indices[:, 1:]
 
@@ -530,7 +539,6 @@ def split_and_sort_coefficients_for_each_fiber(coefficients_and_indices, num_lit
 
 
 def fit_traces_order_by_order(image, second_order_coefficient_guess, order_of_poly_fits=4, num_lit_fibers=2):
-    # this is tested under an integration test for the Do_stage of order-by-order fitting
     """
     :param image: Banzai image object
     :param second_order_coefficient_guess: guess for the coefficient of the second order legendre polynomial for
