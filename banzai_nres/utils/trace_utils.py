@@ -346,6 +346,7 @@ def find_all_traces_marching_up_or_down(image, imfilt, x, vals, evaluated_legend
     NOTE: there is no unit test for this, rather this is tested under an integration test for
     the do_stage of order-by-order fitting
     """
+    num_of_orders_found = 0
     done = False
     i = 1
     while not done:
