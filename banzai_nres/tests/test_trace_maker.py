@@ -19,16 +19,16 @@ logger = logging.getLogger(__name__)
 
 class FakeTraceImage(FakeImage):
     """
-    Image must be square and at least 400x400 for trace making integration test to behave. 500x500 is recommended.
+    Image of 500x500 is recommended. Drastic changes to that dimension may break trace testing.
     """
-    def __init__(self, *args, **kwargs):
+    def __init__(self, nx=500, ny=502, *args, **kwargs):
         super(FakeTraceImage, self).__init__(*args, **kwargs)
         self.caltype = 'TRACE'
         self.header = fits.Header()
         self.header['OBSTYPE'] = 'LAMPFLAT'
         self.header['OBJECTS'] = 'tung&tung&none'
-        self.nx = 500
-        self.ny = 502
+        self.nx = nx
+        self.ny = ny
         self.bpm = np.zeros((self.ny, self.nx), dtype=np.uint8)
         self.data = np.zeros((self.ny, self.nx))
 
@@ -442,24 +442,37 @@ class TestTraceMaker:
         output = master_cal_maker.do_stage(images)
         assert output == []
 
+    @mock.patch('banzai_nres.traces.Image')
+    @mock.patch('banzai_nres.traces.dbs.get_master_calibration_image')
+    def test_trace_maker_does_not_crash_on_blank_frame(self, mock_cal, mock_images):
+        readnoise = 11.0
+        order_of_poly_fit = 4
+        images = [FakeTraceImage(nx=100, ny=100)]
+        images[0].readnoise = readnoise
+        noisify_image(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
+        trim_image(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
+        fake_context = FakeContext()
+        fake_context.db_address = ''
+        blind_trace_maker = GenerateInitialGuessForTraceFit(fake_context)
+        blind_trace_maker.always_generate_traces_from_scratch = True
+        mock_cal.return_value = None
+        blind_trace_maker.order_of_poly_fit = order_of_poly_fit
+        images = blind_trace_maker.do_stage(images)
+        assert True
+
 
 @mock.patch('banzai_nres.traces.Image')
 @mock.patch('banzai_nres.traces.dbs.get_master_calibration_image')
 def test_trace_maker(mock_cal, mock_images):
     """
     test type: Integration Test.
-    info: This tests trace making (which involves blind trace making and then refining via meta-fit).
-    Note: The fake images made here must have enough orders N such that N > order_of_meta_fit + 1.
-    Currently it creates ~20 traces so 10 orders. A bigger image would have more traces, but expanding the
-    image size may cause the created traces to be unrealistic. My suggestion is to never change the fake_image size
-    and to keep order_of_meta_fit less than 8. (6 works well so why would you want it larger?)
+    info: This tests trace making via a blind fit.
     WARNING: Because trace fitting is defined with polynomials which are normalized from -1 to 1, if one squeezes
     the x axis of the image further, then the traces bend more drastically. Thus it is recommended you do not change the
     size of the FakeTraceImage.
     """
     readnoise = 11.0
     order_of_poly_fit = 4
-    order_of_meta_fit = 6
 
     images = [FakeTraceImage()]
     images[0].readnoise = readnoise
