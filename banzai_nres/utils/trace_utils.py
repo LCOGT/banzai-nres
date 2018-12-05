@@ -165,8 +165,8 @@ def maxima(A, s, k, ref):
 def negative_flux_across_trace(legendre_polynomial_coefficients, imfilt, x, evaluated_legendre_polynomials):
     """
     :param legendre_polynomial_coefficients: list of legendre polynomial coefficients
-    :param imfilt: ndarray, image.data passed through ndimage.spline_filter
-    :param x: array of the x pixels from [0,1,2,...,im.shape[1]]
+    :param imfilt: ndarray, image_data passed through ndimage.spline_filter if you are using this with scipy optimize.
+            If you just want the total flux, just pass image_data.
     :param evaluated_legendre_polynomials: Legendre polynomial evaluated over -1 to 1 , ndarray.
     :return: The negative of the total flux summed across the trace.
     NOTE: This requires that the input filtered_image_data has been spline filtered by ndimage.spline_filter
@@ -182,7 +182,8 @@ def negative_flux_across_trace(legendre_polynomial_coefficients, imfilt, x, eval
 def flux_across_trace_up_detector(testpoints, legendre_polynomial_coefficients, imfilt, x, evaluated_legendre_polynomials):
     """
     :param legendre_polynomial_coefficients: list of legendre polynomial coefficients excluding 0th order coefficients
-    :param imfilt: ndarray, image.data passed through ndimage.spline_filter
+    :param imfilt: ndarray. image_data passed through ndimage.spline_filter if you are using this with scipy optimize.
+            If you just want the total flux, just pass image_data.
     :param x: array of the x pixels from [0,1,2,...,im.shape[1]]
     :param evaluated_legendre_polynomials: Legendre polynomial evaluated over -1 to 1 , ndarray.
     :return: The positive total flux at each point in testpoints
@@ -194,10 +195,9 @@ def flux_across_trace_up_detector(testpoints, legendre_polynomial_coefficients, 
     return values
 
 
-def generate_initial_guess_for_trace_polynomial(image, imfilt, x, evaluated_legendre_polynomials, order=2, second_order_coefficient_guess=90, lastcoef=None, direction='up'):
+def generate_initial_guess_for_trace_polynomial(image_data, x, evaluated_legendre_polynomials, order=2, second_order_coefficient_guess=90, lastcoef=None, direction='up'):
     """
-    :param image:
-    :param imfilt:
+    :param image_data: Ndarray, image. E.g. image.data for a banzai image object.
     :param x:
     :param evaluated_legendre_polynomials:
     :param order:
@@ -217,7 +217,7 @@ def generate_initial_guess_for_trace_polynomial(image, imfilt, x, evaluated_lege
 
     if lastcoef is None:
         p = [0. for i in range(order + 1)]
-        p[0] = int(imfilt.shape[0]/3)
+        p[0] = int(image_data.shape[0]/3)
         if order >= 2:
             p[2] = second_order_coefficient_guess
         coeffsguess = copy.deepcopy(p)
@@ -236,8 +236,8 @@ def generate_initial_guess_for_trace_polynomial(image, imfilt, x, evaluated_lege
         elif direction == 'inplace':
             testpoints = list(range(p0 - 10, p0 + 10))
 
-        fluxvals = flux_across_trace_up_detector(testpoints, p, image.data, x, evaluated_legendre_polynomials)
-        refflux = max((-1) * negative_flux_across_trace(lastcoef, image.data, x, evaluated_legendre_polynomials), max(fluxvals))
+        fluxvals = flux_across_trace_up_detector(testpoints, p, image_data, x, evaluated_legendre_polynomials)
+        refflux = max((-1) * negative_flux_across_trace(lastcoef, image_data, x, evaluated_legendre_polynomials), max(fluxvals))
 
         deltap0guess, maximum_exists = maxima(fluxvals, 5, 1 / 20, refflux)
 
@@ -252,9 +252,9 @@ def generate_initial_guess_for_trace_polynomial(image, imfilt, x, evaluated_lege
     return coeffsguess, maximum_exists, refflux
 
 
-def find_order(image, imfilt, x, evaluated_legendre_polynomials, order=2, second_order_coefficient_guess=90, lastcoef=None, direction='up'):
+def find_order(image_data, imfilt, x, evaluated_legendre_polynomials, order=2, second_order_coefficient_guess=90, lastcoef=None, direction='up'):
     """
-    :param image: banzai image object.
+    :param image_data: Ndarray. Image_data e.g. image.data if image is a banzai image object.
     :param imfilt: ndarray, image.data passed through ndimage.spline_filter
     :param x: array of the x pixels from [0,1,2,...,im.shape[1]]
     :param evaluated_legendre_polynomials: Legendre polynomial evaluated over -1 to 1 , ndarray.
@@ -273,7 +273,7 @@ def find_order(image, imfilt, x, evaluated_legendre_polynomials, order=2, second
     NOTE: there is no unit test for this, rather this is tested under an integration test for
     the do_stage of order-by-order fitting
     """
-    coeffsguess, maximum_exists, refflux = generate_initial_guess_for_trace_polynomial(image, imfilt, x,
+    coeffsguess, maximum_exists, refflux = generate_initial_guess_for_trace_polynomial(image_data, x,
                                                 evaluated_legendre_polynomials, order=order,
                                                 second_order_coefficient_guess=second_order_coefficient_guess,
                                                 lastcoef=lastcoef, direction=direction)
@@ -329,9 +329,9 @@ def validate_fit_and_trim_erroneous_fits(coef, allcoef, loop_counter, length, ma
     return num_of_orders_found, allcoef, done
 
 
-def find_all_traces_marching_up_or_down(image, imfilt, x, vals, evaluated_legendre_polynomials, length, order_of_poly_fit, coef, allcoef, direction='up'):
+def find_all_traces_marching_up_or_down(image_data, imfilt, x, vals, evaluated_legendre_polynomials, length, order_of_poly_fit, coef, allcoef, direction='up'):
     """
-    :param image:
+    :param image_data: Ndarray. image_data e.g. image.data if image is a banzai image object.
     :param imfilt:
     :param x:
     :param vals:
@@ -350,7 +350,7 @@ def find_all_traces_marching_up_or_down(image, imfilt, x, vals, evaluated_legend
     done = False
     i = 1
     while not done:
-        coef, val, maximum_exists = find_order(image, imfilt, x, evaluated_legendre_polynomials, order=order_of_poly_fit,
+        coef, val, maximum_exists = find_order(image_data, imfilt, x, evaluated_legendre_polynomials, order=order_of_poly_fit,
                                                lastcoef=coef, direction=direction)
         vals += [val]
         if direction == 'up':
@@ -363,10 +363,10 @@ def find_all_traces_marching_up_or_down(image, imfilt, x, vals, evaluated_legend
     return num_of_orders_found, allcoef, coef, vals
 
 
-def find_all_traces(image, imfilt, order_of_poly_fit, second_order_coefficient_guess):
+def find_all_traces(image_data, imfilt, order_of_poly_fit, second_order_coefficient_guess):
 
     """
-    :param image: banzai image object
+    :param image_data: Ndarray. Image_data e.g. image.data if image is a banzai image object.
     :param imfilt: ndarray, image.data passed through ndimage.spline_filter
     :param order_of_poly_fit: order of the polynomial fit.
     :param second_order_coefficient_guess: coefficient guess for the second order legendre polynomial which
@@ -376,7 +376,7 @@ def find_all_traces(image, imfilt, order_of_poly_fit, second_order_coefficient_g
     NOTE: there is no unit test for this, rather this is tested under an integration test for
     the do_stage of order-by-order fitting
     """
-    length, width = image.data.shape
+    length, width = image_data.shape
 
     evaluated_legendre_polynomials, x, xnorm = generate_legendre_array(width, order_of_poly_fit)
 
@@ -389,7 +389,7 @@ def find_all_traces(image, imfilt, order_of_poly_fit, second_order_coefficient_g
     for i in range(2, order_of_poly_fit + 1):
         if coef is not None:
             coef = list(coef) + [0]
-        coef, val, maximum_exists = find_order(image, imfilt, x, evaluated_legendre_polynomials, order=i,
+        coef, val, maximum_exists = find_order(image_data, imfilt, x, evaluated_legendre_polynomials, order=i,
                                                second_order_coefficient_guess=second_order_coefficient_guess, lastcoef=coef,
                                                direction='inplace')
 
@@ -397,12 +397,12 @@ def find_all_traces(image, imfilt, order_of_poly_fit, second_order_coefficient_g
     initcoef = copy.deepcopy(coef)
     allcoef = [[0] + list(coef)]
 
-    ordersabove, allcoef, coef, vals = find_all_traces_marching_up_or_down(image, imfilt, x, vals,
+    ordersabove, allcoef, coef, vals = find_all_traces_marching_up_or_down(image_data, imfilt, x, vals,
                                                                            evaluated_legendre_polynomials, length,
                                                                            order_of_poly_fit, coef, allcoef,
                                                                            direction='up')
 
-    ordersbelow, allcoef, coef, vals = find_all_traces_marching_up_or_down(image, imfilt, x, vals,
+    ordersbelow, allcoef, coef, vals = find_all_traces_marching_up_or_down(image_data, imfilt, x, vals,
                                                                            evaluated_legendre_polynomials, length,
                                                                            order_of_poly_fit, initcoef, allcoef,
                                                                            direction='down')
@@ -488,7 +488,7 @@ def extract_coeffs_entire_lampflat_frame(image, order_of_poly_fits, second_order
     imagefiltered = ndimage.spline_filter(image.data)
 
     # finding coefficients of traces which fit the echelle orders across the CCD.
-    allcoef, vals, totalnumberoforders = find_all_traces(image, imagefiltered, order_of_poly_fits, second_order_coefficient_guess)
+    allcoef, vals, totalnumberoforders = find_all_traces(image.data, imagefiltered, order_of_poly_fits, second_order_coefficient_guess)
     sortedallcoefs = np.array(allcoef)[np.array(allcoef)[:, 0].argsort()]
     order_indices = np.arange(totalnumberoforders)
     # appending indices 0,1,2...,totalnumberoforders as the first column. prior it is indexed from negative numbers.

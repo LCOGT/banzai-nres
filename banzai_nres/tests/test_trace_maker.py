@@ -141,11 +141,10 @@ class TestUnitBlindFitAlgorithms:
     def test_generating_initial_guess_for_next_blind_fit_given_no_previous_fit(self):
         fake_image_data = np.zeros((10, 10))
         expected_coefficient_guess = [int(fake_image_data.shape[0]/3), 0, 90]
-        coeff_guess, max_exists, refflux = trace_utils.generate_initial_guess_for_trace_polynomial(image=None,
-                                                                imfilt=fake_image_data, x=None,
-                                                                evaluated_legendre_polynomials=None, order=2,
-                                                                second_order_coefficient_guess=expected_coefficient_guess[2],
-                                                                lastcoef=None, direction='up')
+        coeff_guess, max_exists, refflux = trace_utils.generate_initial_guess_for_trace_polynomial(image_data=None, x=None,
+                                                                                                   evaluated_legendre_polynomials=None, order=2,
+                                                                                                   second_order_coefficient_guess=expected_coefficient_guess[2],
+                                                                                                   lastcoef=None, direction='up')
         assert max_exists
         assert coeff_guess == expected_coefficient_guess
 
@@ -161,11 +160,10 @@ class TestUnitBlindFitAlgorithms:
             coefficients_of_last_fit = [int(image.data.shape[0] * start_location), 0]
             evaluated_legendre_polynomials, x_coords, xnorm = trace_utils.generate_legendre_array(image.data.shape[1],
                                                                                                   order_of_poly_fits=1)
-            coeff_guess, max_exists, refflux = trace_utils.generate_initial_guess_for_trace_polynomial(image=image,
-                                                                    imfilt=image_data_filtered, x=x_coords,
-                                                                    evaluated_legendre_polynomials=evaluated_legendre_polynomials,
-                                                                    order=1, lastcoef=coefficients_of_last_fit,
-                                                                    direction=direction)
+            coeff_guess, max_exists, refflux = trace_utils.generate_initial_guess_for_trace_polynomial(image_data=image, x=x_coords,
+                                                                                                       evaluated_legendre_polynomials=evaluated_legendre_polynomials,
+                                                                                                       order=1, lastcoef=coefficients_of_last_fit,
+                                                                                                       direction=direction)
             assert max_exists
             assert np.isclose(coeff_guess[0], expected_guess * image.data.shape[0], atol=5, rtol=0)
 
