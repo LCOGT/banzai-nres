@@ -151,8 +151,6 @@ class TestUnitBlindFitAlgorithms:
     def test_generating_initial_guess_for_next_blind_fit(self):
         image = generate_image_with_two_flat_traces(nx=100, ny=100)
 
-        image_data_filtered = ndimage.spline_filter(image.data)
-
         start_locations = [1/2, 1/2, 1/3]
         expected_0th_order_next_guesses = [1/3, 2/3, 1/3]
         directions = ['down', 'up', 'inplace']
@@ -160,7 +158,7 @@ class TestUnitBlindFitAlgorithms:
             coefficients_of_last_fit = [int(image.data.shape[0] * start_location), 0]
             evaluated_legendre_polynomials, x_coords, xnorm = trace_utils.generate_legendre_array(image.data.shape[1],
                                                                                                   order_of_poly_fits=1)
-            coeff_guess, max_exists, refflux = trace_utils.generate_initial_guess_for_trace_polynomial(image_data=image, x=x_coords,
+            coeff_guess, max_exists, refflux = trace_utils.generate_initial_guess_for_trace_polynomial(image_data=image.data, x=x_coords,
                                                                                                        evaluated_legendre_polynomials=evaluated_legendre_polynomials,
                                                                                                        order=1, lastcoef=coefficients_of_last_fit,
                                                                                                        direction=direction)
