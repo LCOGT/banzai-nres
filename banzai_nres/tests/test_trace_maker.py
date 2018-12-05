@@ -141,7 +141,7 @@ class TestUnitBlindFitAlgorithms:
     def test_generating_initial_guess_for_next_blind_fit_given_no_previous_fit(self):
         fake_image_data = np.zeros((10, 10))
         expected_coefficient_guess = [int(fake_image_data.shape[0]/3), 0, 90]
-        coeff_guess, max_exists, refflux = trace_utils.generate_initial_guess_for_trace_polynomial(image_data=None, x=None,
+        coeff_guess, max_exists, refflux = trace_utils.generate_initial_guess_for_trace_polynomial(image_data=fake_image_data, x=None,
                                                                                                    evaluated_legendre_polynomials=None, order=2,
                                                                                                    second_order_coefficient_guess=expected_coefficient_guess[2],
                                                                                                    lastcoef=None, direction='up')
