@@ -136,7 +136,7 @@ def test_finding_first_statistically_significant_maxima():
 
 class TestUnitBlindFitAlgorithms:
     """
-    Unit tests for various algorithms involved with blind-fitting via the order-by-order technique.
+    Unit tests for various algorithms involved with blind-fitting via the order-by-order technique. b
     """
     def test_generating_initial_guess_for_next_blind_fit_given_no_previous_fit(self):
         fake_image_data = np.zeros((10, 10))
