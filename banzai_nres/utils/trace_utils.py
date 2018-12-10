@@ -281,17 +281,17 @@ def find_order(image_data, imfilt, x, evaluated_legendre_polynomials, order=2, s
     if maximum_exists:
         p1 = optimize.minimize(negative_flux_across_trace, coeffsguess, (imfilt, x, evaluated_legendre_polynomials), method='Powell').x
 
-        val = -1 * negative_flux_across_trace(p1, imfilt, x, evaluated_legendre_polynomials)
+        summed_flux_value = -1 * negative_flux_across_trace(p1, imfilt, x, evaluated_legendre_polynomials)
     else:
-        p1, val = lastcoef, refflux
+        p1, summed_flux_value = lastcoef, refflux
 
-    return p1, val, maximum_exists
+    return p1, summed_flux_value, maximum_exists
 
 
-def validate_fit_and_trim_erroneous_fits(coef, allcoef, loop_counter, length, maximum_exists, done, direction='up'):
+def validate_fit_and_trim_erroneous_fits(last_fit_coefficients, all_fit_coefficients, loop_counter, length, maximum_exists, done, direction='up'):
     """
-    :param coef: coefficients for the trace fit (without index) of the last fit.
-    :param allcoef: list of coefficients for all the previous fits (with index).
+    :param last_fit_coefficients: coefficients for the trace fit (without index) of the last fit.
+    :param all_fit_coefficients: list of coefficients for all the previous fits (with index).
     :param loop_counter: the counter i inside of find_all_traces_marching_up_or_down
     :param length: the height of the image.data (i.e. vertical extent of the image)
     :param maximum_exists: True or False whether generate_initial_guess_for_trace_polynomial decided there exists
@@ -306,40 +306,40 @@ def validate_fit_and_trim_erroneous_fits(coef, allcoef, loop_counter, length, ma
     """
     num_of_orders_found = None
     if direction == 'up':
-        if (coef[0] < allcoef[-2][1] or coef[0] > length) and maximum_exists:
-            allcoef = allcoef[:-1]  # delete bad fit
+        if (last_fit_coefficients[0] < all_fit_coefficients[-2][1] or last_fit_coefficients[0] > length) and maximum_exists:
+            all_fit_coefficients = all_fit_coefficients[:-1]  # delete bad fit
             num_of_orders_found = loop_counter - 1
             done = True
 
     if direction == 'down':
-        if (coef[0] < 0 or coef[0] > allcoef[-2][1]) and maximum_exists:
-            allcoef = allcoef[:-1]  # delete bad fit
+        if (last_fit_coefficients[0] < 0 or last_fit_coefficients[0] > all_fit_coefficients[-2][1]) and maximum_exists:
+            all_fit_coefficients = all_fit_coefficients[:-1]  # delete bad fit
             num_of_orders_found = loop_counter - 1
             done = True
 
     if loop_counter >= 2 and maximum_exists and not done:
-        if abs(coef[0] - allcoef[-2][1]) < 1 and abs(coef[0] - allcoef[-3][1]) < 1:
-            allcoef = allcoef[:-2]  # delete repeated fits
+        if abs(last_fit_coefficients[0] - all_fit_coefficients[-2][1]) < 1 and abs(last_fit_coefficients[0] - all_fit_coefficients[-3][1]) < 1:
+            all_fit_coefficients = all_fit_coefficients[:-2]  # delete repeated fits
             num_of_orders_found = loop_counter - 2
             done = True
     if not maximum_exists:
         done = True
-        allcoef = allcoef[:-1]  # delete duplicate fit
+        all_fit_coefficients = all_fit_coefficients[:-1]  # delete duplicate fit
         num_of_orders_found = loop_counter - 1
-    return num_of_orders_found, allcoef, done
+    return num_of_orders_found, all_fit_coefficients, done
 
 
-def find_all_traces_marching_up_or_down(image_data, imfilt, x, vals, evaluated_legendre_polynomials, length, order_of_poly_fit, coef, allcoef, direction='up'):
+def find_all_traces_marching_up_or_down(image_data, imfilt, x, summed_flux_values, evaluated_legendre_polynomials, length, order_of_poly_fit, last_fit_coefficients, all_fit_coefficients, direction='up'):
     """
     :param image_data: Ndarray. image_data e.g. image.data if image is a banzai image object.
     :param imfilt:
     :param x:
-    :param vals:
+    :param summed_flux_values:
     :param evaluated_legendre_polynomials:
     :param length:
     :param order_of_poly_fit:
-    :param coef:
-    :param allcoef:
+    :param last_fit_coefficients:
+    :param all_fit_coefficients:
     :param direction:
     :return:
 
@@ -350,17 +350,17 @@ def find_all_traces_marching_up_or_down(image_data, imfilt, x, vals, evaluated_l
     done = False
     i = 1
     while not done:
-        coef, val, maximum_exists = find_order(image_data, imfilt, x, evaluated_legendre_polynomials, order=order_of_poly_fit,
-                                               lastcoef=coef, direction=direction)
-        vals += [val]
+        last_fit_coefficients, summed_flux_value, maximum_exists = find_order(image_data, imfilt, x, evaluated_legendre_polynomials, order=order_of_poly_fit,
+                                                                lastcoef=last_fit_coefficients, direction=direction)
+        summed_flux_values += [summed_flux_value]
         if direction == 'up':
-            allcoef += [[i] + list(coef)]
+            all_fit_coefficients += [[i] + list(last_fit_coefficients)]
         if direction == 'down':
-            allcoef += [[-i] + list(coef)]
-        num_of_orders_found, allcoef, done = validate_fit_and_trim_erroneous_fits(coef, allcoef, i, length,
-                                                                                  maximum_exists, done, direction=direction)
+            all_fit_coefficients += [[-i] + list(last_fit_coefficients)]
+        num_of_orders_found, all_fit_coefficients, done = validate_fit_and_trim_erroneous_fits(last_fit_coefficients, all_fit_coefficients, i, length,
+                                                                                               maximum_exists, done, direction=direction)
         i += 1
-    return num_of_orders_found, allcoef, coef, vals
+    return num_of_orders_found, all_fit_coefficients, last_fit_coefficients, summed_flux_values
 
 
 def find_all_traces(image_data, imfilt, order_of_poly_fit, second_order_coefficient_guess):
@@ -389,25 +389,25 @@ def find_all_traces(image_data, imfilt, order_of_poly_fit, second_order_coeffici
     for i in range(2, order_of_poly_fit + 1):
         if coef is not None:
             coef = list(coef) + [0]
-        coef, val, maximum_exists = find_order(image_data, imfilt, x, evaluated_legendre_polynomials, order=i,
+        coef, summed_flux_value, maximum_exists = find_order(image_data, imfilt, x, evaluated_legendre_polynomials, order=i,
                                                second_order_coefficient_guess=second_order_coefficient_guess, lastcoef=coef,
                                                direction='inplace')
 
-    vals = [val]
+    summed_flux_values = [summed_flux_value]
     initcoef = copy.deepcopy(coef)
-    allcoef = [[0] + list(coef)]
+    all_trace_coefficients = [[0] + list(coef)]
 
-    ordersabove, allcoef, coef, vals = find_all_traces_marching_up_or_down(image_data, imfilt, x, vals,
+    ordersabove, all_trace_coefficients, coef, summed_flux_values = find_all_traces_marching_up_or_down(image_data, imfilt, x, summed_flux_values,
                                                                            evaluated_legendre_polynomials, length,
-                                                                           order_of_poly_fit, coef, allcoef,
+                                                                           order_of_poly_fit, coef, all_trace_coefficients,
                                                                            direction='up')
 
-    ordersbelow, allcoef, coef, vals = find_all_traces_marching_up_or_down(image_data, imfilt, x, vals,
+    ordersbelow, all_trace_coefficients, coef, summed_flux_values = find_all_traces_marching_up_or_down(image_data, imfilt, x, summed_flux_values,
                                                                            evaluated_legendre_polynomials, length,
-                                                                           order_of_poly_fit, initcoef, allcoef,
+                                                                           order_of_poly_fit, initcoef, all_trace_coefficients,
                                                                            direction='down')
 
-    return allcoef, vals, ordersabove + ordersbelow + 1
+    return all_trace_coefficients, summed_flux_values, ordersabove + ordersbelow + 1
 
 
 def generate_legendre_array(image_width, order_of_poly_fits):
