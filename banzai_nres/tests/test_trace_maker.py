@@ -1,6 +1,6 @@
 import pytest
 from unittest import mock
-from banzai_nres.traces import GenerateInitialGuessForTraceFit, TraceMaker
+from banzai_nres.traces import InitialTraceFit, TraceMaker
 from banzai.tests.utils import FakeContext
 
 from scipy import ndimage
@@ -449,7 +449,7 @@ class TestTraceMaker:
         trim_image(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
         fake_context = FakeContext()
         fake_context.db_address = ''
-        blind_trace_maker = GenerateInitialGuessForTraceFit(fake_context)
+        blind_trace_maker = InitialTraceFit(fake_context)
         blind_trace_maker.always_generate_traces_from_scratch = True
         mock_cal.return_value = None
         blind_trace_maker.order_of_poly_fit = order_of_poly_fit
@@ -484,7 +484,7 @@ def test_trace_maker(mock_cal, mock_images):
     fake_context.db_address = ''
 
     for force_traces_from_scratch, value in zip([True, False], [None, '']):
-        blind_trace_maker = GenerateInitialGuessForTraceFit(fake_context)
+        blind_trace_maker = InitialTraceFit(fake_context)
         blind_trace_maker.always_generate_traces_from_scratch = force_traces_from_scratch
         mock_cal.return_value = value
 

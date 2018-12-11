@@ -98,7 +98,7 @@ class TraceMaker(CalibrationMaker):
         return [master_trace_calibration]
 
 
-class GenerateInitialGuessForTraceFit(Stage):
+class InitialTraceFit(Stage):
     """
     Loads trace coefficients from file and appends them onto the image object.
     If no master file is found or self.always_generate_traces_from_scratch, then it will do a blind fit:
@@ -116,7 +116,7 @@ class GenerateInitialGuessForTraceFit(Stage):
     if you want to do a fit onto every image in the stack.
     """
     def __init__(self, pipeline_context):
-        super(GenerateInitialGuessForTraceFit, self).__init__(pipeline_context)
+        super(InitialTraceFit, self).__init__(pipeline_context)
         self.pipeline_context = pipeline_context
         self.always_generate_traces_from_scratch = False
         self.order_of_poly_fit = 4
@@ -171,14 +171,11 @@ class GenerateInitialGuessForTraceFit(Stage):
         :return: The coefficients and indices (ndarray), and fiber order tuple from the nearest master trace file.
         """
         coefficients_and_indices, fiber_order = None, None
-        master_trace_does_not_exist = True
         master_trace_full_path = dbs.get_master_calibration_image(image, self.calibration_type,
                                                                   self.group_by_keywords,
                                                                   db_address=self.pipeline_context.db_address)
-        if master_trace_full_path is not None and os.path.exists(master_trace_full_path):
-            master_trace_does_not_exist = False
 
-        if master_trace_does_not_exist:
+        if master_trace_full_path is None or not os.path.exists(master_trace_full_path):
             logger.error('Master trace fit file not found, will '
                          'attempt a blind fit on file {0}.'.format(image.filename))
 
