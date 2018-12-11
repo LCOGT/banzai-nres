@@ -456,20 +456,6 @@ def get_coefficients_from_meta(allmetacoeffs, stpolyarr):
     return np.dot(allmetacoeffs, stpolyarr).T
 
 
-def legpolynomial(normxaxis, *metacoeffs):
-    """
-    legendre polynomial suitable for use in scipy.curve_fit
-    :param normxaxis: the normalized axis from -1 to 1 which forms the domain of the legendre polynomial
-    :param metacoeffs: metacoefficients cast as a tuple
-    :return:
-    """
-    polyorder = len(metacoeffs)
-    y = normxaxis * 0.
-    for i in range(polyorder):
-        y += metacoeffs[i] * np.polynomial.legendre.legval(normxaxis, [0 for j in range(i)] + [1])
-    return y
-
-
 def extract_coeffs_entire_lampflat_frame(image, order_of_poly_fits, second_order_coefficient_guess):
     """
     This extracts the trace coefficients for each bright order of a frame. This is only stable for lampflat frames.
