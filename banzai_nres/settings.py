@@ -26,7 +26,7 @@ class NRESSettings(Settings):
 
     CALIBRATION_SET_CRITERIA = {'BIAS': ['ccdsum'],
                                 'DARK': ['ccdsum'],
-                                'LAMPFLAT': ['ccdsum', 'fiber_state']}
+                                'LAMPFLAT': ['ccdsum', 'fibers_state']}
 
     CALIBRATION_IMAGE_TYPES = ['BIAS', 'DARK', 'LAMPFLAT']
 
