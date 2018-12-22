@@ -32,7 +32,7 @@ class NRESSettings(Settings):
 
     LAST_STAGE = {'BIAS': trim.Trimmer,
                   'DARK': bias.BiasSubtractor,
-                  'FLAT': dark.DarkSubtractor}
+                  'LAMPFLAT': dark.DarkSubtractor}
 
     EXTRA_STAGES = {'BIAS': [bias.BiasMasterLevelSubtractor, bias.BiasComparer, bias.BiasMaker],
                     'DARK': [dark.DarkNormalizer, dark.DarkComparer, dark.DarkMaker],
