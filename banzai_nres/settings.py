@@ -10,7 +10,7 @@ from banzai_nres.flats import FlatStacker
 class NRESSettings(Settings):
     FRAME_CLASS = NRESImage
 
-    FRAME_SELECTION_CRITERIA = [InstrumentCriterion('camera_type', operator.contains, 'NRES')]
+    FRAME_SELECTION_CRITERIA = [InstrumentCriterion('type', operator.contains, 'NRES')]
 
     ORDERED_STAGES = [bpm.BPMUpdater,
                       qc.HeaderSanity,
