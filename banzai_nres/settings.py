@@ -13,8 +13,6 @@ class NRESSettings(Settings):
     FRAME_SELECTION_CRITERIA = [InstrumentCriterion('type', operator.contains, 'NRES')]
 
     ORDERED_STAGES = [bpm.BPMUpdater,
-                      qc.HeaderSanity,
-                      qc.ThousandsTest,
                       qc.SaturationTest,
                       bias.OverscanSubtractor,
                       gain.GainNormalizer,
