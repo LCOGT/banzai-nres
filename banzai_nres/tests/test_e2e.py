@@ -1,5 +1,5 @@
 import pytest
-from banzai.dbs import create_db, populate_bpm_table
+from banzai.dbs import create_db, populate_calibration_table_with_bpms
 import os
 import numpy as np
 import shutil
@@ -58,8 +58,8 @@ def setup_module(module):
                    telescope_name='nres02', site_name='elp')
 
     # adding the bpm folder to database and populating the sqlite tables.
-    populate_bpm_table('/archive/engineering/lsc/nres01/bpm', db_address=os.environ['DB_URL'])
-    populate_bpm_table('/archive/engineering/elp/nres02/bpm', db_address=os.environ['DB_URL'])
+    populate_calibration_table_with_bpms('/archive/engineering/lsc/nres01/bpm', db_address=os.environ['DB_URL'])
+    populate_calibration_table_with_bpms('/archive/engineering/elp/nres02/bpm', db_address=os.environ['DB_URL'])
 
 
 @pytest.mark.e2e

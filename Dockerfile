@@ -1,25 +1,12 @@
-FROM python:3.6.6-slim-jessie
+FROM docker.lco.global/banzai:0.15.1-39-g58f2ed9
 ENTRYPOINT  ["/bin/bash", "-c", "while true; do sleep 100; done"]
 USER root
-
-RUN apt-get update && apt-get -y --no-install-recommends install build-essential git libcfitsio-bin \
-        && rm -rf /var/lib/apt/lists/*
-
-RUN pip install numpy Cython && rm -rf ~/.cache/pip
-
-RUN git clone https://github.com/kbarbary/sep.git /usr/src/sep
-WORKDIR /usr/src/sep
-RUN python setup.py install
 
 WORKDIR /lco/banzai-nres
 
 COPY . /lco/banzai-nres
 
 RUN python /lco/banzai-nres/setup.py install
-
-RUN mkdir /home/archive && /usr/sbin/groupadd -g 10000 "domainusers" \
-        && /usr/sbin/useradd -g 10000 -d /home/archive -M -N -u 10087 archive \
-        && chown -R archive:domainusers /home/archive
 
 USER archive
 

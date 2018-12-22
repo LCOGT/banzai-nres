@@ -10,12 +10,8 @@ class FibersState(object):
         fiber_states_match &= fiber_state.fiber2_lit == self.fiber2_lit
         return fiber_states_match
 
-    def encode_for_db(self):
-        return (1 * self.fiber0_lit) | (2 * self.fiber1_lit) | (4 * self.fiber2_lit)
-
-    @classmethod
-    def from_db(cls, db_value):
-        return cls(bool(db_value & 1), bool(db_value & 2), bool(db_value & 4))
+    def __str__(self):
+        return str(int(self.fiber0_lit)) + str(int(self.fiber1_lit)) + str(int(self.fiber2_lit))
 
     @classmethod
     def from_header(cls, header):

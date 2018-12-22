@@ -1,35 +1,41 @@
+from banzai.settings import Settings
+from banzai.context import InstrumentCriterion
 from banzai_nres.images import NRESImage
-from banzai import settings
-from banzai.context import TelescopeCriterion
+
 import operator
 from banzai import bias, trim, dark, gain, bpm, qc
-import banzai_nres.bias as nres_bias
-import banzai_nres.dark as nres_dark
 from banzai_nres.flats import FlatStacker
 
-NRES_CRITERIA = [TelescopeCriterion('camera_type', operator.contains, 'NRES'),
-                 TelescopeCriterion('schedulable', operator.eq, True)]
 
-settings.ORDERED_STAGES = [bpm.BPMUpdater,
-                           qc.HeaderSanity,
-                           qc.ThousandsTest,
-                           qc.SaturationTest,
-                           bias.OverscanSubtractor,
-                           gain.GainNormalizer,
-                           trim.Trimmer,
-                           bias.BiasSubtractor,
-                           dark.DarkSubtractor]
+class NRESSettings(Settings):
+    FRAME_CLASS = NRESImage
 
-BIAS_IMAGE_TYPES = ['BIAS']
-BIAS_LAST_STAGE = trim.Trimmer
-BIAS_EXTRA_STAGES = [bias.BiasMasterLevelSubtractor, bias.BiasComparer, nres_bias.BiasMaker]
+    FRAME_SELECTION_CRITERIA = [InstrumentCriterion('camera_type', operator.contains, 'NRES')]
 
-DARK_IMAGE_TYPES = ['DARK']
-DARK_LAST_STAGE = bias.BiasSubtractor
-DARK_EXTRA_STAGES = [dark.DarkNormalizer, dark.DarkComparer, nres_dark.DarkMaker]
+    ORDERED_STAGES = [bpm.BPMUpdater,
+                      qc.HeaderSanity,
+                      qc.ThousandsTest,
+                      qc.SaturationTest,
+                      bias.OverscanSubtractor,
+                      gain.GainNormalizer,
+                      trim.Trimmer,
+                      bias.BiasSubtractor,
+                      dark.DarkSubtractor]
 
-FLAT_IMAGE_TYPES = ['LAMPFLAT']
-FLAT_LAST_STAGE = dark.DarkSubtractor
-FLAT_EXTRA_STAGES = [FlatStacker]
+    CALIBRATION_MIN_IMAGES = {'BIAS': 5,
+                              'DARK': 3,
+                              'LAMPFLAT': 5}
 
-IMAGE_CLASS = NRESImage
+    CALIBRATION_SET_CRITERIA = {'BIAS': ['ccdsum'],
+                                'DARK': ['ccdsum'],
+                                'LAMPFLAT': ['ccdsum', 'fiber_state']}
+
+    CALIBRATION_IMAGE_TYPES = ['BIAS', 'DARK', 'LAMPFLAT']
+
+    LAST_STAGE = {'BIAS': trim.Trimmer,
+                  'DARK': bias.BiasSubtractor,
+                  'FLAT': dark.DarkSubtractor}
+
+    EXTRA_STAGES = {'BIAS': [bias.BiasMasterLevelSubtractor, bias.BiasComparer, bias.BiasMaker],
+                    'DARK': [dark.DarkNormalizer, dark.DarkComparer, dark.DarkMaker],
+                    'LAMPFLAT': [FlatStacker]}
