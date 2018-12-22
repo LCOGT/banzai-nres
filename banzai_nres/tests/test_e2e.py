@@ -70,9 +70,9 @@ def test_e2e():
     site = 'lsc'
     epoch = '20180311'
 
-    expected_bias_filename = 'bias_' + instrument + '_' + epoch + '_bin1x1.fits'
-    expected_dark_filename = 'dark_' + instrument + '_' + epoch + '_bin1x1.fits'
-    expected_flat_filename = 'lampflat_' + instrument + '_' + epoch + '_bin1x1.fits'
+    expected_bias_filename = 'lscnres01-nres01-20180311-bias-bin1x1.fits'
+    expected_dark_filename = 'lscnres01-nres01-20180311-dark-bin1x1.fits'
+    expected_flat_filename = 'lscnres01-nres01-20180311-lampflat-bin1x1.fits'
     expected_processed_path = os.path.join('/tmp', site, instrument, epoch, 'processed')
 
     # executing the master bias maker as one would from the command line.
