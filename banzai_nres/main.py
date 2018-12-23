@@ -1,11 +1,11 @@
 """
 main.py: Main driver script for the banzai-NRES pipeline.
-    The make_master_bias_console() and make_master_dark_console() are the entry points.
+    make_master_bias(), make_master_dark() and make_master_trace() are entry points.
 Authors
     Curtis McCully (cmccully@lcogt.net)
-July 2018
+
     G. Mirek Brandt (gmbrandt@ucsb.edu)
-July 2018
+December 2018
 """
 
 from banzai_nres.bias import BiasMaker as nres_BiasMaker

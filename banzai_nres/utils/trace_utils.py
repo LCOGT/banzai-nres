@@ -5,8 +5,6 @@ Authors
     G. Mirek Brandt (gmbrandt@ucsb.edu)
 
     Tim Brandt (tbrandt@physics.ucsb.edu)
-
-Every function here is covered by either a unit test or an integration test inside of tests/test_trace_maker.py
 """
 
 import numpy as np
