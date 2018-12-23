@@ -43,6 +43,18 @@ def test_fiber_states_not_equal_and_inequalities():
     assert f1 > f2
 
 
+def test_fiber_states_hash_and_are_unique():
+    state_count = len(set([FibersState(True, True, True),
+                            FibersState(True, True, False),
+                            FibersState(True, False, True),
+                            FibersState(False, True, True),
+                            FibersState(False, False, True),
+                            FibersState(True, False, False),
+                            FibersState(False, True, False),
+                            FibersState(False, False, False)]))
+    assert state_count == 8
+
+
 def test_on_off_off_str():
     fibers_state = FibersState(True, False, False)
     assert str(fibers_state) == '100'

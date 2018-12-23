@@ -26,6 +26,9 @@ class FibersState(object):
     def __le__(self, fiber_state):
         return self.__lt__(fiber_state) or self.__eq__(fiber_state)
 
+    def __hash__(self):
+        return self.fiber_value()
+
     def __str__(self):
         return str(int(self.fiber0_lit)) + str(int(self.fiber1_lit)) + str(int(self.fiber2_lit))
 
