@@ -5,30 +5,42 @@ def test_fiber_states_equal():
     f1 = FibersState(True, False, False)
     f2 = FibersState(True, False, False)
     assert f1 == f2
+    assert f1 >= f2
+    assert f1 <= f2
     f1 = FibersState(True, True, False)
     f2 = FibersState(True, True, False)
     assert f1 == f2
+    assert f1 >= f2
+    assert f1 <= f2
     f1 = FibersState(True, False, True)
     f2 = FibersState(True, False, True)
     assert f1 == f2
+    assert f1 >= f2
+    assert f1 <= f2
     f1 = FibersState(False, False, True)
     f2 = FibersState(False, False, True)
     assert f1 == f2
+    assert f1 >= f2
+    assert f1 <= f2
 
 
-def test_fiber_states_not_equal():
+def test_fiber_states_not_equal_and_inequalities():
     f1 = FibersState(True, True, False)
     f2 = FibersState(True, False, False)
     assert f1 != f2
+    assert f1 > f2
     f1 = FibersState(False, True, False)
     f2 = FibersState(True, True, False)
     assert f1 != f2
+    assert f1 < f2
     f1 = FibersState(True, False, True)
     f2 = FibersState(True, False, False)
     assert f1 != f2
+    assert f1 > f2
     f1 = FibersState(False, False, True)
     f2 = FibersState(False, False, False)
     assert f1 != f2
+    assert f1 > f2
 
 
 def test_on_off_off_str():
