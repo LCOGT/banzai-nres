@@ -91,7 +91,7 @@ def test_e2e():
         assert hdu_list[0].data.shape is not None
         assert hdu_list['BPM'].data.shape == hdu_list[1].data.shape
 
-    # executing the master dark maker as one would from the command line.
+    # executing the master flat maker as one would from the command line.
     os.system('make_master_flat --db-address {0} --raw-path {1} --ignore-schedulability '
               '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
 
