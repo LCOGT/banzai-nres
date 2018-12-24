@@ -96,7 +96,7 @@ def test_e2e():
     # executing the master flat maker as one would from the command line.
     os.system('make_master_flat --db-address {0} --raw-path {1} --ignore-schedulability '
               '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
-    
+
     for expected_flat_filename in expected_flat_filenames:
         with fits.open(os.path.join(expected_processed_path, expected_flat_filename)) as hdu_list:
             assert hdu_list[0].data.shape is not None
