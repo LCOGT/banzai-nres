@@ -1,6 +1,8 @@
 from banzai.settings import Settings
+from banzai.utils.file_utils import ccdsum_to_filename
 from banzai.context import InstrumentCriterion
 from banzai_nres.images import NRESImage
+from banzai_nres.fibers import fibers_state_to_filename
 
 import operator
 from banzai import bias, trim, dark, gain, bpm, qc
@@ -26,7 +28,11 @@ class NRESSettings(Settings):
 
     CALIBRATION_SET_CRITERIA = {'BIAS': ['ccdsum'],
                                 'DARK': ['ccdsum'],
-                                'LAMPFLAT': ['ccdsum', 'fibers_state']}
+                                'LAMPFLAT': ['ccdsum', 'fiber1_lit', 'fiber2_lit', 'fiber3_lit']}
+
+    CALIBRATION_FILENAME_FUNCTIONS = {'BIAS': [ccdsum_to_filename],
+                                      'DARK': [ccdsum_to_filename],
+                                      'LAMPFLAT': [ccdsum_to_filename, fibers_state_to_filename]}
 
     CALIBRATION_IMAGE_TYPES = ['BIAS', 'DARK', 'LAMPFLAT']
 
