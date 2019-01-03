@@ -70,10 +70,10 @@ def test_e2e():
     site = 'lsc'
     epoch = '20180311'
 
-    expected_bias_filename = 'lscnres01-nres01-20180311-bias-bin1x1.fits'
-    expected_dark_filename = 'lscnres01-nres01-20180311-dark-bin1x1.fits'
-    expected_flat_filenames = ['lscnres01-nres01-20180311-lampflat-bin1x1-110.fits',
-                               'lscnres01-nres01-20180311-lampflat-bin1x1-011.fits']
+    expected_bias_filename = 'lscnrs01-fl09-20180311-bias-bin1x1.fits'
+    expected_dark_filename = 'lscnrs01-fl09-20180311-dark-bin1x1.fits'
+    expected_flat_filenames = ['lscnrs01-fl09-20180311-lampflat-bin1x1-110.fits',
+                               'lscnrs01-fl09-20180311-lampflat-bin1x1-011.fits']
 
     expected_processed_path = os.path.join('/tmp', site, instrument, epoch, 'processed')
 

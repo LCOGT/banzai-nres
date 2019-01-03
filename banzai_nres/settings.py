@@ -1,5 +1,6 @@
 from banzai.settings import Settings
 from banzai.utils.file_utils import ccdsum_to_filename
+from banzai.calibrations import make_calibration_filename_function
 from banzai.context import InstrumentCriterion
 from banzai_nres.images import NRESImage
 from banzai_nres.fibers import fibers_state_to_filename
@@ -7,6 +8,10 @@ from banzai_nres.fibers import fibers_state_to_filename
 import operator
 from banzai import bias, trim, dark, gain, bpm, qc
 from banzai_nres.flats import FlatStacker
+
+
+def get_telescope_filename(image):
+    return image.header.get('TELESCOP', '').replace('nres', 'nrs')
 
 
 class NRESSettings(Settings):
@@ -30,9 +35,9 @@ class NRESSettings(Settings):
                                 'DARK': ['ccdsum'],
                                 'LAMPFLAT': ['ccdsum', 'fiber0_lit', 'fiber1_lit', 'fiber2_lit']}
 
-    CALIBRATION_FILENAME_FUNCTIONS = {'BIAS': [ccdsum_to_filename],
-                                      'DARK': [ccdsum_to_filename],
-                                      'LAMPFLAT': [ccdsum_to_filename, fibers_state_to_filename]}
+    CALIBRATION_FILENAME_FUNCTIONS = {'BIAS': make_calibration_filename_function('BIAS', [ccdsum_to_filename], get_telescope_filename),
+                                      'DARK': make_calibration_filename_function('DARK', [ccdsum_to_filename], get_telescope_filename),
+                                      'LAMPFLAT': make_calibration_filename_function('LAMPFLAT', [ccdsum_to_filename, fibers_state_to_filename], get_telescope_filename)}
 
     CALIBRATION_IMAGE_TYPES = ['BIAS', 'DARK', 'LAMPFLAT']
 
@@ -43,3 +48,5 @@ class NRESSettings(Settings):
     EXTRA_STAGES = {'BIAS': [bias.BiasMasterLevelSubtractor, bias.BiasComparer, bias.BiasMaker],
                     'DARK': [dark.DarkNormalizer, dark.DarkComparer, dark.DarkMaker],
                     'LAMPFLAT': [FlatStacker]}
+
+    get_calibration_filename = get_calibration_filename
