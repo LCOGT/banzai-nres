@@ -7,4 +7,4 @@ class NRESImage(Image):
                  header=None, extension_headers=None, bpm=None):
         super(NRESImage, self).__init__(pipeline_context, filename=filename, data=data, data_tables=data_tables,
                                         header=header, extension_headers=extension_headers, bpm=bpm)
-        self.fiber1_lit, self.fiber2_lit, self.fiber3_lit = fiber_states_from_header(self.header)
+        self.fiber0_lit, self.fiber1_lit, self.fiber2_lit = fiber_states_from_header(self.header)
