@@ -28,7 +28,7 @@ class NRESSettings(Settings):
 
     CALIBRATION_SET_CRITERIA = {'BIAS': ['ccdsum'],
                                 'DARK': ['ccdsum'],
-                                'LAMPFLAT': ['ccdsum', 'fiber1_lit', 'fiber2_lit', 'fiber3_lit']}
+                                'LAMPFLAT': ['ccdsum', 'fiber0_lit', 'fiber1_lit', 'fiber2_lit']}
 
     CALIBRATION_FILENAME_FUNCTIONS = {'BIAS': [ccdsum_to_filename],
                                       'DARK': [ccdsum_to_filename],
