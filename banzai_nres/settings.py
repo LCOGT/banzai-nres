@@ -48,5 +48,3 @@ class NRESSettings(Settings):
     EXTRA_STAGES = {'BIAS': [bias.BiasMasterLevelSubtractor, bias.BiasComparer, bias.BiasMaker],
                     'DARK': [dark.DarkNormalizer, dark.DarkComparer, dark.DarkMaker],
                     'LAMPFLAT': [FlatStacker]}
-
-    get_calibration_filename = get_calibration_filename
