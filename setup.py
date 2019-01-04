@@ -23,4 +23,5 @@ setup(name='lco-banzai-nres',
       tests_require=['pytest>=3.5'],
       entry_points = {'console_scripts': ['make_master_bias=banzai_nres.main:make_master_bias',
                                           'make_master_dark=banzai_nres.main:make_master_dark',
-                                          'make_master_flat=banzai_nres.main:make_master_flat']})
+                                          'make_master_flat=banzai_nres.main:make_master_flat',
+                                          'banzai_nres_reduce_night=banzai_nres.main:reduce_night']})
