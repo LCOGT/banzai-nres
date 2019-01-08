@@ -29,7 +29,8 @@ class NRESSettings(Settings):
 
     CALIBRATION_MIN_IMAGES = {'BIAS': 5,
                               'DARK': 3,
-                              'LAMPFLAT': 5}
+                              'LAMPFLAT': 5,
+                              'TRACE': 1}
 
     CALIBRATION_SET_CRITERIA = {'BIAS': ['ccdsum'],
                                 'DARK': ['ccdsum'],

@@ -34,16 +34,8 @@ class TraceMaker(CalibrationMaker):
         self.fiber_order_header_name = 'FIBRORDR'
 
     @property
-    def group_by_keywords(self):
-        return ['ccdsum']
-
-    @property
     def calibration_type(self):
         return 'TRACE'
-
-    @property
-    def min_images(self):
-        return 1
 
     def make_master_calibration_frame(self, images):
         """
@@ -57,7 +49,9 @@ class TraceMaker(CalibrationMaker):
         good_frame = images[0]
         num_lit_fibers = get_number_of_lit_fibers(images[0])
 
-        master_trace_filename = self.get_calibration_filename(good_frame)
+        make_calibration_name = self.pipeline_context.CALIBRATION_FILENAME_FUNCTIONS[self.calibration_type]
+        master_trace_filename = make_calibration_name(good_frame)
+
         logger.debug('master_trace', os.path.basename(master_trace_filename))
 
         header = fits_utils.create_master_calibration_header(images)
@@ -122,10 +116,6 @@ class InitialTraceFit(Stage):
         self.order_of_poly_fit = 4
         self.average_trace_vertical_extent = 90  # do NOT haphazardly change this.
         self.max_number_of_images_to_fit = 1
-
-    @property
-    def group_by_keywords(self):
-        return ['ccdsum']
 
     @property
     def calibration_type(self):
