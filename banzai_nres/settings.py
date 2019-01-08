@@ -34,10 +34,12 @@ class NRESSettings(Settings):
 
     CALIBRATION_SET_CRITERIA = {'BIAS': ['ccdsum'],
                                 'DARK': ['ccdsum'],
-                                'LAMPFLAT': ['ccdsum']}
+                                'LAMPFLAT': ['ccdsum'],
+                                'TRACE': ['ccdsum']}
 
     CALIBRATION_FILENAME_FUNCTIONS = {'BIAS': make_calibration_filename_function('BIAS', [ccdsum_to_filename], get_telescope_filename),
-                                      'DARK': make_calibration_filename_function('DARK', [ccdsum_to_filename], get_telescope_filename)}
+                                      'DARK': make_calibration_filename_function('DARK', [ccdsum_to_filename], get_telescope_filename),
+                                      'TRACE': make_calibration_filename_function('TRACE', [ccdsum_to_filename], get_telescope_filename)}
 
     CALIBRATION_IMAGE_TYPES = ['BIAS', 'DARK', 'LAMPFLAT']
 
