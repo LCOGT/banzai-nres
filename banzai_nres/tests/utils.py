@@ -2,10 +2,10 @@ from datetime import datetime
 import numpy as np
 
 from banzai_nres.utils.trace_utils import Trace
-from banzai_nres.images import Image
+from banzai_nres.images import NRESImage
 
 
-class FakeImage(Image):
+class FakeImage(NRESImage):
     def __init__(self, nx=102, ny=100, overscan_size=2, ccdsum='2 2', epoch='20180807'):
         self.nx = nx
         self.ny = ny

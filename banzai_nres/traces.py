@@ -7,7 +7,7 @@ Authors
 
 from banzai_nres.utils.trace_utils import fit_traces_order_by_order, get_number_of_lit_fibers, Trace
 from banzai_nres.utils.NRES_class_utils import add_class_as_attribute
-from banzai_nres.images import Image
+from banzai_nres.images import NRESImage
 from banzai.stages import CalibrationMaker, Stage
 from banzai.utils import fits_utils
 from banzai import dbs
@@ -91,8 +91,8 @@ class TraceMaker(CalibrationMaker):
         master_trace_centroids_table = DataTable(data_table=master_trace_centroids_table, name=center_name)
         master_cal_data_tables = {coefficients_name: master_trace_coefficients_table,
                                   center_name: master_trace_centroids_table}
-        master_trace_calibration = Image(pipeline_context=self.pipeline_context,
-                                         data=np.zeros((2, 2)), header=header, data_tables=master_cal_data_tables)
+        master_trace_calibration = NRESImage(pipeline_context=self.pipeline_context,
+                                             data=np.zeros((2, 2)), header=header, data_tables=master_cal_data_tables)
 
         master_trace_calibration.filename = master_trace_filename
         return [master_trace_calibration]

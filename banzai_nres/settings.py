@@ -1,0 +1,49 @@
+from banzai.settings import Settings
+from banzai.utils.file_utils import ccdsum_to_filename
+from banzai.calibrations import make_calibration_filename_function
+from banzai.context import InstrumentCriterion
+from banzai_nres.images import NRESImage
+from banzai_nres import traces
+
+import operator
+from banzai import bias, trim, dark, gain, bpm, qc
+
+
+def get_telescope_filename(image):
+    return image.header.get('TELESCOP', '').replace('nres', 'nrs')
+
+
+class NRESSettings(Settings):
+    FRAME_CLASS = NRESImage
+
+    FRAME_SELECTION_CRITERIA = [InstrumentCriterion('type', operator.contains, 'NRES')]
+
+    ORDERED_STAGES = [bpm.BPMUpdater,
+                      qc.SaturationTest,
+                      bias.OverscanSubtractor,
+                      gain.GainNormalizer,
+                      trim.Trimmer,
+                      bias.BiasSubtractor,
+                      dark.DarkSubtractor,
+                      traces.InitialTraceFit]
+
+    CALIBRATION_MIN_IMAGES = {'BIAS': 5,
+                              'DARK': 3,
+                              'LAMPFLAT': 5}
+
+    CALIBRATION_SET_CRITERIA = {'BIAS': ['ccdsum'],
+                                'DARK': ['ccdsum'],
+                                'LAMPFLAT': ['ccdsum']}
+
+    CALIBRATION_FILENAME_FUNCTIONS = {'BIAS': make_calibration_filename_function('BIAS', [ccdsum_to_filename], get_telescope_filename),
+                                      'DARK': make_calibration_filename_function('DARK', [ccdsum_to_filename], get_telescope_filename)}
+
+    CALIBRATION_IMAGE_TYPES = ['BIAS', 'DARK', 'LAMPFLAT']
+
+    LAST_STAGE = {'BIAS': trim.Trimmer,
+                  'DARK': bias.BiasSubtractor,
+                  'TRACE': traces.InitialTraceFit}
+
+    EXTRA_STAGES = {'BIAS': [bias.BiasMasterLevelSubtractor, bias.BiasComparer, bias.BiasMaker],
+                    'DARK': [dark.DarkNormalizer, dark.DarkComparer, dark.DarkMaker],
+                    'TRACE': [traces.TraceMaker]}
