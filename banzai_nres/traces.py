@@ -45,10 +45,9 @@ class TraceMaker(CalibrationMaker):
     def min_images(self):
         return 1
 
-    def make_master_calibration_frame(self, images, image_config):
+    def make_master_calibration_frame(self, images):
         """
         :param images: list of Banzai-NRES Image objects.
-        :param image_config:
         :return: frame with trace coefficients appended as astropy tables etc.
         """
         if all(image.trace.coefficients is None for image in images):
@@ -58,7 +57,7 @@ class TraceMaker(CalibrationMaker):
         good_frame = images[0]
         num_lit_fibers = get_number_of_lit_fibers(images[0])
 
-        master_trace_filename = self.get_calibration_filename(image_config)
+        master_trace_filename = self.get_calibration_filename(good_frame)
         logger.debug('master_trace', os.path.basename(master_trace_filename))
 
         header = fits_utils.create_master_calibration_header(images)
