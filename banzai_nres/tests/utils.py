@@ -12,6 +12,7 @@ class FakeImage(NRESImage):
         self.telescope_id = -1
         self.site = 'lsc'
         self.instrument = 'nres01'
+        self.camera = None
         self.ccdsum = ccdsum
         self.epoch = epoch
         self.overscan_size = overscan_size
@@ -28,7 +29,6 @@ class FakeImage(NRESImage):
         self.molecule_id = '544562351'
         self.exptime = 30.0
         self.obstype = 'TEST'
-
         self.trace = Trace()
 
 
