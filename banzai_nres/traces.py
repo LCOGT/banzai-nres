@@ -8,7 +8,8 @@ Authors
 from banzai_nres.utils.trace_utils import fit_traces_order_by_order, get_number_of_lit_fibers, Trace
 from banzai_nres.utils.NRES_class_utils import add_class_as_attribute
 from banzai_nres.images import NRESImage
-from banzai.stages import CalibrationMaker, Stage
+from banzai.stages import Stage
+from banzai.calibrations import CalibrationMaker
 from banzai.utils import fits_utils
 from banzai import dbs
 from banzai.images import DataTable, regenerate_data_table_from_fits_hdu_list
