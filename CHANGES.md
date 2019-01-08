@@ -1,8 +1,5 @@
 0.3.0 (2018-11-05)
 ------------------
-- End-to-end tests for all, and a unit test for updating traces
-- Updating traces on science frames
-- Updating master traces on new lampflats
 - Blind master traces from a single lampflat
 - Master bias and dark creation, subtraction, normalization
 

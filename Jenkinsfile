@@ -52,6 +52,7 @@ pipeline {
 							credentialsId: 'rabbit-mq',
 							usernameVariable: 'RABBITMQ_USER',
 							passwordVariable: 'RABBITMQ_PASSWORD')]) {
+						sh('rancher -c ${RANCHERDEV_CREDS} rm --stop --type stack BANZAINRESPipelineTest || true')
 						sh('rancher -c ${RANCHERDEV_CREDS} up --stack BANZAINRESPipelineTest --force-upgrade --confirm-upgrade -d')
 					}
 				}
