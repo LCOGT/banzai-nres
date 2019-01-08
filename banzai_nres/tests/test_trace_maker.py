@@ -429,7 +429,7 @@ class TestTraceMaker:
         assert trace_maker.group_by_keywords == ['ccdsum']
         assert trace_maker.calibration_type == 'TRACE'
 
-    @mock.patch('banzai_nres.traces.Image')
+    @mock.patch('banzai_nres.traces.NRESImage')
     def test_trace_maker_returns_empty_list_if_no_coeffs(self, mock_images):
         images = [FakeTraceImage()]
         images[0].trace.coefficients = None
@@ -438,7 +438,7 @@ class TestTraceMaker:
         output = master_cal_maker.do_stage(images)
         assert output == []
 
-    @mock.patch('banzai_nres.traces.Image')
+    @mock.patch('banzai_nres.traces.NRESImage')
     @mock.patch('banzai_nres.traces.dbs.get_master_calibration_image')
     def test_trace_maker_does_not_crash_on_blank_frame(self, mock_cal, mock_images):
         readnoise = 11.0
@@ -457,7 +457,7 @@ class TestTraceMaker:
         assert True
 
 
-@mock.patch('banzai_nres.traces.Image')
+@mock.patch('banzai_nres.traces.NRESImage')
 @mock.patch('banzai_nres.traces.dbs.get_master_calibration_image')
 def test_trace_maker(mock_cal, mock_images):
     """
