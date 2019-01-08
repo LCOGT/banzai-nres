@@ -1,5 +1,5 @@
 import pytest
-from banzai.dbs import create_db, populate_bpm_table
+from banzai.dbs import create_db, populate_calibration_table_with_bpms
 from banzai_nres.traces import Trace
 import os
 import numpy as np
@@ -17,7 +17,7 @@ def make_dummy_bpm(bpm_path, output_bpm_name_addition, fits_file_to_copy, date_m
     # building bpm folder
     os.makedirs(bpm_path)
     # unpacking a fits file via funpack. Astropy's unpack messes with the files.
-    os.system('funpack {0}'.format(fits_file_to_copy + '.fz'))
+    os.system('funpack {}'.format(fits_file_to_copy + '.fz'))
     # where to save the file
     output_filename = bpm_path + output_bpm_name_addition + date_marker + '.fits'
     # creating the bpm
@@ -40,6 +40,7 @@ def make_dummy_bpm(bpm_path, output_bpm_name_addition, fits_file_to_copy, date_m
 def setup_module(module):
     """
     :param module: Pytest placeholder argument.
+
     This function creates the sqlite database and populates it with
     telescopes and BPM's for the test data sets elp/nres02 and lsc/nres01.
     """
@@ -58,21 +59,21 @@ def setup_module(module):
                    telescope_name='nres02', site_name='elp')
 
     # adding the bpm folder to database and populating the sqlite tables.
-    populate_bpm_table('/archive/engineering/lsc/nres01/bpm', db_address=os.environ['DB_URL'])
-    populate_bpm_table('/archive/engineering/elp/nres02/bpm', db_address=os.environ['DB_URL'])
+    populate_calibration_table_with_bpms('/archive/engineering/lsc/nres01/bpm', db_address=os.environ['DB_URL'])
+    populate_calibration_table_with_bpms('/archive/engineering/elp/nres02/bpm', db_address=os.environ['DB_URL'])
 
 
 @pytest.mark.e2e
 def test_e2e():
     db_address = os.environ['DB_URL']
-    epoch = '20180307'
+    raw_data_path = '/archive/engineering/lsc/nres01/20180311/raw'
     instrument = 'nres01'
     site = 'lsc'
-    raw_data_path = os.path.join('/archive/engineering/', site, instrument, epoch, 'raw')
+    epoch = '20180311'
 
-    expected_bias_filename = 'bias_' + instrument + '_' + epoch + '_bin1x1.fits'
-    expected_dark_filename = 'dark_' + instrument + '_' + epoch + '_bin1x1.fits'
-    expected_trace_filename = 'trace_' + instrument + '_' + epoch + '_bin1x1.fits'
+    expected_bias_filename = 'lscnrs01-fl09-20180311-bias-bin1x1.fits'
+    expected_dark_filename = 'lscnrs01-fl09-20180311-dark-bin1x1.fits'
+    expected_trace_filename = 'lscnrs01-fl09-20180311-trace-bin1x1.fits'
     expected_processed_path = os.path.join('/tmp', site, instrument, epoch, 'processed')
 
     # executing the master bias maker as one would from the command line.
