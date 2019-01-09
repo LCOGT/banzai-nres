@@ -115,7 +115,7 @@ class InitialTraceFit(Stage):
             self.calibration_type.upper(), [])
         self.always_generate_traces_from_scratch = False
         self.order_of_poly_fit = 4
-        self.average_trace_vertical_extent = 90  # do NOT haphazardly change this.
+        self.second_order_coefficient_guess = self.pipeline_context.TRACE_FIT_INITIAL_DEGREE_TWO_GUESS
         self.max_number_of_images_to_fit = 1
 
     @property
@@ -145,8 +145,7 @@ class InitialTraceFit(Stage):
             num_lit_fibers = get_number_of_lit_fibers(image)
             if i < self.max_number_of_images_to_fit:
                 logger.debug('fitting order by order on {0}'.format(image.filename))
-                second_order_coefficient_guess = self.average_trace_vertical_extent
-                coefficients_and_indices_initial = fit_traces_order_by_order(image, second_order_coefficient_guess,
+                coefficients_and_indices_initial = fit_traces_order_by_order(image, self.second_order_coefficient_guess,
                                                                              order_of_poly_fits=self.order_of_poly_fit,
                                                                              num_lit_fibers=num_lit_fibers)
             else:

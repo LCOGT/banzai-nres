@@ -32,6 +32,8 @@ class NRESSettings(Settings):
                               'LAMPFLAT': 5,
                               'TRACE': 1}
 
+    TRACE_FIT_INITIAL_DEGREE_TWO_GUESS = 90  # DO NOT HAPHAZARDLY CHANGE THIS
+
     CALIBRATION_SET_CRITERIA = {'BIAS': ['ccdsum'],
                                 'DARK': ['ccdsum'],
                                 'LAMPFLAT': ['ccdsum'],
