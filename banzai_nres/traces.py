@@ -44,11 +44,8 @@ class TraceMaker(CalibrationMaker):
         :param images: list of Banzai-NRES Image objects.
         :return: frame with trace coefficients appended as astropy tables etc.
         """
-        if all(image.trace.coefficients is None for image in images):
-            logger.error('Each image in images are missing trace coefficients, aborting master trace calibration saving')
-            return []
-
         good_frame = images[0]
+
         num_lit_fibers = get_number_of_lit_fibers(images[0])
 
         make_calibration_name = self.pipeline_context.CALIBRATION_FILENAME_FUNCTIONS[self.calibration_type]
@@ -91,7 +88,7 @@ class TraceMaker(CalibrationMaker):
                                              data=np.zeros((2, 2)), header=header, data_tables=master_cal_data_tables)
 
         master_trace_calibration.filename = master_trace_filename
-        return [master_trace_calibration]
+        return master_trace_calibration
 
 
 class InitialTraceFit(Stage):
@@ -129,7 +126,7 @@ class InitialTraceFit(Stage):
         add_class_as_attribute(images, 'trace', Trace)
         if self.always_generate_traces_from_scratch:
             images = self.blind_fit_traces_on_images(images)
-        if not self.always_generate_traces_from_scratch:
+        else:
             for image in images:
                 logger.debug('importing master coeffs from %s' % image.filename)
                 coefficients_and_indices_initial, fiber_order = self.get_trace_coefficients(image)

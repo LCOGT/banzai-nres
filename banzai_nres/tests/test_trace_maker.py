@@ -428,15 +428,6 @@ class TestTraceMaker:
         assert trace_maker.calibration_type == 'TRACE'
 
     @mock.patch('banzai_nres.traces.NRESImage')
-    def test_trace_maker_returns_empty_list_if_no_coeffs(self, mock_images):
-        images = [FakeTraceImage()]
-        images[0].trace.coefficients = None
-        images[0].trace.fiber_order = None
-        master_cal_maker = TraceMaker(FakeContext())
-        output = master_cal_maker.do_stage(images)
-        assert output == []
-
-    @mock.patch('banzai_nres.traces.NRESImage')
     @mock.patch('banzai_nres.traces.dbs.get_master_calibration_image')
     def test_trace_maker_does_not_crash_on_blank_frame(self, mock_cal, mock_images):
         readnoise = 11.0
@@ -454,61 +445,60 @@ class TestTraceMaker:
         images = blind_trace_maker.do_stage(images)
         assert True
 
+    @mock.patch('banzai_nres.traces.NRESImage')
+    @mock.patch('banzai_nres.traces.dbs.get_master_calibration_image')
+    def test_trace_maker(mock_cal, mock_images):
+        """
+        test type: Integration Test.
+        info: This tests trace making via a blind fit.
+        WARNING: Because trace fitting is defined with polynomials which are normalized from -1 to 1, if one squeezes
+        the x axis of the image further, then the traces bend more drastically. Thus it is recommended you do not change the
+        size of the FakeTraceImage.
+        """
+        readnoise = 11.0
+        order_of_poly_fit = 4
 
-@mock.patch('banzai_nres.traces.NRESImage')
-@mock.patch('banzai_nres.traces.dbs.get_master_calibration_image')
-def test_trace_maker(mock_cal, mock_images):
-    """
-    test type: Integration Test.
-    info: This tests trace making via a blind fit.
-    WARNING: Because trace fitting is defined with polynomials which are normalized from -1 to 1, if one squeezes
-    the x axis of the image further, then the traces bend more drastically. Thus it is recommended you do not change the
-    size of the FakeTraceImage.
-    """
-    readnoise = 11.0
-    order_of_poly_fit = 4
+        images = [FakeTraceImage()]
+        images[0].readnoise = readnoise
 
-    images = [FakeTraceImage()]
-    images[0].readnoise = readnoise
+        make_random_yet_realistic_trace_coefficients(images[0], order_of_poly_fit=order_of_poly_fit)
+        fill_image_with_traces(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
+        noisify_image(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
+        trim_image(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
 
-    make_random_yet_realistic_trace_coefficients(images[0], order_of_poly_fit=order_of_poly_fit)
-    fill_image_with_traces(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
-    noisify_image(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
-    trim_image(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
+        original_coefficents = images[0].trace.coefficients
 
-    original_coefficents = images[0].trace.coefficients
+        fake_context = FakeContext()
+        fake_context.db_address = ''
 
-    fake_context = FakeContext()
-    fake_context.db_address = ''
+        for force_traces_from_scratch, value in zip([True, False], [None, '']):
+            blind_trace_maker = InitialTraceFit(fake_context)
+            blind_trace_maker.always_generate_traces_from_scratch = force_traces_from_scratch
+            mock_cal.return_value = value
 
-    for force_traces_from_scratch, value in zip([True, False], [None, '']):
-        blind_trace_maker = InitialTraceFit(fake_context)
-        blind_trace_maker.always_generate_traces_from_scratch = force_traces_from_scratch
-        mock_cal.return_value = value
+            blind_trace_maker.order_of_poly_fit = order_of_poly_fit
+            images = blind_trace_maker.do_stage(images)
 
-        blind_trace_maker.order_of_poly_fit = order_of_poly_fit
-        images = blind_trace_maker.do_stage(images)
+            master_cal_maker = TraceMaker(fake_context)
+            master_cal_maker.do_stage(images)
 
-        master_cal_maker = TraceMaker(fake_context)
-        master_cal_maker.do_stage(images)
+            args, kwargs = mock_images.call_args
+            trace_coefficients_data_table_name = Trace().coefficients_table_name
+            master_trace_table = kwargs['data_tables'][trace_coefficients_data_table_name]._data_table
 
-        args, kwargs = mock_images.call_args
-        trace_coefficients_data_table_name = Trace().coefficients_table_name
-        master_trace_table = kwargs['data_tables'][trace_coefficients_data_table_name]._data_table
+            coefficients_array, fiber_order = Trace().convert_astropy_table_coefficients_to_numpy_array(master_trace_table)
+            logger.debug(coefficients_array.shape)
+            images[0].trace.coefficients = coefficients_array
 
-        coefficients_array, fiber_order = Trace().convert_astropy_table_coefficients_to_numpy_array(master_trace_table)
-        logger.debug(coefficients_array.shape)
-        images[0].trace.coefficients = coefficients_array
+            difference = differences_between_found_and_generated_trace_vals(original_coefficents, images[0])
+            logger.debug('median absolute deviation in unit-test trace fitting is {0} pixels'
+                         .format(np.median(np.abs(difference - np.median(difference)))))
+            logger.debug('standard deviation in unit-test trace fitting is {0} pixels'
+                         .format(np.std(difference)))
+            logger.debug('worst error (max of true minus found) in unit-test trace fitting is {0} pixels'
+                         .format(np.max(np.abs(difference))))
+            logger.debug('median error (median of true minus found) in unit-test trace fitting is {0} pixels'
+                         .format(np.abs(np.median(difference))))
 
-        difference = differences_between_found_and_generated_trace_vals(original_coefficents, images[0])
-        logger.debug('median absolute deviation in unit-test trace fitting is {0} pixels'
-                     .format(np.median(np.abs(difference - np.median(difference)))))
-        logger.debug('standard deviation in unit-test trace fitting is {0} pixels'
-                     .format(np.std(difference)))
-        logger.debug('worst error (max of true minus found) in unit-test trace fitting is {0} pixels'
-                     .format(np.max(np.abs(difference))))
-        logger.debug('median error (median of true minus found) in unit-test trace fitting is {0} pixels'
-                     .format(np.abs(np.median(difference))))
-
-        assert np.median(np.abs(difference - np.median(difference))) < 2/100
-        assert np.abs(np.median(difference)) < 2/100
+            assert np.median(np.abs(difference - np.median(difference))) < 2/100
+            assert np.abs(np.median(difference)) < 2/100
