@@ -426,7 +426,6 @@ class TestTraceMaker:
     """
     def test_trace_maker_properties(self):
         trace_maker = TraceMaker(FakeContext())
-        assert trace_maker.group_by_keywords == ['ccdsum']
         assert trace_maker.calibration_type == 'TRACE'
 
     @mock.patch('banzai_nres.traces.NRESImage')

@@ -17,20 +17,23 @@ logger = logging.getLogger(__name__)
 
 def make_master_bias(pipeline_context=None, raw_path=None):
     pipeline_context, raw_path = parse_directory_args(pipeline_context, raw_path, settings.NRESSettings())
-    process_directory(pipeline_context, raw_path, ['BIAS'], last_stage=pipeline_context.LAST_STAGE['BIAS'],
+    process_directory(pipeline_context, raw_path, image_types=['BIAS'],
+                      last_stage=pipeline_context.LAST_STAGE['BIAS'],
                       extra_stages=pipeline_context.EXTRA_STAGES['BIAS'],
                       log_message='Making Master BIAS', calibration_maker=True)
 
 
 def make_master_dark(pipeline_context=None, raw_path=None):
     pipeline_context, raw_path = parse_directory_args(pipeline_context, raw_path, settings.NRESSettings())
-    process_directory(pipeline_context, raw_path, ['DARK'], last_stage=pipeline_context.LAST_STAGE['DARK'],
+    process_directory(pipeline_context, raw_path, image_types=['DARK'],
+                      last_stage=pipeline_context.LAST_STAGE['DARK'],
                       extra_stages=pipeline_context.EXTRA_STAGES['DARK'],
                       log_message='Making Master Dark', calibration_maker=True)
 
 
 def make_master_trace(pipeline_context=None, raw_path=None):
     pipeline_context, raw_path = parse_directory_args(pipeline_context, raw_path, settings.NRESSettings())
-    process_directory(pipeline_context, raw_path, ['LAMPFLAT'], last_stage=pipeline_context.LAST_STAGE['TRACE'],
+    process_directory(pipeline_context, raw_path, image_types=['LAMPFLAT'],
+                      last_stage=pipeline_context.LAST_STAGE['TRACE'],
                       extra_stages=pipeline_context.EXTRA_STAGES['TRACE'],
                       log_message='Making Master Trace', calibration_maker=True)
