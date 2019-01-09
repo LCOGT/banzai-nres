@@ -458,25 +458,27 @@ class TestTraceMaker:
         readnoise = 11.0
         order_of_poly_fit = 4
 
-        images = [FakeTraceImage()]
-        images[0].readnoise = readnoise
+        image = FakeTraceImage()
+        image.readnoise = readnoise
 
-        make_random_yet_realistic_trace_coefficients(images[0], order_of_poly_fit=order_of_poly_fit)
-        fill_image_with_traces(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
-        noisify_image(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
-        trim_image(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
+        make_random_yet_realistic_trace_coefficients(image, order_of_poly_fit=order_of_poly_fit)
+        fill_image_with_traces(image, trimmed_shape=tuple([min(image.data.shape)] * 2))
+        noisify_image(image, trimmed_shape=tuple([min(image.data.shape)] * 2))
+        trim_image(image, trimmed_shape=tuple([min(image.data.shape)] * 2))
 
-        original_coefficents = images[0].trace.coefficients
+        original_coefficents = image.trace.coefficients
 
         fake_context = FakeContext()
         fake_context.db_address = ''
+        images = [image, image]
+
+        blind_trace_maker = InitialTraceFit(fake_context)
+        blind_trace_maker.max_number_of_images_to_fit = 1
+        blind_trace_maker.order_of_poly_fit = order_of_poly_fit
 
         for force_traces_from_scratch, value in zip([True, False], [None, '']):
-            blind_trace_maker = InitialTraceFit(fake_context)
             blind_trace_maker.always_generate_traces_from_scratch = force_traces_from_scratch
             mock_cal.return_value = value
-
-            blind_trace_maker.order_of_poly_fit = order_of_poly_fit
             images = blind_trace_maker.do_stage(images)
 
             master_cal_maker = TraceMaker(fake_context)
