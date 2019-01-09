@@ -31,6 +31,8 @@ class TraceMaker(CalibrationMaker):
     def __init__(self, pipeline_context):
         super(TraceMaker, self).__init__(pipeline_context)
         self.pipeline_context = pipeline_context
+        self.master_selection_criteria = self.pipeline_context.CALIBRATION_SET_CRITERIA.get(
+            self.calibration_type.upper(), [])
         self.fiber_order_header_name = 'FIBRORDR'
 
     @property
@@ -49,8 +51,6 @@ class TraceMaker(CalibrationMaker):
         good_frame = images[0]
         num_lit_fibers = get_number_of_lit_fibers(images[0])
 
-        logger.debug(str(self.pipeline_context.FRAME_CLASS))
-        logger.debug(self.pipeline_context.CALIBRATION_FILENAME_FUNCTIONS)
         make_calibration_name = self.pipeline_context.CALIBRATION_FILENAME_FUNCTIONS[self.calibration_type]
         master_trace_filename = make_calibration_name(good_frame)
 
@@ -114,6 +114,8 @@ class InitialTraceFit(Stage):
     def __init__(self, pipeline_context):
         super(InitialTraceFit, self).__init__(pipeline_context)
         self.pipeline_context = pipeline_context
+        self.master_selection_criteria = self.pipeline_context.CALIBRATION_SET_CRITERIA.get(
+            self.calibration_type.upper(), [])
         self.always_generate_traces_from_scratch = False
         self.order_of_poly_fit = 4
         self.average_trace_vertical_extent = 90  # do NOT haphazardly change this.
@@ -164,7 +166,7 @@ class InitialTraceFit(Stage):
         """
         coefficients_and_indices, fiber_order = None, None
         master_trace_full_path = dbs.get_master_calibration_image(image, self.calibration_type,
-                                                                  self.group_by_keywords,
+                                                                  self.master_selection_criteria,
                                                                   db_address=self.pipeline_context.db_address)
 
         if master_trace_full_path is None or not os.path.exists(master_trace_full_path):

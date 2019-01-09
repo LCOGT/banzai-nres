@@ -1,5 +1,5 @@
 from banzai_nres.images import NRESImage
-from banzai.tests.utils import FakeContext
+from banzai_nres.tests.utils import FakeContext
 from banzai_nres.utils.NRES_class_utils import add_class_as_attribute
 
 

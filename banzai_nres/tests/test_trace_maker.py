@@ -1,12 +1,11 @@
 import pytest
 from unittest import mock
 from banzai_nres.traces import InitialTraceFit, TraceMaker
-from banzai.tests.utils import FakeContext
 
 from scipy import ndimage
 import numpy as np
 from banzai_nres.utils.trace_utils import get_coefficients_from_meta, generate_legendre_array, Trace
-from banzai_nres.tests.utils import FakeImage, noisify_image, trim_image, gaussian
+from banzai_nres.tests.utils import FakeImage, FakeContext, noisify_image, trim_image, gaussian
 from banzai_nres.tests.adding_traces_to_images_utils import generate_image_with_two_flat_traces
 from banzai_nres.tests.adding_traces_to_images_utils import trim_coefficients_to_fit_image, fill_image_with_traces
 
