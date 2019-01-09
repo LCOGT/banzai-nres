@@ -77,7 +77,7 @@ def test_e2e():
     expected_processed_path = os.path.join('/tmp', site, instrument, epoch, 'processed')
 
     # executing the master bias maker as one would from the command line.
-    os.system('make_master_bias --db-address {0} --raw-path {1} '
+    os.system('make_master_bias --db-address {0} --raw-path {1} --ignore-schedulability '
               '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
 
     with fits.open(os.path.join(expected_processed_path, expected_bias_filename)) as hdu_list:
@@ -85,7 +85,7 @@ def test_e2e():
         assert hdu_list['BPM'].data.shape == hdu_list[1].data.shape
 
     # executing the master dark maker as one would from the command line.
-    os.system('make_master_dark --db-address {0} --raw-path {1} '
+    os.system('make_master_dark --db-address {0} --raw-path {1} --ignore-schedulability '
               '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
 
     with fits.open(os.path.join(expected_processed_path, expected_dark_filename)) as hdu_list:
@@ -97,7 +97,7 @@ def test_e2e():
     coefficient_table_name = Trace().coefficients_table_name
     centroids_table_name = Trace().trace_center_table_name
 
-    os.system('make_master_trace --db-address {0} --raw-path {1} '
+    os.system('make_master_trace --db-address {0} --raw-path {1} --ignore-schedulability '
               '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
 
     with fits.open(os.path.join(expected_processed_path, expected_trace_filename)) as hdu_list:
