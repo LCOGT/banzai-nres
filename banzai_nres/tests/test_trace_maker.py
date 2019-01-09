@@ -447,7 +447,7 @@ class TestTraceMaker:
 
     @mock.patch('banzai_nres.traces.NRESImage')
     @mock.patch('banzai_nres.traces.dbs.get_master_calibration_image')
-    def test_trace_maker(mock_cal, mock_images):
+    def test_trace_maker(self, mock_cal, mock_images):
         """
         test type: Integration Test.
         info: This tests trace making via a blind fit.
