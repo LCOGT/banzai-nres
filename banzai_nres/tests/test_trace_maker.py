@@ -378,7 +378,7 @@ def test_excluding_traces_which_are_cut_in_half_by_detector():
     fake_image = FakeImage(nx=12, ny=10)
     coefficients = np.array([[0, -5],
                              [1, 3]])
-    trimmed_coeffs = trace_utils.exclude_traces_which_jet_off_detector(coefficients, fake_image)
+    trimmed_coeffs = trace_utils.exclude_traces_which_jet_off_detector(coefficients, fake_image.data)
     assert np.array_equal(trimmed_coeffs, coefficients[1:])
 
 
