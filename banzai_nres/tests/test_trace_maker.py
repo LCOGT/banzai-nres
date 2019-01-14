@@ -5,9 +5,11 @@ from banzai_nres.traces import InitialTraceFit, TraceMaker
 from scipy import ndimage
 import numpy as np
 from banzai_nres.utils.trace_utils import get_coefficients_from_meta, generate_legendre_array, Trace
-from banzai_nres.tests.utils import FakeImage, FakeContext, noisify_image, trim_image, gaussian
+from banzai_nres.tests.utils import FakeImage, noisify_image, trim_image, gaussian
 from banzai_nres.tests.adding_traces_to_images_utils import generate_image_with_two_flat_traces
 from banzai_nres.tests.adding_traces_to_images_utils import trim_coefficients_to_fit_image, fill_image_with_traces
+import banzai_nres.settings
+from banzai.tests.utils import FakeContext
 
 from banzai_nres.utils import trace_utils
 from astropy.io import fits
@@ -424,7 +426,7 @@ class TestTraceMaker:
     Unit tests for TraceMaker class
     """
     def test_trace_maker_properties(self):
-        trace_maker = TraceMaker(FakeContext())
+        trace_maker = TraceMaker(FakeContext(settings=banzai_nres.settings.NRESSettings()))
         assert trace_maker.calibration_type == 'TRACE'
 
     @mock.patch('banzai_nres.traces.NRESImage')
@@ -436,7 +438,7 @@ class TestTraceMaker:
         images[0].readnoise = readnoise
         noisify_image(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
         trim_image(images[0], trimmed_shape=tuple([min(images[0].data.shape)] * 2))
-        fake_context = FakeContext()
+        fake_context = FakeContext(settings=banzai_nres.settings.NRESSettings())
         fake_context.db_address = ''
         blind_trace_maker = InitialTraceFit(fake_context)
         blind_trace_maker.always_generate_traces_from_scratch = True
@@ -468,7 +470,7 @@ class TestTraceMaker:
 
         original_coefficents = image.trace.coefficients
 
-        fake_context = FakeContext()
+        fake_context = FakeContext(settings=banzai_nres.settings.NRESSettings())
         fake_context.db_address = ''
         images = [image, image]
 

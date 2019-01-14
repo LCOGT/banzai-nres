@@ -1,10 +1,8 @@
 from datetime import datetime
 import numpy as np
-import inspect
 
 from banzai_nres.utils.trace_utils import Trace
 from banzai_nres.images import NRESImage
-import banzai_nres.settings
 
 
 class FakeImage(NRESImage):
@@ -32,16 +30,6 @@ class FakeImage(NRESImage):
         self.exptime = 30.0
         self.obstype = 'TEST'
         self.trace = Trace()
-
-
-class FakeContext(object):
-    def __init__(self, preview_mode=False, settings=banzai_nres.settings.NRESSettings()):
-        self.processed_path = '/tmp'
-        self.preview_mode = preview_mode
-        self.FRAME_CLASS = FakeImage
-        for key, value in dict(inspect.getmembers(settings)).items():
-            if not key.startswith('_'):
-                setattr(self, key, value)
 
 
 def gaussian(x, A, b, sigma):
