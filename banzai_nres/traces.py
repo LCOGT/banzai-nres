@@ -145,7 +145,8 @@ class InitialTraceFit(Stage):
             num_lit_fibers = get_number_of_lit_fibers(image)
             if i < self.max_number_of_images_to_fit:
                 logger.debug('fitting order by order on {0}'.format(image.filename))
-                coefficients_and_indices_initial = fit_traces_order_by_order(image, self.second_order_coefficient_guess,
+                coefficients_and_indices_initial = fit_traces_order_by_order(image.data,
+                                                                             self.second_order_coefficient_guess,
                                                                              order_of_poly_fits=self.order_of_poly_fit,
                                                                              num_lit_fibers=num_lit_fibers)
             else:

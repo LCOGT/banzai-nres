@@ -454,13 +454,13 @@ def get_coefficients_from_meta(allmetacoeffs, stpolyarr):
     return np.dot(allmetacoeffs, stpolyarr).T
 
 
-def extract_coeffs_entire_lampflat_frame(image, order_of_poly_fits, second_order_coefficient_guess):
+def extract_coeffs_entire_lampflat_frame(image_data, order_of_poly_fits, second_order_coefficient_guess):
     """
     This extracts the trace coefficients for each bright order of a frame. This is only stable for lampflat frames.
     It returns a list of the coefficients, ordered arbitrarily (fibers are not separated). It also returns the summed fluxed across each order
     called val, and the total number of orders found by the algorithm.
     Parameters:
-        image : Banzai Image object.
+        image_data: Image.data of banzai image object (e.g. the data portion of a fits frame)
         order_of_poly_fits : order of the polynomial fit per trace.
         second_order_coefficient_guess : coefficient guess for the second order legendre polynomial which
         describe the traces across the ccd.
@@ -469,10 +469,10 @@ def extract_coeffs_entire_lampflat_frame(image, order_of_poly_fits, second_order
     the do_stage of order-by-order fitting
 
     """
-    imagefiltered = ndimage.spline_filter(image.data)
+    imagefiltered = ndimage.spline_filter(image_data)
 
     # finding coefficients of traces which fit the echelle orders across the CCD.
-    allcoef, vals, totalnumberoforders = find_all_traces(image.data, imagefiltered, order_of_poly_fits, second_order_coefficient_guess)
+    allcoef, vals, totalnumberoforders = find_all_traces(image_data, imagefiltered, order_of_poly_fits, second_order_coefficient_guess)
     sortedallcoefs = np.array(allcoef)[np.array(allcoef)[:, 0].argsort()]
     order_indices = np.arange(totalnumberoforders)
     # appending indices 0,1,2...,totalnumberoforders as the first column. prior it is indexed from negative numbers.
@@ -482,14 +482,14 @@ def extract_coeffs_entire_lampflat_frame(image, order_of_poly_fits, second_order
     return coefficients_and_indices, vals, totalnumberoforders
 
 
-def exclude_traces_which_jet_off_detector(coefficients_and_indices, image):
+def exclude_traces_which_jet_off_detector(coefficients_and_indices, image_data):
     """
     :param coefficients_and_indices: ndarray. list of trace polynomial coefficients
-    :param image: Banzai image object.
+    :param image_data: Image.data of banzai image object (e.g. the data portion of a fits frame)
     :return: coefficients_and_indices excluding any traces which have discontinuity because they fall off the detector.
     """
     order_of_poly_fits = coefficients_and_indices.shape[1] - 2
-    legendre_polynomial_array, not_needed, not_needed_2 = generate_legendre_array(image.data.shape[1],
+    legendre_polynomial_array, not_needed, not_needed_2 = generate_legendre_array(image_data.shape[1],
                                                                                   order_of_poly_fits)
     trace_values_versus_xpixel = np.dot(coefficients_and_indices[:, 1:], legendre_polynomial_array)
     # trim any traces which are not contiguously on the detector.
@@ -523,19 +523,19 @@ def split_and_sort_coefficients_for_each_fiber(coefficients_and_indices, num_lit
     return coefficients_and_indices
 
 
-def fit_traces_order_by_order(image, second_order_coefficient_guess, order_of_poly_fits=4, num_lit_fibers=2):
+def fit_traces_order_by_order(image_data, second_order_coefficient_guess, order_of_poly_fits=4, num_lit_fibers=2):
     """
-    :param image: Banzai image object
+    :param image_data: Image.data of banzai image object (e.g. the data portion of a fits frame)
     :param second_order_coefficient_guess: guess for the coefficient of the second order legendre polynomial for
     the blind fit.
     :param order_of_poly_fits: Highest order of the polynomial fit to each trace. 4 is good. Do not change needlessly.
     :return array of trace fit coefficients arranged such that those for the first fiber are first.
     the first 67 rows of the array. fiber designation is arbitrary at this point.
     """
-    coefficients_and_indices, vals, totalnumberoftraces = extract_coeffs_entire_lampflat_frame(image, order_of_poly_fits,
+    coefficients_and_indices, vals, totalnumberoftraces = extract_coeffs_entire_lampflat_frame(image_data, order_of_poly_fits,
                                                                                           second_order_coefficient_guess)
 
-    coefficients_and_indices = exclude_traces_which_jet_off_detector(coefficients_and_indices, image)
+    coefficients_and_indices = exclude_traces_which_jet_off_detector(coefficients_and_indices, image_data)
     coefficients_and_indices = split_and_sort_coefficients_for_each_fiber(coefficients_and_indices, num_lit_fibers)
 
     logger.debug('%s traces found' % coefficients_and_indices.shape[0])

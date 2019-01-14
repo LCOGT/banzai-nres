@@ -39,7 +39,7 @@ def gaussian(x, A, b, sigma):
 def noisify_image(image, trimmed_shape):
     """
     :param image: Banzai_nres FakeImage object.
-    This adds poisson, readnoise to an image with traces already on it, in that order.
+    This adds poisson and read noise to an image with traces already on it, in that order.
     """
     # poisson noise
     image_with_poisson_noise = np.random.poisson(image.data[:trimmed_shape[0], :trimmed_shape[1]])
