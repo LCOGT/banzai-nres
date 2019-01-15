@@ -172,8 +172,8 @@ class InitialTraceFit(Stage):
 
         else:
             fiber_order_header_name = TraceMaker(self.pipeline_context).fiber_order_header_name
-            fiber_order = fits.getheader(master_trace_full_path).get(fiber_order_header_name)
             hdu_list = fits.open(master_trace_full_path)
+            fiber_order = hdu_list[0].header.get(fiber_order_header_name)
             coeffs_name = Trace().coefficients_table_name
             dict_of_table = regenerate_data_table_from_fits_hdu_list(hdu_list, table_extension_name=coeffs_name)
             coefficients_and_indices_table = dict_of_table[coeffs_name]

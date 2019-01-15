@@ -29,6 +29,7 @@ class FakeImage(NRESImage):
         self.molecule_id = '544562351'
         self.exptime = 30.0
         self.obstype = 'TEST'
+        self.data_tables = None
         self.trace = Trace()
 
 

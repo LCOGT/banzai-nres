@@ -1,18 +1,22 @@
 import pytest
-from unittest import mock
-from banzai_nres.traces import InitialTraceFit, TraceMaker
-
-from scipy import ndimage
 import numpy as np
+from scipy import ndimage
+from unittest import mock
+from astropy.io import fits
+
+from banzai_nres.traces import InitialTraceFit, TraceMaker
 from banzai_nres.utils.trace_utils import get_coefficients_from_meta, generate_legendre_array, Trace
 from banzai_nres.tests.utils import FakeImage, noisify_image, trim_image, gaussian
 from banzai_nres.tests.adding_traces_to_images_utils import generate_image_with_two_flat_traces
 from banzai_nres.tests.adding_traces_to_images_utils import trim_coefficients_to_fit_image, fill_image_with_traces
-import banzai_nres.settings
-from banzai.tests.utils import FakeContext
-
 from banzai_nres.utils import trace_utils
-from astropy.io import fits
+from banzai_nres.images import NRESImage as Image
+import banzai_nres.settings
+
+from banzai.tests.utils import FakeContext
+from banzai.images import DataTable
+
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -346,6 +350,38 @@ class TestTraceClassMethods:
                                                                             name_of_values='coefficients')
             assert np.array_equal(loaded_values, values_and_indices)
             assert load_fiber_order == fiber_order
+
+    @mock.patch('banzai_nres.traces.os.path.exists')
+    @mock.patch('banzai_nres.traces.fits.open')
+    @mock.patch('banzai_nres.traces.dbs.get_master_calibration_image')
+    def test_loading_coefficients_from_file(self, mock_cal, mock_fits_open, mock_os):
+        """
+        Tests that add_data_tables_to_hdu_list and regenerate_data_table_from_fits_hdu_list
+        create fits.HDUList objects correctly from astropy tables with single element entries
+        and for astropy tables with columns where each element is a list.
+        """
+        fake_context = FakeContext(settings=banzai_nres.settings.NRESSettings())
+        fake_context.db_address = ''
+        test_image = Image(fake_context, filename=None)
+        test_image.filename = 'test.fits'
+        initial_fit_stage = InitialTraceFit(fake_context)
+        trace_class = Trace()
+
+        mock_os.return_value = True
+        mock_cal.return_value = 'fake_cal.fits'
+
+        table_name = trace_class.coefficients_table_name
+        nn, coefficients_and_indices, coefficients_table = self.generate_sample_astropy_nres_values_table(fiber_order=None,
+                                                                    table_name=trace_class.coefficients_table_name)
+        test_image.data_tables[table_name] = DataTable(data_table=coefficients_table, name=table_name)
+        hdu_list = []
+        hdu_list = test_image._add_data_tables_to_hdu_list(hdu_list)
+        fits_hdu_list = fits.HDUList(hdu_list)
+
+        mock_fits_open.return_value = fits_hdu_list
+        loaded_coefficients, loaded_fiber_order = initial_fit_stage.get_trace_coefficients(test_image)
+        assert (loaded_coefficients == coefficients_and_indices).all()
+        assert loaded_fiber_order is None
 
 
 class TestFindingTotalFluxAcrossTraces:
