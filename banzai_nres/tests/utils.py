@@ -31,6 +31,7 @@ class FakeImage(NRESImage):
         self.obstype = 'TEST'
         self.data_tables = None
         self.trace = Trace()
+        self.fiber0_lit, self.fiber1_lit, self.fiber2_lit = False, True, True
 
 
 def gaussian(x, A, b, sigma):
