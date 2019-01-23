@@ -8,41 +8,33 @@ July 2018
 July 2018
 """
 
-from banzai_nres.bias import BiasMaker as nres_BiasMaker
-from banzai_nres.dark import DarkMaker as nres_DarkMaker
-
-from banzai import bias, trim, dark, gain
-from banzai import qc
-from banzai.main import process_directory, parse_directory_args
-from banzai import main as banzai_main
-from banzai.context import TelescopeCriterion
-import operator
+from banzai_nres import settings
+from banzai.main import process_directory, parse_directory_args, run_end_of_night
 import logging
 
 logger = logging.getLogger(__name__)
 
-NRES_CRITERIA = [TelescopeCriterion('camera_type', operator.contains, 'NRES'),
-                 TelescopeCriterion('schedulable', operator.eq, True)]
-
-banzai_main.ORDERED_STAGES = [qc.HeaderSanity,
-                              qc.ThousandsTest,
-                              qc.SaturationTest,
-                              bias.OverscanSubtractor,
-                              gain.GainNormalizer,
-                              trim.Trimmer,
-                              bias.BiasSubtractor,
-                              dark.DarkSubtractor]
-
 
 def make_master_bias(pipeline_context=None, raw_path=None):
-    pipeline_context, raw_path = parse_directory_args(pipeline_context, raw_path, NRES_CRITERIA)
-    process_directory(pipeline_context, raw_path, ['BIAS'], last_stage=trim.Trimmer,
-                      extra_stages=[bias.BiasMasterLevelSubtractor, nres_BiasMaker],
+    pipeline_context, raw_path = parse_directory_args(pipeline_context, raw_path, settings.NRESSettings())
+    process_directory(pipeline_context, raw_path, ['BIAS'], last_stage=pipeline_context.LAST_STAGE['BIAS'],
+                      extra_stages=pipeline_context.EXTRA_STAGES['BIAS'],
                       log_message='Making Master BIAS', calibration_maker=True)
 
 
 def make_master_dark(pipeline_context=None, raw_path=None):
-    pipeline_context, raw_path = parse_directory_args(pipeline_context, raw_path, NRES_CRITERIA)
-    process_directory(pipeline_context, raw_path, ['DARK'], last_stage=bias.BiasSubtractor,
-                      extra_stages=[dark.DarkNormalizer, nres_DarkMaker],
+    pipeline_context, raw_path = parse_directory_args(pipeline_context, raw_path, settings.NRESSettings())
+    process_directory(pipeline_context, raw_path, ['DARK'], last_stage=pipeline_context.LAST_STAGE['DARK'],
+                      extra_stages=pipeline_context.EXTRA_STAGES['DARK'],
                       log_message='Making Master Dark', calibration_maker=True)
+
+
+def make_master_flat(pipeline_context=None, raw_path=None):
+    pipeline_context, raw_path = parse_directory_args(pipeline_context, raw_path, settings.NRESSettings())
+    process_directory(pipeline_context, raw_path, ['LAMPFLAT'], last_stage=pipeline_context.LAST_STAGE['LAMPFLAT'],
+                      extra_stages=pipeline_context.EXTRA_STAGES['LAMPFLAT'],
+                      log_message='Making Master Flat', calibration_maker=True)
+
+
+def reduce_night():
+    run_end_of_night(settings.NRESSettings(), [make_master_bias, make_master_dark, make_master_flat])
