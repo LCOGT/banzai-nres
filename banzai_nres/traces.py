@@ -123,7 +123,7 @@ class InitialTraceFit(Stage):
         return 'TRACE'
 
     def do_stage(self, images):
-        add_class_as_attribute(images, 'trace', Trace)
+        add_class_as_attribute(images, 'trace', Trace) ,
         if self.always_generate_traces_from_scratch:
             images = self.blind_fit_traces_on_images(images)
         else:
