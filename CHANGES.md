@@ -1,7 +1,10 @@
-0.3.0 (2018-11-05)
+0.4.0 (2019-01-23)
 ------------------
-- Blind master traces from a single lampflat
-- Master bias and dark creation, subtraction, normalization
+- Blind master tracing on a single lampflat
+
+0.3.0 (2018-11-13)
+------------------
+Added flat stacking to stages.
 
 0.2.0 (2018-10-30)
 ------------------

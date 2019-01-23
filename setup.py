@@ -21,6 +21,8 @@ setup(name='lco-banzai-nres',
       setup_requires=['pytest-runner'],
       install_requires=['lco-banzai==0.17.1', 'numpy>=1.13', 'sphinx', 'coveralls'],
       tests_require=['pytest>=3.5'],
-      entry_points={'console_scripts': ['make_master_bias=banzai_nres.main:make_master_bias',
-                                        'make_master_dark=banzai_nres.main:make_master_dark',
-                                        'make_master_trace=banzai_nres.main:make_master_trace']})
+      entry_points = {'console_scripts': ['make_master_bias=banzai_nres.main:make_master_bias',
+                                          'make_master_dark=banzai_nres.main:make_master_dark',
+                                          'make_master_flat=banzai_nres.main:make_master_flat',
+                                          'make_master_trace=banzai_nres.main:make_master_trace',
+                                          'banzai_nres_reduce_night=banzai_nres.main:reduce_night']})

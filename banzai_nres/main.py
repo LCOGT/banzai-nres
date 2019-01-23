@@ -9,7 +9,7 @@ July 2018
 """
 
 from banzai_nres import settings
-from banzai.main import process_directory, parse_directory_args
+from banzai.main import process_directory, parse_directory_args, run_end_of_night
 import logging
 
 logger = logging.getLogger(__name__)
@@ -31,9 +31,22 @@ def make_master_dark(pipeline_context=None, raw_path=None):
                       log_message='Making Master Dark', calibration_maker=True)
 
 
+def make_master_flat(pipeline_context=None, raw_path=None):
+    pipeline_context, raw_path = parse_directory_args(pipeline_context, raw_path, settings.NRESSettings())
+    process_directory(pipeline_context, raw_path, image_types=['LAMPFLAT'],
+                      last_stage=pipeline_context.LAST_STAGE['LAMPFLAT'],
+                      extra_stages=pipeline_context.EXTRA_STAGES['LAMPFLAT'],
+                      log_message='Making Master Flat', calibration_maker=True)
+
+
 def make_master_trace(pipeline_context=None, raw_path=None):
     pipeline_context, raw_path = parse_directory_args(pipeline_context, raw_path, settings.NRESSettings())
     process_directory(pipeline_context, raw_path, image_types=['LAMPFLAT'],
                       last_stage=pipeline_context.LAST_STAGE['TRACE'],
                       extra_stages=pipeline_context.EXTRA_STAGES['TRACE'],
                       log_message='Making Master Trace', calibration_maker=True)
+
+
+def reduce_night():
+    run_end_of_night(settings.NRESSettings(), [make_master_bias, make_master_dark,
+                                               make_master_flat, make_master_trace])

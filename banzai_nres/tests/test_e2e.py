@@ -1,6 +1,9 @@
 import pytest
 from banzai.dbs import create_db, populate_calibration_table_with_bpms
+<<<<<<< HEAD
 from banzai_nres.traces import Trace
+=======
+>>>>>>> 4dec185d7287e33b1ea106d660598d525ee0b70f
 import os
 import numpy as np
 import shutil
@@ -73,6 +76,8 @@ def test_e2e():
 
     expected_bias_filename = 'lscnrs01-fl09-20180311-bias-bin1x1.fits'
     expected_dark_filename = 'lscnrs01-fl09-20180311-dark-bin1x1.fits'
+    expected_flat_filenames = ['lscnrs01-fl09-20180311-lampflat-bin1x1-110.fits',
+                               'lscnrs01-fl09-20180311-lampflat-bin1x1-011.fits']
     expected_trace_filename = 'lscnrs01-fl09-20180311-trace-bin1x1.fits'
     expected_processed_path = os.path.join('/tmp', site, instrument, epoch, 'processed')
 
@@ -91,6 +96,15 @@ def test_e2e():
     with fits.open(os.path.join(expected_processed_path, expected_dark_filename)) as hdu_list:
         assert hdu_list[0].data.shape is not None
         assert hdu_list['BPM'].data.shape == hdu_list[1].data.shape
+
+    # executing the master flat maker as one would from the command line.
+    os.system('make_master_flat --db-address {0} --raw-path {1} --ignore-schedulability '
+              '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
+
+    for expected_flat_filename in expected_flat_filenames:
+        with fits.open(os.path.join(expected_processed_path, expected_flat_filename)) as hdu_list:
+            assert hdu_list[0].data.shape is not None
+            assert hdu_list['BPM'].data.shape == hdu_list[1].data.shape
 
     # executing the master trace maker, using a blind fit then a global-meta fit, as one would from the command line.
 
