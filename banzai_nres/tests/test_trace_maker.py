@@ -351,25 +351,18 @@ class TestTraceClassMethods:
             assert np.array_equal(loaded_values, values_and_indices)
             assert load_fiber_order == fiber_order
 
-    @mock.patch('banzai.dbs._guess_instrument_values_from_header')
     @mock.patch('banzai_nres.traces.os.path.exists')
     @mock.patch('banzai_nres.traces.fits.open')
     @mock.patch('banzai_nres.traces.dbs.get_master_calibration_image')
-    def test_loading_coefficients_from_file(self, mock_cal, mock_fits_open, mock_os, mock_dbs):
+    def test_loading_coefficients_from_file(self, mock_cal, mock_fits_open, mock_os):
         """
         Tests that add_data_tables_to_hdu_list and regenerate_data_table_from_fits_hdu_list
         create fits.HDUList objects correctly from astropy tables with single element entries
         and for astropy tables with columns where each element is a list.
         """
-        class FakeInstrument:
-            site = 'lsc'
-            instrument = 'nres01'
-            camera = 'fa09'
-
-        mock_dbs.return_value = FakeInstrument()
         fake_context = FakeContext(settings=banzai_nres.settings.NRESSettings())
         fake_context.db_address = ''
-        test_image = Image(fake_context, filename=None, header={'OBJECTS': 'tung&tung&none'})
+        test_image = Image(fake_context, filename=None)
         test_image.filename = 'test.fits'
         initial_fit_stage = InitialTraceFit(fake_context)
         trace_class = Trace()

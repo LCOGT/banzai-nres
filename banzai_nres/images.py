@@ -8,4 +8,7 @@ class NRESImage(Image):
         super(NRESImage, self).__init__(pipeline_context, filename=filename, data=data, data_tables=data_tables,
                                         header=header, extension_headers=extension_headers, bpm=bpm)
         self.trace = None
-        self.fiber0_lit, self.fiber1_lit, self.fiber2_lit = fiber_states_from_header(self.header)
+        if header is not None:
+            self.fiber0_lit, self.fiber1_lit, self.fiber2_lit = fiber_states_from_header(self.header)
+        else:
+            self.fiber0_lit, self.fiber1_lit, self.fiber2_lit = False, False, False
