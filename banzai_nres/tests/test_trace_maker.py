@@ -340,36 +340,65 @@ class TestTraceClassMethods:
             assert load_fiber_order == fiber_order
 
 
-@mock.patch('banzai_nres.traces.os.path.exists')
-@mock.patch('banzai_nres.traces.fits.open')
-@mock.patch('banzai_nres.traces.dbs.get_master_calibration_image')
-def test_loading_coefficients_from_file(mock_cal, mock_fits_open, mock_os):
-    """
-    Tests that add_data_tables_to_hdu_list and regenerate_data_table_from_fits_hdu_list
-    create fits.HDUList objects correctly from astropy tables with single element entries
-    and for astropy tables with columns where each element is a list.
-    """
-    fake_context = FakeContext(settings=banzai_nres.settings.NRESSettings())
-    fake_context.db_address = ''
-    test_image = Image(fake_context, filename=None)
-    test_image.filename = 'test.fits'
-    trace_load_stage = LoadTrace(fake_context)
-    trace_class = Trace()
+class TestLoadTrace:
+    @mock.patch('banzai_nres.traces.LoadTrace.get_trace_coefficients')
+    def test_load_trace_stage(self, mock_get_coefficients):
+        mock_get_coefficients.return_value = 0
+        images = [FakeTraceImage()]
+        fake_context = FakeContext(settings=banzai_nres.settings.NRESSettings())
+        trace_load_stage = LoadTrace(fake_context)
+        images = trace_load_stage.do_stage(images)
+        assert images[0].trace.coefficients == 0
 
-    mock_os.return_value = True
-    mock_cal.return_value = 'fake_cal.fits'
+    @mock.patch('banzai_nres.traces.os.path.exists')
+    @mock.patch('banzai_nres.traces.fits.open')
+    @mock.patch('banzai_nres.traces.dbs.get_master_calibration_image')
+    def test_loading_coefficients_from_file(self, mock_cal, mock_fits_open, mock_os):
+        """
+        Tests that add_data_tables_to_hdu_list and regenerate_data_table_from_fits_hdu_list
+        create fits.HDUList objects correctly from astropy tables with single element entries
+        and for astropy tables with columns where each element is a list.
+        """
+        fake_context = FakeContext(settings=banzai_nres.settings.NRESSettings())
+        fake_context.db_address = ''
+        test_image = Image(fake_context, filename=None)
+        test_image.filename = 'test.fits'
+        trace_load_stage = LoadTrace(fake_context)
+        trace_class = Trace()
 
-    table_name = trace_class.coefficients_table_name
-    nn, coefficients_and_indices, coefficients_table = generate_sample_astropy_nres_values_table(fiber_order=None,
-                                                                table_name=trace_class.coefficients_table_name)
-    test_image.data_tables[table_name] = DataTable(data_table=coefficients_table, name=table_name)
-    hdu_list = []
-    hdu_list = test_image._add_data_tables_to_hdu_list(hdu_list)
-    fits_hdu_list = fits.HDUList(hdu_list)
+        mock_os.return_value = True
+        mock_cal.return_value = 'fake_cal.fits'
 
-    mock_fits_open.return_value = fits_hdu_list
-    loaded_coefficients = trace_load_stage.get_trace_coefficients(test_image)
-    assert (loaded_coefficients == coefficients_and_indices).all()
+        table_name = trace_class.coefficients_table_name
+        nn, coefficients_and_indices, coefficients_table = generate_sample_astropy_nres_values_table(fiber_order=None,
+                                                                    table_name=trace_class.coefficients_table_name)
+        test_image.data_tables[table_name] = DataTable(data_table=coefficients_table, name=table_name)
+        hdu_list = []
+        hdu_list = test_image._add_data_tables_to_hdu_list(hdu_list)
+        fits_hdu_list = fits.HDUList(hdu_list)
+
+        mock_fits_open.return_value = fits_hdu_list
+        loaded_coefficients = trace_load_stage.get_trace_coefficients(test_image)
+        assert (loaded_coefficients == coefficients_and_indices).all()
+
+    @mock.patch('banzai_nres.traces.os.path.exists')
+    @mock.patch('banzai_nres.traces.dbs.get_master_calibration_image')
+    def test_loading_coefficient_failure(self, mock_cal, mock_os):
+        """
+        Tests that add_data_tables_to_hdu_list and regenerate_data_table_from_fits_hdu_list
+        create fits.HDUList objects correctly from astropy tables with single element entries
+        and for astropy tables with columns where each element is a list.
+        """
+        fake_context = FakeContext(settings=banzai_nres.settings.NRESSettings())
+        fake_context.db_address = ''
+        test_image = Image(fake_context, filename=None)
+        test_image.filename = 'test.fits'
+
+        trace_load_stage = LoadTrace(fake_context)
+        mock_os.return_value = False
+        mock_cal.return_value = 'fake_cal.fits'
+        trace_load_stage.get_trace_coefficients(test_image)
+        assert True
 
 
 class TestFindingTotalFluxAcrossTraces:
