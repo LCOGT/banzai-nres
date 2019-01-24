@@ -54,3 +54,17 @@ def trim_image(image, trimmed_shape):
     image.data = image.data[:trimmed_shape[0], :trimmed_shape[1]]
     image.bpm = image.bpm[:trimmed_shape[0], :trimmed_shape[1]]
     image.ny, image.nx = trimmed_shape
+
+
+def generate_sample_astropy_nres_values_table(fiber_order=None, table_name=None):
+    test_trace = Trace()
+    indices = np.array([np.concatenate((np.arange(2), np.arange(2)))])
+    coefficients = np.arange(4) * np.ones((4, 4))
+    coefficients_and_indices = np.hstack((indices.T, coefficients))
+    test_trace.coefficients = coefficients_and_indices
+    test_trace.fiber_order = fiber_order
+    coefficients_table = test_trace.convert_numpy_array_coefficients_to_astropy_table(num_lit_fibers=2,
+                                                                                      fiber_order=fiber_order)
+    if table_name is not None:
+        coefficients_table[test_trace.coefficients_table_name].name = table_name
+    return test_trace, coefficients_and_indices, coefficients_table

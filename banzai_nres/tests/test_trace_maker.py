@@ -4,9 +4,10 @@ from scipy import ndimage
 from unittest import mock
 from astropy.io import fits
 
-from banzai_nres.traces import InitialTraceFit, TraceMaker
+from banzai_nres.traces import InitialTraceFit, TraceMaker, LoadTrace
 from banzai_nres.utils.trace_utils import get_coefficients_from_meta, generate_legendre_array, Trace
-from banzai_nres.tests.utils import FakeImage, noisify_image, trim_image, gaussian
+from banzai_nres.tests.utils import FakeImage, noisify_image, trim_image,\
+                                    gaussian, generate_sample_astropy_nres_values_table
 from banzai_nres.tests.adding_traces_to_images_utils import generate_image_with_two_flat_traces
 from banzai_nres.tests.adding_traces_to_images_utils import trim_coefficients_to_fit_image, fill_image_with_traces
 from banzai_nres.utils import trace_utils
@@ -275,19 +276,6 @@ def test_generating_blank_evaluated_legendre_array():
 
 
 class TestTraceClassMethods:
-    def generate_sample_astropy_nres_values_table(self, fiber_order=None, table_name=None):
-        test_trace = Trace()
-        indices = np.array([np.concatenate((np.arange(2), np.arange(2)))])
-        coefficients = np.arange(4) * np.ones((4, 4))
-        coefficients_and_indices = np.hstack((indices.T, coefficients))
-        test_trace.coefficients = coefficients_and_indices
-        test_trace.fiber_order = fiber_order
-        coefficients_table = test_trace.convert_numpy_array_coefficients_to_astropy_table(num_lit_fibers=2,
-                                                                                          fiber_order=fiber_order)
-        if table_name is not None:
-            coefficients_table[test_trace.coefficients_table_name].name = table_name
-        return test_trace, coefficients_and_indices, coefficients_table
-
     def test_getting_trace_centroids_from_coefficients(self):
         tiny_image = TinyFakeImageWithTraces()
         tiny_image.trace.coefficients = np.array([[0, 1]])
@@ -300,7 +288,7 @@ class TestTraceClassMethods:
     def test_converting_coefficients_array_to_astropy_table(self):
         fiber_orders_to_try = [None, (1, 2), (2, 1)]
         for fiber_order in fiber_orders_to_try:
-            outputs = self.generate_sample_astropy_nres_values_table(fiber_order=fiber_order)
+            outputs = generate_sample_astropy_nres_values_table(fiber_order=fiber_order)
             coefficients_table = outputs[-1]
             assert coefficients_table['order'][0] == 0
 
@@ -321,7 +309,7 @@ class TestTraceClassMethods:
     def test_converting_astropy_table_coefficients_to_array_and_fiber_order(self):
         fiber_orders_to_try = [None, (1, 2), (2, 1)]
         for fiber_order in fiber_orders_to_try:
-            test_trace, coefficients_and_indices, coefficients_table = self.generate_sample_astropy_nres_values_table(
+            test_trace, coefficients_and_indices, coefficients_table = generate_sample_astropy_nres_values_table(
                                                                             fiber_order=fiber_order)
             load_coefficients, load_fiber_order = test_trace.convert_astropy_table_coefficients_to_numpy_array(
                                                                             coefficients_table)
@@ -332,7 +320,7 @@ class TestTraceClassMethods:
         fiber_orders_to_try = [None, (1, 2), (2, 1)]
         test_trace = Trace()
         for fiber_order in fiber_orders_to_try:
-            test_trace, y_values_with_indices, y_values_table = self.generate_sample_astropy_nres_values_table(
+            test_trace, y_values_with_indices, y_values_table = generate_sample_astropy_nres_values_table(
                                                                             fiber_order=fiber_order,
                                                                             table_name=test_trace.trace_center_table_name)
             load_y_values, load_fiber_order = test_trace.convert_astropy_table_trace_y_values_to_numpy_array(
@@ -343,7 +331,7 @@ class TestTraceClassMethods:
     def test_converting_any_astropy_table_to_values_and_fiber_order(self):
         fiber_orders_to_try = [None, (1, 2), (2, 1)]
         for fiber_order in fiber_orders_to_try:
-            test_trace, values_and_indices, astropy_table = self.generate_sample_astropy_nres_values_table(
+            test_trace, values_and_indices, astropy_table = generate_sample_astropy_nres_values_table(
                                                                             fiber_order=fiber_order)
             loaded_values, load_fiber_order = test_trace.recombine_values_from_table_into_nd_array_with_order_indices(
                                                                             astropy_table,
@@ -351,37 +339,37 @@ class TestTraceClassMethods:
             assert np.array_equal(loaded_values, values_and_indices)
             assert load_fiber_order == fiber_order
 
-    @mock.patch('banzai_nres.traces.os.path.exists')
-    @mock.patch('banzai_nres.traces.fits.open')
-    @mock.patch('banzai_nres.traces.dbs.get_master_calibration_image')
-    def test_loading_coefficients_from_file(self, mock_cal, mock_fits_open, mock_os):
-        """
-        Tests that add_data_tables_to_hdu_list and regenerate_data_table_from_fits_hdu_list
-        create fits.HDUList objects correctly from astropy tables with single element entries
-        and for astropy tables with columns where each element is a list.
-        """
-        fake_context = FakeContext(settings=banzai_nres.settings.NRESSettings())
-        fake_context.db_address = ''
-        test_image = Image(fake_context, filename=None)
-        test_image.filename = 'test.fits'
-        initial_fit_stage = InitialTraceFit(fake_context)
-        trace_class = Trace()
 
-        mock_os.return_value = True
-        mock_cal.return_value = 'fake_cal.fits'
+@mock.patch('banzai_nres.traces.os.path.exists')
+@mock.patch('banzai_nres.traces.fits.open')
+@mock.patch('banzai_nres.traces.dbs.get_master_calibration_image')
+def test_loading_coefficients_from_file(mock_cal, mock_fits_open, mock_os):
+    """
+    Tests that add_data_tables_to_hdu_list and regenerate_data_table_from_fits_hdu_list
+    create fits.HDUList objects correctly from astropy tables with single element entries
+    and for astropy tables with columns where each element is a list.
+    """
+    fake_context = FakeContext(settings=banzai_nres.settings.NRESSettings())
+    fake_context.db_address = ''
+    test_image = Image(fake_context, filename=None)
+    test_image.filename = 'test.fits'
+    trace_load_stage = LoadTrace(fake_context)
+    trace_class = Trace()
 
-        table_name = trace_class.coefficients_table_name
-        nn, coefficients_and_indices, coefficients_table = self.generate_sample_astropy_nres_values_table(fiber_order=None,
-                                                                    table_name=trace_class.coefficients_table_name)
-        test_image.data_tables[table_name] = DataTable(data_table=coefficients_table, name=table_name)
-        hdu_list = []
-        hdu_list = test_image._add_data_tables_to_hdu_list(hdu_list)
-        fits_hdu_list = fits.HDUList(hdu_list)
+    mock_os.return_value = True
+    mock_cal.return_value = 'fake_cal.fits'
 
-        mock_fits_open.return_value = fits_hdu_list
-        loaded_coefficients, loaded_fiber_order = initial_fit_stage.get_trace_coefficients(test_image)
-        assert (loaded_coefficients == coefficients_and_indices).all()
-        assert loaded_fiber_order is None
+    table_name = trace_class.coefficients_table_name
+    nn, coefficients_and_indices, coefficients_table = generate_sample_astropy_nres_values_table(fiber_order=None,
+                                                                table_name=trace_class.coefficients_table_name)
+    test_image.data_tables[table_name] = DataTable(data_table=coefficients_table, name=table_name)
+    hdu_list = []
+    hdu_list = test_image._add_data_tables_to_hdu_list(hdu_list)
+    fits_hdu_list = fits.HDUList(hdu_list)
+
+    mock_fits_open.return_value = fits_hdu_list
+    loaded_coefficients = trace_load_stage.get_trace_coefficients(test_image)
+    assert (loaded_coefficients == coefficients_and_indices).all()
 
 
 class TestFindingTotalFluxAcrossTraces:

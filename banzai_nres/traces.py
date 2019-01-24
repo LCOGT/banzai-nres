@@ -203,7 +203,7 @@ class LoadTrace(Stage):
     def do_stage(self, images):
         for image in images:
             image.trace = Trace()
-            coefficients_and_indices_initial, fiber_order = self.get_trace_coefficients(image)
+            image.trace.coefficients = self.get_trace_coefficients(image)
         return images
 
     def get_trace_coefficients(self, image):
@@ -211,19 +211,16 @@ class LoadTrace(Stage):
         :param image: Banzai Image
         :return: The coefficients and indices (ndarray), and fiber order tuple from the nearest master trace file.
         """
-        coefficients_and_indices, fiber_order = None, None
+        coefficients_and_indices = None
         master_trace_full_path = dbs.get_master_calibration_image(image, self.calibration_type,
                                                                   self.master_selection_criteria,
                                                                   db_address=self.pipeline_context.db_address)
 
         if master_trace_full_path is None or not os.path.exists(master_trace_full_path):
-            logger.error('Master trace fit file not found, will '
-                         'attempt a blind fit on file {0}.'.format(image.filename))
+            logger.error('Master trace fit file not found for {0}.'.format(image.filename))
 
         else:
-            fiber_order_header_name = TraceMaker(self.pipeline_context).fiber_order_header_name
             hdu_list = fits.open(master_trace_full_path)
-            fiber_order = hdu_list[0].header.get(fiber_order_header_name)
             coeffs_name = Trace().coefficients_table_name
             dict_of_table = regenerate_data_table_from_fits_hdu_list(hdu_list, table_extension_name=coeffs_name)
             coefficients_and_indices_table = dict_of_table[coeffs_name]
@@ -233,6 +230,5 @@ class LoadTrace(Stage):
             assert coefficients_and_indices is not None
             logger.info('Imported master trace coefficients array with '
                         'shape {0}'.format(str(coefficients_and_indices.shape)))
-            assert fiber_order == loaded_fiber_order
 
-        return coefficients_and_indices, fiber_order
+        return coefficients_and_indices
