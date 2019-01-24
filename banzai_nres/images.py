@@ -12,3 +12,6 @@ class NRESImage(Image):
             self.fiber0_lit, self.fiber1_lit, self.fiber2_lit = fiber_states_from_header(self.header)
         else:
             self.fiber0_lit, self.fiber1_lit, self.fiber2_lit = False, False, False
+
+    def num_lit_fibers(self):
+        return 1 * self.fiber0_lit + 1 * self.fiber1_lit + 1 * self.fiber2_lit

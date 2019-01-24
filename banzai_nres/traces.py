@@ -44,7 +44,7 @@ class TraceMaker(CalibrationMaker):
         :return: frame with trace coefficients appended as astropy tables etc.
         """
         good_frame = images[0]
-        num_lit_fibers = get_number_of_lit_fibers(images[0])
+        num_lit_fibers = good_frame.num_lit_fibers()
 
         make_calibration_name = self.pipeline_context.CALIBRATION_FILENAME_FUNCTIONS[self.calibration_type]
         master_trace_filename = make_calibration_name(good_frame)
@@ -141,18 +141,69 @@ class InitialTraceFit(Stage):
 
     def blind_fit_traces_on_images(self, images):
         for i, image in enumerate(images):
-            num_lit_fibers = get_number_of_lit_fibers(image)
             if i < self.max_number_of_images_to_fit:
                 logger.debug('fitting order by order on {0}'.format(image.filename))
                 coefficients_and_indices_initial = fit_traces_order_by_order(image.data,
                                                                              self.second_order_coefficient_guess,
                                                                              order_of_poly_fits=self.order_of_poly_fit,
-                                                                             num_lit_fibers=num_lit_fibers)
+                                                                             num_lit_fibers=image.num_lit_fibers())
             else:
                 logger.debug('adopting last order-order fit onto {0}'.format(image.filename))
                 coefficients_and_indices_initial = images[self.max_number_of_images_to_fit - 1].trace.coefficients
             image.trace.fiber_order = None
             image.trace.coefficients = coefficients_and_indices_initial
+        return images
+
+    def get_trace_coefficients(self, image):
+        """
+        :param image: Banzai Image
+        :return: The coefficients and indices (ndarray), and fiber order tuple from the nearest master trace file.
+        """
+        coefficients_and_indices, fiber_order = None, None
+        master_trace_full_path = dbs.get_master_calibration_image(image, self.calibration_type,
+                                                                  self.master_selection_criteria,
+                                                                  db_address=self.pipeline_context.db_address)
+
+        if master_trace_full_path is None or not os.path.exists(master_trace_full_path):
+            logger.error('Master trace fit file not found, will '
+                         'attempt a blind fit on file {0}.'.format(image.filename))
+
+        else:
+            fiber_order_header_name = TraceMaker(self.pipeline_context).fiber_order_header_name
+            hdu_list = fits.open(master_trace_full_path)
+            fiber_order = hdu_list[0].header.get(fiber_order_header_name)
+            coeffs_name = Trace().coefficients_table_name
+            dict_of_table = regenerate_data_table_from_fits_hdu_list(hdu_list, table_extension_name=coeffs_name)
+            coefficients_and_indices_table = dict_of_table[coeffs_name]
+            coefficients_and_indices, loaded_fiber_order = Trace().convert_astropy_table_coefficients_to_numpy_array(
+                                                                                        coefficients_and_indices_table)
+
+            assert coefficients_and_indices is not None
+            logger.info('Imported master trace coefficients array with '
+                        'shape {0}'.format(str(coefficients_and_indices.shape)))
+            assert fiber_order == loaded_fiber_order
+
+        return coefficients_and_indices, fiber_order
+
+
+class LoadTrace(Stage):
+    """
+    Loads trace coefficients from file and appends them onto the image object.
+    """
+    def __init__(self, pipeline_context):
+        super(LoadTrace, self).__init__(pipeline_context)
+        self.pipeline_context = pipeline_context
+        self.master_selection_criteria = self.pipeline_context.CALIBRATION_SET_CRITERIA.get(
+            self.calibration_type.upper(), [])
+
+    @property
+    def calibration_type(self):
+        return 'TRACE'
+
+    def do_stage(self, images):
+        for image in images:
+            image.trace = Trace()
+            coefficients_and_indices_initial, fiber_order = self.get_trace_coefficients(image)
         return images
 
     def get_trace_coefficients(self, image):
