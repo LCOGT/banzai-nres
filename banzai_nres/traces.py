@@ -186,6 +186,47 @@ class InitialTraceFit(Stage):
         return coefficients_and_indices, fiber_order
 
 
+class FitTrace(Stage):
+    """
+    Loads trace coefficients from file and appends them onto the image object.
+    If no master file is found or self.always_generate_traces_from_scratch, then it will do a blind fit:
+
+    Generates an initial guess for the trace global-meta fitting by fitting the traces order by order.
+    :param second_order_coefficient_guess : should in no instance ever be changed unless the detector drastically
+    changes. This should be the approximate (good to within \pm 30 pixels) difference between the position of the bottom
+    of the trace and its position when it contacts the edge of the detector. E.g. if you were to surround a trace in
+    the minimum sized box possible, this is the y-height of the box (parallel to increasing order direction). Sign matters
+    the convention is that if the traces curve upwards then this is positive. Negative if they curve downwards. Sign matters
+    because this is the guess for the second order coefficient of the blind order-by-order trace fit.
+
+    :param max_number_of_images_to_fit : the number of images from the larger list images that you wish to actually fit.
+    For instance if 1, we do one fit then we adopt that fit onto all other images in the list. Set to some large number
+    if you want to do a fit onto every image in the stack.
+    """
+    def __init__(self, pipeline_context):
+        super(FitTrace, self).__init__(pipeline_context)
+        self.pipeline_context = pipeline_context
+        self.master_selection_criteria = self.pipeline_context.CALIBRATION_SET_CRITERIA.get(
+            self.calibration_type.upper(), [])
+        self.order_of_poly_fit = 4
+        self.second_order_coefficient_guess = self.pipeline_context.TRACE_FIT_INITIAL_DEGREE_TWO_GUESS
+        self.max_number_of_images_to_fit = 1
+
+    @property
+    def calibration_type(self):
+        return 'TRACE'
+
+    def do_stage(self, images):
+        for image in images:
+            image.trace = Trace()
+            logger.debug('fitting order by order on {0}'.format(image.filename))
+            image.trace.coefficients = fit_traces_order_by_order(image.data,
+                                                                 self.second_order_coefficient_guess,
+                                                                 order_of_poly_fits=self.order_of_poly_fit,
+                                                                 num_lit_fibers=image.num_lit_fibers())
+        return images
+
+
 class LoadTrace(Stage):
     """
     Loads trace coefficients from file and appends them onto the image object.
