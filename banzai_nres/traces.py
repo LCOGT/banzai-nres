@@ -6,7 +6,6 @@ Authors
 """
 
 from banzai_nres.utils.trace_utils import fit_traces_order_by_order, get_number_of_lit_fibers, Trace
-from banzai_nres.utils.NRES_class_utils import add_class_as_attribute
 from banzai_nres.images import NRESImage
 from banzai.stages import Stage
 from banzai.calibrations import CalibrationMaker
@@ -123,11 +122,11 @@ class InitialTraceFit(Stage):
         return 'TRACE'
 
     def do_stage(self, images):
-        add_class_as_attribute(images, 'trace', Trace) ,
         if self.always_generate_traces_from_scratch:
             images = self.blind_fit_traces_on_images(images)
         else:
             for image in images:
+                image.trace = Trace()
                 logger.debug('importing master coeffs from %s' % image.filename)
                 coefficients_and_indices_initial, fiber_order = self.get_trace_coefficients(image)
                 image.trace.fiber_order = fiber_order
@@ -142,6 +141,7 @@ class InitialTraceFit(Stage):
 
     def blind_fit_traces_on_images(self, images):
         for i, image in enumerate(images):
+            image.trace = Trace()
             num_lit_fibers = get_number_of_lit_fibers(image)
             if i < self.max_number_of_images_to_fit:
                 logger.debug('fitting order by order on {0}'.format(image.filename))
