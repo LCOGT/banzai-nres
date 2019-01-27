@@ -127,7 +127,7 @@ def recombine_values_from_table_into_nd_array_with_order_indices(astropy_table, 
     order_numbers = np.array([np.array(astropy_table[column_names[1]])]).T
     list_of_array_values_per_trace = astropy_table[name_of_values]
     values_and_indices = np.hstack((order_numbers, np.vstack(list_of_array_values_per_trace)))
-    lit_fibers = tuple(list(astropy_table[column_names[0]]))
+    lit_fibers = tuple(set(list(astropy_table[column_names[0]])))
     return values_and_indices, lit_fibers
 
 

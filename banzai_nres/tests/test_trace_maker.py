@@ -318,6 +318,7 @@ class TestTraceTableMethods:
                                                                                                           coefficients_table_name=test_trace.coefficients_table_name)
             assert np.array_equal(load_coefficients, coefficients_and_indices)
             assert all([fiber in lit_fibers for fiber in fiber_order])
+            assert len(lit_fibers) == len(fiber_order)
 
     def test_converting_astropy_table_y_values_array_and_fiber_order(self):
         fiber_orders_to_try = [(1, 2), (2, 1, 3)]
