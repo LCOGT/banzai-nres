@@ -1,6 +1,7 @@
 from datetime import datetime
 import numpy as np
 
+from banzai_nres.utils import trace_utils
 from banzai_nres.utils.trace_utils import Trace
 from banzai_nres.images import NRESImage
 
@@ -57,14 +58,17 @@ def trim_image(image, trimmed_shape):
 
 
 def generate_sample_astropy_nres_values_table(fiber_order=None, table_name=None):
+    if fiber_order is None:
+        fiber_order = (1, 2)
+    num_lit_fibers = len(fiber_order)
     test_trace = Trace()
-    indices = np.array([np.concatenate((np.arange(2), np.arange(2)))])
-    coefficients = np.arange(4) * np.ones((4, 4))
+    indices = np.array([list(np.arange(2))*num_lit_fibers])
+    coefficients = np.arange(4) * np.ones((num_lit_fibers*2, 4))
     coefficients_and_indices = np.hstack((indices.T, coefficients))
     test_trace.coefficients = coefficients_and_indices
     test_trace.fiber_order = fiber_order
-    coefficients_table = test_trace.convert_numpy_array_coefficients_to_astropy_table(num_lit_fibers=2,
-                                                                                      fiber_order=fiber_order)
+    coefficients_table = trace_utils.convert_numpy_array_coefficients_to_astropy_table(coefficients_table_name=test_trace.coefficients_table_name,
+                                                      fiber_order=fiber_order, coefficients=test_trace.coefficients)
     if table_name is not None:
         coefficients_table[test_trace.coefficients_table_name].name = table_name
     return test_trace, coefficients_and_indices, coefficients_table

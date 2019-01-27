@@ -5,7 +5,8 @@ Authors
     G. Mirek Brandt (gmbrandt@ucsb.edu)
 """
 
-from banzai_nres.utils.trace_utils import fit_traces_order_by_order, get_number_of_lit_fibers, Trace
+from banzai_nres.utils.trace_utils import fit_traces_order_by_order, Trace
+from banzai_nres.utils import trace_utils
 from banzai_nres.images import NRESImage
 from banzai.stages import Stage
 from banzai.calibrations import CalibrationMaker
@@ -61,13 +62,13 @@ class SaveTrace(CalibrationMaker):
         header['OBJECTS'] = good_frame.header.get('OBJECTS')
         logger.debug('master calibration filename in TraceMaker is {0}'.format(os.path.basename(master_trace_filename)))
 
-        master_trace_coefficients_table = good_frame.trace.convert_numpy_array_coefficients_to_astropy_table(num_lit_fibers,
-                                                                                                             fiber_order=good_frame.trace.fiber_order)
-        trace_centroids = good_frame.trace.get_trace_centroids_from_coefficients(image_width=good_frame.data.shape[1])[0]
-        master_trace_centroids_table = good_frame.trace.convert_numpy_array_trace_centroids_to_astropy_table(num_lit_fibers,
-                                                                                                             trace_centroids,
-                                                                                                             good_frame.trace.coefficients,
-                                                                                                             good_frame.trace.fiber_order)
+        master_trace_coefficients_table = trace_utils.convert_numpy_array_coefficients_to_astropy_table(num_lit_fibers,
+                                                                                                        fiber_order=good_frame.trace.fiber_order)
+        trace_centroids = good_frame.trace.get_trace_centers()[0]
+        master_trace_centroids_table = trace_utils.convert_numpy_array_trace_centroids_to_astropy_table(num_lit_fibers,
+                                                                                                        trace_centroids,
+                                                                                                        good_frame.trace.coefficients,
+                                                                                                        good_frame.trace.fiber_order)
         center_name = good_frame.trace.trace_center_table_name
         coefficients_name = good_frame.trace.coefficients_table_name
 
@@ -163,7 +164,7 @@ class LoadTrace(Stage):
             coeffs_name = Trace().coefficients_table_name
             dict_of_table = regenerate_data_table_from_fits_hdu_list(hdu_list, table_extension_name=coeffs_name)
             coefficients_and_indices_table = dict_of_table[coeffs_name]
-            coefficients_and_indices, loaded_fiber_order = Trace().convert_astropy_table_coefficients_to_numpy_array(
+            coefficients_and_indices, lit_fibers = trace_utils.convert_astropy_table_coefficients_to_numpy_array(
                                                                                         coefficients_and_indices_table)
 
             assert coefficients_and_indices is not None

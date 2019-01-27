@@ -6,11 +6,11 @@ from astropy.io import fits
 
 from banzai_nres.traces import SaveTrace, LoadTrace, FitTrace
 from banzai_nres.utils.trace_utils import get_coefficients_from_meta, generate_legendre_array, Trace
+from banzai_nres.utils import trace_utils
 from banzai_nres.tests.utils import FakeImage, noisify_image, trim_image,\
                                     gaussian, generate_sample_astropy_nres_values_table
 from banzai_nres.tests.adding_traces_to_images_utils import generate_image_with_two_flat_traces
 from banzai_nres.tests.adding_traces_to_images_utils import trim_coefficients_to_fit_image, fill_image_with_traces
-from banzai_nres.utils import trace_utils
 from banzai_nres.images import NRESImage as Image
 import banzai_nres.settings
 
@@ -106,9 +106,10 @@ def differences_between_found_and_generated_trace_vals(found_coefficients, image
     :param image: banzai image object with trace_Fit_coefficients not None
     :return: ndarray, the difference between the y values of the found traces and the old traces at each x value.
     """
-    trace_values_1, num_traces_1, x = image.trace.get_trace_centroids_from_coefficients(image.data.shape[1],
+    trace_values_1, num_traces_1, x = trace_utils.get_trace_centroids_from_coefficients(image.data.shape[1],
                                                                                         coefficients_and_indices=found_coefficients)
-    trace_values_2, num_traces_2, x = image.trace.get_trace_centroids_from_coefficients(image.data.shape[1])
+    image.trace.image_width = image.data.shape[1]
+    trace_values_2, num_traces_2, x = image.trace.get_trace_centers()
     assert num_traces_1 == num_traces_2
     return trace_values_2 - trace_values_1
 
@@ -279,65 +280,67 @@ class TestTraceClassMethods:
     def test_getting_trace_centroids_from_coefficients(self):
         tiny_image = TinyFakeImageWithTraces()
         tiny_image.trace.coefficients = np.array([[0, 1]])
+        tiny_image.trace.image_width = tiny_image.data.shape[1]
         trace_values_versus_xpixel, num_traces, x_coord_array = \
-            tiny_image.trace.get_trace_centroids_from_coefficients(tiny_image.data.shape[1])
+            tiny_image.trace.get_trace_centers()
         assert np.array_equal(x_coord_array, np.arange(tiny_image.data.shape[1]))
         assert num_traces == 1
         assert np.array_equal(trace_values_versus_xpixel, np.array([np.ones_like(x_coord_array)]))
 
+
+class TestTraceTableMethods:
     def test_converting_coefficients_array_to_astropy_table(self):
-        fiber_orders_to_try = [None, (1, 2), (2, 1)]
+        fiber_orders_to_try = [(1, 2), (2, 1, 3)]
         for fiber_order in fiber_orders_to_try:
             outputs = generate_sample_astropy_nres_values_table(fiber_order=fiber_order)
             coefficients_table = outputs[-1]
             assert coefficients_table['order'][0] == 0
 
     def test_converting_trace_y_values_array_array_to_astropy_table(self):
-        fiber_orders_to_try = [None, (1, 2), (2, 1)]
+        fiber_orders_to_try = [(1, 2), (2, 1, 3)]
         for fiber_order in fiber_orders_to_try:
-            test_trace = Trace()
             indices = np.array([np.concatenate((np.arange(2), np.arange(2)))])
             coefficients = np.ones((4, 4))
             trace_centroids = np.ones((4, 10))
             coefficients_and_indices = np.hstack((indices.T, coefficients))
-            trace_centroids_table = test_trace.convert_numpy_array_trace_centroids_to_astropy_table(num_lit_fibers=2,
-                                                                                                    trace_centroids=trace_centroids,
+            trace_centroids_table = trace_utils.convert_numpy_array_trace_centroids_to_astropy_table(trace_centroids=trace_centroids,
                                                                                                     coefficients=coefficients_and_indices,
+                                                                                                    trace_center_table_name=Trace().trace_center_table_name,
                                                                                                     fiber_order=fiber_order)
             assert trace_centroids_table['order'][0] == 0
 
     def test_converting_astropy_table_coefficients_to_array_and_fiber_order(self):
-        fiber_orders_to_try = [None, (1, 2), (2, 1)]
+        fiber_orders_to_try = [(1, 2), (2, 1, 3)]
         for fiber_order in fiber_orders_to_try:
             test_trace, coefficients_and_indices, coefficients_table = generate_sample_astropy_nres_values_table(
                                                                             fiber_order=fiber_order)
-            load_coefficients, load_fiber_order = test_trace.convert_astropy_table_coefficients_to_numpy_array(
-                                                                            coefficients_table)
+            load_coefficients, lit_fibers = trace_utils.convert_astropy_table_coefficients_to_numpy_array(coefficients_table,
+                                                                                                          coefficients_table_name=test_trace.coefficients_table_name)
             assert np.array_equal(load_coefficients, coefficients_and_indices)
-            assert load_fiber_order == fiber_order
+            assert all([fiber in lit_fibers for fiber in fiber_order])
 
     def test_converting_astropy_table_y_values_array_and_fiber_order(self):
-        fiber_orders_to_try = [None, (1, 2), (2, 1)]
+        fiber_orders_to_try = [(1, 2), (2, 1, 3)]
         test_trace = Trace()
         for fiber_order in fiber_orders_to_try:
             test_trace, y_values_with_indices, y_values_table = generate_sample_astropy_nres_values_table(
                                                                             fiber_order=fiber_order,
                                                                             table_name=test_trace.trace_center_table_name)
-            load_y_values, load_fiber_order = test_trace.convert_astropy_table_trace_y_values_to_numpy_array(
-                                                                            y_values_table)
+            load_y_values, lit_fibers = trace_utils.convert_astropy_table_trace_y_values_to_numpy_array(
+                                                                            y_values_table, trace_center_table_name=test_trace.trace_center_table_name)
             assert np.array_equal(load_y_values, y_values_with_indices[:, 1:])
-            assert load_fiber_order == fiber_order
+            assert all([fiber in lit_fibers for fiber in fiber_order])
 
     def test_converting_any_astropy_table_to_values_and_fiber_order(self):
-        fiber_orders_to_try = [None, (1, 2), (2, 1)]
+        fiber_orders_to_try = [(1, 2), (2, 1, 3)]
         for fiber_order in fiber_orders_to_try:
             test_trace, values_and_indices, astropy_table = generate_sample_astropy_nres_values_table(
                                                                             fiber_order=fiber_order)
-            loaded_values, load_fiber_order = test_trace.recombine_values_from_table_into_nd_array_with_order_indices(
+            loaded_values, lit_fibers = trace_utils.recombine_values_from_table_into_nd_array_with_order_indices(
                                                                             astropy_table,
                                                                             name_of_values='coefficients')
             assert np.array_equal(loaded_values, values_and_indices)
-            assert load_fiber_order == fiber_order
+            assert all([fiber in lit_fibers for fiber in fiber_order])
 
 
 class TestLoadTrace:
@@ -489,6 +492,7 @@ class TestTraceMaker:
 
         fake_context = FakeContext(settings=banzai_nres.settings.NRESSettings())
         fake_context.db_address = ''
+        image.trace.fiber_order = (0, 1)
         images = [image, image]
 
         master_cal_maker = SaveTrace(fake_context)
@@ -498,8 +502,9 @@ class TestTraceMaker:
         trace_coefficients_data_table_name = Trace().coefficients_table_name
         master_trace_table = kwargs['data_tables'][trace_coefficients_data_table_name]._data_table
 
-        coefficients_array, fiber_order = Trace().convert_astropy_table_coefficients_to_numpy_array(master_trace_table)
+        coefficients_array, lit_fibers = trace_utils.convert_astropy_table_coefficients_to_numpy_array(master_trace_table)
         assert (original_coefficents == coefficients_array).all()
+        assert all([fiber in lit_fibers for fiber in image.trace.fiber_order])
 
 
 class TestFitTrace:

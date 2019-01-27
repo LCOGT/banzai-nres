@@ -12,7 +12,6 @@ from scipy import ndimage, optimize
 from astropy.table import Table
 import copy
 
-from banzai_nres.utils.array_utils import unique_elements_unordered
 import logging
 
 logger = logging.getLogger(__name__)
@@ -26,7 +25,7 @@ class Trace(object):
     """
     def __init__(self):
         self.coefficients = None
-        self.fiber_order = ['']
+        self.fiber_order = ('', '')
         self.image_width = None
         self.trace_center_table_name = 'trace_center'
         self.coefficients_table_name = 'coefficients'
@@ -54,13 +53,6 @@ def get_trace_centroids_from_coefficients(image_width, coefficients_and_indices)
     return trace_values_versus_xpixel, num_traces, x
 
 
-def construct_undesignated_fiber_order(num_lit_fibers):
-    #TODO remove this method and replace it with simply self.num_lit_fibers, self.fiber_order.
-    alphabetical_list = ['a', 'b', 'c', 'd', 'e', 'f', 'g']
-    fiber_order = tuple(alphabetical_list[:num_lit_fibers])
-    return fiber_order
-
-
 def convert_numpy_array_coefficients_to_astropy_table(coefficients_table_name='',
                                                       fiber_order=None, coefficients=None):
     # TODO move this to a dedicated function. perhaps in a module called trace_file_utils
@@ -81,9 +73,9 @@ def convert_numpy_array_trace_centroids_to_astropy_table(trace_centroids, coeffi
     # TODO move this to a dedicated function. perhaps in a module called trace_file_utils
     order_numbers = list(coefficients[:, 0].astype(np.int))
     trace_centroids_table = generate_astropy_table_from_numpy_array_and_orders(trace_center_table_name,
-                                                                                    order_numbers,
-                                                                                    trace_centroids,
-                                                                                    fiber_order)
+                                                                               order_numbers,
+                                                                               trace_centroids,
+                                                                               fiber_order)
     trace_centroids_table[trace_center_table_name].unit = 'pixel'
     trace_centroids_table[trace_center_table_name].description = 'y pixel position for trace' \
                                                                                      'center at each x pixel' \
@@ -94,19 +86,19 @@ def convert_numpy_array_trace_centroids_to_astropy_table(trace_centroids, coeffi
 
 def convert_astropy_table_coefficients_to_numpy_array(astropy_table_of_coefficients, coefficients_table_name=''):
     # TODO move this to a dedicated function. perhaps in a module called trace_file_utils
-    coefficients_and_indices, fiber_order = recombine_values_from_table_into_nd_array_with_order_indices(
+    coefficients_and_indices, lit_fibers = recombine_values_from_table_into_nd_array_with_order_indices(
                                                                                  astropy_table_of_coefficients,
                                                                                  coefficients_table_name)
-    return coefficients_and_indices, fiber_order
+    return coefficients_and_indices, lit_fibers
 
 
 def convert_astropy_table_trace_y_values_to_numpy_array(astropy_table_of_trace_centroids, trace_center_table_name=''):
     # TODO move this to a dedicated function. perhaps in a module called trace_file_utils
-    trace_values_with_indices, fiber_order = recombine_values_from_table_into_nd_array_with_order_indices(
+    trace_values_with_indices, lit_fibers = recombine_values_from_table_into_nd_array_with_order_indices(
                                                                                    astropy_table_of_trace_centroids,
                                                                                    trace_center_table_name)
     trace_values_versus_xpixel = trace_values_with_indices[:, 1:]
-    return trace_values_versus_xpixel, fiber_order
+    return trace_values_versus_xpixel, lit_fibers
 
 
 def generate_astropy_table_from_numpy_array_and_orders(array_name, order_numbers_list,
@@ -135,10 +127,8 @@ def recombine_values_from_table_into_nd_array_with_order_indices(astropy_table, 
     order_numbers = np.array([np.array(astropy_table[column_names[1]])]).T
     list_of_array_values_per_trace = astropy_table[name_of_values]
     values_and_indices = np.hstack((order_numbers, np.vstack(list_of_array_values_per_trace)))
-    fiber_order = tuple(unique_elements_unordered(list(astropy_table[column_names[0]])))
-    if fiber_order == construct_undesignated_fiber_order(num_lit_fibers=len(fiber_order)):
-        fiber_order = None
-    return values_and_indices, fiber_order
+    lit_fibers = tuple(list(astropy_table[column_names[0]]))
+    return values_and_indices, lit_fibers
 
 
 def maxima(A, s, k, ref):
