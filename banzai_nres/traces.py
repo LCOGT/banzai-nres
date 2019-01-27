@@ -124,7 +124,7 @@ class FitTrace(Stage):
                                                                  order_of_poly_fits=self.order_of_poly_fit,
                                                                  num_lit_fibers=image.num_lit_fibers())
             image.trace.image_width = image.data.shape[1]
-            image.trace.fiber_order = ['0'] * image.fiber0_lit + ['1'] * image.fiber1_lit + ['2'] * image.fiber2_lit
+            image.trace.fiber_order = tuple([0] * image.fiber0_lit + [1] * image.fiber1_lit + [2] * image.fiber2_lit)
         return images
 
 
