@@ -37,6 +37,7 @@ class FakeTraceImage(FakeImage):
         self.ny = ny
         self.bpm = np.zeros((self.ny, self.nx), dtype=np.uint8)
         self.data = np.zeros((self.ny, self.nx))
+        self.fiber0_lit, self.fiber1_lit, self.fiber2_lit = False, True, True
 
 
 class TinyFakeImageWithTraces(object):
@@ -297,17 +298,16 @@ class TestTraceTableMethods:
             assert coefficients_table['order'][0] == 0
 
     def test_converting_trace_y_values_array_array_to_astropy_table(self):
-        fiber_orders_to_try = [(1, 2), (2, 1, 3)]
-        for fiber_order in fiber_orders_to_try:
-            indices = np.array([np.concatenate((np.arange(2), np.arange(2)))])
-            coefficients = np.ones((4, 4))
-            trace_centroids = np.ones((4, 10))
-            coefficients_and_indices = np.hstack((indices.T, coefficients))
-            trace_centroids_table = trace_utils.convert_numpy_array_trace_centroids_to_astropy_table(trace_centroids=trace_centroids,
-                                                                                                    coefficients=coefficients_and_indices,
-                                                                                                    trace_center_table_name=Trace().trace_center_table_name,
-                                                                                                    fiber_order=fiber_order)
-            assert trace_centroids_table['order'][0] == 0
+        fiber_order = (1,2)
+        indices = np.array([np.concatenate((np.arange(2), np.arange(2)))])
+        coefficients = np.ones((4, 4))
+        trace_centroids = np.ones((4, 10))
+        coefficients_and_indices = np.hstack((indices.T, coefficients))
+        trace_centroids_table = trace_utils.convert_numpy_array_trace_centroids_to_astropy_table(trace_centroids=trace_centroids,
+                                                                                                coefficients=coefficients_and_indices,
+                                                                                                trace_center_table_name=Trace().trace_center_table_name,
+                                                                                                fiber_order=fiber_order)
+        assert trace_centroids_table['order'][0] == 0
 
     def test_converting_astropy_table_coefficients_to_array_and_fiber_order(self):
         fiber_orders_to_try = [(1, 2), (2, 1, 3)]
@@ -341,67 +341,6 @@ class TestTraceTableMethods:
                                                                             name_of_values='coefficients')
             assert np.array_equal(loaded_values, values_and_indices)
             assert all([fiber in lit_fibers for fiber in fiber_order])
-
-
-class TestLoadTrace:
-    @mock.patch('banzai_nres.traces.LoadTrace.get_trace_coefficients')
-    def test_load_trace_stage(self, mock_get_coefficients):
-        mock_get_coefficients.return_value = 0
-        images = [FakeTraceImage()]
-        fake_context = FakeContext(settings=banzai_nres.settings.NRESSettings())
-        trace_load_stage = LoadTrace(fake_context)
-        images = trace_load_stage.do_stage(images)
-        assert images[0].trace.coefficients == 0
-
-    @mock.patch('banzai_nres.traces.os.path.exists')
-    @mock.patch('banzai_nres.traces.fits.open')
-    @mock.patch('banzai_nres.traces.dbs.get_master_calibration_image')
-    def test_loading_coefficients_from_file(self, mock_cal, mock_fits_open, mock_os):
-        """
-        Tests that add_data_tables_to_hdu_list and regenerate_data_table_from_fits_hdu_list
-        create fits.HDUList objects correctly from astropy tables with single element entries
-        and for astropy tables with columns where each element is a list.
-        """
-        fake_context = FakeContext(settings=banzai_nres.settings.NRESSettings())
-        fake_context.db_address = ''
-        test_image = Image(fake_context, filename=None)
-        test_image.filename = 'test.fits'
-        trace_load_stage = LoadTrace(fake_context)
-        trace_class = Trace()
-
-        mock_os.return_value = True
-        mock_cal.return_value = 'fake_cal.fits'
-
-        table_name = trace_class.coefficients_table_name
-        nn, coefficients_and_indices, coefficients_table = generate_sample_astropy_nres_values_table(fiber_order=None,
-                                                                    table_name=trace_class.coefficients_table_name)
-        test_image.data_tables[table_name] = DataTable(data_table=coefficients_table, name=table_name)
-        hdu_list = []
-        hdu_list = test_image._add_data_tables_to_hdu_list(hdu_list)
-        fits_hdu_list = fits.HDUList(hdu_list)
-
-        mock_fits_open.return_value = fits_hdu_list
-        loaded_coefficients = trace_load_stage.get_trace_coefficients(test_image)
-        assert (loaded_coefficients == coefficients_and_indices).all()
-
-    @mock.patch('banzai_nres.traces.os.path.exists')
-    @mock.patch('banzai_nres.traces.dbs.get_master_calibration_image')
-    def test_loading_coefficient_failure(self, mock_cal, mock_os):
-        """
-        Tests that add_data_tables_to_hdu_list and regenerate_data_table_from_fits_hdu_list
-        create fits.HDUList objects correctly from astropy tables with single element entries
-        and for astropy tables with columns where each element is a list.
-        """
-        fake_context = FakeContext(settings=banzai_nres.settings.NRESSettings())
-        fake_context.db_address = ''
-        test_image = Image(fake_context, filename=None)
-        test_image.filename = 'test.fits'
-
-        trace_load_stage = LoadTrace(fake_context)
-        mock_os.return_value = False
-        mock_cal.return_value = 'fake_cal.fits'
-        trace_load_stage.get_trace_coefficients(test_image)
-        assert True
 
 
 class TestFindingTotalFluxAcrossTraces:
@@ -467,22 +406,79 @@ def test_first_sorting_of_coefficients_from_blind_fit_with_odd_num_traces():
     assert np.array_equal(coefficients_and_indices, expected_coefficients_and_indices)
 
 
-class TestTraceMaker:
+class TestLoadTrace:
+    @mock.patch('banzai_nres.traces.LoadTrace.get_trace_coefficients')
+    def test_load_trace_stage(self, mock_get_coefficients):
+        mock_get_coefficients.return_value = 0
+        images = [FakeTraceImage()]
+        fake_context = FakeContext(settings=banzai_nres.settings.NRESSettings())
+        trace_load_stage = LoadTrace(fake_context)
+        images = trace_load_stage.do_stage(images)
+        assert images[0].trace.coefficients == 0
+
+    @mock.patch('banzai_nres.traces.os.path.exists')
+    @mock.patch('banzai_nres.traces.fits.open')
+    @mock.patch('banzai_nres.traces.dbs.get_master_calibration_image')
+    def test_loading_coefficients_from_file(self, mock_cal, mock_fits_open, mock_os):
+        """
+        Tests that add_data_tables_to_hdu_list and regenerate_data_table_from_fits_hdu_list
+        create fits.HDUList objects correctly from astropy tables with single element entries
+        and for astropy tables with columns where each element is a list.
+        """
+        fake_context = FakeContext(settings=banzai_nres.settings.NRESSettings())
+        fake_context.db_address = ''
+        test_image = Image(fake_context, filename=None)
+        test_image.filename = 'test.fits'
+        trace_load_stage = LoadTrace(fake_context)
+        trace_class = Trace()
+
+        mock_os.return_value = True
+        mock_cal.return_value = 'fake_cal.fits'
+
+        table_name = trace_class.coefficients_table_name
+        nn, coefficients_and_indices, coefficients_table = generate_sample_astropy_nres_values_table(fiber_order=(1, 2),
+                                                                         table_name=trace_class.coefficients_table_name)
+        test_image.data_tables[table_name] = DataTable(data_table=coefficients_table, name=table_name)
+        hdu_list = []
+        hdu_list = test_image._add_data_tables_to_hdu_list(hdu_list)
+        fits_hdu_list = fits.HDUList(hdu_list)
+
+        mock_fits_open.return_value = fits_hdu_list
+        loaded_coefficients = trace_load_stage.get_trace_coefficients(test_image)
+        assert (loaded_coefficients == coefficients_and_indices).all()
+
+    @mock.patch('banzai_nres.traces.os.path.exists')
+    @mock.patch('banzai_nres.traces.dbs.get_master_calibration_image')
+    def test_loading_coefficient_failure(self, mock_cal, mock_os):
+        """
+        Tests that add_data_tables_to_hdu_list and regenerate_data_table_from_fits_hdu_list
+        create fits.HDUList objects correctly from astropy tables with single element entries
+        and for astropy tables with columns where each element is a list.
+        """
+        fake_context = FakeContext(settings=banzai_nres.settings.NRESSettings())
+        fake_context.db_address = ''
+        test_image = Image(fake_context, filename=None)
+        test_image.filename = 'test.fits'
+
+        trace_load_stage = LoadTrace(fake_context)
+        mock_os.return_value = False
+        mock_cal.return_value = 'fake_cal.fits'
+        trace_load_stage.get_trace_coefficients(test_image)
+        assert True
+
+
+class TestSaveTrace:
     """
     Unit tests for TraceMaker class
     """
-    def test_trace_maker_properties(self):
-        trace_maker = SaveTrace(FakeContext(settings=banzai_nres.settings.NRESSettings()))
-        assert trace_maker.calibration_type == 'TRACE'
+    def test_save_trace_properties(self):
+        trace_saver = SaveTrace(FakeContext(settings=banzai_nres.settings.NRESSettings()))
+        assert trace_saver.calibration_type == 'TRACE'
 
     @mock.patch('banzai_nres.traces.NRESImage')
-    def test_trace_maker(self, mock_images):
+    def test_trace_saving(self, mock_images):
         """
-        test type: Integration Test.
-        info: This tests trace making via a blind fit.
-        WARNING: Because trace fitting is defined with polynomials which are normalized from -1 to 1, if one squeezes
-        the x axis of the image further, then the traces bend more drastically. Thus it is recommended you do not change the
-        size of the FakeTraceImage.
+
         """
         image = FakeTraceImage()
         make_random_yet_realistic_trace_coefficients(image, order_of_poly_fit=4)
@@ -493,16 +489,22 @@ class TestTraceMaker:
         fake_context = FakeContext(settings=banzai_nres.settings.NRESSettings())
         fake_context.db_address = ''
         image.trace.fiber_order = (0, 1)
+        image.trace.image_width = image.data.shape[1]
+        original_trace_centers = image.trace.get_trace_centers()[0]
         images = [image, image]
 
         master_cal_maker = SaveTrace(fake_context)
         master_cal_maker.do_stage(images)
 
         args, kwargs = mock_images.call_args
-        trace_coefficients_data_table_name = Trace().coefficients_table_name
-        master_trace_table = kwargs['data_tables'][trace_coefficients_data_table_name]._data_table
+        master_trace_table = kwargs['data_tables'][Trace().coefficients_table_name]._data_table
+        trace_centers_table = kwargs['data_tables'][Trace().trace_center_table_name]._data_table
 
-        coefficients_array, lit_fibers = trace_utils.convert_astropy_table_coefficients_to_numpy_array(master_trace_table)
+        coefficients_array, lit_fibers = trace_utils.convert_astropy_table_coefficients_to_numpy_array(master_trace_table,
+                                                                                                       coefficients_table_name=Trace().coefficients_table_name)
+        trace_centers_array, lit_fibers = trace_utils.convert_astropy_table_trace_y_values_to_numpy_array(trace_centers_table,
+                                                                                                          trace_center_table_name=Trace().trace_center_table_name)
+        assert (original_trace_centers == trace_centers_array).all()
         assert (original_coefficents == coefficients_array).all()
         assert all([fiber in lit_fibers for fiber in image.trace.fiber_order])
 
@@ -541,6 +543,7 @@ class TestFitTrace:
         order_of_poly_fit = 4
 
         image = FakeTraceImage()
+        image.fiber0_lit, image.fiber1_lit, image.fiber2_lit = False, True, True
         image.readnoise = readnoise
 
         make_random_yet_realistic_trace_coefficients(image, order_of_poly_fit=order_of_poly_fit)
@@ -572,5 +575,6 @@ class TestFitTrace:
         logger.debug('median error (median of true minus found) in unit-test trace fitting is {0} pixels'
                      .format(np.abs(np.median(difference))))
 
+        assert images[0].trace.fiber_order == (1, 2)
         assert np.median(np.abs(difference - np.median(difference))) < 2/100
         assert np.abs(np.median(difference)) < 2/100
