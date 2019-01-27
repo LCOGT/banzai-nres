@@ -26,7 +26,7 @@ class NRESSettings(Settings):
                       trim.Trimmer,
                       bias.BiasSubtractor,
                       dark.DarkSubtractor,
-                      traces.InitialTraceFit]
+                      traces.LoadTrace]
 
     CALIBRATION_MIN_IMAGES = {'BIAS': 5,
                               'DARK': 3,
@@ -50,10 +50,10 @@ class NRESSettings(Settings):
     LAST_STAGE = {'BIAS': trim.Trimmer,
                   'DARK': bias.BiasSubtractor,
                   'LAMPFLAT': dark.DarkSubtractor,
-                  'TRACE': traces.InitialTraceFit}
+                  'TRACE': dark.DarkSubtractor}
 
     EXTRA_STAGES = {'BIAS': [bias.BiasMasterLevelSubtractor, bias.BiasComparer, bias.BiasMaker],
                     'DARK': [dark.DarkNormalizer, dark.DarkComparer, dark.DarkMaker],
                     'LAMPFLAT': [FlatStacker],
-                    'TRACE': [traces.TraceMaker]}
+                    'TRACE': [traces.FitTrace, traces.SaveTrace]}
 
