@@ -417,18 +417,20 @@ class TestLoadTrace:
         images = trace_load_stage.do_stage(images)
         assert images[0].trace.coefficients == 0
 
+    @mock.patch('banzai.images.Image._init_instrument_info')
     @mock.patch('banzai_nres.traces.os.path.exists')
     @mock.patch('banzai_nres.traces.fits.open')
     @mock.patch('banzai_nres.traces.dbs.get_master_calibration_image')
-    def test_loading_coefficients_from_file(self, mock_cal, mock_fits_open, mock_os):
+    def test_loading_coefficients_from_file(self, mock_cal, mock_fits_open, mock_os, mock_instrument):
         """
         Tests that add_data_tables_to_hdu_list and regenerate_data_table_from_fits_hdu_list
         create fits.HDUList objects correctly from astropy tables with single element entries
         and for astropy tables with columns where each element is a list.
         """
+        mock_instrument.return_value = None, None, None
         fake_context = FakeContext(settings=banzai_nres.settings.NRESSettings())
         fake_context.db_address = ''
-        test_image = Image(fake_context, filename=None)
+        test_image = Image(fake_context, filename=None, header={'OBJECTS': 'tung&tung&none'})
         test_image.filename = 'test.fits'
         trace_load_stage = LoadTrace(fake_context)
         trace_class = Trace()
@@ -448,17 +450,19 @@ class TestLoadTrace:
         loaded_coefficients = trace_load_stage.get_trace_coefficients(test_image)
         assert (loaded_coefficients == coefficients_and_indices).all()
 
+    @mock.patch('banzai.images.Image._init_instrument_info')
     @mock.patch('banzai_nres.traces.os.path.exists')
     @mock.patch('banzai_nres.traces.dbs.get_master_calibration_image')
-    def test_loading_coefficient_failure(self, mock_cal, mock_os):
+    def test_loading_coefficient_failure(self, mock_cal, mock_os, mock_instrument):
         """
         Tests that add_data_tables_to_hdu_list and regenerate_data_table_from_fits_hdu_list
         create fits.HDUList objects correctly from astropy tables with single element entries
         and for astropy tables with columns where each element is a list.
         """
+        mock_instrument.return_value = None, None, None
         fake_context = FakeContext(settings=banzai_nres.settings.NRESSettings())
         fake_context.db_address = ''
-        test_image = Image(fake_context, filename=None)
+        test_image = Image(fake_context, filename=None, header={'OBJECTS': 'tung&tung&none'})
         test_image.filename = 'test.fits'
 
         trace_load_stage = LoadTrace(fake_context)
