@@ -56,4 +56,3 @@ class NRESSettings(Settings):
                     'DARK': [dark.DarkNormalizer, dark.DarkComparer, dark.DarkMaker],
                     'LAMPFLAT': [FlatStacker],
                     'TRACE': [traces.FitTrace, traces.SaveTrace]}
-
