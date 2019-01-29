@@ -536,17 +536,3 @@ def fit_traces_order_by_order(image_data, second_order_coefficient_guess, order_
     logger.debug('%s traces found' % coefficients_and_indices.shape[0])
 
     return coefficients_and_indices
-
-
-def get_number_of_lit_fibers(image):
-    """
-    :param image: banzai image
-    :return: the number of lit fibers (e.g. the number of entries in tung&tung&.... which are not 'none')
-    """
-    if image.header.get('OBJECTS') is None:
-        logger.error('header keyword OBJECTS not found, cannot get the number of lit fibers.')
-        return None
-    fiber_info = image.header.get('OBJECTS').split('&')
-    num_unlit_fibers = fiber_info.count('none')
-    num_lit_fibers = int(len(fiber_info) - num_unlit_fibers)
-    return num_lit_fibers
