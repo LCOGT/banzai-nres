@@ -18,8 +18,6 @@ logger = logging.getLogger(__name__)
 
 
 class Trace(object):
-    # TODO: add generate trace y values as a method of this class.- including image width and all necessary attributes
-    # to do so.
     """
     Object for storing all the trace related attributes. This gets appended to each Image instance.
     """
@@ -35,8 +33,6 @@ class Trace(object):
 
 
 def get_trace_centers_from_coefficients(image_width, coefficients_and_indices):
-    #TODO convert this class method to something which requires no user input. Have it call a function outside of
-    # this, but have the inputs be set from self.coefficients and self.image_width.
     """
     :param coefficients_and_indices: polynomial fit coefficients which describe the traces. Legendre polynomials
                                     normalized between -1 and 1.
@@ -55,7 +51,6 @@ def get_trace_centers_from_coefficients(image_width, coefficients_and_indices):
 
 def convert_numpy_array_coefficients_to_astropy_table(coefficients_table_name='',
                                                       fiber_order=None, coefficients=None):
-    # TODO move this to a dedicated function. perhaps in a module called trace_file_utils
     order_numbers = list(coefficients[:, 0].astype(np.int))
     coefficients_table = generate_astropy_table_from_numpy_array_and_orders(coefficients_table_name,
                                                                             order_numbers,
@@ -70,7 +65,6 @@ def convert_numpy_array_coefficients_to_astropy_table(coefficients_table_name=''
 
 def convert_numpy_array_trace_centroids_to_astropy_table(trace_centroids, coefficients,
                                                          trace_center_table_name='', fiber_order=None):
-    # TODO move this to a dedicated function. perhaps in a module called trace_file_utils
     order_numbers = list(coefficients[:, 0].astype(np.int))
     trace_centroids_table = generate_astropy_table_from_numpy_array_and_orders(trace_center_table_name,
                                                                                order_numbers,
@@ -85,7 +79,6 @@ def convert_numpy_array_trace_centroids_to_astropy_table(trace_centroids, coeffi
 
 
 def convert_astropy_table_coefficients_to_numpy_array(astropy_table_of_coefficients, coefficients_table_name=''):
-    # TODO move this to a dedicated function. perhaps in a module called trace_file_utils
     coefficients_and_indices, lit_fibers = recombine_values_from_table_into_nd_array_with_order_indices(
                                                                                  astropy_table_of_coefficients,
                                                                                  coefficients_table_name)
@@ -93,7 +86,6 @@ def convert_astropy_table_coefficients_to_numpy_array(astropy_table_of_coefficie
 
 
 def convert_astropy_table_trace_y_values_to_numpy_array(astropy_table_of_trace_centroids, trace_center_table_name=''):
-    # TODO move this to a dedicated function. perhaps in a module called trace_file_utils
     trace_values_with_indices, lit_fibers = recombine_values_from_table_into_nd_array_with_order_indices(
                                                                                    astropy_table_of_trace_centroids,
                                                                                    trace_center_table_name)
@@ -103,7 +95,6 @@ def convert_astropy_table_trace_y_values_to_numpy_array(astropy_table_of_trace_c
 
 def generate_astropy_table_from_numpy_array_and_orders(array_name, order_numbers_list,
                                                        array_of_values, fiber_order):
-    # TODO move this to a dedicated function. perhaps in a module called trace_file_utils
     total_num_of_orders = np.max(np.array(order_numbers_list)) + 1
     fiber_designations = []
     list_of_array_values_per_trace = []
@@ -121,8 +112,6 @@ def generate_astropy_table_from_numpy_array_and_orders(array_name, order_numbers
 
 
 def recombine_values_from_table_into_nd_array_with_order_indices(astropy_table, name_of_values):
-    # TODO move this to a dedicated function. remove fiber_order since that will always be on the image.
-    # TODO move this to a dedicated function. perhaps in a module called trace_file_utils
     column_names = astropy_table.colnames
     order_numbers = np.array([np.array(astropy_table[column_names[1]])]).T
     list_of_array_values_per_trace = astropy_table[name_of_values]

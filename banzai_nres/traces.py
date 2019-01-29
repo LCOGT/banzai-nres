@@ -146,6 +146,7 @@ class LoadTrace(Stage):
         for image in images:
             image.trace = Trace()
             image.trace.coefficients = self.get_trace_coefficients(image)
+
             if image.trace.coefficients is None:
                 logger.error("Can't find trace coefficients for image, stopping reduction", image=image)
                 images_to_remove.append(image)
