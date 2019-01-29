@@ -31,10 +31,10 @@ class Trace(object):
         self.coefficients_table_name = 'coefficients'
 
     def get_trace_centers(self):
-        return get_trace_centroids_from_coefficients(self.image_width, self.coefficients)
+        return get_trace_centers_from_coefficients(self.image_width, self.coefficients)
 
 
-def get_trace_centroids_from_coefficients(image_width, coefficients_and_indices):
+def get_trace_centers_from_coefficients(image_width, coefficients_and_indices):
     #TODO convert this class method to something which requires no user input. Have it call a function outside of
     # this, but have the inputs be set from self.coefficients and self.image_width.
     """

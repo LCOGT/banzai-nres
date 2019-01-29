@@ -93,9 +93,8 @@ class SaveTrace(CalibrationMaker):
 class FitTrace(Stage):
     """
     Loads trace coefficients from file and appends them onto the image object.
-    If no master file is found or self.always_generate_traces_from_scratch, then it will do a blind fit:
 
-    Generates an initial guess for the trace global-meta fitting by fitting the traces order by order.
+    Fits the traces order by order by marching up the detector in y and maximizing flux across the detector in x.
     :param second_order_coefficient_guess : should in no instance ever be changed unless the detector drastically
     changes. This should be the approximate (good to within \pm 30 pixels) difference between the position of the bottom
     of the trace and its position when it contacts the edge of the detector. E.g. if you were to surround a trace in
@@ -158,7 +157,8 @@ class LoadTrace(Stage):
     def get_trace_coefficients(self, image):
         """
         :param image: Banzai Image
-        :return: The coefficients and indices (ndarray), and fiber order tuple from the nearest master trace file.
+        :return: The coefficients and indices (ndarray) array. The first column are the diffraction
+        order designations (e.g. 0,1,2...67)
         """
         coefficients_and_indices = None
         master_trace_full_path = dbs.get_master_calibration_image(image, self.calibration_type,
