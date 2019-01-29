@@ -471,6 +471,16 @@ class TestLoadTrace:
         trace_load_stage.get_trace_coefficients(test_image)
         assert True
 
+    @mock.patch('banzai_nres.traces.LoadTrace.get_trace_coefficients')
+    def test_aborting_if_no_coeffs_found(self, mock_load_coefficients):
+        fake_context = FakeContext(settings=banzai_nres.settings.NRESSettings())
+        trace_load_stage = LoadTrace(fake_context)
+        images = [FakeTraceImage(), FakeTraceImage()]
+        for expected_length, coefficients in zip([2, 0], [0, None]):
+            mock_load_coefficients.return_value = coefficients
+            images = trace_load_stage.do_stage(images)
+            assert len(images) == expected_length
+
 
 class TestSaveTrace:
     """

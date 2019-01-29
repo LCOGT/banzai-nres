@@ -143,9 +143,16 @@ class LoadTrace(Stage):
         return 'TRACE'
 
     def do_stage(self, images):
+        images_to_remove = []
         for image in images:
             image.trace = Trace()
             image.trace.coefficients = self.get_trace_coefficients(image)
+            if image.trace.coefficients is None:
+                logger.error("Can't find trace coefficients for image, stopping reduction", image=image)
+                images_to_remove.append(image)
+                continue
+        for image in images_to_remove:
+            images.remove(image)
         return images
 
     def get_trace_coefficients(self, image):
@@ -169,8 +176,6 @@ class LoadTrace(Stage):
             coefficients_and_indices, lit_fibers = trace_utils.convert_astropy_table_coefficients_to_numpy_array(
                                                                                         coefficients_and_indices_table,
                                                                                         coefficients_table_name=coeffs_name)
-
-            assert coefficients_and_indices is not None
             logger.info('Imported master trace coefficients array with '
                         'shape {0}'.format(str(coefficients_and_indices.shape)))
 
