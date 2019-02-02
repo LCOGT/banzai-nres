@@ -25,11 +25,9 @@ class Trace(object):
     def __init__(self, trace_centers=None, trace_table_name=None, second_order_coefficient_guess=None, poly_fit_order=None):
         self.trace_table_name = trace_table_name # will be taken from settings. when instantiated in TraceMaker
         self.trace_centers = trace_centers
+        # cosnider refactoring trace_centers to just be data. Since it is reduendant to call trace.trace_centers['centers'])
         self.second_order_coefficient_guess = second_order_coefficient_guess
         self.poly_fit_order = poly_fit_order
-        self.design_matrix = None # consider putting this into a TraceFItter class.
-        self.x_norm = None # consider putting this into a TraceFItter class.
-        self.x = None # consider putting this into a TraceFItter class.
 
     def get_trace_centers(self, row):
         return self.trace_centers['centers'][row]
@@ -43,6 +41,33 @@ class Trace(object):
         trace_fitter = SingleTraceFitter(image_data=image.data, start_point=start_point,
                                          second_order_coefficient_guess=second_order_coefficient_guess,
                                          poly_fit_order=poly_fit_order)
+        trace_fitter.generate_initial_guess()
+        at_edge = False
+        direction = 'up'
+        trace_id = 0
+        while not at_edge:
+            single_trace_centers = trace_fitter.fit_trace() #fit for new trace
+            no_more_traces = trace_fitter.match_filter_to_refine_initial_guess(single_trace_centers,
+                                                                               direction=direction)
+            trace.trace_centers['centers'].append(single_trace_centers)
+            trace.trace_centers['id'].append(trace_id)
+            trace_id += 1
+
+            at_edge = Trace._at_edge(single_trace_centers, image_data=image.data)
+            a_repeated_fit = trace._repeated_fit(image.data)
+            a_bad_fit = trace._bad_fit(image.data, direction=direction)
+            if no_more_traces or at_edge or a_repeated_fit or a_bad_fit:
+                if a_repeated_fit or a_bad_fit:
+                    del trace.trace_centers['centers'][-1]
+                    del trace.trace_centers['id'][-1]
+                if direction == 'up':
+                    direction = 'down'
+                    trace_fitter.generate_initial_guess_after_turn_around()
+                    at_edge = trace_fitter.match_filter_to_refine_initial_guess(trace.trace_centers['centers'][0],
+                                                                                direction=direction)
+                else:
+                    at_edge = True
+
         return trace
 
     def write(self, filename):
@@ -50,26 +75,92 @@ class Trace(object):
         table['id'].description = 'Blah'
         table.write(filename)
 
+    def _repeated_fit(self, image_data):
+        center = int(image_data.shape[1] / 2)
+        a_repeated_fit = False
+        if len(self.trace_centers['id']) < 2:
+            a_repeated_fit = False
+        elif np.isclose(self.trace_centers['centers'][-1][center], self.trace_centers['centers'][-2][center], atol=2, rtol=0):
+            a_repeated_fit = True
+        return a_repeated_fit
+
+    def _bad_fit(self, image_data, direction='up'):
+        center = int(image_data.shape[1] / 2)
+        a_bad_fit = False
+        if len(self.trace_centers['id']) < 2:
+            a_bad_fit = False
+        elif direction == 'up' and self.trace_centers['centers'][-1][center] < self.trace_centers['centers'][-2][center]:
+            a_bad_fit = True
+        elif direction == 'down' and self.trace_centers['centers'][-1][center] > self.trace_centers['centers'][-2][center]:
+            a_bad_fit = True
+        return a_bad_fit
+
+    @staticmethod
+    def _at_edge(trace_centers, image_data):
+        trace_protrudes_off_detector = False
+        if np.max(trace_centers) > image_data.shape[0]:
+            trace_protrudes_off_detector = True
+        if np.mean(trace_centers) < 0:
+            trace_protrudes_off_detector = True
+        return trace_protrudes_off_detector
+
 
 class SingleTraceFitter(object):
     #TODO add the other non necessary arguments as keyword arguments for extraargs.
     def __init__(self, image_data=None, poly_fit_order=2, start_point=None, second_order_coefficient_guess=None,
-                 extraargs={}):
+                 march_parameters=None, extraargs={}):
+        if march_parameters is None:
+            march_parameters = {'window': 100, 'step_size': 6}
+        if extraargs.get('coefficients') is None:
+            extraargs['coefficients'] = []
         self.second_order_coefficient_guess = second_order_coefficient_guess
         self.start_point = start_point
         self.image_data = image_data
         self.poly_fit_order = poly_fit_order
         self.filtered_image_data = extraargs.get('filtered_image_data')
-        self.coefficients = extraargs.get('coefficients')
         self.initial_guess_next_fit = extraargs.get('initial_guess_next_fit')
+        self.coefficients = extraargs.get('coefficients')
         self.x = extraargs.get('x')
         self.x_norm = extraargs.get('xnorm')
         self.design_matrix = extraargs.get('design_matrix')
+        self.march_parameters = march_parameters
         if extraargs.get('initialize_fit_objects', True) is True:
             self._initialize_fit_objects()
 
-    def match_filter_to_refine_initial_guess(self):
-        return None
+    def fit_trace(self):
+        initial_guess = self.initial_guess_next_fit
+        refined_coefficients = optimize.minimize(SingleTraceFitter._trace_merit_function, initial_guess,
+                                                 args=(self,), method='Powell').x
+        self.coefficients.append(refined_coefficients)
+        return self._centers_from_coefficients(refined_coefficients)
+
+    def match_filter_to_refine_initial_guess(self, current_trace_centers, direction='up'):
+        shifted_trace_centers, offsets = self._centers_shifting_traces_up_or_down(current_trace_centers,
+                                                                                  direction=direction)
+        flux_vs_shift = self._flux_as_trace_shifts_up_or_down(shifted_trace_centers)
+        reference_flux = max(self._flux_across_trace(current_trace_centers), np.max(flux_vs_shift))
+        index_of_max_flux, maximum_exists = maxima(flux_vs_shift, 5, 1 / 20, reference_flux)
+        self.initial_guess_next_fit[0] += offsets[index_of_max_flux]
+        no_more_traces = not maximum_exists
+        return no_more_traces
+
+    def _flux_as_trace_shifts_up_or_down(self, shifted_traces):
+        flux_vs_shift = []
+        for trace in shifted_traces:
+            flux_vs_shift.append(self._flux_across_trace(trace))
+        return flux_vs_shift
+
+    def _centers_shifting_traces_up_or_down(self, current_trace_centers, direction='up'):
+        window = self.march_parameters['window']
+        step = self.march_parameters['step_size']
+        if direction == 'up':
+            offsets = np.arange(step, window, 1)
+        if direction == 'down':
+            offsets = np.arange((-1)*window, (-1)*step, 1)[::-1]
+        shifted_trace_centers = np.ones((offsets.shape[0], current_trace_centers.shape[0]))
+        shifted_trace_centers *= current_trace_centers
+        shifted_trace_centers += np.array([offsets]).T
+        return shifted_trace_centers, offsets
 
     def generate_initial_guess_after_turn_around(self):
         self.initial_guess_next_fit = self.coefficients[0]
@@ -83,11 +174,15 @@ class SingleTraceFitter(object):
             self.initial_guess_next_fit[0] = self.start_point
             self.initial_guess_next_fit[2] = self.second_order_coefficient_guess
 
-    def _centers_from_coefficients(self, single_trace_coefficients):
-        #trace_centers = self.x * 0.
-        #for i in range(len(self.design_matrix)):
-        #    trace_centers += self.design_matrix[i] * single_trace_coefficients[i]
-        trace_centers = np.dot(single_trace_coefficients, self.design_matrix)
+    def _centers_from_coefficients(self, coefficients):
+        """
+        :param coefficients: a 1d array for the coefficients of a single trace in order of: [0th, 1st,.. mth degree coefficient]
+        or a 2d array of shape (N, m+1) for N traces.
+        :return: If coefficients is 1d of size m+1, this will return an array of shape image_data.shape[1] with the trace
+        centers at each of those points. If coefficients is for many traces (shape (N, m+1)) then this will return a 2d
+        array of shape (N, image_data.shape[1]) e.g. the trace centers for each of the traces.
+        """
+        trace_centers = np.dot(coefficients, self.design_matrix)
         return trace_centers
 
     def _flux_across_trace(self, trace_centers):
@@ -102,6 +197,12 @@ class SingleTraceFitter(object):
     def _normalize_domain_coordinates(self):
         self.x = np.arange(self.image_data.shape[1])
         self.x_norm = self.x * 2. / self.x[-1] - 1  # x normalized to run from -1 to 1
+
+    @staticmethod
+    def _trace_merit_function(single_trace_coefficients, cls):
+        trace_centers = cls._centers_from_coefficients(single_trace_coefficients)
+        flux = cls._flux_across_trace(trace_centers)
+        return (-1)*flux
 
     @staticmethod
     def _prefilter_image_data(image_data):

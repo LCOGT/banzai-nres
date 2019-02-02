@@ -30,13 +30,18 @@ class TestSingleTraceFitter:
         assert fitter.second_order_coefficient_guess is None
         assert fitter.start_point is None
         assert fitter.image_data is None
-        assert fitter.poly_fit_order == 2
         assert fitter.filtered_image_data is None
-        assert fitter.coefficients is None
         assert fitter.initial_guess_next_fit is None
         assert fitter.x is None
         assert fitter.x_norm is None
         assert fitter.design_matrix is None
+
+    def test_default_class_attributes(self):
+        fitter = SingleTraceFitter(extraargs={'initialize_fit_objects': False})
+        assert fitter.march_parameters['window'] == 100
+        assert fitter.march_parameters['step_size'] == 6
+        assert fitter.poly_fit_order == 2
+        assert fitter.coefficients == []
 
     def test_fit_initilization(self):
         poly_fit_order = 2
