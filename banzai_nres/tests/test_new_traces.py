@@ -90,3 +90,12 @@ class TestSingleTraceFitter:
         expected_flux = len(x)
         flux = fitter._flux_across_trace(trace_centers)
         assert np.isclose(flux, expected_flux)
+
+    def test_normalizing_coordinates(self):
+        x = np.arange(5)
+        x_norm = np.linspace(-1, 1, len(x))
+        fake_data = np.zeros((9, len(x)))
+        fitter = SingleTraceFitter(image_data=fake_data, extraargs={'initialize_fit_objects': False})
+        fitter._normalize_domain_coordinates()
+        assert np.allclose(fitter.x, x)
+        assert np.allclose(fitter.x_norm, x_norm)
