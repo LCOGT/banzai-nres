@@ -40,9 +40,9 @@ class TraceMaker(CalibrationMaker):
             trace = Trace()
             logger.debug('fitting traces order by order', image=image)
             trace.coefficients = fit_traces_order_by_order(image.data,
-                                                                 self.second_order_coefficient_guess,
-                                                                 order_of_poly_fits=self.order_of_poly_fit,
-                                                                 num_lit_fibers=image.num_lit_fibers())
+                                                           self.second_order_coefficient_guess,
+                                                           order_of_poly_fits=self.order_of_poly_fit,
+                                                           num_lit_fibers=image.num_lit_fibers())
             traces.append(trace)
         return traces
 

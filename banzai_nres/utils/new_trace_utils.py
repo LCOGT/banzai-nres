@@ -18,25 +18,24 @@ logger = logging.getLogger(__name__)
 
 class Trace(object):
     """
-    :param trace_centers = {'id': ndarray, 'centers': ndarray}. 'centers' gives a 2d array, where
+    :param data = {'id': ndarray, 'centers': ndarray}. 'centers' gives a 2d array, where
     the jth row are the y centers across the detector for the trace with identification trace_centers['id'][j]
     :param design_matrix = the 2d array such that coefficients dot design_matrix gives the trace centers for all the orders.
     """
-    def __init__(self, trace_centers=None, trace_table_name=None, second_order_coefficient_guess=None, poly_fit_order=None):
+    def __init__(self, data=None, trace_table_name=None, second_order_coefficient_guess=None, poly_fit_order=None):
         self.trace_table_name = trace_table_name # will be taken from settings. when instantiated in TraceMaker
-        self.trace_centers = trace_centers
-        # cosnider refactoring trace_centers to just be data. Since it is reduendant to call trace.trace_centers['centers'])
+        self.data = data
         self.second_order_coefficient_guess = second_order_coefficient_guess
         self.poly_fit_order = poly_fit_order
 
     def get_trace_centers(self, row):
-        return self.trace_centers['centers'][row]
+        return self.data['centers'][row]
 
     @staticmethod
-    def fit_traces(cls, image, poly_fit_order, second_order_coefficient_guess):
-        trace = cls(trace_centers={'id': [], 'centers': []},
-                    poly_fit_order=poly_fit_order,
-                    second_order_coefficient_guess=second_order_coefficient_guess)
+    def fit_traces(image, poly_fit_order, second_order_coefficient_guess):
+        trace = Trace(data={'id': [], 'centers': []},
+                      poly_fit_order=poly_fit_order,
+                      second_order_coefficient_guess=second_order_coefficient_guess)
         start_point = image.data.shape[0]/3
         trace_fitter = SingleTraceFitter(image_data=image.data, start_point=start_point,
                                          second_order_coefficient_guess=second_order_coefficient_guess,
@@ -50,60 +49,68 @@ class Trace(object):
             trace_fitter.use_previous_fit_as_initial_guess()
             no_more_traces = trace_fitter.match_filter_to_refine_initial_guess(single_trace_centers,
                                                                                direction=direction)
-            trace.trace_centers['centers'].append(single_trace_centers)
-            trace.trace_centers['id'].append(trace_id)
+            trace.data['centers'].append(single_trace_centers)
+            trace.data['id'].append(trace_id)
             trace_id += 1
 
-            at_edge = Trace._at_edge(single_trace_centers, image_data=image.data)
+            beyond_edge = Trace._beyond_edge(single_trace_centers, image_data=image.data)
             a_repeated_fit = trace._repeated_fit(image.data)
             a_bad_fit = trace._bad_fit(image.data, direction=direction)
-            if no_more_traces or at_edge or a_repeated_fit or a_bad_fit:
-                if a_repeated_fit or a_bad_fit:
-                    del trace.trace_centers['centers'][-1]
-                    del trace.trace_centers['id'][-1]
+            if no_more_traces or beyond_edge or a_repeated_fit or a_bad_fit:
+                if beyond_edge or a_repeated_fit or a_bad_fit:
+                    del trace.data['centers'][-1]
+                    del trace.data['id'][-1]
                 if direction == 'up':
                     direction = 'down'
                     trace_fitter.use_very_first_fit_as_initial_guess()
-                    at_edge = trace_fitter.match_filter_to_refine_initial_guess(trace.trace_centers['centers'][0],
+                    at_edge = trace_fitter.match_filter_to_refine_initial_guess(trace.data['centers'][0],
                                                                                 direction=direction)
                 else:
                     at_edge = True
-
+        trace._sort_traces_hierarchically(image.data)
         return trace
 
     def write(self, filename):
-        table = Table(self.trace_centers, name=self.trace_table_name)
+        table = Table(self.data, name=self.trace_table_name)
         table['id'].description = 'Blah'
         table.write(filename)
 
     def _repeated_fit(self, image_data):
         center = int(image_data.shape[1] / 2)
         a_repeated_fit = False
-        if len(self.trace_centers['id']) < 2:
+        if len(self.data['id']) < 2:
             a_repeated_fit = False
-        elif np.isclose(self.trace_centers['centers'][-1][center], self.trace_centers['centers'][-2][center], atol=2, rtol=0):
+        elif np.isclose(self.data['centers'][-1][center], self.data['centers'][-2][center], atol=2, rtol=0):
             a_repeated_fit = True
         return a_repeated_fit
 
     def _bad_fit(self, image_data, direction='up'):
         center = int(image_data.shape[1] / 2)
         a_bad_fit = False
-        if len(self.trace_centers['id']) < 2:
+        if len(self.data['id']) < 2:
             a_bad_fit = False
-        elif direction == 'up' and self.trace_centers['centers'][-1][center] < self.trace_centers['centers'][-2][center]:
+        elif direction == 'up' and self.data['centers'][-1][center] < self.data['centers'][-2][center]:
             a_bad_fit = True
-        elif direction == 'down' and self.trace_centers['centers'][-1][center] > self.trace_centers['centers'][-2][center]:
+        elif direction == 'down' and self.data['centers'][-1][center] > self.data['centers'][-2][center]:
             a_bad_fit = True
         return a_bad_fit
 
     @staticmethod
-    def _at_edge(trace_centers, image_data):
+    def _beyond_edge(data, image_data):
         trace_protrudes_off_detector = False
-        if np.max(trace_centers) > image_data.shape[0]:
+        if np.max(data) > image_data.shape[0]:
             trace_protrudes_off_detector = True
-        if np.mean(trace_centers) < 0:
+        if np.min(data) < 0:
             trace_protrudes_off_detector = True
         return trace_protrudes_off_detector
+
+    def _sort_traces_hierarchically(self, image_data):
+        center = int(image_data.shape[1] / 2)
+        self.data['centers'] = np.array(self.data['centers'])
+        self.data['centers'] = self.data['centers'][self.data['centers'][:, center].argsort()]
+        self.data['id'] = np.arange(self.data['centers'].shape[0])
+
+
 
 
 class SingleTraceFitter(object):

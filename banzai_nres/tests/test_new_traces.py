@@ -15,12 +15,12 @@ class TestTrace:
     def test_class_attributes(self):
         trace = Trace()
         assert trace.trace_table_name is None
-        assert trace.trace_centers is None
+        assert trace.data is None
         assert trace.second_order_coefficient_guess is None
         assert trace.poly_fit_order is None
 
     def test_getting_trace_centers(self):
-        trace = Trace(trace_centers={'id': [0, 1], 'centers': [[0, 1], [1, 2]]})
+        trace = Trace(data={'id': [0, 1], 'centers': [[0, 1], [1, 2]]})
         assert trace.get_trace_centers(0) == [0, 1]
 
 
