@@ -46,7 +46,8 @@ class Trace(object):
         direction = 'up'
         trace_id = 0
         while not at_edge:
-            single_trace_centers = trace_fitter.fit_trace() #fit for new trace
+            single_trace_centers = trace_fitter.fit_trace()
+            trace_fitter.use_previous_fit_as_initial_guess()
             no_more_traces = trace_fitter.match_filter_to_refine_initial_guess(single_trace_centers,
                                                                                direction=direction)
             trace.trace_centers['centers'].append(single_trace_centers)
@@ -62,7 +63,7 @@ class Trace(object):
                     del trace.trace_centers['id'][-1]
                 if direction == 'up':
                     direction = 'down'
-                    trace_fitter.generate_initial_guess_after_turn_around()
+                    trace_fitter.use_very_first_fit_as_initial_guess()
                     at_edge = trace_fitter.match_filter_to_refine_initial_guess(trace.trace_centers['centers'][0],
                                                                                 direction=direction)
                 else:
@@ -162,8 +163,11 @@ class SingleTraceFitter(object):
         shifted_trace_centers += np.array([offsets]).T
         return shifted_trace_centers, offsets
 
-    def generate_initial_guess_after_turn_around(self):
+    def use_very_first_fit_as_initial_guess(self):
         self.initial_guess_next_fit = self.coefficients[0]
+
+    def use_previous_fit_as_initial_guess(self):
+        self.initial_guess_next_fit = self.coefficients[-1]
 
     def generate_initial_guess(self):
         if self.start_point is None or self.second_order_coefficient_guess is None:
