@@ -7,7 +7,7 @@ Authors
 """
 
 import numpy as np
-from scipy import ndimage, optimize
+from scipy import ndimage, optimize, signal
 from astropy.table import Table
 import copy
 
@@ -24,9 +24,11 @@ class Trace(object):
     """
     def __init__(self, data=None, trace_table_name=None, second_order_coefficient_guess=None, poly_fit_order=None):
         self.trace_table_name = trace_table_name # will be taken from settings. when instantiated in TraceMaker
-        self.data = data
-        self.second_order_coefficient_guess = second_order_coefficient_guess
-        self.poly_fit_order = poly_fit_order
+        self.data = data # will be taken from settings. when instantiated in TraceMaker
+        self.second_order_coefficient_guess = second_order_coefficient_guess # will be taken from settings. when instantiated in TraceMaker
+        self.poly_fit_order = poly_fit_order # will be taken from settings. when instantiated in TraceMaker
+        self.fit_march_parameters = {'window': 100, 'step_size': 6}
+        #TODO move the Trace class into the trace.py file and instantiate all the above from settings
 
     def get_trace_centers(self, row):
         return self.data['centers'][row]
@@ -39,7 +41,8 @@ class Trace(object):
         start_point = image.data.shape[0]/3
         trace_fitter = SingleTraceFitter(image_data=image.data, start_point=start_point,
                                          second_order_coefficient_guess=second_order_coefficient_guess,
-                                         poly_fit_order=poly_fit_order)
+                                         poly_fit_order=poly_fit_order,
+                                         march_parameters=trace.fit_march_parameters)
         trace_fitter.generate_initial_guess()
         at_edge = False
         direction = 'up'
@@ -53,7 +56,7 @@ class Trace(object):
             trace.data['id'].append(trace_id)
             trace_id += 1
 
-            beyond_edge = Trace._beyond_edge(single_trace_centers, image_data=image.data)
+            beyond_edge = trace._beyond_edge(single_trace_centers, image_data=image.data)
             a_repeated_fit = trace._repeated_fit(image.data)
             a_bad_fit = trace._bad_fit(image.data, direction=direction)
             if no_more_traces or beyond_edge or a_repeated_fit or a_bad_fit:
@@ -146,13 +149,21 @@ class SingleTraceFitter(object):
         return self._centers_from_coefficients(refined_coefficients)
 
     def match_filter_to_refine_initial_guess(self, current_trace_centers, direction='up'):
+        no_more_traces = False
         shifted_trace_centers, offsets = self._centers_shifting_traces_up_or_down(current_trace_centers,
                                                                                   direction=direction)
         flux_vs_shift = self._flux_as_trace_shifts_up_or_down(shifted_trace_centers)
         reference_flux = max(self._flux_across_trace(current_trace_centers), np.max(flux_vs_shift))
-        index_of_max_flux, maximum_exists = maxima(flux_vs_shift, 5, 1 / 20, reference_flux)
-        self.initial_guess_next_fit[0] += offsets[index_of_max_flux]
-        no_more_traces = not maximum_exists
+        min_peak_height = abs(reference_flux)/20
+        min_peak_spacing = 5
+        peak_indices = signal.find_peaks(flux_vs_shift,
+                                         height=min_peak_height,
+                                         distance=min_peak_spacing)[0]
+        if len(peak_indices) == 0:
+            peak_indices = [0]
+            no_more_traces = True
+        index_of_first_peak = peak_indices[0]
+        self.initial_guess_next_fit[0] += offsets[index_of_first_peak]
         return no_more_traces
 
     def _flux_as_trace_shifts_up_or_down(self, shifted_traces):
@@ -165,9 +176,9 @@ class SingleTraceFitter(object):
         window = self.march_parameters['window']
         step = self.march_parameters['step_size']
         if direction == 'up':
-            offsets = np.arange(step, window, 1)
+            offsets = np.arange(step, window+step, 1)
         if direction == 'down':
-            offsets = np.arange((-1)*window, (-1)*step, 1)[::-1]
+            offsets = np.arange((-1)*step, (-1)*(window+step), -1)
         shifted_trace_centers = np.ones((offsets.shape[0], current_trace_centers.shape[0]))
         shifted_trace_centers *= current_trace_centers
         shifted_trace_centers += np.array([offsets]).T
@@ -187,6 +198,13 @@ class SingleTraceFitter(object):
             self.initial_guess_next_fit = np.zeros(self.poly_fit_order+1).astype(np.float64)
             self.initial_guess_next_fit[0] = self.start_point
             self.initial_guess_next_fit[2] = self.second_order_coefficient_guess
+
+    @staticmethod
+    def _generate_design_matrix(normalized_domain, poly_fit_order):
+        design_matrix = np.ones((poly_fit_order + 1, normalized_domain.shape[0]))
+        for i in range(poly_fit_order + 1):
+            design_matrix[i] = legendre(order=i, values=normalized_domain)
+        return design_matrix
 
     def _centers_from_coefficients(self, coefficients):
         """
@@ -221,13 +239,6 @@ class SingleTraceFitter(object):
     @staticmethod
     def _prefilter_image_data(image_data):
         return ndimage.spline_filter(image_data)
-
-    @staticmethod
-    def _generate_design_matrix(normalized_domain, poly_fit_order):
-        design_matrix = np.ones((poly_fit_order + 1, normalized_domain.shape[0]))
-        for i in range(poly_fit_order + 1):
-            design_matrix[i] = legendre(order=i, values=normalized_domain)
-        return design_matrix
 
 
 def legendre(order, values):

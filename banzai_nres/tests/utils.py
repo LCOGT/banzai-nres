@@ -72,3 +72,14 @@ def generate_sample_astropy_nres_values_table(fiber_order=None, table_name=None)
     if table_name is not None:
         coefficients_table[test_trace.coefficients_table_name].name = table_name
     return test_trace, coefficients_and_indices, coefficients_table
+
+
+def array_with_two_peaks():
+    """
+    :return: generates a fake signal with two peaks with height 1.
+    """
+    centroids = (15, 30)
+    x = np.linspace(0, 50, num=100)
+    vectorized_gaussian = np.vectorize(gaussian)
+    y = vectorized_gaussian(x, 1, centroids[0], 1.5) + vectorized_gaussian(x, 1, centroids[1], 1.5)
+    return y, centroids, x

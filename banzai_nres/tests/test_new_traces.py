@@ -3,6 +3,7 @@ import numpy as np
 from unittest import mock
 import logging
 
+from banzai_nres.tests.utils import array_with_two_peaks
 from banzai_nres.utils.new_trace_utils import Trace, SingleTraceFitter
 
 logger = logging.getLogger(__name__)
@@ -18,6 +19,7 @@ class TestTrace:
         assert trace.data is None
         assert trace.second_order_coefficient_guess is None
         assert trace.poly_fit_order is None
+        assert trace.fit_march_parameters['window'] == 100
 
     def test_getting_trace_centers(self):
         trace = Trace(data={'id': [0, 1], 'centers': [[0, 1], [1, 2]]})
@@ -99,6 +101,10 @@ class TestSingleTraceFitter:
         assert fitter.coefficients == []
 
     def test_fit_initilization(self):
+        """
+        tests that SingleTraceFitter calls _initialize_fit_objects correctly upon
+        instantiation of the class.
+        """
         poly_fit_order = 2
         fitter = SingleTraceFitter(image_data=np.zeros((2, 2)),
                                    poly_fit_order=poly_fit_order,
@@ -134,7 +140,7 @@ class TestSingleTraceFitter:
         fitter.generate_initial_guess()
         assert fitter.initial_guess_next_fit is None
 
-    def test_trace_centers_from_coefficients(self):
+    def test_centers_from_coefficients(self):
         design_matrix = np.ones((2, 5))
         design_matrix[1] = np.linspace(-1, 1, 5)
         offset, linear_coefficient = 1, 0.5
@@ -147,7 +153,7 @@ class TestSingleTraceFitter:
         a_line = np.linspace(offset - linear_coefficient, offset + linear_coefficient, 5)
         assert np.allclose(trace_centers, a_line)
 
-    def test_flux_across_image(self):
+    def test_flux_across_trace(self):
         x = np.arange(5)
         fake_data = np.zeros((9, len(x)))
         fake_data[3] += 1
@@ -160,6 +166,23 @@ class TestSingleTraceFitter:
         flux = fitter._flux_across_trace(trace_centers)
         assert np.isclose(flux, expected_flux)
 
+    def test_trace_merit_function_returns_negative_flux(self):
+        x = np.arange(5)
+        fake_data = np.zeros((9, len(x)))
+        fake_data[3] += 1
+        coefficients_for_line = np.array([3, 0])
+        design_matrix = np.array([np.ones(len(x)),
+                                  np.linspace(-1, 1, len(x))])
+        filtered_fake_data = SingleTraceFitter._prefilter_image_data(fake_data)
+        fitter = SingleTraceFitter(extraargs={'initialize_fit_objects': False,
+                                              'x': x,
+                                              'design_matrix': design_matrix,
+                                              'filtered_image_data': filtered_fake_data})
+        negative_flux = (-1)*len(x)
+        merit = fitter._trace_merit_function(single_trace_coefficients=coefficients_for_line,
+                                             cls=fitter)
+        assert np.isclose(merit, negative_flux)
+
     def test_normalizing_coordinates(self):
         x = np.arange(5)
         x_norm = np.linspace(-1, 1, len(x))
@@ -168,3 +191,66 @@ class TestSingleTraceFitter:
         fitter._normalize_domain_coordinates()
         assert np.allclose(fitter.x, x)
         assert np.allclose(fitter.x_norm, x_norm)
+
+    def test_generating_legendre_design_matrix(self):
+        x = np.arange(5)
+        xnorm = np.linspace(-1, 1, len(x))
+        design_matrix = np.array([np.ones(len(x)),
+                                  xnorm])
+        assert np.allclose(design_matrix,
+                           SingleTraceFitter._generate_design_matrix(xnorm, poly_fit_order=1))
+
+    def test_fit_trace(self):
+        #TODO
+        assert True
+
+
+class TestMatchFilter:
+    """
+    Tests for the functions in single trace fitter which are used to find
+    the approximate locations of the next trace during a march up the detector.
+    """
+    def test_shifting_traces_up_and_down(self):
+        w, s = 2, 6
+        fitter = SingleTraceFitter(extraargs={'initialize_fit_objects': False},
+                                   march_parameters={'window': w, 'step_size': s})
+        current_trace_centers = np.arange(10)
+        shifted_trace_centers, offsets = fitter._centers_shifting_traces_up_or_down(current_trace_centers,
+                                                                                    direction='up')
+        assert np.allclose(shifted_trace_centers, np.array([current_trace_centers + s,
+                                                            current_trace_centers + s + 1]))
+        assert np.allclose(offsets, [6, 7])
+
+        shifted_trace_centers, offsets = fitter._centers_shifting_traces_up_or_down(current_trace_centers,
+                                                                                    direction='down')
+        assert np.allclose(shifted_trace_centers, np.array([current_trace_centers - s,
+                                                            current_trace_centers - s - 1]))
+        assert np.allclose(offsets, [-6, -7])
+
+    @mock.patch('banzai_nres.utils.new_trace_utils.SingleTraceFitter._flux_across_trace', side_effect=np.max)
+    def test_getting_flux_for_all_shifted_traces(self, flux_across_trace):
+        fitter = SingleTraceFitter(extraargs={'initialize_fit_objects': False})
+        shifted_traces = np.array([[1, 2], [2, 3], [4, 5]])
+        flux_per_trace = fitter._flux_as_trace_shifts_up_or_down(shifted_traces)
+        assert np.allclose(flux_per_trace, np.max(shifted_traces, axis=1))
+
+    @mock.patch('banzai_nres.utils.new_trace_utils.SingleTraceFitter._flux_across_trace')
+    @mock.patch('banzai_nres.utils.new_trace_utils.SingleTraceFitter._flux_as_trace_shifts_up_or_down')
+    @mock.patch('banzai_nres.utils.new_trace_utils.SingleTraceFitter._centers_shifting_traces_up_or_down')
+    def test_match_filter_to_refine_initial_guess(self, shift_centers, flux_vs_shift, reference_flux):
+        fitter = SingleTraceFitter(extraargs={'initialize_fit_objects': False})
+        positive_trace_signal, centroids, x_coords = array_with_two_peaks()
+        no_trace_signal = np.random.normal(loc=0, scale=np.max(positive_trace_signal)/50,
+                                           size=len(positive_trace_signal))
+        shift_centers.return_value = None, x_coords
+        reference_flux.return_value = np.max(positive_trace_signal)
+        for trace_signal, outcome, prediction in zip([positive_trace_signal, no_trace_signal],
+                                                     [centroids[0], 0],
+                                                     [False, True]):
+            fitter.initial_guess_next_fit = [0]
+            flux_vs_shift.return_value = trace_signal
+            no_more_traces = fitter.match_filter_to_refine_initial_guess(current_trace_centers=None, direction=None)
+            assert np.isclose(fitter.initial_guess_next_fit[0], outcome, atol=3, rtol=0)
+            assert no_more_traces is prediction
+
+
