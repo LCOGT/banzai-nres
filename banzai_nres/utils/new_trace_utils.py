@@ -28,6 +28,7 @@ class Trace(object):
         self.second_order_coefficient_guess = second_order_coefficient_guess # will be taken from settings. when instantiated in TraceMaker
         self.poly_fit_order = poly_fit_order # will be taken from settings. when instantiated in TraceMaker
         self.fit_march_parameters = {'window': 100, 'step_size': 6}
+        self.match_filter_parameters = {'min_peak_spacing': 5, 'neighboring_peak_flux_ratio': 20}
         #TODO move the Trace class into the trace.py file and instantiate all the above from settings
 
     def get_trace_centers(self, row):
@@ -42,7 +43,8 @@ class Trace(object):
         trace_fitter = SingleTraceFitter(image_data=image.data, start_point=start_point,
                                          second_order_coefficient_guess=second_order_coefficient_guess,
                                          poly_fit_order=poly_fit_order,
-                                         march_parameters=trace.fit_march_parameters)
+                                         march_parameters=trace.fit_march_parameters,
+                                         match_filter_parameters=trace.match_filter_parameters)
         trace_fitter.generate_initial_guess()
         at_edge = False
         direction = 'up'
@@ -122,9 +124,11 @@ class Trace(object):
 class SingleTraceFitter(object):
     #TODO add the other non necessary arguments as keyword arguments for extraargs.
     def __init__(self, image_data=None, poly_fit_order=2, start_point=None, second_order_coefficient_guess=None,
-                 march_parameters=None, extraargs={}):
+                 march_parameters=None, match_filter_parameters=None, extraargs={}):
         if march_parameters is None:
             march_parameters = {'window': 100, 'step_size': 6}
+        if match_filter_parameters is None:
+            match_filter_parameters = {'min_peak_spacing': 5, 'neighboring_peak_flux_ratio': 20}
         if extraargs.get('coefficients') is None:
             extraargs['coefficients'] = []
         self.second_order_coefficient_guess = second_order_coefficient_guess
@@ -138,6 +142,7 @@ class SingleTraceFitter(object):
         self.x_norm = extraargs.get('xnorm')
         self.design_matrix = extraargs.get('design_matrix')
         self.march_parameters = march_parameters
+        self.match_filter_parameters = match_filter_parameters
         if extraargs.get('initialize_fit_objects', True) is True:
             self._initialize_fit_objects()
 
@@ -156,11 +161,10 @@ class SingleTraceFitter(object):
         bg_subtracted_flux = flux_vs_shift - np.median(flux_vs_shift)
         current_trace_flux = self._flux_across_trace(current_trace_centers) - np.median(flux_vs_shift)
         reference_flux = max(current_trace_flux, np.max(bg_subtracted_flux))
-        min_peak_height = abs(reference_flux)/20
-        min_peak_spacing = 5
+        min_peak_height = abs(reference_flux)/self.match_filter_parameters['neighboring_peak_flux_ratio']
         peak_indices = signal.find_peaks(bg_subtracted_flux,
                                          height=min_peak_height,
-                                         distance=min_peak_spacing)[0]
+                                         distance=self.match_filter_parameters['min_peak_spacing'])[0]
         if len(peak_indices) == 0:
             peak_indices = [0]
             no_more_traces = True

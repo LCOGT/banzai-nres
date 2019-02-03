@@ -239,8 +239,9 @@ class TestMatchFilter:
     @mock.patch('banzai_nres.utils.new_trace_utils.SingleTraceFitter._centers_shifting_traces_up_or_down')
     def test_match_filter_to_refine_initial_guess(self, shift_centers, flux_vs_shift, reference_flux):
         fitter = SingleTraceFitter(extraargs={'initialize_fit_objects': False})
+        fitter.match_filter_parameters = {'min_peak_spacing': 5, 'neighboring_peak_flux_ratio': 20}
         positive_trace_signal, centroids, x_coords = array_with_two_peaks()
-        no_trace_signal = np.random.normal(loc=0, scale=np.max(positive_trace_signal)/50,
+        no_trace_signal = np.random.normal(loc=0, scale=np.max(positive_trace_signal)/100,
                                            size=len(positive_trace_signal))
         shift_centers.return_value = None, x_coords
         reference_flux.return_value = np.max(positive_trace_signal)
