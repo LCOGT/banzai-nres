@@ -153,10 +153,12 @@ class SingleTraceFitter(object):
         shifted_trace_centers, offsets = self._centers_shifting_traces_up_or_down(current_trace_centers,
                                                                                   direction=direction)
         flux_vs_shift = self._flux_as_trace_shifts_up_or_down(shifted_trace_centers)
-        reference_flux = max(self._flux_across_trace(current_trace_centers), np.max(flux_vs_shift))
+        bg_subtracted_flux = flux_vs_shift - np.median(flux_vs_shift)
+        current_trace_flux = self._flux_across_trace(current_trace_centers) - np.median(flux_vs_shift)
+        reference_flux = max(current_trace_flux, np.max(bg_subtracted_flux))
         min_peak_height = abs(reference_flux)/20
         min_peak_spacing = 5
-        peak_indices = signal.find_peaks(flux_vs_shift,
+        peak_indices = signal.find_peaks(bg_subtracted_flux,
                                          height=min_peak_height,
                                          distance=min_peak_spacing)[0]
         if len(peak_indices) == 0:
@@ -170,7 +172,7 @@ class SingleTraceFitter(object):
         flux_vs_shift = []
         for trace in shifted_traces:
             flux_vs_shift.append(self._flux_across_trace(trace))
-        return flux_vs_shift
+        return np.array(flux_vs_shift)
 
     def _centers_shifting_traces_up_or_down(self, current_trace_centers, direction='up'):
         window = self.march_parameters['window']
