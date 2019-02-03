@@ -23,6 +23,61 @@ class TestTrace:
         trace = Trace(data={'id': [0, 1], 'centers': [[0, 1], [1, 2]]})
         assert trace.get_trace_centers(0) == [0, 1]
 
+    def test_write(self):
+        #TODO
+        assert True
+
+    def test_detecting_repeated_fit(self):
+        fake_image_data = np.zeros((3, 3))
+        centers = np.array([1, 2, 3])
+        data = {'id': [1, 2], 'centers': [centers, centers+0.1]}
+        trace = Trace(data=data)
+        assert trace._repeated_fit(fake_image_data)
+
+    def test_detecting_bad_fits(self):
+        fake_image_data = np.zeros((3, 3))
+        centers = np.array([1, 2, 3])
+        data = {'id': [1], 'centers': [centers]}
+        trace = Trace(data=data)
+        assert not trace._bad_fit(fake_image_data, direction='up')
+
+        trace.data = {'id': [1, 2], 'centers': [centers, centers-0.1]}
+        assert trace._bad_fit(fake_image_data, direction='up')
+
+        trace.data = {'id': [1, 2], 'centers': [centers, centers+0.1]}
+        assert trace._bad_fit(fake_image_data, direction='down')
+
+    def test_detecting_beyond_edge(self):
+        fake_image_data = np.zeros((3, 3))
+        single_trace_centers = [3.1, 3.1, 3.1]
+        assert Trace._beyond_edge(single_trace_centers, fake_image_data)
+        single_trace_centers = [-0.1, -0.1, -0.1]
+        assert Trace._beyond_edge(single_trace_centers, fake_image_data)
+
+    def test_sorting_trace_centers(self):
+        fake_image_data = np.zeros((3, 3))
+        centers = np.array([1, 2, 3])
+        data = {'id': [1, 2, 3, 4],
+                'centers': [centers, centers+5, centers-10, centers+2]}
+        trace = Trace(data=data)
+        trace._sort_traces_hierarchically(fake_image_data)
+        assert np.allclose(trace.data['id'], np.arange(4))
+        assert np.allclose(trace.data['centers'],
+                           np.array([centers-10, centers, centers+2, centers+5]))
+
+    def test_trimming_bad_fits(self):
+        centers = np.array([1, 2, 3])
+        data = {'id': [1, 2, 3],
+                'centers': [centers, centers+5, centers+10]}
+        trace = Trace(data=data)
+        trace._trim_last_fit_based_on_criterion(True)
+        assert np.allclose(trace.data['id'], [1, 2])
+        assert np.allclose(trace.data['centers'], [centers, centers+5])
+
+        trace._trim_last_fit_based_on_criterion(False)
+        assert np.allclose(trace.data['id'], [1, 2])
+        assert np.allclose(trace.data['centers'], [centers, centers+5])
+
 
 class TestSingleTraceFitter:
     def test_class_attributes(self):
@@ -61,6 +116,15 @@ class TestSingleTraceFitter:
                                    second_order_coefficient_guess=90)
         fitter.generate_initial_guess()
         assert np.allclose(fitter.initial_guess_next_fit, np.array([1, 0, 90]))
+
+    def test_changing_initial_guesses(self):
+        coefficients = np.array([[0, 0],[1, 1]])
+        fitter = SingleTraceFitter(extraargs={'initialize_fit_objects': False,
+                                              'coefficients': coefficients})
+        fitter.use_previous_fit_as_initial_guess()
+        assert np.allclose(fitter.initial_guess_next_fit, coefficients[-1])
+        fitter.use_very_first_fit_as_initial_guess()
+        assert np.allclose(fitter.initial_guess_next_fit, coefficients[0])
 
     def test_generating_initial_guess_fail(self):
         fitter = SingleTraceFitter(image_data=np.zeros((2, 2)),

@@ -57,9 +57,9 @@ class Trace(object):
             a_repeated_fit = trace._repeated_fit(image.data)
             a_bad_fit = trace._bad_fit(image.data, direction=direction)
             if no_more_traces or beyond_edge or a_repeated_fit or a_bad_fit:
-                if beyond_edge or a_repeated_fit or a_bad_fit:
-                    del trace.data['centers'][-1]
-                    del trace.data['id'][-1]
+                trace._trim_last_fit_based_on_criterion(beyond_edge,
+                                                        a_repeated_fit,
+                                                        a_bad_fit)
                 if direction == 'up':
                     direction = 'down'
                     trace_fitter.use_very_first_fit_as_initial_guess()
@@ -74,6 +74,11 @@ class Trace(object):
         table = Table(self.data, name=self.trace_table_name)
         table['id'].description = 'Blah'
         table.write(filename)
+
+    def _trim_last_fit_based_on_criterion(self, *criterion):
+        if any(criterion):
+            del self.data['centers'][-1]
+            del self.data['id'][-1]
 
     def _repeated_fit(self, image_data):
         center = int(image_data.shape[1] / 2)
@@ -96,11 +101,11 @@ class Trace(object):
         return a_bad_fit
 
     @staticmethod
-    def _beyond_edge(data, image_data):
+    def _beyond_edge(single_trace_centers, image_data):
         trace_protrudes_off_detector = False
-        if np.max(data) > image_data.shape[0]:
+        if np.max(single_trace_centers) > image_data.shape[0]:
             trace_protrudes_off_detector = True
-        if np.min(data) < 0:
+        if np.min(single_trace_centers) < 0:
             trace_protrudes_off_detector = True
         return trace_protrudes_off_detector
 
@@ -109,8 +114,6 @@ class Trace(object):
         self.data['centers'] = np.array(self.data['centers'])
         self.data['centers'] = self.data['centers'][self.data['centers'][:, center].argsort()]
         self.data['id'] = np.arange(self.data['centers'].shape[0])
-
-
 
 
 class SingleTraceFitter(object):
