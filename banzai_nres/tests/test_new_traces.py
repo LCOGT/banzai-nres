@@ -23,7 +23,7 @@ class TestTrace:
 
     def test_getting_trace_centers(self):
         trace = Trace(data={'id': [0, 1], 'centers': [[0, 1], [1, 2]]})
-        assert trace.get_trace_centers(0) == [0, 1]
+        assert trace.get_centers(0) == [0, 1]
 
     def test_write(self):
         #TODO
@@ -62,7 +62,7 @@ class TestTrace:
         data = {'id': [1, 2, 3, 4],
                 'centers': [centers, centers+5, centers-10, centers+2]}
         trace = Trace(data=data)
-        trace._sort_traces_hierarchically(fake_image_data)
+        trace._sort_traces(fake_image_data)
         assert np.allclose(trace.data['id'], np.arange(4))
         assert np.allclose(trace.data['centers'],
                            np.array([centers-10, centers, centers+2, centers+5]))
@@ -210,7 +210,7 @@ class TestMatchFilter:
     Tests for the functions in single trace fitter which are used to find
     the approximate locations of the next trace during a march up the detector.
     """
-    def test_shifting_traces_up_and_down(self):
+    def test_centers_shifting_traces_up_or_down(self):
         w, s = 2, 6
         fitter = SingleTraceFitter(extraargs={'initialize_fit_objects': False},
                                    march_parameters={'window': w, 'step_size': s})
@@ -228,7 +228,7 @@ class TestMatchFilter:
         assert np.allclose(offsets, [-6, -7])
 
     @mock.patch('banzai_nres.utils.new_trace_utils.SingleTraceFitter._flux_across_trace', side_effect=np.max)
-    def test_getting_flux_for_all_shifted_traces(self, flux_across_trace):
+    def test_getting_flux_as_trace_shifts_up_or_down(self, flux_across_trace):
         fitter = SingleTraceFitter(extraargs={'initialize_fit_objects': False})
         shifted_traces = np.array([[1, 2], [2, 3], [4, 5]])
         flux_per_trace = fitter._flux_as_trace_shifts_up_or_down(shifted_traces)

@@ -31,8 +31,12 @@ class Trace(object):
         self.match_filter_parameters = {'min_peak_spacing': 5, 'neighboring_peak_flux_ratio': 20}
         #TODO move the Trace class into the trace.py file and instantiate all the above from settings
 
-    def get_trace_centers(self, row):
+    def get_centers(self, row):
         return self.data['centers'][row]
+
+    def load(self, image):
+        #TODO
+        return None
 
     @staticmethod
     def fit_traces(image, poly_fit_order, second_order_coefficient_guess):
@@ -50,15 +54,15 @@ class Trace(object):
         direction = 'up'
         trace_id = 0
         while not at_edge:
-            single_trace_centers = trace_fitter.fit_trace()
+            trace_centers = trace_fitter.fit_trace()
             trace_fitter.use_previous_fit_as_initial_guess()
-            no_more_traces = trace_fitter.match_filter_to_refine_initial_guess(single_trace_centers,
+            no_more_traces = trace_fitter.match_filter_to_refine_initial_guess(trace_centers,
                                                                                direction=direction)
-            trace.data['centers'].append(single_trace_centers)
+            trace.data['centers'].append(trace_centers)
             trace.data['id'].append(trace_id)
             trace_id += 1
 
-            beyond_edge = trace._beyond_edge(single_trace_centers, image_data=image.data)
+            beyond_edge = trace._beyond_edge(trace_centers, image_data=image.data)
             a_repeated_fit = trace._repeated_fit(image.data)
             a_bad_fit = trace._bad_fit(image.data, direction=direction)
             if no_more_traces or beyond_edge or a_repeated_fit or a_bad_fit:
@@ -72,12 +76,14 @@ class Trace(object):
                                                                                 direction=direction)
                 else:
                     at_edge = True
-        trace._sort_traces_hierarchically(image.data)
+        trace._sort_traces(image.data)
         return trace
 
     def write(self, filename):
         table = Table(self.data, name=self.trace_table_name)
-        table['id'].description = 'Blah'
+        table['id'].description = 'Identification tag for trace'
+        table['center'].description = 'Vertical position of the center of the trace as a function of horizontal pixel'
+        table['center'].unit = 'pixel'
         table.write(filename)
 
     def _trim_last_fit_based_on_criterion(self, *criterion):
@@ -106,15 +112,15 @@ class Trace(object):
         return a_bad_fit
 
     @staticmethod
-    def _beyond_edge(single_trace_centers, image_data):
+    def _beyond_edge(trace_centers, image_data):
         trace_protrudes_off_detector = False
-        if np.max(single_trace_centers) > image_data.shape[0]:
+        if np.max(trace_centers) > image_data.shape[0]:
             trace_protrudes_off_detector = True
-        if np.min(single_trace_centers) < 0:
+        if np.min(trace_centers) < 0:
             trace_protrudes_off_detector = True
         return trace_protrudes_off_detector
 
-    def _sort_traces_hierarchically(self, image_data):
+    def _sort_traces(self, image_data):
         center = int(image_data.shape[1] / 2)
         self.data['centers'] = np.array(self.data['centers'])
         self.data['centers'] = self.data['centers'][self.data['centers'][:, center].argsort()]
@@ -158,11 +164,10 @@ class SingleTraceFitter(object):
         shifted_trace_centers, offsets = self._centers_shifting_traces_up_or_down(current_trace_centers,
                                                                                   direction=direction)
         flux_vs_shift = self._flux_as_trace_shifts_up_or_down(shifted_trace_centers)
-        bg_subtracted_flux = flux_vs_shift - np.median(flux_vs_shift)
-        current_trace_flux = self._flux_across_trace(current_trace_centers) - np.median(flux_vs_shift)
-        reference_flux = max(current_trace_flux, np.max(bg_subtracted_flux))
+        current_trace_flux = self._flux_across_trace(current_trace_centers)
+        reference_flux = max(current_trace_flux, np.max(flux_vs_shift))
         min_peak_height = abs(reference_flux)/self.match_filter_parameters['neighboring_peak_flux_ratio']
-        peak_indices = signal.find_peaks(bg_subtracted_flux,
+        peak_indices = signal.find_peaks(flux_vs_shift,
                                          height=min_peak_height,
                                          distance=self.match_filter_parameters['min_peak_spacing'])[0]
         if len(peak_indices) == 0:
