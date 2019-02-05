@@ -134,7 +134,7 @@ class SingleTraceFitter(object):
         if march_parameters is None:
             march_parameters = {'window': 100, 'step_size': 6}
         if match_filter_parameters is None:
-            match_filter_parameters = {'min_peak_spacing': 5, 'neighboring_peak_flux_ratio': 20}
+            match_filter_parameters = {'min_peak_spacing': 5, 'neighboring_peak_flux_ratio': 5}
         if extraargs.get('coefficients') is None:
             extraargs['coefficients'] = []
         self.second_order_coefficient_guess = second_order_coefficient_guess
@@ -167,14 +167,9 @@ class SingleTraceFitter(object):
         current_trace_flux = self._flux_across_trace(current_trace_centers)
         reference_flux = max(current_trace_flux, np.max(flux_vs_shift))
         min_peak_height = abs(reference_flux)/self.match_filter_parameters['neighboring_peak_flux_ratio']
-        """
+        flux_vs_shift[flux_vs_shift < min_peak_height] = min_peak_height
         peak_indices = signal.find_peaks(flux_vs_shift,
-                                         height=min_peak_height,
                                          distance=self.match_filter_parameters['min_peak_spacing'])[0]
-        """
-        peak_index, maxima_exists = maxima(flux_vs_shift, 5, 1 / 20, reference_flux)
-        no_more_traces = not maxima_exists
-        peak_indices = [peak_index]
         if len(peak_indices) == 0:
             peak_indices = [0]
             no_more_traces = True
