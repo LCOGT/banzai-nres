@@ -22,53 +22,63 @@ class Trace(object):
     the jth row are the y centers across the detector for the trace with identification trace_centers['id'][j]
     :param design_matrix = the 2d array such that coefficients dot design_matrix gives the trace centers for all the orders.
     """
-    def __init__(self, data=None, trace_table_name=None, second_order_coefficient_guess=None, poly_fit_order=None):
-        self.trace_table_name = trace_table_name # will be taken from settings. when instantiated in TraceMaker
-        self.data = data # will be taken from settings. when instantiated in TraceMaker
-        self.second_order_coefficient_guess = second_order_coefficient_guess # will be taken from settings. when instantiated in TraceMaker
-        self.poly_fit_order = poly_fit_order # will be taken from settings. when instantiated in TraceMaker
+    def __init__(self, data=None, trace_table_name=None):
+        if data is None:
+            data = {'id': [], 'centers': []}
+        self.trace_table_name = trace_table_name
+        self.data = Table(data)
+        self.data['id'].description = 'Identification tag for trace'
+        self.data['centers'].description = 'Vertical position of the center of the trace as a function of horizontal pixel'
+        self.data['centers'].unit = 'pixel'
         self.fit_march_parameters = {'window': 100, 'step_size': 6}
         self.match_filter_parameters = {'min_peak_spacing': 5, 'neighboring_peak_flux_ratio': 20}
+        # all the above attributes will be taken from settings. when instantiated in TraceMaker.
         #TODO move the Trace class into the trace.py file and instantiate all the above from settings
+        #TODO move the dictionary keys 'centers' and 'id' to immutable attributes of Trace (or to settings).
 
     def get_centers(self, row):
         return self.data['centers'][row]
 
-    def load(self, image):
-        #TODO
-        return None
+    def add_centers(self, trace_centers, id):
+        #TODO fix the fact that astropy cannot add a row to an empty table
+        if len(self.data['id']) == 0:
+            self.data = Trace(data={'id': [id], 'centers': [trace_centers]}).data
+        else:
+            self.data.add_row([id, trace_centers])
+
+    @staticmethod
+    def load(hdu_list, trace_extension_name):
+        return Trace(data=hdu_list[trace_extension_name].data)
 
     @staticmethod
     def fit_traces(image, poly_fit_order, second_order_coefficient_guess):
-        trace = Trace(data={'id': [], 'centers': []},
-                      poly_fit_order=poly_fit_order,
-                      second_order_coefficient_guess=second_order_coefficient_guess)
         start_point = image.data.shape[0]/3
+        trace = Trace(data=None)
         trace_fitter = SingleTraceFitter(image_data=image.data, start_point=start_point,
                                          second_order_coefficient_guess=second_order_coefficient_guess,
                                          poly_fit_order=poly_fit_order,
                                          march_parameters=trace.fit_march_parameters,
                                          match_filter_parameters=trace.match_filter_parameters)
-        trace_fitter.generate_initial_guess()
         at_edge = False
         direction = 'up'
         trace_id = 0
+        trace_fitter.generate_initial_guess() # change to use_center_trace_as_initial_guess
         while not at_edge:
             trace_centers = trace_fitter.fit_trace()
-            trace_fitter.use_previous_fit_as_initial_guess()
-            no_more_traces = trace_fitter.match_filter_to_refine_initial_guess(trace_centers,
-                                                                               direction=direction)
-            trace.data['centers'].append(trace_centers)
-            trace.data['id'].append(trace_id)
+            trace.add_centers(trace_centers, trace_id)
             trace_id += 1
 
+            trace_fitter.use_previous_fit_as_initial_guess() # consider renaming
+            no_more_traces = trace_fitter.match_filter_to_refine_initial_guess(trace_centers,
+                                                                               direction=direction)
+
             beyond_edge = trace._beyond_edge(trace_centers, image_data=image.data)
-            a_repeated_fit = trace._repeated_fit(image.data)
-            a_bad_fit = trace._bad_fit(image.data, direction=direction)
+            a_repeated_fit = trace._repeated_fit()
+            a_bad_fit = trace._bad_fit(direction=direction)
             if no_more_traces or beyond_edge or a_repeated_fit or a_bad_fit:
-                trace._trim_last_fit_based_on_criterion(beyond_edge,
-                                                        a_repeated_fit,
-                                                        a_bad_fit)
+                trace._del_last_fit_based_on_criterion(beyond_edge,
+                                                       a_repeated_fit,
+                                                       a_bad_fit)
                 if direction == 'up':
                     direction = 'down'
                     trace_fitter.use_very_first_fit_as_initial_guess()
@@ -76,23 +86,19 @@ class Trace(object):
                                                                                 direction=direction)
                 else:
                     at_edge = True
-        trace._sort_traces(image.data)
+        trace._sort_traces()
         return trace
 
     def write(self, filename):
-        table = Table(self.data, name=self.trace_table_name)
-        table['id'].description = 'Identification tag for trace'
-        table['center'].description = 'Vertical position of the center of the trace as a function of horizontal pixel'
-        table['center'].unit = 'pixel'
-        table.write(filename)
+        #TODO name= fails to give the table.write thing a valid extension name we can call later.
+        self.data.write(filename, format='fits')
 
-    def _trim_last_fit_based_on_criterion(self, *criterion):
+    def _del_last_fit_based_on_criterion(self, *criterion):
         if any(criterion):
-            del self.data['centers'][-1]
-            del self.data['id'][-1]
+            self.data.remove_row(-1)
 
-    def _repeated_fit(self, image_data):
-        center = int(image_data.shape[1] / 2)
+    def _repeated_fit(self):
+        center = int(self.data['centers'].shape[1] / 2)
         a_repeated_fit = False
         if len(self.data['id']) < 2:
             a_repeated_fit = False
@@ -100,8 +106,8 @@ class Trace(object):
             a_repeated_fit = True
         return a_repeated_fit
 
-    def _bad_fit(self, image_data, direction='up'):
-        center = int(image_data.shape[1] / 2)
+    def _bad_fit(self, direction='up'):
+        center = int(self.data['centers'].shape[1] / 2)
         a_bad_fit = False
         if len(self.data['id']) < 2:
             a_bad_fit = False
@@ -120,8 +126,8 @@ class Trace(object):
             trace_protrudes_off_detector = True
         return trace_protrudes_off_detector
 
-    def _sort_traces(self, image_data):
-        center = int(image_data.shape[1] / 2)
+    def _sort_traces(self):
+        center = int(self.data['centers'].shape[1] / 2)
         self.data['centers'] = np.array(self.data['centers'])
         self.data['centers'] = self.data['centers'][self.data['centers'][:, center].argsort()]
         self.data['id'] = np.arange(self.data['centers'].shape[0])
@@ -130,7 +136,9 @@ class Trace(object):
 class SingleTraceFitter(object):
     #TODO add the other non necessary arguments as keyword arguments for extraargs.
     def __init__(self, image_data=None, poly_fit_order=2, start_point=None, second_order_coefficient_guess=None,
-                 march_parameters=None, match_filter_parameters=None, extraargs={}):
+                 march_parameters=None, match_filter_parameters=None, extraargs=None):
+        if extraargs is None:
+            extraargs = {}
         if march_parameters is None:
             march_parameters = {'window': 100, 'step_size': 6}
         if match_filter_parameters is None:
@@ -149,7 +157,7 @@ class SingleTraceFitter(object):
         self.design_matrix = extraargs.get('design_matrix')
         self.march_parameters = march_parameters
         self.match_filter_parameters = match_filter_parameters
-        if extraargs.get('initialize_fit_objects', True) is True:
+        if extraargs.get('initialize_fit_objects', True):
             self._initialize_fit_objects()
 
     def fit_trace(self):
@@ -258,54 +266,3 @@ def legendre(order, values):
         return np.ones_like(values)
     else:
         return np.polynomial.legendre.legval(values, [0 for j in range(order)] + [1])
-
-
-def maxima(A, s, k, ref):
-    # TODO: replace this with a function from a package. This works fine, but for maintainability reasons we
-    # want a function from a package, like scipy signal peak finder.
-    """
-    A procedure for finding maxima which are not just peaks in the noise floor. E.g. searches for statistically
-    significant maxima.
-    :param A: An array of values where you wish to find maxima
-    :param s: The window were the central-point's value must be larger than all the other values in the window to qualify
-              as a maximum.
-    :param k: multiplicative constant which qualifies a point as a real maxima (not just noise)
-    :param ref: the reference value which k*r defines the value any real maximal point must exceed
-    :return: The index of the a point near a maximum  and a boolean for whether or not
-            a valid maximum exists.
-    """
-
-    i = s - 1
-    l, r = 0, 0
-    A = A - np.ones_like(A) * np.min(A)
-    threshold = k * ref
-    first_max_index = 0
-    maximum_exists = False
-    while i < len(A) - s and int(l + r) != 2:
-        l, r = 1, 1
-        for j in range(1, s + 1):
-            if A[i] < A[i + j] or A[i] < threshold:
-                r, j = 0, s + 1
-            if A[i] < A[i - j] or A[i] < threshold:
-                l, j = 0, s + 1
-        if int(l + r) == 2:
-            first_max_index = i
-            maximum_exists = True
-        i += 1
-    return first_max_index, maximum_exists
-
-
-def get_coefficients_from_meta(allmetacoeffs, stpolyarr):
-    #TODO this should be a test_util function.
-    """
-    NOTE: This is used in the suite of meta fit procedures (which are not implemented into Banzai-NRES as of
-     11/13/2018) AND for generating realistic test frames for unit tests.
-    :param allmetacoeffs: meta coefficients which describe the polynomial coefficients for each trace as a function
-    of order.
-    :param stpolyarr: The poly array which is the basis for the meta fit. Should be a legendre polynomial array.
-    :return:
-    """
-    return np.dot(allmetacoeffs, stpolyarr).T
-
-
-

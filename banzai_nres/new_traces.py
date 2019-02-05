@@ -5,16 +5,13 @@ Authors
     G. Mirek Brandt (gmbrandt@ucsb.edu)
 """
 
-from banzai_nres.utils.trace_utils import fit_traces_order_by_order, Trace
+from banzai_nres.utils.new_trace_utils import Trace
 from banzai_nres.utils import trace_utils
-from banzai_nres.images import NRESImage
 from banzai.stages import Stage
 from banzai.calibrations import CalibrationMaker
-from banzai.utils import fits_utils
 from banzai import dbs
 from banzai.images import DataTable, regenerate_data_table_from_fits_hdu_list
 from astropy.io import fits
-import numpy as np
 import os
 import logging
 
@@ -37,12 +34,8 @@ class TraceMaker(CalibrationMaker):
     def make_master_calibration_frame(self, images):
         traces = []
         for image in images:
-            trace = Trace()
             logger.debug('fitting traces order by order', image=image)
-            trace.coefficients = fit_traces_order_by_order(image.data,
-                                                           self.second_order_coefficient_guess,
-                                                           order_of_poly_fits=self.order_of_poly_fit,
-                                                           num_lit_fibers=image.num_lit_fibers())
+            trace = Trace.fit_traces(image, self.order_of_poly_fit, self.second_order_coefficient_guess)
             traces.append(trace)
         return traces
 
@@ -64,10 +57,16 @@ class LoadTrace(Stage):
     def do_stage(self, images):
         images_to_remove = []
         for image in images:
-            image.trace = Trace()
-            image.trace.coefficients = self.get_trace_coefficients(image)
+            logger.info('loading trace data onto image', image=image)
+            master_trace_path = dbs.get_master_calibration_image(image, self.calibration_type,
+                                                                      self.master_selection_criteria,
+                                                                      db_address=self.pipeline_context.db_address)
+            #NOTE this will fail if master_trace_full_path does not exist or leads to a none file. is there
+            # a banzai util which will return None which I can use instead of fits.open?
+            hdu_list = fits.open(master_trace_path)
+            image.trace = Trace.load(hdu_list)
 
-            if image.trace.coefficients is None:
+            if image.trace is None:
                 logger.error("Can't find trace coefficients for image, stopping reduction", image=image)
                 images_to_remove.append(image)
                 continue

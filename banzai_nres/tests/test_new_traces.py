@@ -1,5 +1,6 @@
 import pytest
 import numpy as np
+from astropy.table import Table
 from unittest import mock
 import logging
 
@@ -16,38 +17,47 @@ class TestTrace:
     def test_class_attributes(self):
         trace = Trace()
         assert trace.trace_table_name is None
-        assert trace.data is None
-        assert trace.second_order_coefficient_guess is None
-        assert trace.poly_fit_order is None
+        assert trace.data.colnames == ['id', 'centers']
+        assert len(trace.data['id']) == 0
+        assert len(trace.data['centers']) == 0
         assert trace.fit_march_parameters['window'] == 100
+        assert trace.fit_march_parameters['step_size'] == 6
 
     def test_getting_trace_centers(self):
         trace = Trace(data={'id': [0, 1], 'centers': [[0, 1], [1, 2]]})
-        assert trace.get_centers(0) == [0, 1]
+        assert np.allclose(trace.get_centers(0), [0, 1])
+
+    def test_add_centers(self):
+        trace = Trace(data=None)
+        trace.add_centers(trace_centers=np.array([1, 2, 3]), id=1)
+        assert np.allclose(trace.data['centers'], [[1, 2, 3]])
+        assert np.allclose(trace.data['id'], [1])
+        trace = Trace(data={'id': [1], 'centers': [[1, 2, 3]]})
+        trace.add_centers(trace_centers=np.array([1, 2, 3]), id=2)
+        assert np.allclose(trace.data['centers'], [[1, 2, 3], [1, 2, 3]])
+        assert np.allclose(trace.data['id'], [1, 2])
 
     def test_write(self):
         #TODO
         assert True
 
     def test_detecting_repeated_fit(self):
-        fake_image_data = np.zeros((3, 3))
         centers = np.array([1, 2, 3])
         data = {'id': [1, 2], 'centers': [centers, centers+0.1]}
         trace = Trace(data=data)
-        assert trace._repeated_fit(fake_image_data)
+        assert trace._repeated_fit()
 
     def test_detecting_bad_fits(self):
-        fake_image_data = np.zeros((3, 3))
         centers = np.array([1, 2, 3])
-        data = {'id': [1], 'centers': [centers]}
+        data = {'id': [1], 'centers': np.array([centers])}
         trace = Trace(data=data)
-        assert not trace._bad_fit(fake_image_data, direction='up')
+        assert not trace._bad_fit(direction='up')
 
-        trace.data = {'id': [1, 2], 'centers': [centers, centers-0.1]}
-        assert trace._bad_fit(fake_image_data, direction='up')
+        trace.data = {'id': [1, 2], 'centers': np.array([centers, centers-0.1])}
+        assert trace._bad_fit(direction='up')
 
-        trace.data = {'id': [1, 2], 'centers': [centers, centers+0.1]}
-        assert trace._bad_fit(fake_image_data, direction='down')
+        trace.data = {'id': [1, 2], 'centers': np.array([centers, centers+0.1])}
+        assert trace._bad_fit(direction='down')
 
     def test_detecting_beyond_edge(self):
         fake_image_data = np.zeros((3, 3))
@@ -57,12 +67,11 @@ class TestTrace:
         assert Trace._beyond_edge(single_trace_centers, fake_image_data)
 
     def test_sorting_trace_centers(self):
-        fake_image_data = np.zeros((3, 3))
         centers = np.array([1, 2, 3])
         data = {'id': [1, 2, 3, 4],
                 'centers': [centers, centers+5, centers-10, centers+2]}
         trace = Trace(data=data)
-        trace._sort_traces(fake_image_data)
+        trace._sort_traces()
         assert np.allclose(trace.data['id'], np.arange(4))
         assert np.allclose(trace.data['centers'],
                            np.array([centers-10, centers, centers+2, centers+5]))
@@ -72,11 +81,11 @@ class TestTrace:
         data = {'id': [1, 2, 3],
                 'centers': [centers, centers+5, centers+10]}
         trace = Trace(data=data)
-        trace._trim_last_fit_based_on_criterion(True)
+        trace._del_last_fit_based_on_criterion(True)
         assert np.allclose(trace.data['id'], [1, 2])
         assert np.allclose(trace.data['centers'], [centers, centers+5])
 
-        trace._trim_last_fit_based_on_criterion(False)
+        trace._del_last_fit_based_on_criterion(False)
         assert np.allclose(trace.data['id'], [1, 2])
         assert np.allclose(trace.data['centers'], [centers, centers+5])
 
@@ -124,7 +133,7 @@ class TestSingleTraceFitter:
         assert np.allclose(fitter.initial_guess_next_fit, np.array([1, 0, 90]))
 
     def test_changing_initial_guesses(self):
-        coefficients = np.array([[0, 0],[1, 1]])
+        coefficients = np.array([[0, 0], [1, 1]])
         fitter = SingleTraceFitter(extraargs={'initialize_fit_objects': False,
                                               'coefficients': coefficients})
         fitter.use_previous_fit_as_initial_guess()
