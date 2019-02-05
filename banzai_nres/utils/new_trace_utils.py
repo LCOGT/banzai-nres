@@ -68,21 +68,17 @@ class Trace(object):
         for direction in ['up', 'down']:
             if direction == 'down':
                 trace_fitter.use_very_first_fit_as_initial_guess()
-                at_edge = trace_fitter.match_filter_to_refine_initial_guess(trace.get_centers(0),
-                                                                            direction=direction)
+                at_edge = trace_fitter.match_filter_to_refine_initial_guess(trace.get_centers(0), direction=direction)
             while not at_edge:
                 trace_centers = trace_fitter.fit_trace()
                 trace.add_centers(trace_centers, trace_id)
                 trace_id += 1
 
                 trace_fitter.use_previous_fit_as_initial_guess()
-                at_edge = trace_fitter.match_filter_to_refine_initial_guess(trace_centers,
-                                                                            direction=direction)
-                bad_fit = any((trace._bad_fit(direction=direction),
-                              trace._repeated_fit(),
-                              trace._beyond_edge(image_data=image.data)))
-                if bad_fit:
+                at_edge = trace_fitter.match_filter_to_refine_initial_guess(trace_centers, direction=direction)
+                if trace._bad_fit(image.data, direction):
                     trace._del_last_fit()
+                    at_edge = True
             trace._sort_traces()
         return trace
 
@@ -99,16 +95,19 @@ class Trace(object):
             a_repeated_fit = True
         return a_repeated_fit
 
-    def _bad_fit(self, direction='up'):
+    def _bad_fit(self, image_data, direction='up'):
+        return any((self._bad_shift(direction), self._beyond_edge(image_data), self._repeated_fit()))
+
+    def _bad_shift(self, direction='up'):
         center_pixel = int(len(self.get_centers(0)) / 2)
-        a_bad_fit = False
+        a_bad_shift = False
         if self.num_traces_found() < 2:
-            a_bad_fit = False
+            a_bad_shift = False
         elif direction == 'up' and self.get_centers(-1)[center_pixel] < self.get_centers(-2)[center_pixel]:
-            a_bad_fit = True
+            a_bad_shift = True
         elif direction == 'down' and self.get_centers(-1)[center_pixel] > self.get_centers(-2)[center_pixel]:
-            a_bad_fit = True
-        return a_bad_fit
+            a_bad_shift = True
+        return a_bad_shift
 
     def _beyond_edge(self, image_data):
         """
@@ -127,7 +126,6 @@ class Trace(object):
 
 
 class SingleTraceFitter(object):
-    #TODO add the other non necessary arguments as keyword arguments for extraargs.
     def __init__(self, image_data=None, poly_fit_order=2, start_point=None, second_order_coefficient_guess=None,
                  march_parameters=None, match_filter_parameters=None, extraargs=None):
         if extraargs is None:
