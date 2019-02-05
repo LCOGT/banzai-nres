@@ -25,13 +25,17 @@ class TestTrace:
         trace = Trace(data={'id': [0, 1], 'centers': [[0, 1], [1, 2]]})
         assert np.allclose(trace.get_centers(0), [0, 1])
 
+    def test_getting_num_found_traces(self):
+        trace = Trace(data={'id': [0, 1], 'centers': [[0, 1], [1, 2]]})
+        assert trace.num_traces_found() == 2
+
     def test_add_centers(self):
         trace = Trace(data=None)
-        trace.add_centers(trace_centers=np.array([1, 2, 3]), id=1)
+        trace.add_centers(trace_centers=np.array([1, 2, 3]), trace_id=1)
         assert np.allclose(trace.data['centers'], [[1, 2, 3]])
         assert np.allclose(trace.data['id'], [1])
         trace = Trace(data={'id': [1], 'centers': [[1, 2, 3]]})
-        trace.add_centers(trace_centers=np.array([1, 2, 3]), id=2)
+        trace.add_centers(trace_centers=np.array([1, 2, 3]), trace_id=2)
         assert np.allclose(trace.data['centers'], [[1, 2, 3], [1, 2, 3]])
         assert np.allclose(trace.data['id'], [1, 2])
 

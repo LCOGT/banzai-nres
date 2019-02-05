@@ -35,12 +35,18 @@ class Trace(object):
     def get_centers(self, row):
         return self.data['centers'][row]
 
-    def add_centers(self, trace_centers, id):
+    def add_centers(self, trace_centers, trace_id):
         # TODO fix the fact that astropy cannot add a row to an empty table
         if len(self.data['id']) == 0:
-            self.data = Trace(data={'id': [id], 'centers': [trace_centers]}).data
+            self.data = Trace(data={'id': [trace_id], 'centers': [trace_centers]}).data
         else:
-            self.data.add_row([id, trace_centers])
+            self.data.add_row([trace_id, trace_centers])
+
+    def _del_last_fit(self):
+        self.data.remove_row(-1)
+
+    def num_traces_found(self):
+        return len(self.data['id'])
 
     @staticmethod
     def load(hdu_list, trace_extension_name):
@@ -84,26 +90,23 @@ class Trace(object):
         #TODO name= fails to give the table.write thing a valid extension name we can call later.
         self.data.write(filename, format='fits')
 
-    def _del_last_fit(self):
-        self.data.remove_row(-1)
-
     def _repeated_fit(self):
-        center = int(self.data['centers'].shape[1] / 2)
+        center_pixel = int(len(self.get_centers(0)) / 2)
         a_repeated_fit = False
-        if len(self.data['id']) < 2:
+        if self.num_traces_found() < 2:
             a_repeated_fit = False
-        elif np.isclose(self.data['centers'][-1][center], self.data['centers'][-2][center], atol=2, rtol=0):
+        elif np.isclose(self.get_centers(-1)[center_pixel], self.get_centers(-2)[center_pixel], atol=2, rtol=0):
             a_repeated_fit = True
         return a_repeated_fit
 
     def _bad_fit(self, direction='up'):
-        center = int(self.data['centers'].shape[1] / 2)
+        center_pixel = int(len(self.get_centers(0)) / 2)
         a_bad_fit = False
-        if len(self.data['id']) < 2:
+        if self.num_traces_found() < 2:
             a_bad_fit = False
-        elif direction == 'up' and self.data['centers'][-1][center] < self.data['centers'][-2][center]:
+        elif direction == 'up' and self.get_centers(-1)[center_pixel] < self.get_centers(-2)[center_pixel]:
             a_bad_fit = True
-        elif direction == 'down' and self.data['centers'][-1][center] > self.data['centers'][-2][center]:
+        elif direction == 'down' and self.get_centers(-1)[center_pixel] > self.get_centers(-2)[center_pixel]:
             a_bad_fit = True
         return a_bad_fit
 
@@ -113,8 +116,8 @@ class Trace(object):
         :return: True or False whether the y value at the center of the most recent trace fit is <0 or greater than
         the maximum y coordinate of the image (i.e. image_data.shape[0])
         """
-        center = int(self.data['centers'].shape[1] / 2)
-        return any((self.data['centers'][-1][center] < 0, self.data['centers'][-1][center] > image_data.shape[0]))
+        center_pixel = int(len(self.get_centers(0)) / 2)
+        return any((self.get_centers(-1)[center_pixel] < 0, self.get_centers(-1)[center_pixel] > image_data.shape[0]))
 
     def _sort_traces(self):
         center = int(self.data['centers'].shape[1] / 2)
