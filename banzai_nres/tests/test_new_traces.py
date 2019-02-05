@@ -59,10 +59,12 @@ class TestTrace:
 
     def test_detecting_beyond_edge(self):
         fake_image_data = np.zeros((3, 3))
-        single_trace_centers = [3.1, 3.1, 3.1]
-        assert Trace._beyond_edge(single_trace_centers, fake_image_data)
-        single_trace_centers = [-0.1, -0.1, -0.1]
-        assert Trace._beyond_edge(single_trace_centers, fake_image_data)
+        data = {'id': [1], 'centers': [[3.1, 3.1, 3.1]]}
+        assert Trace(data=data)._beyond_edge(fake_image_data)
+        data = {'id': [1], 'centers': [[-0.1, -0.1, -0.1]]}
+        assert Trace(data=data)._beyond_edge(fake_image_data)
+        data = {'id': [1], 'centers': [[2, -0.1, 2]]}
+        assert Trace(data=data)._beyond_edge(fake_image_data)
 
     def test_sorting_trace_centers(self):
         centers = np.array([1, 2, 3])

@@ -9,6 +9,7 @@ Authors
 import numpy as np
 from scipy import ndimage, optimize, signal
 from astropy.table import Table
+from banzai_nres.utils.trace_utils import maxima
 import copy
 
 import logging
@@ -75,11 +76,9 @@ class Trace(object):
                                                                             direction=direction)
                 bad_fit = any((trace._bad_fit(direction=direction),
                               trace._repeated_fit(),
-                              trace._beyond_edge(trace_centers, image_data=image.data)))
+                              trace._beyond_edge(image_data=image.data)))
                 if bad_fit:
                     trace._del_last_fit()
-
-
             trace._sort_traces()
         return trace
 
@@ -110,14 +109,14 @@ class Trace(object):
             a_bad_fit = True
         return a_bad_fit
 
-    @staticmethod
-    def _beyond_edge(trace_centers, image_data):
-        trace_protrudes_off_detector = False
-        if np.max(trace_centers) > image_data.shape[0]:
-            trace_protrudes_off_detector = True
-        if np.min(trace_centers) < 0:
-            trace_protrudes_off_detector = True
-        return trace_protrudes_off_detector
+    def _beyond_edge(self, image_data):
+        """
+        :param image_data:
+        :return: True or False whether the y value at the center of the most recent trace fit is <0 or greater than
+        the maximum y coordinate of the image (i.e. image_data.shape[0])
+        """
+        center = int(self.data['centers'].shape[1] / 2)
+        return any((self.data['centers'][-1][center] < 0, self.data['centers'][-1][center] > image_data.shape[0]))
 
     def _sort_traces(self):
         center = int(self.data['centers'].shape[1] / 2)
@@ -168,9 +167,14 @@ class SingleTraceFitter(object):
         current_trace_flux = self._flux_across_trace(current_trace_centers)
         reference_flux = max(current_trace_flux, np.max(flux_vs_shift))
         min_peak_height = abs(reference_flux)/self.match_filter_parameters['neighboring_peak_flux_ratio']
+        """
         peak_indices = signal.find_peaks(flux_vs_shift,
                                          height=min_peak_height,
                                          distance=self.match_filter_parameters['min_peak_spacing'])[0]
+        """
+        peak_index, maxima_exists = maxima(flux_vs_shift, 5, 1 / 20, reference_flux)
+        no_more_traces = not maxima_exists
+        peak_indices = [peak_index]
         if len(peak_indices) == 0:
             peak_indices = [0]
             no_more_traces = True
