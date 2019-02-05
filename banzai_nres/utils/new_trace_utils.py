@@ -30,17 +30,14 @@ class Trace(object):
         self.data['id'].description = 'Identification tag for trace'
         self.data['centers'].description = 'Vertical position of the center of the trace as a function of horizontal pixel'
         self.data['centers'].unit = 'pixel'
-        self.fit_march_parameters = {'window': 100, 'step_size': 6}
-        self.match_filter_parameters = {'min_peak_spacing': 5, 'neighboring_peak_flux_ratio': 20}
-        # all the above attributes will be taken from settings. when instantiated in TraceMaker.
-        #TODO move the Trace class into the trace.py file and instantiate all the above from settings
-        #TODO move the dictionary keys 'centers' and 'id' to immutable attributes of Trace (or to settings).
+        # TODO move the Trace class into the trace.py file and instantiate all the above from settings
+        # TODO move the dictionary keys 'centers' and 'id' to immutable attributes of Trace (or to settings).
 
     def get_centers(self, row):
         return self.data['centers'][row]
 
     def add_centers(self, trace_centers, id):
-        #TODO fix the fact that astropy cannot add a row to an empty table
+        # TODO fix the fact that astropy cannot add a row to an empty table
         if len(self.data['id']) == 0:
             self.data = Trace(data={'id': [id], 'centers': [trace_centers]}).data
         else:
@@ -51,51 +48,47 @@ class Trace(object):
         return Trace(data=hdu_list[trace_extension_name].data)
 
     @staticmethod
-    def fit_traces(image, poly_fit_order, second_order_coefficient_guess):
+    def fit_traces(image, poly_fit_order, second_order_coefficient_guess,
+                   fit_march_parameters=None, match_filter_parameters=None):
         start_point = image.data.shape[0]/3
         trace = Trace(data=None)
         trace_fitter = SingleTraceFitter(image_data=image.data, start_point=start_point,
                                          second_order_coefficient_guess=second_order_coefficient_guess,
                                          poly_fit_order=poly_fit_order,
-                                         march_parameters=trace.fit_march_parameters,
-                                         match_filter_parameters=trace.match_filter_parameters)
+                                         march_parameters=fit_march_parameters,
+                                         match_filter_parameters=match_filter_parameters)
         at_edge = False
-        direction = 'up'
         trace_id = 0
-        trace_fitter.generate_initial_guess() # change to use_center_trace_as_initial_guess
-        while not at_edge:
-            trace_centers = trace_fitter.fit_trace()
-            trace.add_centers(trace_centers, trace_id)
-            trace_id += 1
+        trace_fitter.generate_initial_guess()
+        for direction in ['up', 'down']:
+            if direction == 'down':
+                trace_fitter.use_very_first_fit_as_initial_guess()
+                at_edge = trace_fitter.match_filter_to_refine_initial_guess(trace.get_centers(0),
+                                                                            direction=direction)
+            while not at_edge:
+                trace_centers = trace_fitter.fit_trace()
+                trace.add_centers(trace_centers, trace_id)
+                trace_id += 1
 
-            trace_fitter.use_previous_fit_as_initial_guess() # consider renaming
-            no_more_traces = trace_fitter.match_filter_to_refine_initial_guess(trace_centers,
-                                                                               direction=direction)
+                trace_fitter.use_previous_fit_as_initial_guess()
+                at_edge = trace_fitter.match_filter_to_refine_initial_guess(trace_centers,
+                                                                            direction=direction)
+                bad_fit = any((trace._bad_fit(direction=direction),
+                              trace._repeated_fit(),
+                              trace._beyond_edge(trace_centers, image_data=image.data)))
+                if bad_fit:
+                    trace._del_last_fit()
 
-            beyond_edge = trace._beyond_edge(trace_centers, image_data=image.data)
-            a_repeated_fit = trace._repeated_fit()
-            a_bad_fit = trace._bad_fit(direction=direction)
-            if no_more_traces or beyond_edge or a_repeated_fit or a_bad_fit:
-                trace._del_last_fit_based_on_criterion(beyond_edge,
-                                                       a_repeated_fit,
-                                                       a_bad_fit)
-                if direction == 'up':
-                    direction = 'down'
-                    trace_fitter.use_very_first_fit_as_initial_guess()
-                    at_edge = trace_fitter.match_filter_to_refine_initial_guess(trace.data['centers'][0],
-                                                                                direction=direction)
-                else:
-                    at_edge = True
-        trace._sort_traces()
+
+            trace._sort_traces()
         return trace
 
     def write(self, filename):
         #TODO name= fails to give the table.write thing a valid extension name we can call later.
         self.data.write(filename, format='fits')
 
-    def _del_last_fit_based_on_criterion(self, *criterion):
-        if any(criterion):
-            self.data.remove_row(-1)
+    def _del_last_fit(self):
+        self.data.remove_row(-1)
 
     def _repeated_fit(self):
         center = int(self.data['centers'].shape[1] / 2)

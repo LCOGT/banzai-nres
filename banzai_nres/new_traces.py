@@ -26,6 +26,8 @@ class TraceMaker(CalibrationMaker):
             self.calibration_type.upper(), [])
         self.order_of_poly_fit = 4
         self.second_order_coefficient_guess = self.pipeline_context.TRACE_FIT_INITIAL_DEGREE_TWO_GUESS
+        self.fit_march_parameters = {'window': 100, 'step_size': 6}
+        self.match_filter_parameters = {'min_peak_spacing': 5, 'neighboring_peak_flux_ratio': 20}
 
     @property
     def calibration_type(self):
@@ -35,7 +37,10 @@ class TraceMaker(CalibrationMaker):
         traces = []
         for image in images:
             logger.debug('fitting traces order by order', image=image)
-            trace = Trace.fit_traces(image, self.order_of_poly_fit, self.second_order_coefficient_guess)
+            trace = Trace.fit_traces(image, poly_fit_order=self.order_of_poly_fit,
+                                     second_order_coefficient_guess=self.second_order_coefficient_guess,
+                                     fit_march_parameters= self.fit_march_parameters,
+                                     match_filter_parameters=self.match_filter_parameters)
             traces.append(trace)
         return traces
 

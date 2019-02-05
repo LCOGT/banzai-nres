@@ -83,3 +83,15 @@ def array_with_two_peaks():
     vectorized_gaussian = np.vectorize(gaussian)
     y = vectorized_gaussian(x, 1, centroids[0], 1.5) + vectorized_gaussian(x, 1, centroids[1], 1.5)
     return y, centroids, x
+
+
+def get_coefficients_from_meta(allmetacoeffs, stpolyarr):
+    """
+    NOTE: This is used in the suite of meta fit procedures (which are not implemented into Banzai-NRES as of
+     11/13/2018) AND for generating realistic test frames for unit tests.
+    :param allmetacoeffs: meta coefficients which describe the polynomial coefficients for each trace as a function
+    of order.
+    :param stpolyarr: The poly array which is the basis for the meta fit. Should be a legendre polynomial array.
+    :return:
+    """
+    return np.dot(allmetacoeffs, stpolyarr).T

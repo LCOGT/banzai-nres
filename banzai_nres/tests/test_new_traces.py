@@ -20,8 +20,6 @@ class TestTrace:
         assert trace.data.colnames == ['id', 'centers']
         assert len(trace.data['id']) == 0
         assert len(trace.data['centers']) == 0
-        assert trace.fit_march_parameters['window'] == 100
-        assert trace.fit_march_parameters['step_size'] == 6
 
     def test_getting_trace_centers(self):
         trace = Trace(data={'id': [0, 1], 'centers': [[0, 1], [1, 2]]})
@@ -76,16 +74,12 @@ class TestTrace:
         assert np.allclose(trace.data['centers'],
                            np.array([centers-10, centers, centers+2, centers+5]))
 
-    def test_trimming_bad_fits(self):
+    def test_deleting_row(self):
         centers = np.array([1, 2, 3])
         data = {'id': [1, 2, 3],
                 'centers': [centers, centers+5, centers+10]}
         trace = Trace(data=data)
-        trace._del_last_fit_based_on_criterion(True)
-        assert np.allclose(trace.data['id'], [1, 2])
-        assert np.allclose(trace.data['centers'], [centers, centers+5])
-
-        trace._del_last_fit_based_on_criterion(False)
+        trace._del_last_fit()
         assert np.allclose(trace.data['id'], [1, 2])
         assert np.allclose(trace.data['centers'], [centers, centers+5])
 
