@@ -9,8 +9,6 @@ Authors
 import numpy as np
 from scipy import ndimage, optimize, signal
 from astropy.table import Table
-from banzai_nres.utils.trace_utils import maxima
-import copy
 
 import logging
 
