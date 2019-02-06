@@ -43,10 +43,15 @@ class TestTrace:
         #TODO
         assert True
 
-    @mock.patch('banzai_nres.utils.new_trace_utils.Trace._bad_shift', return_value=True)
-    @mock.patch('banzai_nres.utils.new_trace_utils.Trace._repeated_fit', return_value=True)
-    @mock.patch('banzai_nres.utils.new_trace_utils.Trace._beyond_edge', return_value=True)
-    def test_bad_fit(self, bad_shift, repeated_fit, beyond_edge):
+    @mock.patch('banzai_nres.utils.new_trace_utils.Trace._bad_shift')
+    @mock.patch('banzai_nres.utils.new_trace_utils.Trace._repeated_fit')
+    @mock.patch('banzai_nres.utils.new_trace_utils.Trace._beyond_edge')
+    def test_bad_fit(self, beyond_edge, repeated_fit, bad_shift):
+        beyond_edge.return_value, repeated_fit.return_value, bad_shift.return_value = True, True, True
+        assert Trace()._bad_fit(image_data=None, direction=None)
+        beyond_edge.return_value, repeated_fit.return_value, bad_shift.return_value = False, False, False
+        assert not Trace()._bad_fit(image_data=None, direction=None)
+        beyond_edge.return_value, repeated_fit.return_value, bad_shift.return_value = True, False, True
         assert Trace()._bad_fit(image_data=None, direction=None)
 
     def test_detecting_repeated_fit(self):

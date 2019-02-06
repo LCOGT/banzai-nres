@@ -9,6 +9,7 @@ Authors
 import numpy as np
 from scipy import ndimage, optimize, signal
 from astropy.table import Table
+from astropy.io import fits
 
 import logging
 
@@ -29,8 +30,6 @@ class Trace(object):
         self.data['id'].description = 'Identification tag for trace'
         self.data['centers'].description = 'Vertical position of the center of the trace as a function of horizontal pixel'
         self.data['centers'].unit = 'pixel'
-        # TODO move the Trace class into the trace.py file and instantiate all the above from settings
-        # TODO move the dictionary keys 'centers' and 'id' to immutable attributes of Trace (or to settings).
 
     def get_centers(self, row):
         return self.data['centers'][row]
@@ -47,10 +46,6 @@ class Trace(object):
 
     def num_traces_found(self):
         return len(self.data['id'])
-
-    @staticmethod
-    def load(hdu_list, trace_extension_name):
-        return Trace(data=hdu_list[trace_extension_name].data)
 
     @staticmethod
     def fit_traces(image, poly_fit_order, second_order_coefficient_guess,
@@ -83,8 +78,12 @@ class Trace(object):
         return trace
 
     def write(self, filename):
-        #TODO name= fails to give the table.write thing a valid extension name we can call later.
-        self.data.write(filename, format='fits')
+        hdu = fits.BinTableHDU(self.data, name=self.trace_table_name)
+        fits.HDUList([fits.PrimaryHDU(), hdu]).writeto(filename)
+
+    @staticmethod
+    def load(hdu_list, trace_table_name):
+        return Trace(data=hdu_list[trace_table_name].data)
 
     def _repeated_fit(self):
         center_pixel = int(len(self.get_centers(0)) / 2)
