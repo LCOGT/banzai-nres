@@ -13,14 +13,19 @@ logger = logging.getLogger(__name__)
 
 class TestTrace:
     """
-    Unit tests for the Trace() class.
+    Unit tests for the Trace class.
     """
     def test_class_attributes(self):
-        trace = Trace()
-        assert trace.trace_table_name is None
-        assert trace.data.colnames == ['id', 'centers']
-        assert len(trace.data['id']) == 0
-        assert len(trace.data['centers']) == 0
+        traces = [Trace(num_centers_per_trace=5), Trace(data={'id': [], 'centers': []})]
+        for trace, shape in zip(traces, [(0, 5), (0,)]):
+            assert trace.trace_table_name is None
+            assert trace.data.colnames == ['id', 'centers']
+            assert len(trace.data['id']) == 0
+            assert trace.data['centers'].shape == shape
+            assert trace.data['centers'].description is not None
+            assert trace.data['id'].description is not None
+        with pytest.raises(Exception):
+            Trace(data=None, num_centers_per_trace=0)
 
     def test_getting_trace_centers(self):
         trace = Trace(data={'id': [0, 1], 'centers': [[0, 1], [1, 2]]})
@@ -31,13 +36,14 @@ class TestTrace:
         assert trace.num_traces_found() == 2
 
     def test_add_centers(self):
-        trace = Trace(data=None)
-        trace.add_centers(trace_centers=np.array([1, 2, 3]), trace_id=1)
-        assert np.allclose(trace.data['centers'], [[1, 2, 3]])
+        centers = np.arange(3)
+        trace = Trace(data=None, num_centers_per_trace=len(centers))
+        trace.add_centers(trace_centers=centers, trace_id=1)
+        assert np.allclose(trace.data['centers'], [centers])
         assert np.allclose(trace.data['id'], [1])
-        trace = Trace(data={'id': [1], 'centers': [[1, 2, 3]]})
-        trace.add_centers(trace_centers=np.array([1, 2, 3]), trace_id=2)
-        assert np.allclose(trace.data['centers'], [[1, 2, 3], [1, 2, 3]])
+        trace = Trace(data={'id': [1], 'centers': [centers]})
+        trace.add_centers(trace_centers=centers, trace_id=2)
+        assert np.allclose(trace.data['centers'], [centers, centers])
         assert np.allclose(trace.data['id'], [1, 2])
 
     def test_write(self):
@@ -48,12 +54,13 @@ class TestTrace:
     @mock.patch('banzai_nres.utils.new_trace_utils.Trace._repeated_fit')
     @mock.patch('banzai_nres.utils.new_trace_utils.Trace._beyond_edge')
     def test_bad_fit(self, beyond_edge, repeated_fit, bad_shift):
+        data = {'id': [], 'centers': []}
         beyond_edge.return_value, repeated_fit.return_value, bad_shift.return_value = True, True, True
-        assert Trace()._bad_fit(image_data=None, direction=None)
+        assert Trace(data=data)._bad_fit(image_data=None, direction=None)
         beyond_edge.return_value, repeated_fit.return_value, bad_shift.return_value = False, False, False
-        assert not Trace()._bad_fit(image_data=None, direction=None)
+        assert not Trace(data=data)._bad_fit(image_data=None, direction=None)
         beyond_edge.return_value, repeated_fit.return_value, bad_shift.return_value = True, False, True
-        assert Trace()._bad_fit(image_data=None, direction=None)
+        assert Trace(data=data)._bad_fit(image_data=None, direction=None)
 
     def test_detecting_repeated_fit(self):
         centers = np.array([1, 2, 3])
@@ -106,6 +113,9 @@ class TestTrace:
         trace._del_centers([-1, -2])
         assert np.allclose(trace.data['id'], [1])
         assert np.allclose(trace.data['centers'], [centers])
+
+    def test_fit_trace(self):
+        assert True
 
 
 class TestSingleTraceFitter:
@@ -289,5 +299,3 @@ class TestMatchFilter:
             no_more_traces = fitter.match_filter_to_refine_initial_guess(current_trace_centers=None, direction=None)
             assert np.isclose(fitter.initial_guess_next_fit[0], outcome, atol=3, rtol=0)
             assert no_more_traces is prediction
-
-

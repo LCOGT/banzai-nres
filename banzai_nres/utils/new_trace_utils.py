@@ -8,7 +8,7 @@ Authors
 
 import numpy as np
 from scipy import ndimage, optimize, signal
-from astropy.table import Table
+from astropy.table import Table, Column
 from astropy.io import fits
 
 import logging
@@ -22,24 +22,26 @@ class Trace(object):
     the jth row are the y centers across the detector for the trace with identification trace_centers['id'][j]
     :param design_matrix = the 2d array such that coefficients dot design_matrix gives the trace centers for all the orders.
     """
-    def __init__(self, data=None, trace_table_name=None):
-        if data is None:
-            data = {'id': [], 'centers': []}
+    def __init__(self, data=None, trace_table_name=None, num_centers_per_trace=0):
         self.trace_table_name = trace_table_name
-        self.data = Table(data)
-        self.data['id'].description = 'Identification tag for trace'
-        self.data['centers'].description = 'Vertical position of the center of the trace as a function of horizontal pixel'
-        self.data['centers'].unit = 'pixel'
+        self.data = self._init_data(data=data, num_centers_per_trace=num_centers_per_trace)
+
+    def _init_data(self, data, num_centers_per_trace):
+        if data is None and num_centers_per_trace > 0:
+            data = Table([Column(name='id'), Column(name='centers', shape=(num_centers_per_trace,))])
+        if data is None and num_centers_per_trace == 0:
+            raise ValueError('Trace object instantiated but no trace data given and num_centers_per_trace == 0')
+        data = Table(data)
+        data['id'].description = 'Identification tag for trace'
+        data['centers'].description = 'Vertical position of the center of the trace as a function of horizontal pixel'
+        data['centers'].unit = 'pixel'
+        return data
 
     def get_centers(self, row):
         return self.data['centers'][row]
 
     def add_centers(self, trace_centers, trace_id):
-        # TODO fix the fact that astropy cannot add a row to an empty table
-        if len(self.data['id']) == 0:
-            self.data = Trace(data={'id': [trace_id], 'centers': [trace_centers]}).data
-        else:
-            self.data.add_row([trace_id, trace_centers])
+        self.data.add_row([trace_id, trace_centers])
 
     def _del_centers(self, rows):
         self.data.remove_rows(rows)
