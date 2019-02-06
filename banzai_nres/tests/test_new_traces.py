@@ -1,6 +1,7 @@
 import pytest
 import numpy as np
 from astropy.table import Table
+from scipy.optimize import OptimizeResult
 from unittest import mock
 import logging
 
@@ -226,9 +227,18 @@ class TestSingleTraceFitter:
         assert np.allclose(design_matrix,
                            SingleTraceFitter._generate_design_matrix(xnorm, poly_fit_order=1))
 
-    def test_fit_trace(self):
-        #TODO
-        assert True
+    @mock.patch('banzai_nres.utils.new_trace_utils.SingleTraceFitter._centers_from_coefficients')
+    @mock.patch('banzai_nres.utils.new_trace_utils.optimize.minimize')
+    def test_fit_trace(self, minimize, centers):
+        coefficients = np.arange(4)
+        centers.return_value = None
+        minimize.return_value = OptimizeResult(x=coefficients)
+        fitter = SingleTraceFitter(extraargs={'initialize_fit_objects': False,
+                                              'coefficients': [],
+                                              'initial_guess_next_fit': coefficients})
+
+        assert fitter.fit_trace() is None
+        assert fitter.coefficients == [coefficients]
 
 
 class TestMatchFilter:

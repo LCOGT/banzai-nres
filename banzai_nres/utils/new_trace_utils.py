@@ -60,9 +60,9 @@ class Trace(object):
         at_edge = False
         trace_id = 0
         traces_to_remove = []
+        directions = ['up', 'down']
         trace_fitter.generate_initial_guess()
-        #trace_centers = trace_fitter.generate_initial_guess()
-        for direction in ['up', 'down']:
+        for direction in directions:
             while not at_edge:
                 trace_centers = trace_fitter.fit_trace()
                 trace.add_centers(trace_centers, trace_id)
@@ -75,7 +75,7 @@ class Trace(object):
                     at_edge = True
                 trace_id += 1
             trace_fitter.use_very_first_fit_as_initial_guess()
-            at_edge = trace_fitter.match_filter_to_refine_initial_guess(trace.get_centers(0), direction='down')
+            at_edge = trace_fitter.match_filter_to_refine_initial_guess(trace.get_centers(0), direction=directions[1])
 
         trace._del_centers(traces_to_remove)
         trace._sort_traces()
@@ -155,8 +155,7 @@ class SingleTraceFitter(object):
             self._initialize_fit_objects()
 
     def fit_trace(self):
-        initial_guess = self.initial_guess_next_fit
-        refined_coefficients = optimize.minimize(SingleTraceFitter._trace_merit_function, initial_guess,
+        refined_coefficients = optimize.minimize(SingleTraceFitter._trace_merit_function, self.initial_guess_next_fit,
                                                  args=(self,), method='Powell').x
         self.coefficients.append(refined_coefficients)
         return self._centers_from_coefficients(refined_coefficients)
