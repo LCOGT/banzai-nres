@@ -26,7 +26,8 @@ class Trace(object):
         self.trace_table_name = trace_table_name
         self.data = self._init_data(data=data, num_centers_per_trace=num_centers_per_trace)
 
-    def _init_data(self, data, num_centers_per_trace):
+    @staticmethod
+    def _init_data(data, num_centers_per_trace):
         if data is None and num_centers_per_trace > 0:
             data = Table([Column(name='id'), Column(name='centers', shape=(num_centers_per_trace,))])
         if data is None and num_centers_per_trace == 0:
