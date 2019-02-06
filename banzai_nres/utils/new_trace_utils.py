@@ -41,8 +41,8 @@ class Trace(object):
         else:
             self.data.add_row([trace_id, trace_centers])
 
-    def _del_last_fit(self):
-        self.data.remove_row(-1)
+    def _del_centers(self, rows):
+        self.data.remove_rows(rows)
 
     def num_traces_found(self):
         return len(self.data['id'])
@@ -59,22 +59,26 @@ class Trace(object):
                                          match_filter_parameters=match_filter_parameters)
         at_edge = False
         trace_id = 0
+        traces_to_remove = []
         trace_fitter.generate_initial_guess()
+        #trace_centers = trace_fitter.generate_initial_guess()
         for direction in ['up', 'down']:
-            if direction == 'down':
-                trace_fitter.use_very_first_fit_as_initial_guess()
-                at_edge = trace_fitter.match_filter_to_refine_initial_guess(trace.get_centers(0), direction=direction)
             while not at_edge:
                 trace_centers = trace_fitter.fit_trace()
                 trace.add_centers(trace_centers, trace_id)
-                trace_id += 1
 
                 trace_fitter.use_previous_fit_as_initial_guess()
                 at_edge = trace_fitter.match_filter_to_refine_initial_guess(trace_centers, direction=direction)
+
                 if trace._bad_fit(image.data, direction):
-                    trace._del_last_fit()
+                    traces_to_remove.append(trace_id)
                     at_edge = True
-            trace._sort_traces()
+                trace_id += 1
+            trace_fitter.use_very_first_fit_as_initial_guess()
+            at_edge = trace_fitter.match_filter_to_refine_initial_guess(trace.get_centers(0), direction='down')
+
+        trace._del_centers(traces_to_remove)
+        trace._sort_traces()
         return trace
 
     def write(self, filename):

@@ -91,14 +91,20 @@ class TestTrace:
         assert np.allclose(trace.data['centers'],
                            np.array([centers-10, centers, centers+2, centers+5]))
 
-    def test_deleting_row(self):
-        centers = np.array([1, 2, 3])
-        data = {'id': [1, 2, 3],
-                'centers': [centers, centers+5, centers+10]}
+    def test_delete_centers(self):
+        centers = np.array([1, 2, 3, 4])
+        data = {'id': [1, 2, 3, 4],
+                'centers': [centers, centers+5, centers+10, centers+11]}
         trace = Trace(data=data)
-        trace._del_last_fit()
-        assert np.allclose(trace.data['id'], [1, 2])
-        assert np.allclose(trace.data['centers'], [centers, centers+5])
+        trace._del_centers([])
+        assert np.allclose(trace.data['id'], data['id'])
+        assert np.allclose(trace.data['centers'], data['centers'])
+        trace._del_centers(-1)
+        assert np.allclose(trace.data['id'], [1, 2, 3])
+        assert np.allclose(trace.data['centers'], [centers, centers+5, centers+10])
+        trace._del_centers([-1, -2])
+        assert np.allclose(trace.data['id'], [1])
+        assert np.allclose(trace.data['centers'], [centers])
 
 
 class TestSingleTraceFitter:
