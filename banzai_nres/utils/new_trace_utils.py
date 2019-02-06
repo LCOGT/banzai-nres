@@ -20,14 +20,8 @@ class Trace(object):
     """
     :param data = {'id': ndarray, 'centers': ndarray}. 'centers' gives a 2d array, where
     the jth row are the y centers across the detector for the trace with identification trace_centers['id'][j]
-    :param design_matrix = the 2d array such that coefficients dot design_matrix gives the trace centers for all the orders.
     """
     def __init__(self, data=None, trace_table_name=None, num_centers_per_trace=0):
-        self.trace_table_name = trace_table_name
-        self.data = self._init_data(data=data, num_centers_per_trace=num_centers_per_trace)
-
-    @staticmethod
-    def _init_data(data, num_centers_per_trace):
         if data is None and num_centers_per_trace > 0:
             data = Table([Column(name='id'), Column(name='centers', shape=(num_centers_per_trace,))])
         if data is None and num_centers_per_trace == 0:
@@ -36,7 +30,8 @@ class Trace(object):
         data['id'].description = 'Identification tag for trace'
         data['centers'].description = 'Vertical position of the center of the trace as a function of horizontal pixel'
         data['centers'].unit = 'pixel'
-        return data
+        self.data = data
+        self.trace_table_name = trace_table_name
 
     def get_centers(self, row):
         return self.data['centers'][row]
@@ -54,7 +49,7 @@ class Trace(object):
     def fit_traces(image, poly_fit_order, second_order_coefficient_guess,
                    fit_march_parameters=None, match_filter_parameters=None):
         start_point = image.data.shape[0]/3
-        trace = Trace(data=None)
+        trace = Trace(data=None, num_centers_per_trace=image.data.shape[1])
         trace_fitter = SingleTraceFitter(image_data=image.data, start_point=start_point,
                                          second_order_coefficient_guess=second_order_coefficient_guess,
                                          poly_fit_order=poly_fit_order,
