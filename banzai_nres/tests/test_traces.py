@@ -91,9 +91,9 @@ class TestTrace:
         #TODO
         assert True
 
-    @mock.patch('banzai_nres.utils.new_trace_utils.Trace._bad_shift')
-    @mock.patch('banzai_nres.utils.new_trace_utils.Trace._repeated_fit')
-    @mock.patch('banzai_nres.utils.new_trace_utils.Trace._beyond_edge')
+    @mock.patch('banzai_nres.utils.trace_utils.Trace._bad_shift')
+    @mock.patch('banzai_nres.utils.trace_utils.Trace._repeated_fit')
+    @mock.patch('banzai_nres.utils.trace_utils.Trace._beyond_edge')
     def test_bad_fit(self, beyond_edge, repeated_fit, bad_shift):
         data = {'id': [], 'centers': []}
         beyond_edge.return_value, repeated_fit.return_value, bad_shift.return_value = True, True, True
@@ -278,8 +278,8 @@ class TestSingleTraceFitter:
         assert np.allclose(design_matrix,
                            SingleTraceFitter._generate_design_matrix(xnorm, poly_fit_order=1))
 
-    @mock.patch('banzai_nres.utils.new_trace_utils.SingleTraceFitter._centers_from_coefficients')
-    @mock.patch('banzai_nres.utils.new_trace_utils.optimize.minimize')
+    @mock.patch('banzai_nres.utils.trace_utils.SingleTraceFitter._centers_from_coefficients')
+    @mock.patch('banzai_nres.utils.trace_utils.optimize.minimize')
     def test_fit_trace(self, minimize, centers):
         coefficients = np.arange(4)
         centers.return_value = None
@@ -314,16 +314,16 @@ class TestMatchFilter:
                                                             current_trace_centers - s - 1]))
         assert np.allclose(offsets, [-6, -7])
 
-    @mock.patch('banzai_nres.utils.new_trace_utils.SingleTraceFitter._flux_across_trace', side_effect=np.max)
+    @mock.patch('banzai_nres.utils.trace_utils.SingleTraceFitter._flux_across_trace', side_effect=np.max)
     def test_getting_flux_as_trace_shifts_up_or_down(self, flux_across_trace):
         fitter = SingleTraceFitter(extraargs={'initialize_fit_objects': False})
         shifted_traces = np.array([[1, 2], [2, 3], [4, 5]])
         flux_per_trace = fitter._flux_as_trace_shifts_up_or_down(shifted_traces)
         assert np.allclose(flux_per_trace, np.max(shifted_traces, axis=1))
 
-    @mock.patch('banzai_nres.utils.new_trace_utils.SingleTraceFitter._flux_across_trace')
-    @mock.patch('banzai_nres.utils.new_trace_utils.SingleTraceFitter._flux_as_trace_shifts_up_or_down')
-    @mock.patch('banzai_nres.utils.new_trace_utils.SingleTraceFitter._centers_shifting_traces_up_or_down')
+    @mock.patch('banzai_nres.utils.trace_utils.SingleTraceFitter._flux_across_trace')
+    @mock.patch('banzai_nres.utils.trace_utils.SingleTraceFitter._flux_as_trace_shifts_up_or_down')
+    @mock.patch('banzai_nres.utils.trace_utils.SingleTraceFitter._centers_shifting_traces_up_or_down')
     def test_match_filter_to_refine_initial_guess(self, shift_centers, flux_vs_shift, reference_flux):
         fitter = SingleTraceFitter(extraargs={'initialize_fit_objects': False})
         fitter.match_filter_parameters = {'min_peak_spacing': 5, 'neighboring_peak_flux_ratio': 20}
