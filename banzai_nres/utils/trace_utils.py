@@ -64,7 +64,7 @@ class Trace(object):
                                          poly_fit_order=poly_fit_order,
                                          march_parameters=fit_march_parameters,
                                          match_filter_parameters=match_filter_parameters)
-        trace_fitter.generate_initial_guess()
+        trace_fitter.generate_initial_guess() # move inside of SingleTraceFitter __init__ function.
         at_edge = False
         traces_to_remove = []
         traces_to_remove = trace._step_through_detector(trace, trace_fitter,

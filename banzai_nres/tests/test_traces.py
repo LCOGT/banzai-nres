@@ -6,9 +6,9 @@ from scipy.optimize import OptimizeResult
 from unittest import mock
 from banzai.tests.utils import FakeContext
 
-from banzai_nres.new_traces import TraceMaker
+from banzai_nres.traces import TraceMaker
 from banzai_nres.tests.utils import array_with_two_peaks, FakeImage, noisify_image
-from banzai_nres.utils.new_trace_utils import Trace, SingleTraceFitter
+from banzai_nres.utils.trace_utils import Trace, SingleTraceFitter
 from banzai_nres.tests.utils import fill_image_with_traces
 import banzai_nres.settings
 import logging

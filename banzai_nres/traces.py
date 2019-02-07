@@ -5,7 +5,7 @@ Authors
     G. Mirek Brandt (gmbrandt@ucsb.edu)
 """
 
-from banzai_nres.utils.new_trace_utils import Trace
+from banzai_nres.utils.trace_utils import Trace
 from banzai.stages import Stage
 from banzai.calibrations import CalibrationMaker
 from banzai import dbs

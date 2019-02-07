@@ -29,7 +29,7 @@ class FakeImage(object):
         self.exptime = 30.0
         self.obstype = 'TEST'
         self.data_tables = None
-        self.trace = Trace()
+        self.trace = Trace(num_centers_per_trace=nx)
         self.fiber0_lit, self.fiber1_lit, self.fiber2_lit = False, True, True
 
 
