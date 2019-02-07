@@ -353,42 +353,37 @@ class TestTraceMaker:
         fake_context.db_address = ''
         trace_fitter = TraceMaker(fake_context)
         trace_fitter.order_of_poly_fit = order_of_poly_fit
-        traces = trace_fitter.do_stage([image])
+        trace_fitter.do_stage([image])
         assert True
 
-    @pytest.mark.e2e
     def test_trace_fitting(self):
         #TODO
         """
-        test type: Integration Test.
+        test type: Mock Integration Test with metrics for how well trace fitting is doing.
         info: This tests trace making via a blind fit.
         WARNING: Because trace fitting is defined with polynomials which are normalized from -1 to 1, if one squeezes
         the x axis of the image further, then the traces bend more drastically. Thus it is recommended you do not change the
         size of the FakeTraceImage.
         """
         readnoise = 11.0
-        order_of_poly_fit = 4
+        poly_fit_order = 4
 
         image = FakeTraceImage()
         image.fiber0_lit, image.fiber1_lit, image.fiber2_lit = False, True, True
         image.readnoise = readnoise
 
-        fill_image_with_traces(image)
+        image, trace_centers, second_order_coefficient_guess = fill_image_with_traces(image,
+                                                                                      poly_fit_order=poly_fit_order)
         noisify_image(image)
-
         fake_context = FakeContext(settings=banzai_nres.settings.NRESSettings())
-        images = [image, image]
+        images = [image]
 
-        blind_trace_maker = TraceMaker(fake_context)
-        blind_trace_maker.order_of_poly_fit = order_of_poly_fit
-
-        images = blind_trace_maker.do_stage(images)
-
-        coefficients_array = images[0].trace.coefficients
-        logger.debug(coefficients_array.shape)
-        images[0].trace.coefficients = coefficients_array
-
-        difference = []
+        trace_maker = TraceMaker(fake_context)
+        trace_maker.order_of_poly_fit = poly_fit_order
+        trace_maker.second_order_coefficient_guess = second_order_coefficient_guess
+        traces = trace_maker.do_stage(images)
+        assert traces[0][0].data['centers'].shape[0] == trace_centers.shape[0]
+        difference = traces[0][0].data['centers'] - trace_centers
         logger.debug('median absolute deviation in unit-test trace fitting is {0} pixels'
                      .format(np.median(np.abs(difference - np.median(difference)))))
         logger.debug('standard deviation in unit-test trace fitting is {0} pixels'
@@ -398,6 +393,5 @@ class TestTraceMaker:
         logger.debug('median error (median of true minus found) in unit-test trace fitting is {0} pixels'
                      .format(np.abs(np.median(difference))))
 
-        assert images[0].trace.fiber_order == (1, 2)
         assert np.median(np.abs(difference - np.median(difference))) < 2/100
         assert np.abs(np.median(difference)) < 2/100

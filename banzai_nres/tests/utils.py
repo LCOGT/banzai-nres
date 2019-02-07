@@ -1,7 +1,7 @@
 from datetime import datetime
 import numpy as np
 
-from banzai_nres.utils.trace_utils import Trace
+from banzai_nres.utils.trace_utils import Trace, SingleTraceFitter
 
 
 class FakeImage(object):
@@ -56,5 +56,31 @@ def array_with_two_peaks():
     return y, centroids, x
 
 
-def fill_image_with_traces(image):
-    image.data[int(image.data.shape[0]/2), :] = 1E5
+def fill_image_with_traces(image, poly_fit_order=4, order_width=1.5, fiber_intensity=1E4):
+    if image.data.shape[1] < 200:
+        raise ValueError
+    trace_fitter = SingleTraceFitter(image_data=image.data, start_point=0,
+                                     second_order_coefficient_guess=0,
+                                     poly_fit_order=poly_fit_order)
+    num_fake_traces = int((image.data.shape[1] - 60)/20)
+    coefficients = np.ones((num_fake_traces, poly_fit_order+1))
+    coefficients[:, 0] = np.linspace(30, image.data.shape[0] - 30, num=num_fake_traces)
+    coefficients[:, 2] = np.linspace(30, 40, num=num_fake_traces)
+    coefficients[:, 3] = np.linspace(1, 3, num=num_fake_traces)
+    coefficients[:, 4] = np.linspace(5, 10, num=num_fake_traces)
+    trace_centers = trace_fitter._centers_from_coefficients(coefficients)
+    trace_overlay = np.zeros_like(image.data).astype(np.float64)
+    vgauss = np.vectorize(gaussian)
+    for x_pixel in range(trace_centers.shape[1]):
+        #TODO there is probably a cleaner and quicker way to do this other than looping over slices of the image.
+        # consider if we can get rid of the explicit i loop.
+        for i in range(num_fake_traces):
+            centroid = trace_centers[i, x_pixel]
+            low, high = max(0, int(centroid - 5 * order_width)), min(trace_centers.shape[1] - 1,
+                                                                     int(centroid + 5 * order_width)) + 1
+            evalwindow = np.arange(low, high, 1)
+            if len(evalwindow) > 0:
+                trace_overlay[low: high, x_pixel] += vgauss(evalwindow, 1, centroid, order_width)
+    image.data += trace_overlay*fiber_intensity
+    second_order_coefficient_guess = np.mean(coefficients[:, 2])
+    return image, trace_centers, second_order_coefficient_guess
