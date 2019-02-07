@@ -392,6 +392,5 @@ class TestTraceMaker:
                      .format(np.max(np.abs(difference))))
         logger.debug('median error (median of true minus found) in unit-test trace fitting is {0} pixels'
                      .format(np.abs(np.median(difference))))
-
-        assert np.median(np.abs(difference - np.median(difference))) < 2/100
-        assert np.abs(np.median(difference)) < 2/100
+        assert np.median(np.abs(difference - np.median(difference))) < 1/100
+        assert np.abs(np.median(difference)) < 1/100
