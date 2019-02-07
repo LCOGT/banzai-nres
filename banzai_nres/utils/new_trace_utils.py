@@ -22,19 +22,23 @@ class Trace(object):
     the jth row are the y centers across the detector for the trace with identification trace_centers['id'][j]
     """
     def __init__(self, data=None, trace_table_name=None, num_centers_per_trace=0):
-        if data is None and num_centers_per_trace > 0:
+        if data is None and num_centers_per_trace <= 0:
+            raise ValueError('Trace object instantiated but no trace data given and num_centers_per_trace is not > 0')
+        if data is None:
             data = Table([Column(name='id'), Column(name='centers', shape=(num_centers_per_trace,))])
-        if data is None and num_centers_per_trace == 0:
-            raise ValueError('Trace object instantiated but no trace data given and num_centers_per_trace == 0')
+            data['id'].description = 'Identification tag for trace'
+            data[
+                'centers'].description = 'Vertical position of the center of the trace as a function of horizontal pixel'
+            data['centers'].unit = 'pixel'
         data = Table(data)
-        data['id'].description = 'Identification tag for trace'
-        data['centers'].description = 'Vertical position of the center of the trace as a function of horizontal pixel'
-        data['centers'].unit = 'pixel'
         self.data = data
         self.trace_table_name = trace_table_name
 
     def get_centers(self, row):
         return self.data['centers'][row]
+
+    def get_id(self, row):
+        return self.data['id'][row]
 
     def add_centers(self, trace_centers, trace_id):
         self.data.add_row([trace_id, trace_centers])
@@ -42,8 +46,13 @@ class Trace(object):
     def _del_centers(self, rows):
         self.data.remove_rows(rows)
 
-    def num_traces_found(self):
-        return len(self.data['id'])
+    def write(self, filename):
+        hdu = fits.BinTableHDU(self.data, name=self.trace_table_name)
+        fits.HDUList([fits.PrimaryHDU(), hdu]).writeto(filename)
+
+    @staticmethod
+    def load(hdu_list, trace_table_name):
+        return Trace(data=hdu_list[trace_table_name].data)
 
     @staticmethod
     def fit_traces(image, poly_fit_order, second_order_coefficient_guess,
@@ -55,37 +64,43 @@ class Trace(object):
                                          poly_fit_order=poly_fit_order,
                                          march_parameters=fit_march_parameters,
                                          match_filter_parameters=match_filter_parameters)
-        at_edge = False
-        trace_id = 0
-        traces_to_remove = []
-        directions = ['up', 'down']
         trace_fitter.generate_initial_guess()
-        for direction in directions:
-            while not at_edge:
-                trace_centers = trace_fitter.fit_trace()
-                trace.add_centers(trace_centers, trace_id)
-
-                trace_fitter.use_previous_fit_as_initial_guess()
-                at_edge = trace_fitter.match_filter_to_refine_initial_guess(trace_centers, direction=direction)
-
-                if trace._bad_fit(image.data, direction):
-                    traces_to_remove.append(trace_id)
-                    at_edge = True
-                trace_id += 1
-            trace_fitter.use_very_first_fit_as_initial_guess()
-            at_edge = trace_fitter.match_filter_to_refine_initial_guess(trace.get_centers(0), direction=directions[1])
-
+        at_edge = False
+        traces_to_remove = []
+        traces_to_remove = trace._step_through_detector(trace, trace_fitter,
+                                                        image, direction='up',
+                                                        traces_to_remove=traces_to_remove,
+                                                        at_edge=at_edge)
+        trace_fitter.use_very_first_fit_as_initial_guess()
+        at_edge = trace_fitter.match_filter_to_refine_initial_guess(trace.get_centers(0), direction='down')
+        traces_to_remove = trace._step_through_detector(trace, trace_fitter,
+                                                        image, direction='down',
+                                                        traces_to_remove=traces_to_remove,
+                                                        at_edge=at_edge)
         trace._del_centers(traces_to_remove)
         trace._sort_traces()
         return trace
 
-    def write(self, filename):
-        hdu = fits.BinTableHDU(self.data, name=self.trace_table_name)
-        fits.HDUList([fits.PrimaryHDU(), hdu]).writeto(filename)
-
     @staticmethod
-    def load(hdu_list, trace_table_name):
-        return Trace(data=hdu_list[trace_table_name].data)
+    def _step_through_detector(trace, trace_fitter, image, direction='up', traces_to_remove=None, at_edge=False):
+        if traces_to_remove is None:
+            traces_to_remove = []
+        trace_id = trace.num_traces_found()
+        while not at_edge:
+            trace_centers = trace_fitter.fit_trace()
+            trace.add_centers(trace_centers, trace_id)
+
+            trace_fitter.use_previous_fit_as_initial_guess()
+            at_edge = trace_fitter.match_filter_to_refine_initial_guess(trace_centers, direction=direction)
+
+            if trace._bad_fit(image.data, direction):
+                traces_to_remove.append(trace_id)
+                at_edge = True
+            trace_id += 1
+        return traces_to_remove
+
+    def num_traces_found(self):
+        return len(self.data['id'])
 
     def _repeated_fit(self):
         center_pixel = int(len(self.get_centers(0)) / 2)

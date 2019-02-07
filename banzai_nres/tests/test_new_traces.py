@@ -1,35 +1,76 @@
 import pytest
 import numpy as np
 from astropy.table import Table
+from astropy.io import fits
 from scipy.optimize import OptimizeResult
 from unittest import mock
+from banzai.tests.utils import FakeContext
+
+from banzai_nres.new_traces import TraceMaker
+from banzai_nres.tests.utils import array_with_two_peaks, FakeImage, noisify_image
+from banzai_nres.utils.new_trace_utils import Trace, SingleTraceFitter
+from banzai_nres.tests.utils import fill_image_with_traces
+import banzai_nres.settings
 import logging
 
-from banzai_nres.tests.utils import array_with_two_peaks
-from banzai_nres.utils.new_trace_utils import Trace, SingleTraceFitter
 
 logger = logging.getLogger(__name__)
+
+
+class FakeTraceImage(FakeImage):
+    """
+    Image of 500x500 is recommended. Drastic changes to that dimension may break trace testing.
+    """
+    def __init__(self, nx=500, ny=502, *args, **kwargs):
+        super(FakeTraceImage, self).__init__(*args, **kwargs)
+        self.caltype = 'TRACE'
+        self.header = fits.Header()
+        self.header['OBSTYPE'] = 'LAMPFLAT'
+        self.header['OBJECTS'] = 'tung&tung&none'
+        self.nx = nx
+        self.ny = ny
+        self.bpm = np.zeros((self.ny, self.nx), dtype=np.uint8)
+        self.data = np.zeros((self.ny, self.nx))
+        self.fiber0_lit, self.fiber1_lit, self.fiber2_lit = False, True, True
 
 
 class TestTrace:
     """
     Unit tests for the Trace class.
     """
-    def test_class_attributes(self):
-        traces = [Trace(num_centers_per_trace=5), Trace(data={'id': [], 'centers': []})]
-        for trace, shape in zip(traces, [(0, 5), (0,)]):
-            assert trace.trace_table_name is None
-            assert trace.data.colnames == ['id', 'centers']
-            assert len(trace.data['id']) == 0
-            assert trace.data['centers'].shape == shape
-            assert trace.data['centers'].description is not None
-            assert trace.data['id'].description is not None
+    def test_trace_loads_from_num_centers(self):
+        trace = Trace(num_centers_per_trace=5)
+        assert trace.trace_table_name is None
+        assert trace.data.colnames == ['id', 'centers']
+        assert len(trace.data['id']) == 0
+        assert trace.data['centers'].shape == (0, 5)
+        assert trace.data['centers'].description is not None
+        assert trace.data['id'].description is not None
+
+    def test_trace_loads_from_data(self):
+        data = Table({'id': [], 'centers': []})
+        data['id'].description = 'test'
+        data['centers'].description = 'test_2'
+        trace = Trace(data=data)
+        assert trace.trace_table_name is None
+        assert trace.data.colnames == ['id', 'centers']
+        assert len(trace.data['id']) == 0
+        assert trace.data['centers'].shape == (0,)
+        assert trace.data['centers'].description == 'test_2'
+        assert trace.data['id'].description == 'test'
+
+    def test_trace_raises_exception(self):
         with pytest.raises(Exception):
             Trace(data=None, num_centers_per_trace=0)
 
     def test_getting_trace_centers(self):
         trace = Trace(data={'id': [0, 1], 'centers': [[0, 1], [1, 2]]})
         assert np.allclose(trace.get_centers(0), [0, 1])
+
+    def test_getting_trace_id(self):
+        trace = Trace(data={'id': [0, 1], 'centers': [[0, 1], [1, 2]]})
+        assert trace.get_id(-1) == 1
+        assert trace.get_id(0) == 0
 
     def test_getting_num_found_traces(self):
         trace = Trace(data={'id': [0, 1], 'centers': [[0, 1], [1, 2]]})
@@ -299,3 +340,64 @@ class TestMatchFilter:
             no_more_traces = fitter.match_filter_to_refine_initial_guess(current_trace_centers=None, direction=None)
             assert np.isclose(fitter.initial_guess_next_fit[0], outcome, atol=3, rtol=0)
             assert no_more_traces is prediction
+
+
+class TestTraceMaker:
+    def test_trace_fit_does_not_crash_on_blank_frame(self):
+        readnoise = 11.0
+        order_of_poly_fit = 4
+        image = FakeTraceImage(nx=100, ny=100)
+        image.readnoise = readnoise
+        noisify_image(image)
+        fake_context = FakeContext(settings=banzai_nres.settings.NRESSettings())
+        fake_context.db_address = ''
+        trace_fitter = TraceMaker(fake_context)
+        trace_fitter.order_of_poly_fit = order_of_poly_fit
+        traces = trace_fitter.do_stage([image])
+        assert True
+
+    @pytest.mark.e2e
+    def test_trace_fitting(self):
+        #TODO
+        """
+        test type: Integration Test.
+        info: This tests trace making via a blind fit.
+        WARNING: Because trace fitting is defined with polynomials which are normalized from -1 to 1, if one squeezes
+        the x axis of the image further, then the traces bend more drastically. Thus it is recommended you do not change the
+        size of the FakeTraceImage.
+        """
+        readnoise = 11.0
+        order_of_poly_fit = 4
+
+        image = FakeTraceImage()
+        image.fiber0_lit, image.fiber1_lit, image.fiber2_lit = False, True, True
+        image.readnoise = readnoise
+
+        fill_image_with_traces(image)
+        noisify_image(image)
+
+        fake_context = FakeContext(settings=banzai_nres.settings.NRESSettings())
+        images = [image, image]
+
+        blind_trace_maker = TraceMaker(fake_context)
+        blind_trace_maker.order_of_poly_fit = order_of_poly_fit
+
+        images = blind_trace_maker.do_stage(images)
+
+        coefficients_array = images[0].trace.coefficients
+        logger.debug(coefficients_array.shape)
+        images[0].trace.coefficients = coefficients_array
+
+        difference = []
+        logger.debug('median absolute deviation in unit-test trace fitting is {0} pixels'
+                     .format(np.median(np.abs(difference - np.median(difference)))))
+        logger.debug('standard deviation in unit-test trace fitting is {0} pixels'
+                     .format(np.std(difference)))
+        logger.debug('worst error (max of true minus found) in unit-test trace fitting is {0} pixels'
+                     .format(np.max(np.abs(difference))))
+        logger.debug('median error (median of true minus found) in unit-test trace fitting is {0} pixels'
+                     .format(np.abs(np.median(difference))))
+
+        assert images[0].trace.fiber_order == (1, 2)
+        assert np.median(np.abs(difference - np.median(difference))) < 2/100
+        assert np.abs(np.median(difference)) < 2/100

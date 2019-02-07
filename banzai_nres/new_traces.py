@@ -6,11 +6,9 @@ Authors
 """
 
 from banzai_nres.utils.new_trace_utils import Trace
-from banzai_nres.utils import trace_utils
 from banzai.stages import Stage
 from banzai.calibrations import CalibrationMaker
 from banzai import dbs
-from banzai.images import DataTable, regenerate_data_table_from_fits_hdu_list
 from astropy.io import fits
 import os
 import logging

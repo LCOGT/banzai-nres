@@ -1,6 +1,6 @@
 import pytest
 from banzai.dbs import create_db, populate_calibration_table_with_bpms
-from banzai_nres.traces import Trace
+from banzai_nres.new_traces import Trace
 import os
 import numpy as np
 import shutil

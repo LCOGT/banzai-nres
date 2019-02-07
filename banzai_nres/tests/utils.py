@@ -1,12 +1,10 @@
 from datetime import datetime
 import numpy as np
 
-from banzai_nres.utils import trace_utils
 from banzai_nres.utils.trace_utils import Trace
-from banzai_nres.images import NRESImage
 
 
-class FakeImage(NRESImage):
+class FakeImage(object):
     def __init__(self, nx=102, ny=100, overscan_size=2, ccdsum='2 2', epoch='20180807'):
         self.nx = nx
         self.ny = ny
@@ -39,39 +37,12 @@ def gaussian(x, A, b, sigma):
     return A * np.exp(-(x - b) ** 2 / (2 * sigma ** 2))
 
 
-def noisify_image(image, trimmed_shape):
+def noisify_image(image):
     """
     :param image: Banzai_nres FakeImage object.
     This adds poisson and read noise to an image with traces already on it, in that order.
     """
-    # poisson noise
-    image_with_poisson_noise = np.random.poisson(image.data[:trimmed_shape[0], :trimmed_shape[1]])
-    image.data[:trimmed_shape[0], :trimmed_shape[1]] = image_with_poisson_noise
-    # read noise
-    image.data += np.random.normal(0, image.readnoise, image.data.shape)
-
-
-def trim_image(image, trimmed_shape):
-    image.data = image.data[:trimmed_shape[0], :trimmed_shape[1]]
-    image.bpm = image.bpm[:trimmed_shape[0], :trimmed_shape[1]]
-    image.ny, image.nx = trimmed_shape
-
-
-def generate_sample_astropy_nres_values_table(fiber_order=None, table_name=None):
-    if fiber_order is None:
-        fiber_order = (1, 2)
-    num_lit_fibers = len(fiber_order)
-    test_trace = Trace()
-    indices = np.array([list(np.arange(2))*num_lit_fibers])
-    coefficients = np.arange(4) * np.ones((num_lit_fibers*2, 4))
-    coefficients_and_indices = np.hstack((indices.T, coefficients))
-    test_trace.coefficients = coefficients_and_indices
-    test_trace.fiber_order = fiber_order
-    coefficients_table = trace_utils.convert_numpy_array_coefficients_to_astropy_table(coefficients_table_name=test_trace.coefficients_table_name,
-                                                      fiber_order=fiber_order, coefficients=test_trace.coefficients)
-    if table_name is not None:
-        coefficients_table[test_trace.coefficients_table_name].name = table_name
-    return test_trace, coefficients_and_indices, coefficients_table
+    image.data = np.random.poisson(image.data) + np.random.normal(0, image.readnoise, image.data.shape)
 
 
 def array_with_two_peaks():
@@ -85,13 +56,5 @@ def array_with_two_peaks():
     return y, centroids, x
 
 
-def get_coefficients_from_meta(allmetacoeffs, stpolyarr):
-    """
-    NOTE: This is used in the suite of meta fit procedures (which are not implemented into Banzai-NRES as of
-     11/13/2018) AND for generating realistic test frames for unit tests.
-    :param allmetacoeffs: meta coefficients which describe the polynomial coefficients for each trace as a function
-    of order.
-    :param stpolyarr: The poly array which is the basis for the meta fit. Should be a legendre polynomial array.
-    :return:
-    """
-    return np.dot(allmetacoeffs, stpolyarr).T
+def fill_image_with_traces(image):
+    image.data[int(image.data.shape[0]/2), :] = 1E5

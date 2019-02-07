@@ -4,7 +4,7 @@ from banzai.calibrations import make_calibration_filename_function
 from banzai.context import InstrumentCriterion
 from banzai_nres.images import NRESImage
 from banzai_nres.fibers import fibers_state_to_filename
-from banzai_nres import traces
+from banzai_nres import new_traces
 import operator
 from banzai import bias, trim, dark, gain, bpm, qc
 from banzai_nres.flats import FlatStacker
@@ -26,7 +26,7 @@ class NRESSettings(Settings):
                       trim.Trimmer,
                       bias.BiasSubtractor,
                       dark.DarkSubtractor,
-                      traces.LoadTrace]
+                      new_traces.LoadTrace]
 
     CALIBRATION_MIN_IMAGES = {'BIAS': 5,
                               'DARK': 3,
@@ -55,4 +55,4 @@ class NRESSettings(Settings):
     EXTRA_STAGES = {'BIAS': [bias.BiasMasterLevelSubtractor, bias.BiasComparer, bias.BiasMaker],
                     'DARK': [dark.DarkNormalizer, dark.DarkComparer, dark.DarkMaker],
                     'LAMPFLAT': [FlatStacker],
-                    'TRACE': [traces.FitTrace, traces.SaveTrace]}
+                    'TRACE': [new_traces.FitTrace, new_traces.SaveTrace]}
