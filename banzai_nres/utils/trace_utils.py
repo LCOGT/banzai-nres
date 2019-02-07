@@ -71,7 +71,7 @@ class Trace(object):
                                                         image, direction='up',
                                                         traces_to_remove=traces_to_remove,
                                                         at_edge=at_edge)
-        trace_fitter.use_very_first_fit_as_initial_guess()
+        trace_fitter.use_fit_as_initial_guess(fit_id=0)
         at_edge = trace_fitter.match_filter_to_refine_initial_guess(trace.get_centers(0), direction='down')
         traces_to_remove = trace._step_through_detector(trace, trace_fitter,
                                                         image, direction='down',
@@ -89,10 +89,8 @@ class Trace(object):
         while not at_edge:
             trace_centers = trace_fitter.fit_trace()
             trace.add_centers(trace_centers, trace_id)
-
-            trace_fitter.use_previous_fit_as_initial_guess()
+            trace_fitter.use_fit_as_initial_guess(fit_id=-1)
             at_edge = trace_fitter.match_filter_to_refine_initial_guess(trace_centers, direction=direction)
-
             if trace._bad_fit(image.data, direction):
                 traces_to_remove.append(trace_id)
                 at_edge = True
@@ -209,11 +207,8 @@ class SingleTraceFitter(object):
         shifted_trace_centers += np.array([offsets]).T
         return shifted_trace_centers, offsets
 
-    def use_very_first_fit_as_initial_guess(self):
-        self.initial_guess_next_fit = self.coefficients[0]
-
-    def use_previous_fit_as_initial_guess(self):
-        self.initial_guess_next_fit = self.coefficients[-1]
+    def use_fit_as_initial_guess(self, fit_id):
+        self.initial_guess_next_fit = np.copy(self.coefficients[fit_id])
 
     def generate_initial_guess(self):
         if self.start_point is None or self.second_order_coefficient_guess is None:

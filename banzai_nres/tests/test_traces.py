@@ -202,13 +202,13 @@ class TestSingleTraceFitter:
         assert np.allclose(fitter.initial_guess_next_fit, np.array([1, 0, 90]))
 
     def test_changing_initial_guesses(self):
-        coefficients = np.array([[0, 0], [1, 1]])
+        coefficients = [np.array([0, 0])]
         fitter = SingleTraceFitter(extraargs={'initialize_fit_objects': False,
                                               'coefficients': coefficients})
-        fitter.use_previous_fit_as_initial_guess()
+        fitter.use_fit_as_initial_guess(-1)
         assert np.allclose(fitter.initial_guess_next_fit, coefficients[-1])
-        fitter.use_very_first_fit_as_initial_guess()
-        assert np.allclose(fitter.initial_guess_next_fit, coefficients[0])
+        fitter.initial_guess_next_fit += 1
+        assert not np.allclose(fitter.initial_guess_next_fit, coefficients[-1])
 
     def test_generating_initial_guess_fail(self):
         fitter = SingleTraceFitter(image_data=np.zeros((2, 2)),
