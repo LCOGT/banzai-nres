@@ -27,8 +27,7 @@ class Trace(object):
         if data is None:
             data = Table([Column(name='id'), Column(name='centers', shape=(num_centers_per_trace,))])
             data['id'].description = 'Identification tag for trace'
-            data[
-                'centers'].description = 'Vertical position of the center of the trace as a function of horizontal pixel'
+            data['centers'].description = 'Vertical position of the center of the trace as a function of horizontal pixel'
             data['centers'].unit = 'pixel'
         data = Table(data)
         self.data = data
