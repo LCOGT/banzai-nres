@@ -43,7 +43,7 @@ class Trace(object):
     def add_centers(self, trace_centers, trace_id):
         self.data.add_row([trace_id, trace_centers])
 
-    def _del_centers(self, rows):
+    def del_centers(self, rows):
         self.data.remove_rows(rows)
 
     def write(self, filename):
@@ -79,14 +79,17 @@ class Trace(object):
             trace.add_centers(trace_centers, trace_id)
             trace_fitter.use_fit_as_initial_guess(fit_id=-1)
             at_edge = trace_fitter.match_filter_to_refine_initial_guess(direction=direction)
-            if trace._bad_fit(image.data, direction):
-                trace._del_centers(-1)
+            if trace.last_fit_bad(image.data, direction):
+                trace.del_centers(-1)
                 at_edge = True
             trace_id += 1
         trace_fitter.use_fit_as_initial_guess(fit_id=0)
 
     def num_traces_found(self):
         return len(self.data['id'])
+
+    def last_fit_bad(self, image_data, direction='up'):
+        return any((self._bad_shift(direction), self._beyond_edge(image_data), self._repeated_fit()))
 
     def _repeated_fit(self):
         center_pixel = int(len(self.get_centers(0)) / 2)
@@ -96,9 +99,6 @@ class Trace(object):
         elif np.isclose(self.get_centers(-1)[center_pixel], self.get_centers(-2)[center_pixel], atol=2, rtol=0):
             a_repeated_fit = True
         return a_repeated_fit
-
-    def _bad_fit(self, image_data, direction='up'):
-        return any((self._bad_shift(direction), self._beyond_edge(image_data), self._repeated_fit()))
 
     def _bad_shift(self, direction='up'):
         center_pixel = int(len(self.get_centers(0)) / 2)

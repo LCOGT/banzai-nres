@@ -97,11 +97,11 @@ class TestTrace:
     def test_bad_fit(self, beyond_edge, repeated_fit, bad_shift):
         data = {'id': [], 'centers': []}
         beyond_edge.return_value, repeated_fit.return_value, bad_shift.return_value = True, True, True
-        assert Trace(data=data)._bad_fit(image_data=None, direction=None)
+        assert Trace(data=data).last_fit_bad(image_data=None, direction=None)
         beyond_edge.return_value, repeated_fit.return_value, bad_shift.return_value = False, False, False
-        assert not Trace(data=data)._bad_fit(image_data=None, direction=None)
+        assert not Trace(data=data).last_fit_bad(image_data=None, direction=None)
         beyond_edge.return_value, repeated_fit.return_value, bad_shift.return_value = True, False, True
-        assert Trace(data=data)._bad_fit(image_data=None, direction=None)
+        assert Trace(data=data).last_fit_bad(image_data=None, direction=None)
 
     def test_detecting_repeated_fit(self):
         centers = np.array([1, 2, 3])
@@ -145,13 +145,13 @@ class TestTrace:
         data = {'id': [1, 2, 3, 4],
                 'centers': [centers, centers+5, centers+10, centers+11]}
         trace = Trace(data=data)
-        trace._del_centers([])
+        trace.del_centers([])
         assert np.allclose(trace.data['id'], data['id'])
         assert np.allclose(trace.data['centers'], data['centers'])
-        trace._del_centers(-1)
+        trace.del_centers(-1)
         assert np.allclose(trace.data['id'], [1, 2, 3])
         assert np.allclose(trace.data['centers'], [centers, centers+5, centers+10])
-        trace._del_centers([-1, -2])
+        trace.del_centers([-1, -2])
         assert np.allclose(trace.data['id'], [1])
         assert np.allclose(trace.data['centers'], [centers])
 
