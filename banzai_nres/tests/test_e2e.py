@@ -1,6 +1,6 @@
 import pytest
 from banzai.dbs import create_db, populate_calibration_table_with_bpms
-from banzai_nres.traces import Trace
+from banzai_nres.settings import NRESSettings
 import os
 import numpy as np
 import shutil
@@ -105,7 +105,7 @@ def test_e2e():
 
     # executing the master trace maker, using a blind fit then a global-meta fit, as one would from the command line.
 
-    trace_table_name = Trace().trace_table_name
+    trace_table_name = NRESSettings.TRACE_TABLE_NAME
     os.system('make_master_trace --db-address {0} --raw-path {1} --ignore-schedulability '
               '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
 
