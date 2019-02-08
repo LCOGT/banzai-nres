@@ -67,17 +67,15 @@ class LoadTrace(Stage):
             master_trace_path = dbs.get_master_calibration_image(image, self.calibration_type,
                                                                       self.master_selection_criteria,
                                                                       db_address=self.pipeline_context.db_address)
+            
             if master_trace_path is None or not os.path.exists(master_trace_path):
                 logger.error('Master trace fit file not found for {0}.'.format(image.filename))
-                image.trace = None
-            else:
-                hdu_list = fits.open(master_trace_path)
-                image.trace = Trace.load(hdu_list, trace_table_name=self.trace_table_name)
-
-            if image.trace is None:
                 logger.error("Can't find trace coefficients for image, stopping reduction", image=image)
                 images_to_remove.append(image)
                 continue
+            else:
+                hdu_list = fits.open(master_trace_path)
+                image.trace = Trace.load(hdu_list, trace_table_name=self.trace_table_name)
         for image in images_to_remove:
             images.remove(image)
         return images
