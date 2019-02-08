@@ -200,6 +200,13 @@ class TestSingleTraceFitter:
                                    second_order_coefficient_guess=90)
         assert np.allclose(fitter.initial_guess_next_fit, np.array([1, 0, 90]))
 
+    def test_generating_initial_guess_raises_error(self):
+        with pytest.raises(Exception):
+            SingleTraceFitter(image_data=np.zeros((2, 2)),
+                              poly_fit_order=2,
+                              start_point=None,
+                              second_order_coefficient_guess=90)
+
     def test_changing_initial_guesses(self):
         coefficients = [np.array([0, 0])]
         fitter = SingleTraceFitter(extraargs={'initialize_fit_objects': False,
@@ -208,13 +215,6 @@ class TestSingleTraceFitter:
         assert np.allclose(fitter.initial_guess_next_fit, coefficients[-1])
         fitter.initial_guess_next_fit += 1
         assert not np.allclose(fitter.initial_guess_next_fit, coefficients[-1])
-
-    def test_generating_initial_guess_fail(self):
-        with pytest.raises(Exception):
-            fitter = SingleTraceFitter(image_data=np.zeros((2, 2)),
-                                       poly_fit_order=2,
-                                       start_point=None,
-                                       second_order_coefficient_guess=90)
 
     def test_centers_from_coefficients(self):
         design_matrix = np.ones((2, 5))
@@ -319,10 +319,11 @@ class TestMatchFilter:
         flux_per_trace = fitter._flux_as_trace_shifts_up_or_down(shifted_traces)
         assert np.allclose(flux_per_trace, np.max(shifted_traces, axis=1))
 
+    @mock.patch('banzai_nres.utils.trace_utils.SingleTraceFitter._centers_from_coefficients', return_value=None)
     @mock.patch('banzai_nres.utils.trace_utils.SingleTraceFitter._flux_across_trace')
     @mock.patch('banzai_nres.utils.trace_utils.SingleTraceFitter._flux_as_trace_shifts_up_or_down')
     @mock.patch('banzai_nres.utils.trace_utils.SingleTraceFitter._centers_shifting_traces_up_or_down')
-    def test_match_filter_to_refine_initial_guess(self, shift_centers, flux_vs_shift, reference_flux):
+    def test_match_filter_to_refine_initial_guess(self, shift_centers, flux_vs_shift, reference_flux, make_centers):
         fitter = SingleTraceFitter(extraargs={'initialize_fit_objects': False})
         fitter.match_filter_parameters = {'min_peak_spacing': 5, 'neighboring_peak_flux_ratio': 20}
         positive_trace_signal, centroids, x_coords = array_with_two_peaks()
@@ -335,7 +336,7 @@ class TestMatchFilter:
                                                      [False, True]):
             fitter.initial_guess_next_fit = [0]
             flux_vs_shift.return_value = trace_signal
-            no_more_traces = fitter.match_filter_to_refine_initial_guess(current_trace_centers=None, direction=None)
+            no_more_traces = fitter.match_filter_to_refine_initial_guess(direction=None)
             assert np.isclose(fitter.initial_guess_next_fit[0], outcome, atol=3, rtol=0)
             assert no_more_traces is prediction
 

@@ -64,37 +64,26 @@ class Trace(object):
                                          poly_fit_order=poly_fit_order,
                                          march_parameters=fit_march_parameters,
                                          match_filter_parameters=match_filter_parameters)
-        at_edge = False
-        traces_to_remove = []
-        traces_to_remove = trace._step_through_detector(trace, trace_fitter,
-                                                        image, direction='up',
-                                                        traces_to_remove=traces_to_remove,
-                                                        at_edge=at_edge)
-        trace_fitter.use_fit_as_initial_guess(fit_id=0)
-        at_edge = trace_fitter.match_filter_to_refine_initial_guess(trace.get_centers(0), direction='down')
-        traces_to_remove = trace._step_through_detector(trace, trace_fitter,
-                                                        image, direction='down',
-                                                        traces_to_remove=traces_to_remove,
-                                                        at_edge=at_edge)
-        trace._del_centers(traces_to_remove)
+        for direction in ['up', 'down']:
+            trace._step_through_detector(trace, trace_fitter,
+                                         image, direction=direction)
         trace._sort_traces()
         return trace
 
     @staticmethod
-    def _step_through_detector(trace, trace_fitter, image, direction='up', traces_to_remove=None, at_edge=False):
-        if traces_to_remove is None:
-            traces_to_remove = []
+    def _step_through_detector(trace, trace_fitter, image, direction='up'):
         trace_id = trace.num_traces_found()
+        at_edge = trace_fitter.match_filter_to_refine_initial_guess(direction=direction)
         while not at_edge:
             trace_centers = trace_fitter.fit_trace()
             trace.add_centers(trace_centers, trace_id)
             trace_fitter.use_fit_as_initial_guess(fit_id=-1)
-            at_edge = trace_fitter.match_filter_to_refine_initial_guess(trace_centers, direction=direction)
+            at_edge = trace_fitter.match_filter_to_refine_initial_guess(direction=direction)
             if trace._bad_fit(image.data, direction):
-                traces_to_remove.append(trace_id)
+                trace._del_centers(-1)
                 at_edge = True
             trace_id += 1
-        return traces_to_remove
+        trace_fitter.use_fit_as_initial_guess(fit_id=0)
 
     def num_traces_found(self):
         return len(self.data['id'])
@@ -161,7 +150,7 @@ class SingleTraceFitter(object):
         self.design_matrix = extraargs.get('design_matrix')
         self.march_parameters = march_parameters
         self.match_filter_parameters = match_filter_parameters
-        
+
         if extraargs.get('initialize_fit_objects', True):
             if self.start_point is None or self.second_order_coefficient_guess is None:
                 logger.error('Starting y position up the detector nor the second order guess have been specified '
@@ -180,8 +169,9 @@ class SingleTraceFitter(object):
         self.coefficients.append(refined_coefficients)
         return self._centers_from_coefficients(refined_coefficients)
 
-    def match_filter_to_refine_initial_guess(self, current_trace_centers, direction='up'):
+    def match_filter_to_refine_initial_guess(self, direction='up'):
         no_more_traces = False
+        current_trace_centers = self._centers_from_coefficients(self.initial_guess_next_fit)
         shifted_trace_centers, offsets = self._centers_shifting_traces_up_or_down(current_trace_centers,
                                                                                   direction=direction)
         flux_vs_shift = self._flux_as_trace_shifts_up_or_down(shifted_trace_centers)
