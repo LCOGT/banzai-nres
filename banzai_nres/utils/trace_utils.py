@@ -64,7 +64,6 @@ class Trace(object):
                                          poly_fit_order=poly_fit_order,
                                          march_parameters=fit_march_parameters,
                                          match_filter_parameters=match_filter_parameters)
-        trace_fitter.generate_initial_guess() # move inside of SingleTraceFitter __init__ function.
         at_edge = False
         traces_to_remove = []
         traces_to_remove = trace._step_through_detector(trace, trace_fitter,
@@ -162,8 +161,18 @@ class SingleTraceFitter(object):
         self.design_matrix = extraargs.get('design_matrix')
         self.march_parameters = march_parameters
         self.match_filter_parameters = match_filter_parameters
+        
         if extraargs.get('initialize_fit_objects', True):
-            self._initialize_fit_objects()
+            if self.start_point is None or self.second_order_coefficient_guess is None:
+                logger.error('Starting y position up the detector nor the second order guess have been specified '
+                             ', failed to generate an initial guess for trace fitting.')
+                raise ValueError('Starting y position up the detector nor the second order guess have been specified')
+            self._normalize_domain_coordinates()
+            self.filtered_image_data = self._prefilter_image_data(self.image_data)
+            self.design_matrix = self._generate_design_matrix(self.x_norm, self.poly_fit_order)
+            self.initial_guess_next_fit = np.zeros(self.poly_fit_order + 1).astype(np.float64)
+            self.initial_guess_next_fit[0] = self.start_point
+            self.initial_guess_next_fit[2] = self.second_order_coefficient_guess
 
     def fit_trace(self):
         refined_coefficients = optimize.minimize(SingleTraceFitter._trace_merit_function, self.initial_guess_next_fit,
@@ -210,15 +219,6 @@ class SingleTraceFitter(object):
     def use_fit_as_initial_guess(self, fit_id):
         self.initial_guess_next_fit = np.copy(self.coefficients[fit_id])
 
-    def generate_initial_guess(self):
-        if self.start_point is None or self.second_order_coefficient_guess is None:
-            logger.error('Starting y position up the detector nor the second order guess have been specified '
-                         ', failed to generate an initial guess for trace fitting.')
-        else:
-            self.initial_guess_next_fit = np.zeros(self.poly_fit_order+1).astype(np.float64)
-            self.initial_guess_next_fit[0] = self.start_point
-            self.initial_guess_next_fit[2] = self.second_order_coefficient_guess
-
     @staticmethod
     def _generate_design_matrix(normalized_domain, poly_fit_order):
         design_matrix = np.ones((poly_fit_order + 1, normalized_domain.shape[0]))
@@ -240,11 +240,6 @@ class SingleTraceFitter(object):
     def _flux_across_trace(self, trace_centers):
         total_flux = np.sum(ndimage.map_coordinates(self.filtered_image_data, [trace_centers, self.x], prefilter=False))
         return total_flux
-
-    def _initialize_fit_objects(self):
-        self._normalize_domain_coordinates()
-        self.filtered_image_data = self._prefilter_image_data(self.image_data)
-        self.design_matrix = self._generate_design_matrix(self.x_norm, self.poly_fit_order)
 
     def _normalize_domain_coordinates(self):
         self.x = np.arange(self.image_data.shape[1])

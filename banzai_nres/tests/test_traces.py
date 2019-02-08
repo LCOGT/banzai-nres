@@ -198,7 +198,6 @@ class TestSingleTraceFitter:
                                    poly_fit_order=2,
                                    start_point=1,
                                    second_order_coefficient_guess=90)
-        fitter.generate_initial_guess()
         assert np.allclose(fitter.initial_guess_next_fit, np.array([1, 0, 90]))
 
     def test_changing_initial_guesses(self):
@@ -211,12 +210,11 @@ class TestSingleTraceFitter:
         assert not np.allclose(fitter.initial_guess_next_fit, coefficients[-1])
 
     def test_generating_initial_guess_fail(self):
-        fitter = SingleTraceFitter(image_data=np.zeros((2, 2)),
-                                   poly_fit_order=2,
-                                   start_point=None,
-                                   second_order_coefficient_guess=90)
-        fitter.generate_initial_guess()
-        assert fitter.initial_guess_next_fit is None
+        with pytest.raises(Exception):
+            fitter = SingleTraceFitter(image_data=np.zeros((2, 2)),
+                                       poly_fit_order=2,
+                                       start_point=None,
+                                       second_order_coefficient_guess=90)
 
     def test_centers_from_coefficients(self):
         design_matrix = np.ones((2, 5))
