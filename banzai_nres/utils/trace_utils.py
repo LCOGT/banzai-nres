@@ -79,7 +79,7 @@ class Trace(object):
             trace.add_centers(trace_centers, trace_id)
             trace_fitter.use_fit_as_initial_guess(fit_id=-1)
             at_edge = trace_fitter.match_filter_to_refine_initial_guess(direction=direction)
-            if trace.last_fit_bad(image.data, direction):
+            if trace.last_fit_is_bad(image.data, direction):
                 trace.del_centers(-1)
                 at_edge = True
             trace_id += 1
@@ -88,7 +88,7 @@ class Trace(object):
     def num_traces_found(self):
         return len(self.data['id'])
 
-    def last_fit_bad(self, image_data, direction='up'):
+    def last_fit_is_bad(self, image_data, direction='up'):
         return any((self._bad_shift(direction), self._beyond_edge(image_data), self._repeated_fit()))
 
     def _repeated_fit(self):

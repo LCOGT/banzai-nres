@@ -97,11 +97,11 @@ class TestTrace:
     def test_bad_fit(self, beyond_edge, repeated_fit, bad_shift):
         data = {'id': [], 'centers': []}
         beyond_edge.return_value, repeated_fit.return_value, bad_shift.return_value = True, True, True
-        assert Trace(data=data).last_fit_bad(image_data=None, direction=None)
+        assert Trace(data=data).last_fit_is_bad(image_data=None, direction=None)
         beyond_edge.return_value, repeated_fit.return_value, bad_shift.return_value = False, False, False
-        assert not Trace(data=data).last_fit_bad(image_data=None, direction=None)
+        assert not Trace(data=data).last_fit_is_bad(image_data=None, direction=None)
         beyond_edge.return_value, repeated_fit.return_value, bad_shift.return_value = True, False, True
-        assert Trace(data=data).last_fit_bad(image_data=None, direction=None)
+        assert Trace(data=data).last_fit_is_bad(image_data=None, direction=None)
 
     def test_detecting_repeated_fit(self):
         centers = np.array([1, 2, 3])
