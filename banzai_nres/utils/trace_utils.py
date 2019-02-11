@@ -27,7 +27,8 @@ class Trace(object):
         if data is None:
             data = Table([Column(name='id'), Column(name='centers', shape=(num_centers_per_trace,))])
             data['id'].description = 'Identification tag for trace'
-            data['centers'].description = 'Vertical position of the center of the trace as a function of horizontal pixel'
+            data['centers'].description = 'Vertical position of the center of the' \
+                                          ' trace as a function of horizontal pixel'
             data['centers'].unit = 'pixel'
         data = Table(data)
         self.data = data
@@ -45,6 +46,9 @@ class Trace(object):
     def del_centers(self, rows):
         self.data.remove_rows(rows)
 
+    def num_traces_found(self):
+        return len(self.data['id'])
+
     def write(self, filename):
         hdu = fits.BinTableHDU(self.data, name=self.trace_table_name)
         fits.HDUList([fits.PrimaryHDU(), hdu]).writeto(filename)
@@ -53,24 +57,40 @@ class Trace(object):
     def load(hdu_list, trace_table_name):
         return Trace(data=hdu_list[trace_table_name].data)
 
-    @staticmethod
-    def fit_traces(image, poly_fit_order, second_order_coefficient_guess,
+    def sort(self):
+        center = int(self.data['centers'].shape[1] / 2)
+        self.data['centers'] = np.array(self.data['centers'])
+        self.data['centers'] = self.data['centers'][self.data['centers'][:, center].argsort()]
+        self.data['id'] = np.arange(self.data['centers'].shape[0])
+
+
+class AllTraceFitter:
+    def fit_traces(self, cls, image, poly_fit_order, second_order_coefficient_guess,
                    fit_march_parameters=None, match_filter_parameters=None):
+        """
+        :param cls: Trace object with get_centers, num_traces_found, add_centers, del_centers, and sort method
+        :param image: Object where image.data is the image data array
+        :param poly_fit_order: degree of the polynomial which will fit the echelle orders across the detector
+        :param second_order_coefficient_guess: guess for the 2nd order coefficient of the aforementioned polynomial
+        :param fit_march_parameters: parameters which describe how the algorithm looks for the next fit. See docs.
+        :param match_filter_parameters: another set of parameters which describe how the algorithm looks for the next
+                                        fit. See docs.
+        :return: trace object with the y coordinates of the trace centers as a function of x pixel.
+        """
+        trace = cls(data=None, num_centers_per_trace=image.data.shape[1])
         start_point = image.data.shape[0]/3
-        trace = Trace(data=None, num_centers_per_trace=image.data.shape[1])
         trace_fitter = SingleTraceFitter(image_data=image.data, start_point=start_point,
                                          second_order_coefficient_guess=second_order_coefficient_guess,
                                          poly_fit_order=poly_fit_order,
                                          march_parameters=fit_march_parameters,
                                          match_filter_parameters=match_filter_parameters)
         for direction in ['up', 'down']:
-            trace._step_through_detector(trace, trace_fitter,
-                                         image, direction=direction)
-        trace._sort_traces()
+            self._step_through_detector(trace, trace_fitter,
+                                        image, direction=direction)
+        trace.sort()
         return trace
 
-    @staticmethod
-    def _step_through_detector(trace, trace_fitter, image, direction='up'):
+    def _step_through_detector(self, trace, trace_fitter, image, direction='up'):
         trace_id = trace.num_traces_found()
         at_edge = trace_fitter.match_filter_to_refine_initial_guess(direction=direction)
         while not at_edge:
@@ -78,52 +98,47 @@ class Trace(object):
             trace.add_centers(trace_centers, trace_id)
             trace_fitter.use_fit_as_initial_guess(fit_id=-1)
             at_edge = trace_fitter.match_filter_to_refine_initial_guess(direction=direction)
-            if trace.last_fit_is_bad(image.data, direction):
+            if self._last_fit_is_bad(trace, image.data, direction):
                 trace.del_centers(-1)
                 at_edge = True
             trace_id += 1
         trace_fitter.use_fit_as_initial_guess(fit_id=0)
 
-    def num_traces_found(self):
-        return len(self.data['id'])
+    def _last_fit_is_bad(self, trace, image_data, direction='up'):
+        return any((self._bad_shift(trace, direction), self._beyond_edge(trace, image_data), self._repeated_fit(trace)))
 
-    def last_fit_is_bad(self, image_data, direction='up'):
-        return any((self._bad_shift(direction), self._beyond_edge(image_data), self._repeated_fit()))
-
-    def _repeated_fit(self):
-        center_pixel = int(len(self.get_centers(0)) / 2)
+    @staticmethod
+    def _repeated_fit(trace):
+        center_pixel = int(len(trace.get_centers(0)) / 2)
         a_repeated_fit = False
-        if self.num_traces_found() < 2:
+        if trace.num_traces_found() < 2:
             a_repeated_fit = False
-        elif np.isclose(self.get_centers(-1)[center_pixel], self.get_centers(-2)[center_pixel], atol=2, rtol=0):
+        elif np.isclose(trace.get_centers(-1)[center_pixel], trace.get_centers(-2)[center_pixel], atol=2, rtol=0):
             a_repeated_fit = True
         return a_repeated_fit
 
-    def _bad_shift(self, direction='up'):
-        center_pixel = int(len(self.get_centers(0)) / 2)
+    @staticmethod
+    def _bad_shift(trace, direction='up'):
+        center_pixel = int(len(trace.get_centers(0)) / 2)
         a_bad_shift = False
-        if self.num_traces_found() < 2:
+        if trace.num_traces_found() < 2:
             a_bad_shift = False
-        elif direction == 'up' and self.get_centers(-1)[center_pixel] < self.get_centers(-2)[center_pixel]:
+        elif direction == 'up' and trace.get_centers(-1)[center_pixel] < trace.get_centers(-2)[center_pixel]:
             a_bad_shift = True
-        elif direction == 'down' and self.get_centers(-1)[center_pixel] > self.get_centers(-2)[center_pixel]:
+        elif direction == 'down' and trace.get_centers(-1)[center_pixel] > trace.get_centers(-2)[center_pixel]:
             a_bad_shift = True
         return a_bad_shift
 
-    def _beyond_edge(self, image_data):
+    @staticmethod
+    def _beyond_edge(trace, image_data):
         """
-        :param image_data:
+        :param image_data: image.data
+        :param trace: Trace object with a get_centers and num_traces_found method
         :return: True or False whether the y value at the center of the most recent trace fit is <0 or greater than
         the maximum y coordinate of the image (i.e. image_data.shape[0])
         """
-        center_pixel = int(len(self.get_centers(0)) / 2)
-        return any((self.get_centers(-1)[center_pixel] < 0, self.get_centers(-1)[center_pixel] > image_data.shape[0]))
-
-    def _sort_traces(self):
-        center = int(self.data['centers'].shape[1] / 2)
-        self.data['centers'] = np.array(self.data['centers'])
-        self.data['centers'] = self.data['centers'][self.data['centers'][:, center].argsort()]
-        self.data['id'] = np.arange(self.data['centers'].shape[0])
+        center_pixel = int(len(trace.get_centers(0)) / 2)
+        return any((trace.get_centers(-1)[center_pixel] < 0, trace.get_centers(-1)[center_pixel] > image_data.shape[0]))
 
 
 class SingleTraceFitter(object):
@@ -150,7 +165,7 @@ class SingleTraceFitter(object):
         self.march_parameters = march_parameters
         self.match_filter_parameters = match_filter_parameters
 
-        if extraargs.get('initialize_fit_objects', True):
+        if extraargs.get('initialize_fit_objects', True): #TODO just make this an argument with default True.
             if self.start_point is None or self.second_order_coefficient_guess is None:
                 logger.error('Starting y position up the detector nor the second order guess have been specified '
                              ', failed to generate an initial guess for trace fitting.')
@@ -246,7 +261,7 @@ class SingleTraceFitter(object):
 
 
 def legendre(order, values):
-    #TODO replace with scipy legendre(order)(values) if it works the same.
+    #TODO replace with scipy.legendre(order)(values) if it works the same.
     if order == 0:
         return np.ones_like(values)
     else:

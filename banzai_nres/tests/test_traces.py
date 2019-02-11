@@ -8,7 +8,7 @@ from banzai.tests.utils import FakeContext
 
 from banzai_nres.traces import TraceMaker
 from banzai_nres.tests.utils import array_with_two_peaks, FakeImage, noisify_image
-from banzai_nres.utils.trace_utils import Trace, SingleTraceFitter
+from banzai_nres.utils.trace_utils import Trace, SingleTraceFitter, AllTraceFitter
 from banzai_nres.tests.utils import fill_image_with_traces
 import banzai_nres.settings
 import logging
@@ -88,54 +88,15 @@ class TestTrace:
         assert np.allclose(trace.data['id'], [1, 2])
 
     def test_write(self):
-        #TODO
+        # TODO
         assert True
-
-    @mock.patch('banzai_nres.utils.trace_utils.Trace._bad_shift')
-    @mock.patch('banzai_nres.utils.trace_utils.Trace._repeated_fit')
-    @mock.patch('banzai_nres.utils.trace_utils.Trace._beyond_edge')
-    def test_bad_fit(self, beyond_edge, repeated_fit, bad_shift):
-        data = {'id': [], 'centers': []}
-        beyond_edge.return_value, repeated_fit.return_value, bad_shift.return_value = True, True, True
-        assert Trace(data=data).last_fit_is_bad(image_data=None, direction=None)
-        beyond_edge.return_value, repeated_fit.return_value, bad_shift.return_value = False, False, False
-        assert not Trace(data=data).last_fit_is_bad(image_data=None, direction=None)
-        beyond_edge.return_value, repeated_fit.return_value, bad_shift.return_value = True, False, True
-        assert Trace(data=data).last_fit_is_bad(image_data=None, direction=None)
-
-    def test_detecting_repeated_fit(self):
-        centers = np.array([1, 2, 3])
-        data = {'id': [1, 2], 'centers': [centers, centers+0.1]}
-        trace = Trace(data=data)
-        assert trace._repeated_fit()
-
-    def test_detecting_bad_shifts(self):
-        centers = np.array([1, 2, 3])
-        data = {'id': [1], 'centers': np.array([centers])}
-        trace = Trace(data=data)
-        assert not trace._bad_shift(direction='up')
-
-        trace.data = {'id': [1, 2], 'centers': np.array([centers, centers-0.1])}
-        assert trace._bad_shift(direction='up')
-
-        trace.data = {'id': [1, 2], 'centers': np.array([centers, centers+0.1])}
-        assert trace._bad_shift(direction='down')
-
-    def test_detecting_beyond_edge(self):
-        fake_image_data = np.zeros((3, 3))
-        data = {'id': [1], 'centers': [[3.1, 3.1, 3.1]]}
-        assert Trace(data=data)._beyond_edge(fake_image_data)
-        data = {'id': [1], 'centers': [[-0.1, -0.1, -0.1]]}
-        assert Trace(data=data)._beyond_edge(fake_image_data)
-        data = {'id': [1], 'centers': [[2, -0.1, 2]]}
-        assert Trace(data=data)._beyond_edge(fake_image_data)
 
     def test_sorting_trace_centers(self):
         centers = np.array([1, 2, 3])
         data = {'id': [1, 2, 3, 4],
                 'centers': [centers, centers+5, centers-10, centers+2]}
         trace = Trace(data=data)
-        trace._sort_traces()
+        trace.sort()
         assert np.allclose(trace.data['id'], np.arange(4))
         assert np.allclose(trace.data['centers'],
                            np.array([centers-10, centers, centers+2, centers+5]))
@@ -155,7 +116,53 @@ class TestTrace:
         assert np.allclose(trace.data['id'], [1])
         assert np.allclose(trace.data['centers'], [centers])
 
-    def test_fit_trace(self):
+
+class TestAllTraceFitter:
+    @mock.patch('banzai_nres.utils.trace_utils.AllTraceFitter._bad_shift')
+    @mock.patch('banzai_nres.utils.trace_utils.AllTraceFitter._repeated_fit')
+    @mock.patch('banzai_nres.utils.trace_utils.AllTraceFitter._beyond_edge')
+    def test_bad_fit(self, beyond_edge, repeated_fit, bad_shift):
+        all_trace_fitter = AllTraceFitter()
+        beyond_edge.return_value, repeated_fit.return_value, bad_shift.return_value = True, True, True
+        assert all_trace_fitter._last_fit_is_bad(trace=None, image_data=None, direction=None)
+        beyond_edge.return_value, repeated_fit.return_value, bad_shift.return_value = False, False, False
+        assert not all_trace_fitter._last_fit_is_bad(trace=None, image_data=None, direction=None)
+        beyond_edge.return_value, repeated_fit.return_value, bad_shift.return_value = True, False, True
+        assert all_trace_fitter._last_fit_is_bad(trace=None, image_data=None, direction=None)
+
+    def test_detecting_repeated_fit(self):
+        centers = np.array([1, 2, 3])
+        data = {'id': [1, 2], 'centers': [centers, centers+0.1]}
+        trace = Trace(data=data)
+        assert AllTraceFitter._repeated_fit(trace=trace)
+
+    def test_detecting_bad_shifts(self):
+        centers = np.array([1, 2, 3])
+        data = {'id': [1], 'centers': np.array([centers])}
+        trace = Trace(data=data)
+        assert not AllTraceFitter._bad_shift(trace=trace, direction='up')
+
+        trace.data = {'id': [1, 2], 'centers': np.array([centers, centers-0.1])}
+        assert AllTraceFitter._bad_shift(trace=trace, direction='up')
+
+        trace.data = {'id': [1, 2], 'centers': np.array([centers, centers+0.1])}
+        assert AllTraceFitter._bad_shift(trace=trace, direction='down')
+
+    def test_detecting_beyond_edge(self):
+        fake_image_data = np.zeros((3, 3))
+        data = {'id': [1], 'centers': [[3.1, 3.1, 3.1]]}
+        assert AllTraceFitter._beyond_edge(Trace(data=data), fake_image_data)
+        data = {'id': [1], 'centers': [[-0.1, -0.1, -0.1]]}
+        assert AllTraceFitter._beyond_edge(Trace(data=data), fake_image_data)
+        data = {'id': [1], 'centers': [[2, -0.1, 2]]}
+        assert AllTraceFitter._beyond_edge(Trace(data=data), fake_image_data)
+
+    def test_step_through_detector(self):
+        # TODO
+        assert True
+
+    def test_fit_traces(self):
+        # TODO
         assert True
 
 

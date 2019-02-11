@@ -5,7 +5,7 @@ Authors
     G. Mirek Brandt (gmbrandt@ucsb.edu)
 """
 
-from banzai_nres.utils.trace_utils import Trace
+from banzai_nres.utils.trace_utils import Trace, AllTraceFitter
 from banzai.stages import Stage
 from banzai.calibrations import CalibrationMaker
 from banzai import dbs
@@ -36,10 +36,11 @@ class TraceMaker(CalibrationMaker):
         traces = []
         for image in images:
             logger.debug('fitting traces order by order', image=image)
-            trace = Trace.fit_traces(image, poly_fit_order=self.order_of_poly_fit,
-                                     second_order_coefficient_guess=self.second_order_coefficient_guess,
-                                     fit_march_parameters=self.fit_march_parameters,
-                                     match_filter_parameters=self.match_filter_parameters)
+            fitter = AllTraceFitter()
+            trace = fitter.fit_traces(cls=Trace, image=image, poly_fit_order=self.order_of_poly_fit,
+                                      second_order_coefficient_guess=self.second_order_coefficient_guess,
+                                      fit_march_parameters=self.fit_march_parameters,
+                                      match_filter_parameters=self.match_filter_parameters)
             trace.trace_table_name = self.trace_table_name
             traces.append(trace)
         return traces
@@ -65,9 +66,9 @@ class LoadTrace(Stage):
         for image in images:
             logger.info('loading trace data onto image', image=image)
             master_trace_path = dbs.get_master_calibration_image(image, self.calibration_type,
-                                                                      self.master_selection_criteria,
-                                                                      db_address=self.pipeline_context.db_address)
-            
+                                                                 self.master_selection_criteria,
+                                                                 db_address=self.pipeline_context.db_address)
+
             if master_trace_path is None or not os.path.exists(master_trace_path):
                 logger.error('Master trace fit file not found for {0}.'.format(image.filename))
                 logger.error("Can't find trace coefficients for image, stopping reduction", image=image)
