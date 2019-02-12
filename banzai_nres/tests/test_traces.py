@@ -374,13 +374,26 @@ class TestTraceMaker:
         trace_fitter.do_stage([image])
         assert True
 
-    def test_trace_fitting(self):
-        #TODO
+    @mock.patch('banzai_nres.utils.trace_utils.AllTraceFitter.fit_traces')
+    def test_trace_maker(self, fit_traces):
+        trace_table_name = 'test'
+        data = {'id': [1], 'centers': [np.arange(3)]}
+        fit_traces.return_value = Trace(data=data)
+        expected_trace = Trace(data=data)
+        fake_context = FakeContext(settings=banzai_nres.settings.NRESSettings())
+        trace_maker = TraceMaker(fake_context)
+        trace_maker.trace_table_name = trace_table_name
+        traces = trace_maker.do_stage(images=[FakeImage()])
+        loaded_trace = traces[0][0]
+        assert np.allclose(loaded_trace.get_centers(0), expected_trace.get_centers(0))
+        assert np.allclose(loaded_trace.get_id(0), expected_trace.get_id(0))
+
+    def test_accuracy_of_trace_fitting(self):
         """
         test type: Mock Integration Test with metrics for how well trace fitting is doing.
         info: This tests trace making via a blind fit.
         WARNING: Because trace fitting is defined with polynomials which are normalized from -1 to 1, if one squeezes
-        the x axis of the image further, then the traces bend more drastically. Thus it is recommended you do not change the
+        the x axis of the image, then the traces bend more drastically. Thus it is recommended you do not change the
         size of the FakeTraceImage.
         """
         readnoise = 11.0
