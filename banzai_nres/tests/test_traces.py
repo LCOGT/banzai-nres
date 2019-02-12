@@ -1,9 +1,13 @@
 import pytest
+import tempfile
 import numpy as np
+import os
+
 from astropy.table import Table
 from astropy.io import fits
 from scipy.optimize import OptimizeResult
 from unittest import mock
+
 from banzai.tests.utils import FakeContext
 
 from banzai_nres.traces import TraceMaker
@@ -11,6 +15,7 @@ from banzai_nres.tests.utils import array_with_two_peaks, FakeImage, noisify_ima
 from banzai_nres.utils.trace_utils import Trace, SingleTraceFitter, AllTraceFitter
 from banzai_nres.tests.utils import fill_image_with_traces
 import banzai_nres.settings
+
 import logging
 
 
@@ -87,9 +92,16 @@ class TestTrace:
         assert np.allclose(trace.data['centers'], [centers, centers])
         assert np.allclose(trace.data['id'], [1, 2])
 
-    def test_write(self):
-        # TODO
-        assert True
+    def test_load_and_write(self):
+        name = 'trace'
+        trace = Trace(data={'id': [1], 'centers': [np.arange(3)]}, trace_table_name=name)
+        with tempfile.TemporaryDirectory() as tmp_directory_name:
+            filename = os.path.join(tmp_directory_name, 'test_trace_table.fits')
+            trace.write(filename=filename)
+            hdu_list = fits.open(filename)
+            loaded_trace = Trace.load(hdu_list=hdu_list, trace_table_name=name)
+        assert np.allclose(loaded_trace.get_centers(0), trace.get_centers(0))
+        assert np.allclose(loaded_trace.get_id(0), trace.get_id(0))
 
     def test_sorting_trace_centers(self):
         centers = np.array([1, 2, 3])
