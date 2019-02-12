@@ -58,7 +58,9 @@ class TestTrace:
         data['centers'].description = 'test_2'
         trace = Trace(data=data)
         assert trace.trace_table_name is None
-        assert trace.data.colnames == ['id', 'centers']
+        for name in ['id', 'centers']:
+            assert name in trace.data.colnames
+        assert len(trace.data.colnames) == 2
         assert len(trace.data['id']) == 0
         assert trace.data['centers'].shape == (0,)
         assert trace.data['centers'].description == 'test_2'
