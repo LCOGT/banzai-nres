@@ -361,6 +361,9 @@ class TestMatchFilter:
 
 
 class TestTraceMaker:
+    def test_properties(self):
+        assert TraceMaker(FakeContext(settings=banzai_nres.settings.NRESSettings())).calibration_type is 'TRACE'
+
     def test_trace_fit_does_not_crash_on_blank_frame(self):
         readnoise = 11.0
         order_of_poly_fit = 4
@@ -428,6 +431,9 @@ class TestTraceMaker:
 
 
 class TestLoadTrace:
+    def test_properties(self):
+        assert LoadTrace(FakeContext(settings=banzai_nres.settings.NRESSettings())).calibration_type is 'TRACE'
+
     @mock.patch('banzai.dbs.get_master_calibration_image', return_value=None)
     def test_load_trace_removes_images_without_calibration(self, mock_get_cal):
         images = [FakeImage(), FakeImage(), FakeImage()]
