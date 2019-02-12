@@ -43,7 +43,7 @@ class TestTrace:
     """
     Unit tests for the Trace class.
     """
-    def test_trace_loads_from_num_centers(self):
+    def test_trace_instantiates_from_num_centers(self):
         trace = Trace(num_centers_per_trace=5)
         assert trace.trace_table_name is None
         assert trace.data.colnames == ['id', 'centers']
@@ -52,8 +52,8 @@ class TestTrace:
         assert trace.data['centers'].description is not None
         assert trace.data['id'].description is not None
 
-    def test_trace_loads_from_data(self):
-        data = Table({'id': [], 'centers': []})
+    def test_trace_instantiates_from_data(self):
+        data = Table({'id': [1], 'centers': [[1, 2, 3]]})
         data['id'].description = 'test'
         data['centers'].description = 'test_2'
         trace = Trace(data=data)
@@ -61,8 +61,8 @@ class TestTrace:
         for name in ['id', 'centers']:
             assert name in trace.data.colnames
         assert len(trace.data.colnames) == 2
-        assert len(trace.data['id']) == 0
-        assert trace.data['centers'].shape == (0,)
+        assert len(trace.data['id']) == 1
+        assert trace.data['centers'].shape == (1, 3)
         assert trace.data['centers'].description == 'test_2'
         assert trace.data['id'].description == 'test'
 
