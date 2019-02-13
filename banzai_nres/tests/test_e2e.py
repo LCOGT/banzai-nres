@@ -80,7 +80,7 @@ def test_e2e():
     # executing the master bias maker as one would from the command line.
     os.system('reduce_bias_frames --db-address {0} --raw-path {1} --ignore-schedulability '
               '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
-    os.system('stack_calibrations --site lsc --camera nres01 --frame-type BIAS --min-date 2018-03-11'
+    os.system('stack_calibrations --site lsc --camera nres01 --frame-type BIAS --min-date 2018-03-11T00:00:00'
               ' --max-date 2018-03-12T23:59 --db-address {0} --raw-path {1} --ignore-schedulability '
               '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
 
@@ -91,7 +91,7 @@ def test_e2e():
     # executing the master dark maker as one would from the command line.
     os.system('reduce_dark_frames --db-address {0} --raw-path {1} --ignore-schedulability '
               '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
-    os.system('stack_calibrations --site lsc --camera nres01 --frame-type DARK --min-date 2018-03-11'
+    os.system('stack_calibrations --site lsc --camera nres01 --frame-type DARK --min-date 2018-03-11T00:00:00'
               ' --max-date 2018-03-12T23:59 --db-address {0} --raw-path {1} --ignore-schedulability '
               '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
 
@@ -102,7 +102,7 @@ def test_e2e():
     # executing the master flat maker as one would from the command line.
     os.system('reduce_flat_frames --db-address {0} --raw-path {1} --ignore-schedulability '
               '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
-    os.system('stack_calibrations --site lsc --camera nres01 --frame-type LAMPFLAT --min-date 2018-03-11'
+    os.system('stack_calibrations --site lsc --camera nres01 --frame-type LAMPFLAT --min-date 2018-03-11T00:00:00'
               ' --max-date 2018-03-12T23:59 --db-address {0} --raw-path {1} --ignore-schedulability '
               '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
 
