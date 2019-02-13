@@ -27,7 +27,7 @@ class NRESSettings(Settings):
                       bias.BiasSubtractor,
                       dark.DarkSubtractor]
 
-    CALIBRATION_MIN_IMAGES = {'BIAS': 5,
+    CALIBRATION_MIN_FRAMES = {'BIAS': 5,
                               'DARK': 3,
                               'LAMPFLAT': 5}
 
