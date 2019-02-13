@@ -1,6 +1,10 @@
+0.4.0 (2019-02-13)
+------------------
+- Fixes to account for upstream changes in BANZAI
+
 0.3.0 (2018-11-13)
 ------------------
-Added flat stacking to stages.
+- Added flat stacking to stages.
 
 0.2.0 (2018-10-30)
 ------------------
