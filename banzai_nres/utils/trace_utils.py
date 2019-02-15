@@ -94,11 +94,11 @@ class AllTraceFitter:
         at_edge = False
         trace_id = trace.num_traces_found()
         while not at_edge:
-            next_trace_position = trace_fitter.match_filter_next_trace_position(direction=direction)
-            if next_trace_position is None:
+            zeroth_order_coefficient_guess = trace_fitter.match_filter_refine_0th_order_guess(direction=direction)
+            if zeroth_order_coefficient_guess is None:
                 at_edge = True
             else:
-                trace_fitter.shift_next_guess_to_position(position=next_trace_position)
+                trace_fitter.initial_guess_next_fit[0] = zeroth_order_coefficient_guess
                 trace_centers = trace_fitter.fit_trace()
                 trace.add_centers(trace_centers, trace_id)
                 trace_fitter.use_fit_as_initial_guess(fit_id=-1)
@@ -188,26 +188,22 @@ class SingleTraceFitter(object):
         self.coefficients.append(refined_coefficients)
         return self._centers_from_coefficients(refined_coefficients)
 
-    def match_filter_next_trace_position(self, direction='up'):
+    def match_filter_refine_0th_order_guess(self, direction='up'):
         current_trace_centers = self._centers_from_coefficients(self.initial_guess_next_fit)
-        shifted_trace_centers, offsets = self._centers_shifting_traces_up_or_down(current_trace_centers,
-                                                                                  direction=direction)
+        shifted_trace_centers, offsets = self._shift_trace(current_trace_centers,
+                                                           direction=direction)
         flux_vs_shift = self._flux_as_trace_shifts_up_or_down(shifted_trace_centers)
         current_trace_flux = self._flux_across_trace(current_trace_centers)
         reference_flux = max(current_trace_flux, np.max(flux_vs_shift))
         min_peak_height = abs(reference_flux)/self.match_filter_parameters['neighboring_peak_flux_ratio']
-        flux_vs_shift[flux_vs_shift < min_peak_height] = min_peak_height
-        peak_indices = signal.find_peaks(flux_vs_shift,
-                                         distance=self.match_filter_parameters['min_peak_spacing'])[0]
+        min_peak_to_peak_distance = self.match_filter_parameters['min_peak_spacing']
+        peak_indices = find_peaks(flux_vs_shift, min_peak_height, min_peak_to_peak_distance)
         if len(peak_indices) == 0:
-            next_trace_position = None
+            zeroth_order_coefficient_guess = None
         else:
             index_of_first_peak = peak_indices[0]
-            next_trace_position = self.initial_guess_next_fit[0] + offsets[index_of_first_peak]
-        return next_trace_position
-
-    def shift_next_guess_to_position(self, position):
-        self.initial_guess_next_fit[0] = position
+            zeroth_order_coefficient_guess = self.initial_guess_next_fit[0] + offsets[index_of_first_peak]
+        return zeroth_order_coefficient_guess
 
     def _flux_as_trace_shifts_up_or_down(self, shifted_traces):
         flux_vs_shift = []
@@ -215,7 +211,8 @@ class SingleTraceFitter(object):
             flux_vs_shift.append(self._flux_across_trace(trace))
         return np.array(flux_vs_shift)
 
-    def _centers_shifting_traces_up_or_down(self, current_trace_centers, direction='up'):
+    def _shift_trace(self, current_trace_centers, direction='up'):
+        #TODO something which is detached from the whole window business that _centers_shifting_traces_is
         window = self.march_parameters['window']
         step = self.march_parameters['step_size']
         if direction == 'up':
@@ -273,3 +270,10 @@ def legendre(order, values):
         return np.ones_like(values)
     else:
         return np.polynomial.legendre.legval(values, [0 for j in range(order)] + [1])
+
+
+def find_peaks(flux, min_peak_height, min_peak_to_peak_distance):
+    # TODO see if scipy's min_peak_height wrapper works. Only gave a cursory glance before.
+    flux[flux < min_peak_height] = min_peak_height
+    peak_indices = signal.find_peaks(flux, distance=min_peak_to_peak_distance)[0]
+    return peak_indices

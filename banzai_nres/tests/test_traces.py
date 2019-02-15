@@ -321,14 +321,14 @@ class TestMatchFilter:
         fitter = SingleTraceFitter(extraargs={'initialize_fit_objects': False},
                                    march_parameters={'window': w, 'step_size': s})
         current_trace_centers = np.arange(10)
-        shifted_trace_centers, offsets = fitter._centers_shifting_traces_up_or_down(current_trace_centers,
-                                                                                    direction='up')
+        shifted_trace_centers, offsets = fitter._shift_trace(current_trace_centers,
+                                                             direction='up')
         assert np.allclose(shifted_trace_centers, np.array([current_trace_centers + s,
                                                             current_trace_centers + s + 1]))
         assert np.allclose(offsets, [6, 7])
 
-        shifted_trace_centers, offsets = fitter._centers_shifting_traces_up_or_down(current_trace_centers,
-                                                                                    direction='down')
+        shifted_trace_centers, offsets = fitter._shift_trace(current_trace_centers,
+                                                             direction='down')
         assert np.allclose(shifted_trace_centers, np.array([current_trace_centers - s,
                                                             current_trace_centers - s - 1]))
         assert np.allclose(offsets, [-6, -7])
@@ -343,7 +343,7 @@ class TestMatchFilter:
     @mock.patch('banzai_nres.utils.trace_utils.SingleTraceFitter._centers_from_coefficients', return_value=None)
     @mock.patch('banzai_nres.utils.trace_utils.SingleTraceFitter._flux_across_trace')
     @mock.patch('banzai_nres.utils.trace_utils.SingleTraceFitter._flux_as_trace_shifts_up_or_down')
-    @mock.patch('banzai_nres.utils.trace_utils.SingleTraceFitter._centers_shifting_traces_up_or_down')
+    @mock.patch('banzai_nres.utils.trace_utils.SingleTraceFitter._shift_trace')
     def test_match_filter_to_refine_initial_guess(self, shift_centers, flux_vs_shift, reference_flux, make_centers):
         fitter = SingleTraceFitter(extraargs={'initialize_fit_objects': False})
         fitter.match_filter_parameters = {'min_peak_spacing': 5, 'neighboring_peak_flux_ratio': 20}
@@ -355,7 +355,7 @@ class TestMatchFilter:
         for trace_signal, outcome in zip([positive_trace_signal, no_trace_signal], [centroids[0], None]):
             fitter.initial_guess_next_fit = [0]
             flux_vs_shift.return_value = trace_signal
-            next_trace_position = fitter.match_filter_next_trace_position(direction=None)
+            next_trace_position = fitter.match_filter_refine_0th_order_guess(direction=None)
             if next_trace_position is not None:
                 assert np.isclose(next_trace_position, outcome, atol=3, rtol=0)
 
