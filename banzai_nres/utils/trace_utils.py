@@ -91,17 +91,22 @@ class AllTraceFitter:
         return trace
 
     def _step_through_detector(self, trace, trace_fitter, image, direction='up'):
+        at_edge = False
         trace_id = trace.num_traces_found()
-        at_edge = trace_fitter.match_filter_to_refine_initial_guess(direction=direction)
         while not at_edge:
-            trace_centers = trace_fitter.fit_trace()
-            trace.add_centers(trace_centers, trace_id)
-            trace_fitter.use_fit_as_initial_guess(fit_id=-1)
-            at_edge = trace_fitter.match_filter_to_refine_initial_guess(direction=direction)
-            if self._last_fit_is_bad(trace, image.data, direction):
-                trace.del_centers(-1)
+            next_trace_position = trace_fitter.match_filter_next_trace_position(direction=direction)
+            if next_trace_position is None:
                 at_edge = True
-            trace_id += 1
+            else:
+                trace_fitter.shift_next_guess_to_position(position=next_trace_position)
+                trace_centers = trace_fitter.fit_trace()
+                trace.add_centers(trace_centers, trace_id)
+                trace_fitter.use_fit_as_initial_guess(fit_id=-1)
+                if self._last_fit_is_bad(trace, image.data, direction):
+                    trace.del_centers(-1)
+                    at_edge = True
+                trace_id += 1
+
         trace_fitter.use_fit_as_initial_guess(fit_id=0)
 
     def _last_fit_is_bad(self, trace, image_data, direction='up'):
@@ -183,8 +188,7 @@ class SingleTraceFitter(object):
         self.coefficients.append(refined_coefficients)
         return self._centers_from_coefficients(refined_coefficients)
 
-    def match_filter_to_refine_initial_guess(self, direction='up'):
-        no_more_traces = False
+    def match_filter_next_trace_position(self, direction='up'):
         current_trace_centers = self._centers_from_coefficients(self.initial_guess_next_fit)
         shifted_trace_centers, offsets = self._centers_shifting_traces_up_or_down(current_trace_centers,
                                                                                   direction=direction)
@@ -196,11 +200,14 @@ class SingleTraceFitter(object):
         peak_indices = signal.find_peaks(flux_vs_shift,
                                          distance=self.match_filter_parameters['min_peak_spacing'])[0]
         if len(peak_indices) == 0:
-            peak_indices = [0]
-            no_more_traces = True
-        index_of_first_peak = peak_indices[0]
-        self.initial_guess_next_fit[0] += offsets[index_of_first_peak]
-        return no_more_traces
+            next_trace_position = None
+        else:
+            index_of_first_peak = peak_indices[0]
+            next_trace_position = self.initial_guess_next_fit[0] + offsets[index_of_first_peak]
+        return next_trace_position
+
+    def shift_next_guess_to_position(self, position):
+        self.initial_guess_next_fit[0] = position
 
     def _flux_as_trace_shifts_up_or_down(self, shifted_traces):
         flux_vs_shift = []
@@ -213,7 +220,7 @@ class SingleTraceFitter(object):
         step = self.march_parameters['step_size']
         if direction == 'up':
             offsets = np.arange(step, window+step, 1)
-        if direction == 'down':
+        if direction == 'down': #remove offsets logic, replace just with signed direction
             offsets = np.arange((-1)*step, (-1)*(window+step), -1)
         shifted_trace_centers = np.ones((offsets.shape[0], current_trace_centers.shape[0]))
         shifted_trace_centers *= current_trace_centers

@@ -352,14 +352,12 @@ class TestMatchFilter:
                                            size=len(positive_trace_signal))
         shift_centers.return_value = None, x_coords
         reference_flux.return_value = np.max(positive_trace_signal)
-        for trace_signal, outcome, prediction in zip([positive_trace_signal, no_trace_signal],
-                                                     [centroids[0], 0],
-                                                     [False, True]):
+        for trace_signal, outcome in zip([positive_trace_signal, no_trace_signal], [centroids[0], None]):
             fitter.initial_guess_next_fit = [0]
             flux_vs_shift.return_value = trace_signal
-            no_more_traces = fitter.match_filter_to_refine_initial_guess(direction=None)
-            assert np.isclose(fitter.initial_guess_next_fit[0], outcome, atol=3, rtol=0)
-            assert no_more_traces is prediction
+            next_trace_position = fitter.match_filter_next_trace_position(direction=None)
+            if next_trace_position is not None:
+                assert np.isclose(next_trace_position, outcome, atol=3, rtol=0)
 
 
 class TestTraceMaker:
