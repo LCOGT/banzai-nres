@@ -20,9 +20,7 @@ class TraceMaker(CalibrationMaker):
     def __init__(self, pipeline_context):
         super(TraceMaker, self).__init__(pipeline_context)
         self.pipeline_context = pipeline_context
-        self.master_selection_criteria = self.pipeline_context.CALIBRATION_SET_CRITERIA.get(
-            self.calibration_type.upper(), [])
-        self.order_of_poly_fit = 4
+        self.order_of_poly_fit = self.pipeline_context.TRACE_FIT_POLYNOMIAL_ORDER
         self.second_order_coefficient_guess = self.pipeline_context.TRACE_FIT_INITIAL_DEGREE_TWO_GUESS
         self.trace_table_name = self.pipeline_context.TRACE_TABLE_NAME
         self.fit_march_parameters = {'window': self.pipeline_context.MAX_ORDER_TO_ORDER_SPACING,
@@ -53,7 +51,6 @@ class LoadTrace(Stage):
     def __init__(self, pipeline_context):
         super(LoadTrace, self).__init__(pipeline_context)
         self.pipeline_context = pipeline_context
-        self.trace_table_name = self.pipeline_context.TRACE_TABLE_NAME
         self.master_selection_criteria = self.pipeline_context.CALIBRATION_SET_CRITERIA.get(
             self.calibration_type.upper(), [])
 
@@ -76,7 +73,7 @@ class LoadTrace(Stage):
                 continue
             else:
                 hdu_list = fits.open(master_trace_path)
-                image.trace = Trace.load(hdu_list, trace_table_name=self.trace_table_name)
+                image.trace = Trace.load(hdu_list, trace_table_name=self.pipeline_context.TRACE_TABLE_NAME)
         for image in images_to_remove:
             images.remove(image)
         return images
