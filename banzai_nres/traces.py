@@ -36,10 +36,9 @@ class TraceMaker(CalibrationMaker):
         traces = []
         for image in images:
             logger.debug('fitting traces order by order', image=image)
-            fitter = AllTraceFitter()
+            fitter = AllTraceFitter(march_parameters=self.fit_march_parameters)
             trace = fitter.fit_traces(cls=Trace, image=image, poly_fit_order=self.order_of_poly_fit,
                                       second_order_coefficient_guess=self.second_order_coefficient_guess,
-                                      fit_march_parameters=self.fit_march_parameters,
                                       match_filter_parameters=self.match_filter_parameters)
             trace.trace_table_name = self.trace_table_name
             traces.append(trace)
