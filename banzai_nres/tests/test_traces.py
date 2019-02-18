@@ -207,8 +207,8 @@ class TestSingleTraceFitter:
 
     def test_default_class_attributes(self):
         fitter = SingleTraceFitter(extraargs={'initialize_fit_objects': False})
-        assert fitter.march_parameters['window'] == 100
-        assert fitter.march_parameters['step_size'] == 6
+        assert fitter.match_filter_parameters['min_peak_spacing'] == 5
+        assert fitter.match_filter_parameters['neighboring_peak_flux_ratio'] == 5
         assert fitter.poly_fit_order == 2
         assert fitter.coefficients == []
 
@@ -250,7 +250,7 @@ class TestSingleTraceFitter:
         fitter.initial_guess_next_fit += 1
         assert not np.allclose(fitter.initial_guess_next_fit, coefficients[-1])
 
-    def test_centers_from_coefficients(self):
+    def _generate_fitter(self):
         design_matrix = np.ones((2, 5))
         design_matrix[1] = np.linspace(-1, 1, 5)
         offset, linear_coefficient = 1, 0.5
@@ -259,11 +259,24 @@ class TestSingleTraceFitter:
                                               'design_matrix': design_matrix,
                                               'x': x})
         single_trace_coefficients = np.array([offset, linear_coefficient])
-        trace_centers = fitter._centers_from_coefficients(single_trace_coefficients)
-        a_line = np.linspace(offset - linear_coefficient, offset + linear_coefficient, 5)
-        assert np.allclose(trace_centers, a_line)
         fitter.initial_guess_next_fit = single_trace_coefficients
+        a_line = np.linspace(offset - linear_coefficient, offset + linear_coefficient, 5)
+
+        return fitter, a_line
+
+    def test_centers_from_coefficients(self):
+        fitter, a_line = self._generate_fitter()
+        assert np.allclose(fitter._centers_from_coefficients(fitter.initial_guess_next_fit), a_line)
+
+    def test_centers_from_current_guess(self):
+        fitter, a_line = self._generate_fitter()
         assert np.allclose(fitter.centers_current_guess(), a_line)
+
+    def test_update_initial_guess_to_run_through_pt(self):
+        fitter, a_line = self._generate_fitter()
+        fitter.update_initial_guess_to_run_through_pt(xy=(1, 400))
+        shifted_line = a_line - a_line[1] + 400
+        assert np.allclose(fitter.centers_current_guess(), shifted_line)
 
     def test_flux_across_trace(self):
         x = np.arange(5)
@@ -352,11 +365,11 @@ class TestMatchFilter:
         reference_flux.return_value = np.max(positive_trace_signal)
         for trace_signal, outcome in zip([positive_trace_signal, no_trace_signal], [centroids[0], None]):
             fitter.initial_guess_next_fit = [0]
-            flux_vs_pos.return_value = trace_signal
-            next_trace_xy_coordinate = fitter.match_filter(None, y_min=None, y_max=None, reference_x=30)
+            flux_vs_pos.return_value = trace_signal, x_coords
+            next_trace_xy_coordinate = fitter.match_filter(np.zeros(3), y_min=None, y_max=None, reference_x=2)
             if next_trace_xy_coordinate is not None:
                 assert np.isclose(next_trace_xy_coordinate[1], outcome, atol=3, rtol=0)
-                assert np.isclose(next_trace_xy_coordinate[0], 30)
+                assert np.isclose(next_trace_xy_coordinate[0], 2)
 
 
 class TestTraceMaker:

@@ -11,6 +11,8 @@ from scipy import ndimage, optimize, signal
 from astropy.table import Table, Column
 from astropy.io import fits
 
+from banzai_nres.utils.array_utils import find_nearest
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -220,13 +222,16 @@ class SingleTraceFitter(object):
         if len(peak_indices) == 0:
             next_trace_xy_coordinate = None
         else:
-            next_trace_xy_coordinate = (reference_x, trace_positions[peak_indices[0]])
+            current_y = current_trace_centers[reference_x]
+            next_trace_y_coordinate = find_nearest(trace_positions[peak_indices], current_y)
+            next_trace_xy_coordinate = (reference_x, next_trace_y_coordinate)
         return next_trace_xy_coordinate
 
     def _convolve_trace_with_image_data(self, current_trace_centers, y_min, y_max, reference_x):
         model_trace = current_trace_centers - current_trace_centers[reference_x]
         trace_positions = np.arange(y_min, y_max)
-        return np.array([self._flux_across_trace(model_trace + y) for y in trace_positions]), trace_positions
+        convolution = np.array([self._flux_across_trace(model_trace + y) for y in trace_positions])
+        return convolution, trace_positions
 
     def use_fit_as_initial_guess(self, fit_id):
         self.initial_guess_next_fit = np.copy(self.coefficients[fit_id])
