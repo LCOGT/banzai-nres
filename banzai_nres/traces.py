@@ -48,6 +48,7 @@ class LoadTrace(Stage):
     """
     Loads trace coefficients from file and appends them onto the image object.
     """
+    #TODO make this a calibration applier stage.
     def __init__(self, pipeline_context):
         super(LoadTrace, self).__init__(pipeline_context)
         self.pipeline_context = pipeline_context
@@ -72,8 +73,7 @@ class LoadTrace(Stage):
                 images_to_remove.append(image)
                 continue
             else:
-                hdu_list = fits.open(master_trace_path)
-                image.trace = Trace.load(hdu_list, trace_table_name=self.pipeline_context.TRACE_TABLE_NAME)
+                image.trace = Trace.load(master_trace_path, trace_table_name=self.pipeline_context.TRACE_TABLE_NAME)
         for image in images_to_remove:
             images.remove(image)
         return images

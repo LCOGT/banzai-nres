@@ -98,10 +98,9 @@ class TestTrace:
         name = 'trace'
         trace = Trace(data={'id': [1], 'centers': [np.arange(3)]}, trace_table_name=name)
         with tempfile.TemporaryDirectory() as tmp_directory_name:
-            filename = os.path.join(tmp_directory_name, 'test_trace_table.fits')
-            trace.write(filename=filename)
-            hdu_list = fits.open(filename)
-            loaded_trace = Trace.load(hdu_list=hdu_list, trace_table_name=name)
+            path = os.path.join(tmp_directory_name, 'test_trace_table.fits')
+            trace.write(filename=path)
+            loaded_trace = Trace.load(path=path, trace_table_name=name)
         assert np.allclose(loaded_trace.get_centers(0), trace.get_centers(0))
         assert np.allclose(loaded_trace.get_id(0), trace.get_id(0))
 

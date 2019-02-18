@@ -56,7 +56,8 @@ class Trace(object):
         fits.HDUList([fits.PrimaryHDU(), hdu]).writeto(filename)
 
     @staticmethod
-    def load(hdu_list, trace_table_name):
+    def load(path, trace_table_name):
+        hdu_list = fits.open(path)
         return Trace(data=hdu_list[trace_table_name].data)
 
     def sort(self):
