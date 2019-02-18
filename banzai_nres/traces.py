@@ -23,7 +23,7 @@ class TraceMaker(CalibrationMaker):
         self.order_of_poly_fit = self.pipeline_context.TRACE_FIT_POLYNOMIAL_ORDER
         self.second_order_coefficient_guess = self.pipeline_context.TRACE_FIT_INITIAL_DEGREE_TWO_GUESS
         self.trace_table_name = self.pipeline_context.TRACE_TABLE_NAME
-        self.fit_march_parameters = {'window': self.pipeline_context.MAX_ORDER_TO_ORDER_SPACING,
+        self.fit_march_parameters = {'window_size': self.pipeline_context.MAX_ORDER_TO_ORDER_SPACING,
                                      'step_size': self.pipeline_context.MAX_ORDER_FHWM}
         self.match_filter_parameters = self.pipeline_context.MATCH_FILTER_PEAK_PARAMETERS
 

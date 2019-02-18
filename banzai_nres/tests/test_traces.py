@@ -181,7 +181,7 @@ class TestAllTraceFitter:
     def test_window_for_next_trace_search(self):
         window, step = 100, 6
         ref_x = 1
-        fitter = AllTraceFitter(march_parameters={'window': window, 'step_size': step})
+        fitter = AllTraceFitter(march_parameters={'window_size': window, 'step_size': step})
         current_trace_centers = np.zeros(10)
         reference_y = current_trace_centers[ref_x]
         yminmax = fitter._window_for_next_trace_search(current_trace_centers,

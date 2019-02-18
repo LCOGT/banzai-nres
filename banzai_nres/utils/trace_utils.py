@@ -70,8 +70,7 @@ class Trace(object):
 class AllTraceFitter(object):
     def __init__(self, march_parameters=None):
         if march_parameters is None:
-            march_parameters = {'window': 100, 'step_size': 6}
-            # TODO rename 'window' to 'window_size'
+            march_parameters = {'window_size': 100, 'step_size': 6}
         self.march_parameters = march_parameters
 
     def fit_traces(self, cls, image, poly_fit_order, second_order_coefficient_guess,
@@ -129,7 +128,7 @@ class AllTraceFitter(object):
         return any((self._bad_shift(trace, direction), self._beyond_edge(trace, image_data), self._repeated_fit(trace)))
 
     def _window_for_next_trace_search(self, current_trace_centers, reference_x, direction='up'):
-        window = self.march_parameters['window']
+        window = self.march_parameters['window_size']
         step = self.march_parameters['step_size']
         current_y = current_trace_centers[reference_x]
         if direction == 'up':
