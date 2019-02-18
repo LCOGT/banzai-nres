@@ -36,7 +36,8 @@ class TraceMaker(CalibrationMaker):
         for image in images:
             logger.debug('fitting traces order by order', image=image)
             fitter = AllTraceFitter(march_parameters=self.fit_march_parameters)
-            trace = fitter.fit_traces(cls=Trace, image=image, poly_fit_order=self.order_of_poly_fit,
+            trace = Trace(data=None, num_centers_per_trace=image.data.shape[1])
+            trace = fitter.fit_traces(trace=trace, image=image, poly_fit_order=self.order_of_poly_fit,
                                       second_order_coefficient_guess=self.second_order_coefficient_guess,
                                       match_filter_parameters=self.match_filter_parameters)
             trace.trace_table_name = self.trace_table_name

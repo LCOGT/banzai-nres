@@ -73,20 +73,18 @@ class AllTraceFitter(object):
             march_parameters = {'window_size': 100, 'step_size': 6}
         self.march_parameters = march_parameters
 
-    def fit_traces(self, cls, image, poly_fit_order, second_order_coefficient_guess,
+    def fit_traces(self, trace, image, poly_fit_order, second_order_coefficient_guess,
                    match_filter_parameters=None):
         """
-        :param cls: Trace object with get_centers, num_traces_found, add_centers, del_centers, and sort method
+        :param trace: Trace object with get_centers, num_traces_found, add_centers, del_centers, and sort method
         :param image: Object where image.data is the image data array
         :param poly_fit_order: degree of the polynomial which will fit the echelle orders across the detector
         :param second_order_coefficient_guess: guess for the 2nd order coefficient of the aforementioned polynomial
-        :param fit_march_parameters: parameters which describe how the algorithm looks for the next fit. See docs.
         :param match_filter_parameters: another set of parameters which describe how the algorithm looks for the next
                                         fit. See docs.
         :return: trace object with the y coordinates of the trace centers as a function of x pixel.
         """
-        trace = cls(data=None, num_centers_per_trace=image.data.shape[1]) #TODO get rid of this coupling to trace.
-        start_point = image.data.shape[0]/3
+        start_point = image.data.shape[0]//3
         trace_fitter = SingleTraceFitter(image_data=image.data, start_point=start_point,
                                          second_order_coefficient_guess=second_order_coefficient_guess,
                                          poly_fit_order=poly_fit_order,
