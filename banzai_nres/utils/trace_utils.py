@@ -101,6 +101,7 @@ class AllTraceFitter(object):
         at_edge = False
         trace_id = trace.num_traces_found()
         center_pixel = image.data.shape[1]//2
+        fit_id = {'last_fit': -1, 'center_of_detector': 0}
         while not at_edge:
             test_trace_centers = trace_fitter.centers_current_guess()
             y_min, y_max = self._window_for_next_trace_search(test_trace_centers,
@@ -115,13 +116,13 @@ class AllTraceFitter(object):
                 trace_fitter.update_initial_guess_to_run_through_pt(next_trace_xy_coordinate)
                 trace_centers = trace_fitter.fit_trace()
                 trace.add_centers(trace_centers, trace_id)
-                trace_fitter.use_fit_as_initial_guess(fit_id=-1)
+                trace_fitter.use_fit_as_initial_guess(fit_id['last_fit'])
                 if self._last_fit_is_bad(trace, image.data, direction):
-                    trace.del_centers(-1)
+                    trace.del_centers(fit_id['last_fit'])
                     at_edge = True
                 trace_id += 1
 
-        trace_fitter.use_fit_as_initial_guess(fit_id=0)
+        trace_fitter.use_fit_as_initial_guess(fit_id['center_of_detector'])
 
     def _last_fit_is_bad(self, trace, image_data, direction='up'):
         return any((self._bad_shift(trace, direction), self._beyond_edge(trace, image_data), self._repeated_fit(trace)))
