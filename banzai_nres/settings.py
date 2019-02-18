@@ -35,6 +35,9 @@ class NRESSettings(Settings):
 
     TRACE_FIT_INITIAL_DEGREE_TWO_GUESS = 90  # DO NOT HAPHAZARDLY CHANGE THIS
     TRACE_TABLE_NAME = 'TRACE'
+    MAX_ORDER_FHWM = 6  # pixels
+    MAX_ORDER_TO_ORDER_SPACING = 100  # pixels
+    MATCH_FILTER_PEAK_PARAMETERS = {'min_peak_spacing': 5, 'neighboring_peak_flux_ratio': 5}
 
     CALIBRATION_SET_CRITERIA = {'BIAS': ['ccdsum'],
                                 'DARK': ['ccdsum'],

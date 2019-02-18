@@ -85,7 +85,7 @@ class AllTraceFitter(object):
                                         fit. See docs.
         :return: trace object with the y coordinates of the trace centers as a function of x pixel.
         """
-        trace = cls(data=None, num_centers_per_trace=image.data.shape[1])
+        trace = cls(data=None, num_centers_per_trace=image.data.shape[1]) #TODO get rid of this coupling to trace.
         start_point = image.data.shape[0]/3
         trace_fitter = SingleTraceFitter(image_data=image.data, start_point=start_point,
                                          second_order_coefficient_guess=second_order_coefficient_guess,
