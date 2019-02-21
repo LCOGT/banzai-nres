@@ -25,10 +25,10 @@ class TraceMaker(CalibrationMaker):
         self.order_of_poly_fit = self.pipeline_context.TRACE_FIT_POLYNOMIAL_ORDER
         self.second_order_coefficient_guess = self.pipeline_context.TRACE_FIT_INITIAL_DEGREE_TWO_GUESS
         self.trace_table_name = self.pipeline_context.TRACE_TABLE_NAME
-        self.xmin = 2000
-        self.xmax = 2100
-        self.min_peak_to_peak_spacing = 10
-        self.min_snr = 6
+        self.xmin = self.pipeline_context.WINDOW_FOR_TRACE_IDENTIFICATION['min']
+        self.xmax = self.pipeline_context.WINDOW_FOR_TRACE_IDENTIFICATION['max']
+        self.min_peak_to_peak_spacing = self.pipeline_context.MIN_PEAK_TO_PEAK_SPACING
+        self.min_snr = self.pipeline_context.MIN_SNR_FOR_TRACE_IDENTIFICATION
 
     @property
     def calibration_type(self):
