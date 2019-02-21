@@ -44,15 +44,12 @@ def noisify_image(image):
     image.data = np.random.poisson(image.data) + np.random.normal(0, image.header['RDNOISE'], image.data.shape)
 
 
-def array_with_two_peaks():
-    """
-    :return: generates a fake signal with two peaks with height 1.
-    """
-    centroids = (15, 30)
-    x = np.linspace(0, 50, num=100)
+def array_with_peaks(x, centroids, amplitudes, stds):
     vectorized_gaussian = np.vectorize(gaussian)
-    y = vectorized_gaussian(x, 1, centroids[0], 1.5) + vectorized_gaussian(x, 1, centroids[1], 1.5)
-    return y, centroids, x
+    y = np.zeros_like(x)
+    for centroid, amplitude, std in zip(centroids, amplitudes, stds):
+        y += vectorized_gaussian(x, amplitude, centroid, std)
+    return y
 
 
 def fill_image_with_traces(image, poly_fit_order=4, order_width=1.5, fiber_intensity=1E4):
@@ -69,17 +66,15 @@ def fill_image_with_traces(image, poly_fit_order=4, order_width=1.5, fiber_inten
     coefficients[:, 4] = np.linspace(5, 10, num=num_fake_traces)
     trace_centers = trace_fitter._centers_from_coefficients(coefficients)
     trace_overlay = np.zeros_like(image.data).astype(np.float64)
-    vgauss = np.vectorize(gaussian)
+    vectorized_gaussian = np.vectorize(gaussian)
     for x_pixel in range(trace_centers.shape[1]):
-        #TODO there is probably a cleaner and quicker way to do this other than looping over slices of the image.
-        # consider if we can get rid of the explicit i loop.
         for i in range(num_fake_traces):
             centroid = trace_centers[i, x_pixel]
             low, high = max(0, int(centroid - 5 * order_width)), min(trace_centers.shape[1] - 1,
                                                                      int(centroid + 5 * order_width)) + 1
             evalwindow = np.arange(low, high, 1)
             if len(evalwindow) > 0:
-                trace_overlay[low: high, x_pixel] += vgauss(evalwindow, 1, centroid, order_width)
+                trace_overlay[low: high, x_pixel] += vectorized_gaussian(evalwindow, 1, centroid, order_width)
     image.data += trace_overlay*fiber_intensity
     second_order_coefficient_guess = np.mean(coefficients[:, 2])
     return image, trace_centers, second_order_coefficient_guess

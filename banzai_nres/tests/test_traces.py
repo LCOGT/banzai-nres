@@ -11,7 +11,7 @@ from unittest import mock
 from banzai.tests.utils import FakeContext
 
 from banzai_nres.traces import TraceMaker, LoadTrace
-from banzai_nres.tests.utils import array_with_two_peaks, FakeImage, noisify_image
+from banzai_nres.tests.utils import array_with_peaks, FakeImage, noisify_image
 from banzai_nres.utils.trace_utils import Trace, SingleTraceFitter, AllTraceFitter
 from banzai_nres.tests.utils import fill_image_with_traces
 import banzai_nres.settings
@@ -131,17 +131,51 @@ class TestTrace:
 
 
 class TestAllTraceFitter:
-    def test_step_through_detector(self):
-        # TODO
-        assert True
+    @mock.patch('banzai_nres.utils.trace_utils.SingleTraceFitter.update_initial_guess_to_run_through_pt')
+    @mock.patch('banzai_nres.utils.trace_utils.SingleTraceFitter.fit_trace')
+    @mock.patch('banzai_nres.utils.trace_utils.SingleTraceFitter.use_fit_as_initial_guess')
+    def test_step_through_detector(self, use_last, fit, update):
+        fit.return_value = np.arange(10)
+        num_traces = 3
+        fitter = SingleTraceFitter(extraargs={'initialize_fit_objects': False})
+        trace = Trace(num_centers_per_trace=10)
+        peak_xy_coordinates = list(zip(np.arange(num_traces), np.arange(num_traces)))
+        trace = AllTraceFitter()._step_through_detector(trace, fitter, peak_xy_coordinates)
+        for i in range(num_traces):
+            assert np.allclose(trace.get_centers(i), np.arange(10))
 
-    def test_fit_traces(self):
-        # TODO
-        assert True
+    @mock.patch('banzai_nres.utils.trace_utils.AllTraceFitter._step_through_detector')
+    @mock.patch('banzai_nres.utils.trace_utils.AllTraceFitter._identify_traces')
+    @mock.patch('banzai_nres.utils.trace_utils.SingleTraceFitter.__init__', return_value=None)
+    def test_fit_traces(self, fitter, identify, step):
+        step.return_value = Trace(data={'id': [0, 2, 1], 'centers': np.array([np.arange(3),
+                                                                            np.arange(2,5),
+                                                                            np.arange(1,4)])})
+        trace = AllTraceFitter().fit_traces(None, None, None, None, None)
+        for i in range(trace.num_traces_found()):
+            assert np.allclose(trace.get_centers(i), np.arange(3)+i)
+            assert np.isclose(trace.get_id(i), i)
 
-    def test_identify_traces(self):
-        # TODO
-        assert True
+    def test_getting_flux_down_detector(self):
+        fake_trace_image = np.ones((5, 5))
+        fake_trace_image[1] = 10
+        fake_trace_image[3] = 10
+        image_noise_estimate = np.sqrt(2)
+        flux_signal = AllTraceFitter(xmin=3, xmax=5)._filtered_flux_down_detector(fake_trace_image,
+                                                                                  image_noise_estimate)
+        expected_slice = np.array([1, 10, 1, 10, 1])/np.sqrt(image_noise_estimate**2 + np.array([1, 10, 1, 10, 1]))
+        assert np.allclose(flux_signal, expected_slice)
+
+    @mock.patch('banzai_nres.utils.trace_utils.AllTraceFitter._filtered_flux_down_detector')
+    def test_identify_traces(self, flux):
+        min_snr = 2
+        peak_centers = np.array([15, 40, 60, 80])
+        flux.return_value = array_with_peaks(x=np.arange(100).astype(float), centroids=peak_centers,
+                                             amplitudes=[10, 6, min_snr+0.1, min_snr-0.1], stds=[3, 3, 3, 3])
+        fitter = AllTraceFitter(min_snr=min_snr, min_peak_to_peak_spacing=5, xmin=0, xmax=2)
+        peak_xy_coordinates = fitter._identify_traces(None, None)
+        expected_peak_xy_coordinates = list(zip(np.ones_like(peak_centers[:-1]), peak_centers[:-1]))
+        assert np.allclose(peak_xy_coordinates, expected_peak_xy_coordinates, atol=3)
 
 
 class TestSingleTraceFitter:

@@ -75,7 +75,7 @@ class AllTraceFitter(object):
     def fit_traces(self, trace, image_data, poly_fit_order, second_order_coefficient_guess, image_noise_estimate=10):
         """
         :param trace: Trace object with get_centers, num_traces_found, add_centers, del_centers, and sort method
-        :param image: Object where image.data is the image data array
+        :param image_data: The image data array, e.g. image.data or hdu[1].data for a fits HDUlist
         :param poly_fit_order: degree of the polynomial which will fit the echelle orders across the detector
         :param second_order_coefficient_guess: guess for the 2nd order coefficient of the aforementioned polynomial
         :param image_noise_estimate: estimate of the images read noise.
@@ -84,9 +84,8 @@ class AllTraceFitter(object):
         trace_fitter = SingleTraceFitter(image_data=image_data,
                                          second_order_coefficient_guess=second_order_coefficient_guess,
                                          poly_fit_order=poly_fit_order)
-        peak_xy_coordinates = self._identify_traces(image_data, image_noise_estimate,
-                                                    self.xmin, self.xmax)
-        self._step_through_detector(trace, trace_fitter, peak_xy_coordinates)
+        peak_xy_coordinates = self._identify_traces(image_data, image_noise_estimate)
+        trace = self._step_through_detector(trace, trace_fitter, peak_xy_coordinates)
         trace.sort()
         return trace
 
@@ -97,15 +96,25 @@ class AllTraceFitter(object):
             trace_centers = trace_fitter.fit_trace()
             trace.add_centers(trace_centers, trace_id)
             trace_fitter.use_fit_as_initial_guess(-1)
+        return trace
 
-    def _identify_traces(self, bkg_subtracted_image_data, image_noise_estimate, xmin, xmax):
-        wedge_of_image = bkg_subtracted_image_data[:, xmin:xmax]
+    def _filtered_flux_down_detector(self, image_data, image_noise_estimate):
+        wedge_of_image = image_data[:, self.xmin:self.xmax]
         noise_normalized_wedge = wedge_of_image / np.sqrt(image_noise_estimate**2 + np.abs(wedge_of_image))
         median_slice = np.median(noise_normalized_wedge, axis=1)
-        peak_y_locations = signal.find_peaks(median_slice, distance=self.min_peak_to_peak_spacing,
+        return median_slice
+
+    def _identify_traces(self, bkg_subtracted_image_data, image_noise_estimate):
+        """
+        :param bkg_subtracted_image_data: Image with the background subtracted
+        :param image_noise_estimate: Read noise on the image.
+        :return:
+        """
+        flux_down_detector = self._filtered_flux_down_detector(bkg_subtracted_image_data, image_noise_estimate)
+        peak_y_coordinates = signal.find_peaks(flux_down_detector, distance=self.min_peak_to_peak_spacing,
                                              height=self.min_snr)[0]
-        peak_x_locations = np.ones_like(peak_y_locations) * np.mean((xmin, xmax), dtype=int)
-        peak_xy_coordinates = list(zip(peak_x_locations, peak_y_locations))
+        peak_x_coordinates = np.ones_like(peak_y_coordinates) * np.mean((self.xmin, self.xmax), dtype=int)
+        peak_xy_coordinates = list(zip(peak_x_coordinates, peak_y_coordinates))
         return peak_xy_coordinates
 
 
