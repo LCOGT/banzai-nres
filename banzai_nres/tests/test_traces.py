@@ -131,45 +131,6 @@ class TestTrace:
 
 
 class TestAllTraceFitter:
-    @mock.patch('banzai_nres.utils.trace_utils.AllTraceFitter._bad_shift')
-    @mock.patch('banzai_nres.utils.trace_utils.AllTraceFitter._repeated_fit')
-    @mock.patch('banzai_nres.utils.trace_utils.AllTraceFitter._beyond_edge')
-    def test_bad_fit(self, beyond_edge, repeated_fit, bad_shift):
-        all_trace_fitter = AllTraceFitter()
-        beyond_edge.return_value, repeated_fit.return_value, bad_shift.return_value = True, True, True
-        assert all_trace_fitter._last_fit_is_bad(trace=None, image_data=None, direction=None)
-        beyond_edge.return_value, repeated_fit.return_value, bad_shift.return_value = False, False, False
-        assert not all_trace_fitter._last_fit_is_bad(trace=None, image_data=None, direction=None)
-        beyond_edge.return_value, repeated_fit.return_value, bad_shift.return_value = True, False, True
-        assert all_trace_fitter._last_fit_is_bad(trace=None, image_data=None, direction=None)
-
-    def test_detecting_repeated_fit(self):
-        centers = np.array([1, 2, 3])
-        data = {'id': [1, 2], 'centers': [centers, centers+0.1]}
-        trace = Trace(data=data)
-        assert AllTraceFitter._repeated_fit(trace=trace)
-
-    def test_detecting_bad_shifts(self):
-        centers = np.array([1, 2, 3])
-        data = {'id': [1], 'centers': np.array([centers])}
-        trace = Trace(data=data)
-        assert not AllTraceFitter._bad_shift(trace=trace, direction='up')
-
-        trace.data = {'id': [1, 2], 'centers': np.array([centers, centers-0.1])}
-        assert AllTraceFitter._bad_shift(trace=trace, direction='up')
-
-        trace.data = {'id': [1, 2], 'centers': np.array([centers, centers+0.1])}
-        assert AllTraceFitter._bad_shift(trace=trace, direction='down')
-
-    def test_detecting_beyond_edge(self):
-        fake_image_data = np.zeros((3, 3))
-        data = {'id': [1], 'centers': [[3.1, 3.1, 3.1]]}
-        assert AllTraceFitter._beyond_edge(Trace(data=data), fake_image_data)
-        data = {'id': [1], 'centers': [[-0.1, -0.1, -0.1]]}
-        assert AllTraceFitter._beyond_edge(Trace(data=data), fake_image_data)
-        data = {'id': [1], 'centers': [[2, -0.1, 2]]}
-        assert AllTraceFitter._beyond_edge(Trace(data=data), fake_image_data)
-
     def test_step_through_detector(self):
         # TODO
         assert True
@@ -178,25 +139,15 @@ class TestAllTraceFitter:
         # TODO
         assert True
 
-    def test_window_for_next_trace_search(self):
-        window, step = 100, 6
-        ref_x = 1
-        fitter = AllTraceFitter(march_parameters={'window_size': window, 'step_size': step})
-        current_trace_centers = np.zeros(10)
-        reference_y = current_trace_centers[ref_x]
-        yminmax = fitter._window_for_next_trace_search(current_trace_centers,
-                                                       reference_x=ref_x, direction='up')
-        assert np.allclose(yminmax, (reference_y + step, reference_y + window + step))
-        yminmax = fitter._window_for_next_trace_search(current_trace_centers,
-                                                       reference_x=ref_x, direction='down')
-        assert np.allclose(yminmax, (reference_y - window - step, reference_y - step))
+    def test_identify_traces(self):
+        # TODO
+        assert True
 
 
 class TestSingleTraceFitter:
     def test_class_attributes(self):
         fitter = SingleTraceFitter(extraargs={'initialize_fit_objects': False})
         assert fitter.second_order_coefficient_guess is None
-        assert fitter.start_point is None
         assert fitter.image_data is None
         assert fitter.filtered_image_data is None
         assert fitter.initial_guess_next_fit is None
@@ -206,8 +157,6 @@ class TestSingleTraceFitter:
 
     def test_default_class_attributes(self):
         fitter = SingleTraceFitter(extraargs={'initialize_fit_objects': False})
-        assert fitter.match_filter_parameters['min_peak_spacing'] == 5
-        assert fitter.match_filter_parameters['neighboring_peak_flux_ratio'] == 5
         assert fitter.poly_fit_order == 2
         assert fitter.coefficients == []
 
@@ -219,7 +168,6 @@ class TestSingleTraceFitter:
         poly_fit_order = 2
         fitter = SingleTraceFitter(image_data=np.zeros((2, 2)),
                                    poly_fit_order=poly_fit_order,
-                                   start_point=1,
                                    second_order_coefficient_guess=90)
         assert np.allclose(fitter.x_norm, np.array([-1, 1]))
         assert np.allclose(fitter.x, np.arange(2))
@@ -229,16 +177,14 @@ class TestSingleTraceFitter:
     def test_generating_initial_guess(self):
         fitter = SingleTraceFitter(image_data=np.zeros((2, 2)),
                                    poly_fit_order=2,
-                                   start_point=1,
                                    second_order_coefficient_guess=90)
-        assert np.allclose(fitter.initial_guess_next_fit, np.array([1, 0, 90]))
+        assert np.allclose(fitter.initial_guess_next_fit, np.array([0, 0, 90]))
 
     def test_generating_initial_guess_raises_error(self):
         with pytest.raises(Exception):
             SingleTraceFitter(image_data=np.zeros((2, 2)),
                               poly_fit_order=2,
-                              start_point=None,
-                              second_order_coefficient_guess=90)
+                              second_order_coefficient_guess=None)
 
     def test_changing_initial_guesses(self):
         coefficients = [np.array([0, 0])]
@@ -267,15 +213,11 @@ class TestSingleTraceFitter:
         fitter, a_line = self._generate_fitter()
         assert np.allclose(fitter._centers_from_coefficients(fitter.initial_guess_next_fit), a_line)
 
-    def test_centers_from_current_guess(self):
-        fitter, a_line = self._generate_fitter()
-        assert np.allclose(fitter.centers_current_guess(), a_line)
-
     def test_update_initial_guess_to_run_through_pt(self):
         fitter, a_line = self._generate_fitter()
         fitter.update_initial_guess_to_run_through_pt(xy=(1, 400))
         shifted_line = a_line - a_line[1] + 400
-        assert np.allclose(fitter.centers_current_guess(), shifted_line)
+        assert np.allclose(fitter._centers_from_coefficients(fitter.initial_guess_next_fit), shifted_line)
 
     def test_flux_across_trace(self):
         x = np.arange(5)
@@ -338,48 +280,14 @@ class TestSingleTraceFitter:
         assert fitter.coefficients == [coefficients]
 
 
-class TestMatchFilter:
-    """
-    Tests for the functions in single trace fitter which are used to find
-    the approximate locations of the next trace during a march up the detector.
-    """
-    @mock.patch('banzai_nres.utils.trace_utils.SingleTraceFitter._flux_across_trace', side_effect=np.max)
-    def test_convolve_trace_with_image_data(self, flux_across_trace):
-        fitter = SingleTraceFitter(extraargs={'initialize_fit_objects': False})
-        current_trace_centers = np.arange(10)
-        offset = current_trace_centers[2]
-        flux_per_trace, coords = fitter._convolve_trace_with_image_data(current_trace_centers,
-                                                                        y_min=0, y_max=4, reference_x=2)
-        expected_flux_per_trace = (np.max(current_trace_centers) - offset) + np.arange(0, 4)
-        assert np.allclose(flux_per_trace, expected_flux_per_trace)
-
-    @mock.patch('banzai_nres.utils.trace_utils.SingleTraceFitter._flux_across_trace')
-    @mock.patch('banzai_nres.utils.trace_utils.SingleTraceFitter._convolve_trace_with_image_data')
-    def test_match_filter(self, flux_vs_pos, reference_flux):
-        fitter = SingleTraceFitter(extraargs={'initialize_fit_objects': False})
-        fitter.match_filter_parameters = {'min_peak_spacing': 5, 'neighboring_peak_flux_ratio': 20}
-        positive_trace_signal, centroids, x_coords = array_with_two_peaks()
-        no_trace_signal = np.random.normal(loc=0, scale=np.max(positive_trace_signal)/100,
-                                           size=len(positive_trace_signal))
-        reference_flux.return_value = np.max(positive_trace_signal)
-        for trace_signal, outcome in zip([positive_trace_signal, no_trace_signal], [centroids[0], None]):
-            fitter.initial_guess_next_fit = [0]
-            flux_vs_pos.return_value = trace_signal, x_coords
-            next_trace_xy_coordinate = fitter.match_filter(np.zeros(3), y_min=None, y_max=None, reference_x=2)
-            if next_trace_xy_coordinate is not None:
-                assert np.isclose(next_trace_xy_coordinate[1], outcome, atol=3, rtol=0)
-                assert np.isclose(next_trace_xy_coordinate[0], 2)
-
-
 class TestTraceMaker:
     def test_properties(self):
         assert TraceMaker(FakeContext(settings=banzai_nres.settings.NRESSettings())).calibration_type is 'TRACE'
 
     def test_trace_fit_does_not_crash_on_blank_frame(self):
-        readnoise = 11.0
         order_of_poly_fit = 4
         image = FakeTraceImage(nx=100, ny=100)
-        image.readnoise = readnoise
+        image.header['RDNOISE'] = 11
         noisify_image(image)
         fake_context = FakeContext(settings=banzai_nres.settings.NRESSettings())
         fake_context.db_address = ''
@@ -396,6 +304,8 @@ class TestTraceMaker:
         expected_trace = Trace(data=data)
         fake_context = FakeContext(settings=banzai_nres.settings.NRESSettings())
         trace_maker = TraceMaker(fake_context)
+        trace_maker.xmin = 5
+        trace_maker.xmax = 10
         trace_maker.trace_table_name = trace_table_name
         traces = trace_maker.do_stage(images=[FakeImage()])
         loaded_trace = traces[0][0]
@@ -410,12 +320,12 @@ class TestTraceMaker:
         the x axis of the image, then the traces bend more drastically. Thus it is recommended you do not change the
         size of the FakeTraceImage.
         """
-        readnoise = 11.0
+        read_noise = 11.0
         poly_fit_order = 4
 
         image = FakeTraceImage()
         image.fiber0_lit, image.fiber1_lit, image.fiber2_lit = False, True, True
-        image.readnoise = readnoise
+        image.header['RDNOISE'] = read_noise
 
         image, trace_centers, second_order_coefficient_guess = fill_image_with_traces(image,
                                                                                       poly_fit_order=poly_fit_order)
@@ -424,6 +334,8 @@ class TestTraceMaker:
         images = [image]
 
         trace_maker = TraceMaker(fake_context)
+        trace_maker.xmin = image.data.shape[1]//2 - 20
+        trace_maker.xmax = image.data.shape[1]//2 + 20
         trace_maker.order_of_poly_fit = poly_fit_order
         trace_maker.second_order_coefficient_guess = second_order_coefficient_guess
         traces = trace_maker.do_stage(images)

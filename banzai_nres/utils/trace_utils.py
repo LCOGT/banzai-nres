@@ -11,8 +11,6 @@ from scipy import ndimage, optimize, signal
 from astropy.table import Table, Column
 from astropy.io import fits
 
-from banzai_nres.utils.array_utils import find_nearest
-
 import logging
 
 logger = logging.getLogger(__name__)
@@ -68,120 +66,57 @@ class Trace(object):
 
 
 class AllTraceFitter(object):
-    def __init__(self, march_parameters=None):
-        if march_parameters is None:
-            march_parameters = {'window_size': 100, 'step_size': 6}
-        self.march_parameters = march_parameters
+    def __init__(self, xmin=2000, xmax=2100, min_peak_to_peak_spacing=10, min_snr=6):
+        self.xmin = xmin
+        self.xmax = xmax
+        self.min_peak_to_peak_spacing = min_peak_to_peak_spacing
+        self.min_snr = min_snr
 
-    def fit_traces(self, trace, image, poly_fit_order, second_order_coefficient_guess,
-                   match_filter_parameters=None):
+    def fit_traces(self, trace, image_data, poly_fit_order, second_order_coefficient_guess, image_noise_estimate=10):
         """
         :param trace: Trace object with get_centers, num_traces_found, add_centers, del_centers, and sort method
         :param image: Object where image.data is the image data array
         :param poly_fit_order: degree of the polynomial which will fit the echelle orders across the detector
         :param second_order_coefficient_guess: guess for the 2nd order coefficient of the aforementioned polynomial
-        :param match_filter_parameters: another set of parameters which describe how the algorithm looks for the next
-                                        fit. See docs.
+        :param image_noise_estimate: estimate of the images read noise.
         :return: trace object with the y coordinates of the trace centers as a function of x pixel.
         """
-        start_point = image.data.shape[0]//3
-        trace_fitter = SingleTraceFitter(image_data=image.data, start_point=start_point,
+        trace_fitter = SingleTraceFitter(image_data=image_data,
                                          second_order_coefficient_guess=second_order_coefficient_guess,
-                                         poly_fit_order=poly_fit_order,
-                                         match_filter_parameters=match_filter_parameters)
-        for direction in ['up', 'down']:
-            self._step_through_detector(trace, trace_fitter,
-                                        image, direction=direction)
+                                         poly_fit_order=poly_fit_order)
+        peak_xy_coordinates = self._identify_traces(image_data, image_noise_estimate,
+                                                    self.xmin, self.xmax)
+        self._step_through_detector(trace, trace_fitter, peak_xy_coordinates)
         trace.sort()
         return trace
 
-    def _step_through_detector(self, trace, trace_fitter, image, direction='up'):
-        at_edge = False
-        trace_id = trace.num_traces_found()
-        center_pixel = image.data.shape[1]//2
-        fit_id = {'last_fit': -1, 'center_of_detector': 0}
-        while not at_edge:
-            test_trace_centers = trace_fitter.centers_current_guess()
-            y_min, y_max = self._window_for_next_trace_search(test_trace_centers,
-                                                              reference_x=center_pixel,
-                                                              direction=direction)
-            next_trace_xy_coordinate = trace_fitter.match_filter(test_trace_centers,
-                                                                 y_min=y_min, y_max=y_max,
-                                                                 reference_x=center_pixel)
-            if next_trace_xy_coordinate is None:
-                at_edge = True
-            else:
-                trace_fitter.update_initial_guess_to_run_through_pt(next_trace_xy_coordinate)
-                trace_centers = trace_fitter.fit_trace()
-                trace.add_centers(trace_centers, trace_id)
-                trace_fitter.use_fit_as_initial_guess(fit_id['last_fit'])
-                if self._last_fit_is_bad(trace, image.data, direction):
-                    trace.del_centers(fit_id['last_fit'])
-                    at_edge = True
-                trace_id += 1
-
-        trace_fitter.use_fit_as_initial_guess(fit_id['center_of_detector'])
-
-    def _last_fit_is_bad(self, trace, image_data, direction='up'):
-        return any((self._bad_shift(trace, direction), self._beyond_edge(trace, image_data), self._repeated_fit(trace)))
-
-    def _window_for_next_trace_search(self, current_trace_centers, reference_x, direction='up'):
-        window = self.march_parameters['window_size']
-        step = self.march_parameters['step_size']
-        current_y = current_trace_centers[reference_x]
-        if direction == 'up':
-            offsets = (step, window+step)
-        if direction == 'down':
-            offsets = ((-1)*step, (-1)*(window+step))
-        ymin = current_y + min(offsets)
-        ymax = current_y + max(offsets)
-        return ymin, ymax
-
     @staticmethod
-    def _repeated_fit(trace):
-        center_pixel = int(len(trace.get_centers(0)) / 2)
-        a_repeated_fit = False
-        if trace.num_traces_found() < 2:
-            a_repeated_fit = False
-        elif np.isclose(trace.get_centers(-1)[center_pixel], trace.get_centers(-2)[center_pixel], atol=2, rtol=0):
-            a_repeated_fit = True
-        return a_repeated_fit
+    def _step_through_detector(trace, trace_fitter, peak_xy_coordinates):
+        for trace_id, peak_xy_coordinate in enumerate(peak_xy_coordinates):
+            trace_fitter.update_initial_guess_to_run_through_pt(peak_xy_coordinate)
+            trace_centers = trace_fitter.fit_trace()
+            trace.add_centers(trace_centers, trace_id)
+            trace_fitter.use_fit_as_initial_guess(-1)
 
-    @staticmethod
-    def _bad_shift(trace, direction='up'):
-        center_pixel = int(len(trace.get_centers(0)) / 2)
-        a_bad_shift = False
-        if trace.num_traces_found() < 2:
-            a_bad_shift = False
-        elif direction == 'up' and trace.get_centers(-1)[center_pixel] < trace.get_centers(-2)[center_pixel]:
-            a_bad_shift = True
-        elif direction == 'down' and trace.get_centers(-1)[center_pixel] > trace.get_centers(-2)[center_pixel]:
-            a_bad_shift = True
-        return a_bad_shift
-
-    @staticmethod
-    def _beyond_edge(trace, image_data):
-        """
-        :param image_data: image.data
-        :param trace: Trace object with a get_centers and num_traces_found method
-        :return: True or False whether the y value at the center of the most recent trace fit is <0 or greater than
-        the maximum y coordinate of the image (i.e. image_data.shape[0])
-        """
-        center_pixel = int(len(trace.get_centers(0)) / 2)
-        return any((trace.get_centers(-1)[center_pixel] < 0, trace.get_centers(-1)[center_pixel] > image_data.shape[0]))
+    def _identify_traces(self, bkg_subtracted_image_data, image_noise_estimate, xmin, xmax):
+        wedge_of_image = bkg_subtracted_image_data[:, xmin:xmax]
+        noise_normalized_wedge = wedge_of_image / np.sqrt(image_noise_estimate**2 + np.abs(wedge_of_image))
+        median_slice = np.median(noise_normalized_wedge, axis=1)
+        peak_y_locations = signal.find_peaks(median_slice, distance=self.min_peak_to_peak_spacing,
+                                             height=self.min_snr)[0]
+        peak_x_locations = np.ones_like(peak_y_locations) * np.mean((xmin, xmax), dtype=int)
+        peak_xy_coordinates = list(zip(peak_x_locations, peak_y_locations))
+        return peak_xy_coordinates
 
 
 class SingleTraceFitter(object):
-    def __init__(self, image_data=None, poly_fit_order=2, start_point=None, second_order_coefficient_guess=None,
-                 match_filter_parameters=None, extraargs=None):
+    def __init__(self, image_data=None, poly_fit_order=2, second_order_coefficient_guess=None,
+                 extraargs=None):
         if extraargs is None:
             extraargs = {}
-        if match_filter_parameters is None:
-            match_filter_parameters = {'min_peak_spacing': 5, 'neighboring_peak_flux_ratio': 5}
         if extraargs.get('coefficients') is None:
             extraargs['coefficients'] = []
         self.second_order_coefficient_guess = second_order_coefficient_guess
-        self.start_point = start_point
         self.image_data = image_data
         self.poly_fit_order = poly_fit_order
         self.filtered_image_data = extraargs.get('filtered_image_data')
@@ -190,18 +125,16 @@ class SingleTraceFitter(object):
         self.x = extraargs.get('x')
         self.x_norm = extraargs.get('xnorm')
         self.design_matrix = extraargs.get('design_matrix')
-        self.match_filter_parameters = match_filter_parameters
 
-        if extraargs.get('initialize_fit_objects', True): #TODO just make this an argument with default True.
-            if self.start_point is None or self.second_order_coefficient_guess is None:
-                logger.error('Starting y position up the detector nor the second order guess have been specified '
-                             ', failed to generate an initial guess for trace fitting.')
+        if extraargs.get('initialize_fit_objects', True):
+            if self.second_order_coefficient_guess is None:
+                logger.error('The second order guess have been specified '
+                             ', aborting trace fitting.')
                 raise ValueError('Starting y position up the detector nor the second order guess have been specified')
             self._normalize_domain_coordinates()
             self.filtered_image_data = self._prefilter_image_data(self.image_data)
             self.design_matrix = self._generate_design_matrix(self.x_norm, self.poly_fit_order)
             self.initial_guess_next_fit = np.zeros(self.poly_fit_order + 1).astype(np.float64)
-            self.initial_guess_next_fit[0] = self.start_point
             self.initial_guess_next_fit[2] = self.second_order_coefficient_guess
 
     def fit_trace(self):
@@ -209,28 +142,6 @@ class SingleTraceFitter(object):
                                                  args=(self,), method='Powell').x
         self.coefficients.append(refined_coefficients)
         return self._centers_from_coefficients(refined_coefficients)
-
-    def match_filter(self, current_trace_centers, y_min, y_max, reference_x):
-        flux_vs_pos, trace_positions = self._convolve_trace_with_image_data(current_trace_centers,
-                                                                            y_min, y_max, reference_x)
-        current_trace_flux = self._flux_across_trace(current_trace_centers)
-        reference_flux = max(current_trace_flux, np.max(flux_vs_pos))
-        min_peak_height = abs(reference_flux)/self.match_filter_parameters['neighboring_peak_flux_ratio']
-        min_peak_to_peak_distance = self.match_filter_parameters['min_peak_spacing']
-        peak_indices = find_peaks(flux_vs_pos, min_peak_height, min_peak_to_peak_distance)
-        if len(peak_indices) == 0:
-            next_trace_xy_coordinate = None
-        else:
-            current_y = current_trace_centers[reference_x]
-            next_trace_y_coordinate = find_nearest(trace_positions[peak_indices], current_y)
-            next_trace_xy_coordinate = (reference_x, next_trace_y_coordinate)
-        return next_trace_xy_coordinate
-
-    def _convolve_trace_with_image_data(self, current_trace_centers, y_min, y_max, reference_x):
-        model_trace = current_trace_centers - current_trace_centers[reference_x]
-        trace_positions = np.arange(y_min, y_max)
-        convolution = np.array([self._flux_across_trace(model_trace + y) for y in trace_positions])
-        return convolution, trace_positions
 
     def use_fit_as_initial_guess(self, fit_id):
         self.initial_guess_next_fit = np.copy(self.coefficients[fit_id])
@@ -252,9 +163,6 @@ class SingleTraceFitter(object):
         """
         trace_centers = np.dot(coefficients, self.design_matrix)
         return trace_centers
-
-    def centers_current_guess(self):
-        return self._centers_from_coefficients(self.initial_guess_next_fit)
 
     def update_initial_guess_to_run_through_pt(self, xy):
         """
@@ -292,10 +200,3 @@ def legendre(order, values):
         return np.ones_like(values)
     else:
         return np.polynomial.legendre.legval(values, [0 for j in range(order)] + [1])
-
-
-def find_peaks(flux, min_peak_height, min_peak_to_peak_distance):
-    # TODO see if scipy's min_peak_height wrapper works. Only gave a cursory glance before.
-    flux[flux < min_peak_height] = min_peak_height
-    peak_indices = signal.find_peaks(flux, distance=min_peak_to_peak_distance)[0]
-    return peak_indices

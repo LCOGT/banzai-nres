@@ -19,11 +19,10 @@ class FakeImage(object):
         self.filename = 'test.fits'
         self.filter = 'U'
         self.dateobs = datetime(2018, 8, 7)
-        self.header = {}
+        self.header = {'RDNOISE': 11}
         self.caltype = ''
         self.bpm = np.zeros((ny, nx-overscan_size), dtype=np.uint8)
         self.request_number = '0000331403'
-        self.readnoise = 11
         self.block_id = '254478983'
         self.molecule_id = '544562351'
         self.exptime = 30.0
@@ -42,7 +41,7 @@ def noisify_image(image):
     :param image: Banzai_nres FakeImage object.
     This adds poisson and read noise to an image with traces already on it, in that order.
     """
-    image.data = np.random.poisson(image.data) + np.random.normal(0, image.readnoise, image.data.shape)
+    image.data = np.random.poisson(image.data) + np.random.normal(0, image.header['RDNOISE'], image.data.shape)
 
 
 def array_with_two_peaks():
@@ -59,7 +58,7 @@ def array_with_two_peaks():
 def fill_image_with_traces(image, poly_fit_order=4, order_width=1.5, fiber_intensity=1E4):
     if image.data.shape[1] < 200:
         raise ValueError
-    trace_fitter = SingleTraceFitter(image_data=image.data, start_point=0,
+    trace_fitter = SingleTraceFitter(image_data=image.data,
                                      second_order_coefficient_guess=0,
                                      poly_fit_order=poly_fit_order)
     num_fake_traces = int((image.data.shape[1] - 60)/20)
