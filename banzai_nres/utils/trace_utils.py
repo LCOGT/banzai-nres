@@ -98,12 +98,6 @@ class AllTraceFitter(object):
             trace_fitter.use_fit_as_initial_guess(-1)
         return trace
 
-    def _filtered_flux_down_detector(self, image_data, image_noise_estimate):
-        wedge_of_image = image_data[:, self.xmin:self.xmax]
-        noise_normalized_wedge = wedge_of_image / np.sqrt(image_noise_estimate**2 + np.abs(wedge_of_image))
-        median_slice = np.median(noise_normalized_wedge, axis=1)
-        return median_slice
-
     def _identify_traces(self, bkg_subtracted_image_data, image_noise_estimate):
         """
         :param bkg_subtracted_image_data: Image with the background subtracted
@@ -116,6 +110,12 @@ class AllTraceFitter(object):
         peak_x_coordinates = np.ones_like(peak_y_coordinates) * np.mean((self.xmin, self.xmax), dtype=int)
         peak_xy_coordinates = list(zip(peak_x_coordinates, peak_y_coordinates))
         return peak_xy_coordinates
+
+    def _filtered_flux_down_detector(self, image_data, image_noise_estimate):
+        wedge_of_image = image_data[:, self.xmin:self.xmax]
+        noise_normalized_wedge = wedge_of_image / np.sqrt(image_noise_estimate**2 + np.abs(wedge_of_image))
+        median_slice = np.median(noise_normalized_wedge, axis=1)
+        return median_slice
 
 
 class SingleTraceFitter(object):

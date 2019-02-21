@@ -11,7 +11,6 @@ from banzai.calibrations import CalibrationMaker
 from banzai import dbs
 
 import sep
-from astropy.io import fits
 import os
 import logging
 
