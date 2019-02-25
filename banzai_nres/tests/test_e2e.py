@@ -75,11 +75,15 @@ def test_e2e():
     expected_dark_filename = 'lscnrs01-fl09-20180311-dark-bin1x1.fits'
     expected_flat_filenames = ['lscnrs01-fl09-20180311-lampflat-bin1x1-110.fits',
                                'lscnrs01-fl09-20180311-lampflat-bin1x1-011.fits']
-    expected_trace_filename = 'lscnrs01-fl09-20180311-trace-bin1x1.fits'
+    expected_trace_filenames = ['lscnrs01-fl09-20180311-trace-bin1x1-110.fits',
+                                'lscnrs01-fl09-20180311-trace-bin1x1-011.fits']
     expected_processed_path = os.path.join('/tmp', site, instrument, epoch, 'processed')
 
     # executing the master bias maker as one would from the command line.
-    os.system('make_master_bias --db-address {0} --raw-path {1} --ignore-schedulability '
+    os.system('reduce_bias_frames --db-address {0} --raw-path {1} --ignore-schedulability '
+              '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
+    os.system('stack_calibrations --site lsc --camera nres01 --frame-type BIAS --min-date 2018-03-11T00:00:00'
+              ' --max-date 2018-03-12T23:59:59 --db-address {0} --raw-path {1} --ignore-schedulability '
               '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
 
     with fits.open(os.path.join(expected_processed_path, expected_bias_filename)) as hdu_list:
@@ -87,7 +91,10 @@ def test_e2e():
         assert hdu_list['BPM'].data.shape == hdu_list[1].data.shape
 
     # executing the master dark maker as one would from the command line.
-    os.system('make_master_dark --db-address {0} --raw-path {1} --ignore-schedulability '
+    os.system('reduce_dark_frames --db-address {0} --raw-path {1} --ignore-schedulability '
+              '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
+    os.system('stack_calibrations --site lsc --camera nres01 --frame-type DARK --min-date 2018-03-11T00:00:00'
+              ' --max-date 2018-03-12T23:59:59 --db-address {0} --raw-path {1} --ignore-schedulability '
               '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
 
     with fits.open(os.path.join(expected_processed_path, expected_dark_filename)) as hdu_list:
@@ -95,7 +102,10 @@ def test_e2e():
         assert hdu_list['BPM'].data.shape == hdu_list[1].data.shape
 
     # executing the master flat maker as one would from the command line.
-    os.system('make_master_flat --db-address {0} --raw-path {1} --ignore-schedulability '
+    os.system('reduce_flat_frames --db-address {0} --raw-path {1} --ignore-schedulability '
+              '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
+    os.system('stack_calibrations --site lsc --camera nres01 --frame-type LAMPFLAT --min-date 2018-03-11T00:00:00'
+              ' --max-date 2018-03-12T23:59:59 --db-address {0} --raw-path {1} --ignore-schedulability '
               '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
 
     for expected_flat_filename in expected_flat_filenames:
@@ -103,12 +113,13 @@ def test_e2e():
             assert hdu_list[0].data.shape is not None
             assert hdu_list['BPM'].data.shape == hdu_list[1].data.shape
 
-    # executing the master trace maker, using a blind fit then a global-meta fit, as one would from the command line.
-
+    # executing the master trace maker as one would from the command line
     trace_table_name = NRESSettings.TRACE_TABLE_NAME
-    os.system('make_master_trace --db-address {0} --raw-path {1} --ignore-schedulability '
+    os.system('stack_calibrations --site lsc --camera nres01 --frame-type TRACE --min-date 2018-03-11T00:00:00'
+              ' --max-date 2018-03-12T23:59:59 --db-address {0} --raw-path {1} --ignore-schedulability '
               '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
 
-    with fits.open(os.path.join(expected_processed_path, expected_trace_filename)) as hdu_list:
-        assert hdu_list[trace_table_name] is not None
-        assert hdu_list[trace_table_name].data['centers'].shape[0] > 100
+    for filename in expected_trace_filenames:
+        with fits.open(os.path.join(expected_processed_path, filename)) as hdu_list:
+            assert hdu_list[trace_table_name] is not None
+            assert hdu_list[trace_table_name].data['centers'].shape[0] > 100

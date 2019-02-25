@@ -1,10 +1,11 @@
-0.4.0 (2019-01-23)
+0.4.0 (2019-02-25)
 ------------------
-- Blind master tracing on a single lampflat
+- Blind master tracing on lampflats
+- Fixes to account for upstream changes to BANZAI
 
 0.3.0 (2018-11-13)
 ------------------
-Added flat stacking to stages.
+- Added flat stacking to stages.
 
 0.2.0 (2018-10-30)
 ------------------

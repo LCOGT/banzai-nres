@@ -28,7 +28,7 @@ class NRESSettings(Settings):
                       dark.DarkSubtractor,
                       traces.LoadTrace]
 
-    CALIBRATION_MIN_IMAGES = {'BIAS': 5,
+    CALIBRATION_MIN_FRAMES = {'BIAS': 5,
                               'DARK': 3,
                               'LAMPFLAT': 5,
                               'TRACE': 1}
@@ -45,10 +45,16 @@ class NRESSettings(Settings):
                                 'LAMPFLAT': ['ccdsum', 'fiber0_lit', 'fiber1_lit', 'fiber2_lit'],
                                 'TRACE': ['ccdsum', 'fiber0_lit', 'fiber1_lit', 'fiber2_lit']}
 
-    CALIBRATION_FILENAME_FUNCTIONS = {'BIAS': make_calibration_filename_function('BIAS', [ccdsum_to_filename], get_telescope_filename),
-                                      'DARK': make_calibration_filename_function('DARK', [ccdsum_to_filename], get_telescope_filename),
-                                      'LAMPFLAT': make_calibration_filename_function('LAMPFLAT', [ccdsum_to_filename, fibers_state_to_filename], get_telescope_filename),
-                                      'TRACE': make_calibration_filename_function('TRACE', [ccdsum_to_filename], get_telescope_filename)}
+    CALIBRATION_FILENAME_FUNCTIONS = {'BIAS': make_calibration_filename_function('BIAS', [ccdsum_to_filename],
+                                                                                 get_telescope_filename),
+                                      'DARK': make_calibration_filename_function('DARK', [ccdsum_to_filename],
+                                                                                 get_telescope_filename),
+                                      'LAMPFLAT': make_calibration_filename_function('LAMPFLAT',
+                                                                                     [ccdsum_to_filename,
+                                                                                      fibers_state_to_filename],
+                                                                                     get_telescope_filename),
+                                      'TRACE': make_calibration_filename_function('TRACE', [ccdsum_to_filename],
+                                                                                  get_telescope_filename)}
 
     CALIBRATION_IMAGE_TYPES = ['BIAS', 'DARK', 'LAMPFLAT']
 
@@ -57,7 +63,12 @@ class NRESSettings(Settings):
                   'LAMPFLAT': dark.DarkSubtractor,
                   'TRACE': dark.DarkSubtractor}
 
-    EXTRA_STAGES = {'BIAS': [bias.BiasMasterLevelSubtractor, bias.BiasComparer, bias.BiasMaker],
-                    'DARK': [dark.DarkNormalizer, dark.DarkComparer, dark.DarkMaker],
-                    'LAMPFLAT': [FlatStacker],
-                    'TRACE': [traces.TraceMaker]}
+    EXTRA_STAGES = {'BIAS': [bias.BiasMasterLevelSubtractor, bias.BiasComparer],
+                    'DARK': [dark.DarkNormalizer, dark.DarkComparer],
+                    'LAMPFLAT': [],
+                    'TRACE': []}
+
+    CALIBRATION_STACKER_STAGE = {'BIAS': bias.BiasMaker,
+                                 'DARK': dark.DarkMaker,
+                                 'LAMPFLAT': FlatStacker,
+                                 'TRACE': traces.TraceMaker}
