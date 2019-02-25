@@ -1,17 +1,17 @@
+import operator
+
 from banzai.settings import Settings
 from banzai.utils.file_utils import ccdsum_to_filename
 from banzai.calibrations import make_calibration_filename_function
 from banzai.context import InstrumentCriterion
+from banzai import bias, trim, dark, gain, bpm, qc
+
 from banzai_nres.images import NRESImage
 from banzai_nres.fibers import fibers_state_to_filename
+from banzai_nres.utils.munge_utils import get_telescope_filename
 from banzai_nres import traces
-import operator
-from banzai import bias, trim, dark, gain, bpm, qc
+
 from banzai_nres.flats import FlatStacker
-
-
-def get_telescope_filename(image):
-    return image.header.get('TELESCOP', '').replace('nres', 'nrs')
 
 
 class NRESSettings(Settings):
