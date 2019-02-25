@@ -58,6 +58,8 @@ class TestTrace:
         data['centers'].description = 'test_2'
         trace = Trace(data=data)
         assert trace.trace_table_name is None
+        assert trace.filename is None
+        assert trace.header == {}
         for name in ['id', 'centers']:
             assert name in trace.data.colnames
         assert len(trace.data.colnames) == 2
@@ -99,10 +101,13 @@ class TestTrace:
         trace = Trace(data={'id': [1], 'centers': [np.arange(3)]}, trace_table_name=name)
         with tempfile.TemporaryDirectory() as tmp_directory_name:
             path = os.path.join(tmp_directory_name, 'test_trace_table.fits')
-            trace.write(filename=path)
+            trace.filename = path
+            trace.header = {'bla': 1}
+            trace.write()
             loaded_trace = Trace.load(path=path, trace_table_name=name)
         assert np.allclose(loaded_trace.get_centers(0), trace.get_centers(0))
         assert np.allclose(loaded_trace.get_id(0), trace.get_id(0))
+        assert np.isclose(loaded_trace.header['bla'], 1)
 
     def test_sorting_trace_centers(self):
         centers = np.array([1, 2, 3])

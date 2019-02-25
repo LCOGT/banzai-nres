@@ -1,5 +1,6 @@
 from datetime import datetime
 import numpy as np
+from astropy.io import fits
 
 from banzai_nres.utils.trace_utils import Trace, SingleTraceFitter
 
@@ -19,7 +20,7 @@ class FakeImage(object):
         self.filename = 'test.fits'
         self.filter = 'U'
         self.dateobs = datetime(2018, 8, 7)
-        self.header = {'RDNOISE': 11}
+        self.header = fits.Header({'RDNOISE': 11})
         self.caltype = ''
         self.bpm = np.zeros((ny, nx-overscan_size), dtype=np.uint8)
         self.request_number = '0000331403'

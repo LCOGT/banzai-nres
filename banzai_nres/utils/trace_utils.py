@@ -21,7 +21,7 @@ class Trace(object):
     :param data = {'id': ndarray, 'centers': ndarray}. 'centers' gives a 2d array, where
     the jth row are the y centers across the detector for the trace with identification trace_centers['id'][j]
     """
-    def __init__(self, data=None, trace_table_name=None, num_centers_per_trace=0):
+    def __init__(self, data=None, trace_table_name=None, num_centers_per_trace=0, filename=None, header=None):
         if data is None and num_centers_per_trace <= 0:
             raise ValueError('Trace object instantiated but no trace data given and num_centers_per_trace is not > 0')
         if data is None:
@@ -30,8 +30,11 @@ class Trace(object):
             data['centers'].description = 'Vertical position of the center of the' \
                                           ' trace as a function of horizontal pixel'
             data['centers'].unit = 'pixel'
-        data = Table(data)
-        self.data = data
+        if header is None:
+            header = {}
+        self.header = header
+        self.filename = filename
+        self.data = Table(data)
         self.trace_table_name = trace_table_name
 
     def get_centers(self, row):
@@ -49,14 +52,14 @@ class Trace(object):
     def num_traces_found(self):
         return len(self.data['id'])
 
-    def write(self, filename):
-        hdu = fits.BinTableHDU(self.data, name=self.trace_table_name)
-        fits.HDUList([fits.PrimaryHDU(), hdu]).writeto(filename)
+    def write(self, pipeline_context=None):
+        hdu = fits.BinTableHDU(self.data, name=self.trace_table_name, header=fits.Header(self.header))
+        fits.HDUList([fits.PrimaryHDU(), hdu]).writeto(self.filename)
 
     @staticmethod
     def load(path, trace_table_name):
         hdu_list = fits.open(path)
-        return Trace(data=hdu_list[trace_table_name].data)
+        return Trace(data=hdu_list[trace_table_name].data, header=hdu_list[trace_table_name].header)
 
     def sort(self):
         center = int(self.data['centers'].shape[1] / 2)
