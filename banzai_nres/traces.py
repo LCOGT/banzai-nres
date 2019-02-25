@@ -58,12 +58,15 @@ class TraceMaker(CalibrationMaker):
     def do_stage(self, images):
         """
         :param images: list of images to run TraceMaker on.
-        :return: [first_trace, second_trace,...] etc. This is a munge function since
+        :return: [first_trace, second_trace,...] etc. This is a munge function which fixes the following problem.
         TraceMaker.make_master_calibration_frame returns [first_trace, second_trace,...] and then BANZAI's do_stage
         wraps that list in another list, e.g. do_stage natively would return [[first_trace, second_trace,...]]. This
         rewrite of do_stage simply returns [[first_trace, second_trace,...]][0] = [first_trace, second_trace,...]
         """
-        return super(TraceMaker, self).do_stage(images)[0]
+        master_calibrations = super(TraceMaker, self).do_stage(images)
+        if len(master_calibrations) > 0:
+            master_calibrations = master_calibrations[0]
+        return master_calibrations
 
 
 class LoadTrace(Stage):
