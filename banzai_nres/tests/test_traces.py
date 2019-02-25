@@ -229,7 +229,8 @@ class TestSingleTraceFitter:
         fitter.initial_guess_next_fit += 1
         assert not np.allclose(fitter.initial_guess_next_fit, coefficients[-1])
 
-    def _generate_fitter(self):
+    @staticmethod
+    def _generate_fitter():
         design_matrix = np.ones((2, 5))
         design_matrix[1] = np.linspace(-1, 1, 5)
         offset, linear_coefficient = 1, 0.5
