@@ -53,7 +53,17 @@ class TraceMaker(CalibrationMaker):
             traces.append(trace)
             logger.info('Created master trace', image=image,
                         extra_tags={'calibration_type': self.calibration_type})
-        return traces[0] # TODO must return 0 since do_stage in CalibrationMaker automatically puts this in a list, which breaks the write inside of run_master_maker
+        return traces
+
+    def do_stage(self, images):
+        """
+        :param images: list of images to run TraceMaker on.
+        :return: [first_trace, second_trace,...] etc. This is a munge function since
+        TraceMaker.make_master_calibration_frame returns [first_trace, second_trace,...] and then BANZAI's do_stage
+        wraps that list in another list, e.g. do_stage natively would return [[first_trace, second_trace,...]]. This
+        rewrite of do_stage simply returns [[first_trace, second_trace,...]][0] = [first_trace, second_trace,...]
+        """
+        return super(TraceMaker, self).do_stage(images)[0]
 
 
 class LoadTrace(Stage):
