@@ -51,8 +51,8 @@ class TraceMaker(CalibrationMaker):
                                       second_order_coefficient_guess=self.second_order_coefficient_guess,
                                       image_noise_estimate=image.header['RDNOISE'])
             traces.append(trace)
-            logger.info('Created master trace', image=image,
-                        extra_tags={'calibration_type': self.calibration_type})
+            logger.info('Created master trace', image=image, extra_tags={'calibration_type': self.calibration_type,
+                                                                         'output_filename': master_filename})
         return traces
 
     def do_stage(self, images):
