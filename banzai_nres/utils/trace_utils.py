@@ -53,7 +53,7 @@ class Trace(object):
         return len(self.data['id'])
 
     def write(self, pipeline_context=None):
-        logger.info('Writing Trace file to {filepath}'.format(filepath=self.filename), image=self)
+        logger.info('Writing Trace file to {filepath}'.format(filepath=self.filename))
         hdu = fits.BinTableHDU(self.data, name=self.trace_table_name, header=fits.Header(self.header))
         fits.HDUList([fits.PrimaryHDU(), hdu]).writeto(self.filename)
 
