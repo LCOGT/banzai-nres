@@ -7,9 +7,12 @@ Authors
 """
 
 import numpy as np
+import os
+
 from scipy import ndimage, optimize, signal
 from astropy.table import Table, Column
 from astropy.io import fits
+from banzai.utils import file_utils
 
 import logging
 
@@ -53,9 +56,14 @@ class Trace(object):
         return len(self.data['id'])
 
     def write(self, pipeline_context=None):
-        logger.info('Writing Trace file to {filepath}'.format(filepath=self.filename))
+        filepath = self._get_filepath(pipeline_context)
+        logger.info('Writing Trace file to {filepath}'.format(filepath=filepath))
         hdu = fits.BinTableHDU(self.data, name=self.trace_table_name, header=fits.Header(self.header))
-        fits.HDUList([fits.PrimaryHDU(), hdu]).writeto(self.filename)
+        fits.HDUList([fits.PrimaryHDU(), hdu]).writeto(filepath)
+
+    def _get_filepath(self, pipeline_context):
+        output_directory = file_utils.make_output_directory(pipeline_context, self)
+        return os.path.join(output_directory, os.path.basename(self.filename))
 
     @staticmethod
     def load(path, trace_table_name):

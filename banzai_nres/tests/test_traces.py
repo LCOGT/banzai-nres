@@ -96,18 +96,25 @@ class TestTrace:
         assert np.allclose(trace.data['centers'], [centers, centers])
         assert np.allclose(trace.data['id'], [1, 2])
 
-    def test_load_and_write(self):
+    @mock.patch('banzai_nres.utils.trace_utils.Trace._get_filepath')
+    def test_load_and_write(self, mock_get_path):
         name = 'trace'
         trace = Trace(data={'id': [1], 'centers': [np.arange(3)]}, trace_table_name=name)
         with tempfile.TemporaryDirectory() as tmp_directory_name:
-            path = os.path.join(tmp_directory_name, 'test_trace_table.fits')
-            trace.filename = path
+            trace.filename = 'test_trace_table.fits'
+            path = os.path.join(tmp_directory_name, trace.filename)
             trace.header = {'bla': 1}
+            mock_get_path.return_value = path
             trace.write()
             loaded_trace = Trace.load(path=path, trace_table_name=name)
         assert np.allclose(loaded_trace.get_centers(0), trace.get_centers(0))
         assert np.allclose(loaded_trace.get_id(0), trace.get_id(0))
         assert np.isclose(loaded_trace.header['bla'], 1)
+
+    @mock.patch('banzai.utils.file_utils.make_output_directory', return_value='/tmp')
+    def test_get_file_path(self, mock_dir):
+        trace = Trace(data={'id': [1], 'centers': [np.arange(3)]}, filename='test.tst')
+        assert trace._get_filepath(pipeline_context=None) == '/tmp/test.tst'
 
     def test_sorting_trace_centers(self):
         centers = np.array([1, 2, 3])
