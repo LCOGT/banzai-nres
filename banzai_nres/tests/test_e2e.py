@@ -104,6 +104,7 @@ def test_e2e():
     # executing the master flat maker as one would from the command line.
     os.system('reduce_flat_frames --db-address {0} --raw-path {1} --ignore-schedulability '
               '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
+    """
     os.system('stack_calibrations --site lsc --camera nres01 --frame-type LAMPFLAT --min-date 2018-03-11T00:00:00'
               ' --max-date 2018-03-12T23:59:59 --db-address {0} --raw-path {1} --ignore-schedulability '
               '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
@@ -112,7 +113,7 @@ def test_e2e():
         with fits.open(os.path.join(expected_processed_path, expected_flat_filename)) as hdu_list:
             assert hdu_list[0].data.shape is not None
             assert hdu_list['BPM'].data.shape == hdu_list[1].data.shape
-    """
+
     # executing the master trace maker as one would from the command line
     os.system('stack_calibrations --site lsc --camera nres01 --frame-type TRACE --min-date 2018-03-11T00:00:00'
               ' --max-date 2018-03-12T23:59:59 --db-address {0} --raw-path {1} --ignore-schedulability '
