@@ -54,8 +54,6 @@ def array_with_peaks(x, centroids, amplitudes, stds):
 
 
 def fill_image_with_traces(image, poly_fit_order=4, order_width=1.5, fiber_intensity=1E4):
-    if image.data.shape[1] < 200:
-        raise ValueError
     trace_fitter = SingleTraceFitter(image_data=image.data,
                                      second_order_coefficient_guess=0,
                                      poly_fit_order=poly_fit_order)
