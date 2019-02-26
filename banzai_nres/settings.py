@@ -53,7 +53,8 @@ class NRESSettings(Settings):
                                                                                      [ccdsum_to_filename,
                                                                                       fibers_state_to_filename],
                                                                                      get_telescope_filename),
-                                      'TRACE': make_calibration_filename_function('TRACE', [ccdsum_to_filename],
+                                      'TRACE': make_calibration_filename_function('TRACE', [ccdsum_to_filename,
+                                                                                  fibers_state_to_filename],
                                                                                   get_telescope_filename)}
 
     CALIBRATION_IMAGE_TYPES = ['BIAS', 'DARK', 'LAMPFLAT']
