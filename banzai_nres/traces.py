@@ -8,6 +8,7 @@ Authors
 from banzai_nres.utils.trace_utils import Trace, AllTraceFitter
 from banzai.stages import Stage
 from banzai.calibrations import CalibrationMaker, create_master_calibration_header
+from banzai.utils import file_utils
 from banzai import dbs
 
 import sep
@@ -38,13 +39,14 @@ class TraceMaker(CalibrationMaker):
         for image in images:
             master_header = create_master_calibration_header(old_header=image.header, images=[image])
             master_filename = self.pipeline_context.CALIBRATION_FILENAME_FUNCTIONS[self.calibration_type](image)
+            master_filepath = self._get_filepath(self.pipeline_context, image, master_filename)
             bkg_subtracted_image_data = image.data - sep.Background(image.data).back()
 
             logger.info('fitting traces order by order', image=image)
             fitter = AllTraceFitter(xmin=self.xmin, xmax=self.xmax,
                                     min_peak_to_peak_spacing=self.min_peak_to_peak_spacing,
                                     min_snr=self.min_snr)
-            trace = Trace(data=None, filename=master_filename, header=master_header,
+            trace = Trace(data=None, filepath=master_filepath, header=master_header,
                           num_centers_per_trace=image.data.shape[1], trace_table_name=self.trace_table_name)
             trace = fitter.fit_traces(trace=trace, image_data=bkg_subtracted_image_data,
                                       poly_fit_order=self.order_of_poly_fit,
@@ -52,8 +54,13 @@ class TraceMaker(CalibrationMaker):
                                       image_noise_estimate=image.header['RDNOISE'])
             traces.append(trace)
             logger.info('Created master trace', image=image, extra_tags={'calibration_type': self.calibration_type,
-                                                                         'output_filename': master_filename})
+                                                                         'output_path': master_filepath})
         return traces
+
+    @staticmethod
+    def _get_filepath(pipeline_context, lampflat_image, master_filename):
+        output_directory = file_utils.make_output_directory(pipeline_context, lampflat_image)
+        return os.path.join(output_directory, os.path.basename(master_filename))
 
     def do_stage(self, images):
         """

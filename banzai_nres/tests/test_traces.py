@@ -58,7 +58,7 @@ class TestTrace:
         data['centers'].description = 'test_2'
         trace = Trace(data=data)
         assert trace.trace_table_name is None
-        assert trace.filename is None
+        assert trace.filepath is None
         assert trace.header == {}
         for name in ['id', 'centers']:
             assert name in trace.data.colnames
@@ -96,25 +96,18 @@ class TestTrace:
         assert np.allclose(trace.data['centers'], [centers, centers])
         assert np.allclose(trace.data['id'], [1, 2])
 
-    @mock.patch('banzai_nres.utils.trace_utils.Trace._get_filepath')
-    def test_load_and_write(self, mock_get_path):
+    def test_load_and_write(self):
         name = 'trace'
         trace = Trace(data={'id': [1], 'centers': [np.arange(3)]}, trace_table_name=name)
         with tempfile.TemporaryDirectory() as tmp_directory_name:
-            trace.filename = 'test_trace_table.fits'
-            path = os.path.join(tmp_directory_name, trace.filename)
+            path = os.path.join(tmp_directory_name, 'test_trace_table.fits')
+            trace.filepath = path
             trace.header = {'bla': 1}
-            mock_get_path.return_value = path
             trace.write()
             loaded_trace = Trace.load(path=path, trace_table_name=name)
         assert np.allclose(loaded_trace.get_centers(0), trace.get_centers(0))
         assert np.allclose(loaded_trace.get_id(0), trace.get_id(0))
         assert np.isclose(loaded_trace.header['bla'], 1)
-
-    @mock.patch('banzai.utils.file_utils.make_output_directory', return_value='/tmp')
-    def test_get_file_path(self, mock_dir):
-        trace = Trace(data={'id': [1], 'centers': [np.arange(3)]}, filename='test.tst')
-        assert trace._get_filepath(pipeline_context=None) == '/tmp/test.tst'
 
     def test_sorting_trace_centers(self):
         centers = np.array([1, 2, 3])
@@ -331,7 +324,12 @@ class TestTraceMaker:
     def test_properties(self):
         assert TraceMaker(FakeContext(settings=banzai_nres.settings.NRESSettings())).calibration_type is 'TRACE'
 
-    def test_trace_fit_does_not_crash_on_blank_frame(self):
+    @mock.patch('banzai.utils.file_utils.make_output_directory', return_value='/tmp')
+    def test_get_file_path(self, mock_dir):
+        assert TraceMaker._get_filepath(None, None, master_filename='test.tst') == '/tmp/test.tst'
+
+    @mock.patch('banzai_nres.traces.TraceMaker._get_filepath', return_value=None)
+    def test_trace_fit_does_not_crash_on_blank_frame(self, mock_get_path):
         order_of_poly_fit = 4
         image = FakeTraceImage(nx=100, ny=100)
         image.header['RDNOISE'] = 11
@@ -343,8 +341,9 @@ class TestTraceMaker:
         trace_fitter.do_stage([image])
         assert True
 
+    @mock.patch('banzai_nres.traces.TraceMaker._get_filepath', return_value=None)
     @mock.patch('banzai_nres.utils.trace_utils.AllTraceFitter.fit_traces')
-    def test_trace_maker(self, fit_traces):
+    def test_trace_maker(self, fit_traces, mock_get_path):
         trace_table_name = 'test'
         data = {'id': [1], 'centers': [np.arange(3)]}
         fit_traces.return_value = Trace(data=data)
@@ -359,7 +358,8 @@ class TestTraceMaker:
         assert np.allclose(loaded_trace.get_centers(0), expected_trace.get_centers(0))
         assert np.allclose(loaded_trace.get_id(0), expected_trace.get_id(0))
 
-    def test_accuracy_of_trace_fitting(self):
+    @mock.patch('banzai_nres.traces.TraceMaker._get_filepath', return_value=None)
+    def test_accuracy_of_trace_fitting(self, mock_get_path):
         """
         test type: Mock Integration Test with metrics for how well trace fitting is doing.
         info: This tests trace making via a blind fit.

@@ -7,12 +7,10 @@ Authors
 """
 
 import numpy as np
-import os
 
 from scipy import ndimage, optimize, signal
 from astropy.table import Table, Column
 from astropy.io import fits
-from banzai.utils import file_utils
 
 import logging
 
@@ -24,7 +22,7 @@ class Trace(object):
     :param data = {'id': ndarray, 'centers': ndarray}. 'centers' gives a 2d array, where
     the jth row are the y centers across the detector for the trace with identification trace_centers['id'][j]
     """
-    def __init__(self, data=None, trace_table_name=None, num_centers_per_trace=0, filename=None, header=None):
+    def __init__(self, data=None, trace_table_name=None, num_centers_per_trace=0, filepath=None, header=None):
         if data is None and num_centers_per_trace <= 0:
             raise ValueError('Trace object instantiated but no trace data given and num_centers_per_trace is not > 0')
         if data is None:
@@ -36,7 +34,7 @@ class Trace(object):
         if header is None:
             header = {}
         self.header = header
-        self.filename = filename
+        self.filepath = filepath
         self.data = Table(data)
         self.trace_table_name = trace_table_name
 
@@ -56,14 +54,9 @@ class Trace(object):
         return len(self.data['id'])
 
     def write(self, pipeline_context=None):
-        filepath = self._get_filepath(pipeline_context)
-        logger.info('Writing Trace file to {filepath}'.format(filepath=filepath))
+        logger.info('Writing Trace file to {filepath}'.format(filepath=self.filepath))
         hdu = fits.BinTableHDU(self.data, name=self.trace_table_name, header=fits.Header(self.header))
-        fits.HDUList([fits.PrimaryHDU(), hdu]).writeto(filepath)
-
-    def _get_filepath(self, pipeline_context):
-        output_directory = file_utils.make_output_directory(pipeline_context, self)
-        return os.path.join(output_directory, os.path.basename(self.filename))
+        fits.HDUList([fits.PrimaryHDU(), hdu]).writeto(self.filepath)
 
     @staticmethod
     def load(path, trace_table_name):
