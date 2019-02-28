@@ -6,8 +6,7 @@ Authors
 """
 
 from banzai_nres.utils.trace_utils import Trace, AllTraceFitter
-from banzai.stages import Stage
-from banzai.calibrations import CalibrationMaker, create_master_calibration_header
+from banzai.calibrations import CalibrationMaker, ApplyCalibration, create_master_calibration_header
 from banzai.utils import file_utils
 from banzai import dbs
 
@@ -76,36 +75,25 @@ class TraceMaker(CalibrationMaker):
         return master_calibrations
 
 
-class LoadTrace(Stage):
+class LoadTrace(ApplyCalibration):
     """
     Loads trace coefficients from file and appends them onto the image object.
     """
-    #TODO make this a calibration applier stage.
     def __init__(self, pipeline_context):
         super(LoadTrace, self).__init__(pipeline_context)
         self.pipeline_context = pipeline_context
-        self.master_selection_criteria = self.pipeline_context.CALIBRATION_SET_CRITERIA.get(
-            self.calibration_type.upper(), [])
 
     @property
     def calibration_type(self):
         return 'TRACE'
 
-    def do_stage(self, images):
-        images_to_remove = []
-        for image in images:
-            logger.info('loading trace data onto image', image=image)
-            master_trace_path = dbs.get_master_calibration_image(image, self.calibration_type,
-                                                                 self.master_selection_criteria,
-                                                                 db_address=self.pipeline_context.db_address)
+    def apply_master_calibration(self, image, master_calibration_filename):
+        image.trace = Trace.load(master_calibration_filename, trace_table_name=self.pipeline_context.TRACE_TABLE_NAME)
+        return image
 
-            if master_trace_path is None or not os.path.exists(master_trace_path):
-                logger.error('Master trace fit file not found for {0}.'.format(image.filename))
-                logger.error("Can't find trace coefficients for image, stopping reduction", image=image)
-                images_to_remove.append(image)
-                continue
-            else:
-                image.trace = Trace.load(master_trace_path, trace_table_name=self.pipeline_context.TRACE_TABLE_NAME)
-        for image in images_to_remove:
-            images.remove(image)
-        return images
+    def do_stage(self, image):
+        master_calibration_filename = self.get_calibration_filename(image)
+        if master_calibration_filename is None:
+            self.on_missing_master_calibration(image)
+            return image
+        return self.apply_master_calibration(image, master_calibration_filename)

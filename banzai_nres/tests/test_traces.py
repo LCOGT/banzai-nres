@@ -338,6 +338,7 @@ class TestTraceMaker:
         fake_context.db_address = ''
         trace_fitter = TraceMaker(fake_context)
         trace_fitter.order_of_poly_fit = order_of_poly_fit
+        trace_fitter.xmin, trace_fitter.xmax = 50, 60
         trace_fitter.do_stage([image])
         assert True
 
@@ -404,16 +405,15 @@ class TestLoadTrace:
     def test_properties(self):
         assert LoadTrace(FakeContext(settings=banzai_nres.settings.NRESSettings())).calibration_type is 'TRACE'
 
-    @mock.patch('banzai.dbs.get_master_calibration_image', return_value=None)
-    def test_load_trace_removes_images_without_calibration(self, mock_get_cal):
-        images = [FakeImage(), FakeImage(), FakeImage()]
+    @mock.patch('banzai_nres.traces.LoadTrace.get_calibration_filename', return_value=None)
+    def test_load_trace_flags_images_without_calibration(self, mock_get_cal):
         fake_context = FakeContext(settings=banzai_nres.settings.NRESSettings())
         setattr(fake_context, 'db_address', None)
         trace_loader = LoadTrace(fake_context)
-        images = trace_loader.do_stage(images=images)
-        assert len(images) == 0
+        image = trace_loader.do_stage(image=FakeImage())
+        assert getattr(image, 'trace') is None
 
-    @mock.patch('banzai.dbs.get_master_calibration_image', return_value='path')
+    @mock.patch('banzai_nres.traces.LoadTrace.get_calibration_filename', return_value='path')
     @mock.patch('os.path.exists', return_value=True)
     @mock.patch('astropy.io.fits.open', return_value=None)
     @mock.patch('banzai_nres.utils.trace_utils.Trace.load')
@@ -424,8 +424,6 @@ class TestLoadTrace:
         fake_context = FakeContext(settings=banzai_nres.settings.NRESSettings())
         setattr(fake_context, 'db_address', None)
         trace_loader = LoadTrace(fake_context)
-        images = [FakeImage(), FakeImage(), FakeImage()]
-        images = trace_loader.do_stage(images=images)
-        for image in images:
-            assert np.allclose(image.trace.get_centers(0), expected_trace.get_centers(0))
-            assert np.allclose(image.trace.get_id(0), expected_trace.get_id(0))
+        image = trace_loader.do_stage(image=FakeImage())
+        assert np.allclose(image.trace.get_centers(0), expected_trace.get_centers(0))
+        assert np.allclose(image.trace.get_id(0), expected_trace.get_id(0))
