@@ -85,12 +85,15 @@ class TestTrace:
         trace = Trace(data={'id': [0, 1], 'centers': [[0, 1], [1, 2]]})
         assert trace.num_traces_found() == 2
 
-    def test_add_centers(self):
+    def test_add_centers_to_empty(self):
         centers = np.arange(3)
         trace = Trace(data=None, num_centers_per_trace=len(centers))
         trace.add_centers(trace_centers=centers, trace_id=1)
         assert np.allclose(trace.data['centers'], [centers])
         assert np.allclose(trace.data['id'], [1])
+
+    def test_add_centers_to_existing(self):
+        centers = np.arange(3)
         trace = Trace(data={'id': [1], 'centers': [centers]})
         trace.add_centers(trace_centers=centers, trace_id=2)
         assert np.allclose(trace.data['centers'], [centers, centers])
