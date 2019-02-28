@@ -38,12 +38,12 @@ matrix:
     include:
         - env: SETUP_CMD='egg_info' RUN_TESTS=0 PYTHON_INSTALL_COMMAND='true' INSTALL_DEPS=0
 
-        - python: 3.5
+        - python: 3.6
           env: SETUP_CMD='egg_info' RUN_TESTS=0 PYTHON_INSTALL_COMMAND='true' INSTALL_DEPS=0
 
         - env: RUN_TESTS=1
 
-        - python: 3.5
+        - python: 3.7
           env: RUN_TESTS=1
 
         # Do a coverage test.
