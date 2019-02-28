@@ -1,11 +1,10 @@
 """
 main.py: Main driver script for the banzai-NRES pipeline.
-    The make_master_bias_console() and make_master_dark_console() are the entry points.
+    The reduce_X_frames() and stack_calibrations() are the entry points.
 Authors
     Curtis McCully (cmccully@lcogt.net)
-July 2018
+
     G. Mirek Brandt (gmbrandt@ucsb.edu)
-July 2018
 """
 
 from banzai_nres import settings

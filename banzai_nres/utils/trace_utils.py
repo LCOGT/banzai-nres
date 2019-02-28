@@ -4,6 +4,8 @@ Authors
     G. Mirek Brandt (gmbrandt@ucsb.edu)
 
     Tim Brandt (tbrandt@physics.ucsb.edu)
+
+    Curtis McCully (cmccully@lcogt.net)
 """
 
 import numpy as np
