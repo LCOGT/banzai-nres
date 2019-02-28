@@ -89,7 +89,6 @@ class LoadTrace(ApplyCalibration):
 
     def apply_master_calibration(self, image, master_calibration_filename):
         image.trace = Trace.load(master_calibration_filename, trace_table_name=self.pipeline_context.TRACE_TABLE_NAME)
-        image.data_tables['trace'] = DataTable(image.trace.data, name=self.pipeline_context.TRACE_TABLE_NAME)
         return image
 
     def do_stage(self, image):

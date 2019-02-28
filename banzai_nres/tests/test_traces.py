@@ -427,4 +427,3 @@ class TestLoadTrace:
         image = trace_loader.do_stage(image=FakeImage())
         assert np.allclose(image.trace.get_centers(0), expected_trace.get_centers(0))
         assert np.allclose(image.trace.get_id(0), expected_trace.get_id(0))
-        assert np.allclose(image.data_tables['trace']['centers'][0], expected_trace.get_centers(0))
