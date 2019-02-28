@@ -89,7 +89,7 @@ class LoadTrace(ApplyCalibration):
     def apply_master_calibration(self, image, master_calibration_path):
         image.trace = Trace.load(master_calibration_path, trace_table_name=self.pipeline_context.TRACE_TABLE_NAME)
         master_trace_filename = os.path.basename(master_calibration_path).split('.')[0]
-        image.header['L1IDTRAC'] = (master_trace_filename, 'ID of bias frame')
+        image.header['L1IDTRAC'] = (master_trace_filename, 'ID of trace centers file')
         logger.info('Loading trace centers', image=image,  extra_tags={'L1IDTRAC': image.header['L1IDTRAC']})
         return image
 
