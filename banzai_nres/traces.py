@@ -8,7 +8,7 @@ Authors
 from banzai_nres.utils.trace_utils import Trace, AllTraceFitter
 from banzai.calibrations import CalibrationMaker, ApplyCalibration, create_master_calibration_header
 from banzai.utils import file_utils
-from banzai import dbs
+from banzai.images import DataTable
 
 import sep
 import os
@@ -89,6 +89,7 @@ class LoadTrace(ApplyCalibration):
 
     def apply_master_calibration(self, image, master_calibration_filename):
         image.trace = Trace.load(master_calibration_filename, trace_table_name=self.pipeline_context.TRACE_TABLE_NAME)
+        image.data_tables['trace'] = DataTable(image.trace.data, name=self.pipeline_context.TRACE_TABLE_NAME)
         return image
 
     def do_stage(self, image):

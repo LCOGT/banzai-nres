@@ -28,7 +28,7 @@ class FakeImage(object):
         self.molecule_id = '544562351'
         self.exptime = 30.0
         self.obstype = 'TEST'
-        self.data_tables = None
+        self.data_tables = {}
         self.trace = None
         self.fiber0_lit, self.fiber1_lit, self.fiber2_lit = False, True, True
 
