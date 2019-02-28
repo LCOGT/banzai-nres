@@ -8,7 +8,6 @@ Authors
 from banzai_nres.utils.trace_utils import Trace, AllTraceFitter
 from banzai.calibrations import CalibrationMaker, ApplyCalibration, create_master_calibration_header
 from banzai.utils import file_utils
-from banzai.images import DataTable
 
 import sep
 import os
@@ -87,13 +86,16 @@ class LoadTrace(ApplyCalibration):
     def calibration_type(self):
         return 'TRACE'
 
-    def apply_master_calibration(self, image, master_calibration_filename):
-        image.trace = Trace.load(master_calibration_filename, trace_table_name=self.pipeline_context.TRACE_TABLE_NAME)
+    def apply_master_calibration(self, image, master_calibration_path):
+        image.trace = Trace.load(master_calibration_path, trace_table_name=self.pipeline_context.TRACE_TABLE_NAME)
+        master_trace_filename = os.path.basename(master_calibration_path).split('.')[0]
+        image.header['L1IDTRAC'] = (master_trace_filename, 'ID of bias frame')
+        logger.info('Loading trace centers', image=image,  extra_tags={'L1IDTRAC': image.header['L1IDTRAC']})
         return image
 
     def do_stage(self, image):
-        master_calibration_filename = self.get_calibration_filename(image)
-        if master_calibration_filename is None:
+        master_calibration_path = self.get_calibration_filename(image)
+        if master_calibration_path is None:
             self.on_missing_master_calibration(image)
             return image
-        return self.apply_master_calibration(image, master_calibration_filename)
+        return self.apply_master_calibration(image, master_calibration_path)

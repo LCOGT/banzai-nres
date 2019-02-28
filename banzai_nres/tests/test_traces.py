@@ -413,7 +413,7 @@ class TestLoadTrace:
         image = trace_loader.do_stage(image=FakeImage())
         assert getattr(image, 'trace') is None
 
-    @mock.patch('banzai_nres.traces.LoadTrace.get_calibration_filename', return_value='path')
+    @mock.patch('banzai_nres.traces.LoadTrace.get_calibration_filename', return_value='/path/to/master_trace.fits')
     @mock.patch('os.path.exists', return_value=True)
     @mock.patch('astropy.io.fits.open', return_value=None)
     @mock.patch('banzai_nres.utils.trace_utils.Trace.load')
@@ -425,5 +425,6 @@ class TestLoadTrace:
         setattr(fake_context, 'db_address', None)
         trace_loader = LoadTrace(fake_context)
         image = trace_loader.do_stage(image=FakeImage())
+        assert image.header['L1IDTRAC'] == 'master_trace'
         assert np.allclose(image.trace.get_centers(0), expected_trace.get_centers(0))
         assert np.allclose(image.trace.get_id(0), expected_trace.get_id(0))
