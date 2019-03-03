@@ -25,4 +25,4 @@ setup(name='lco-banzai-nres',
       entry_points={'console_scripts': ['reduce_bias_frames=banzai_nres.main:reduce_bias_frames',
                                         'reduce_dark_frames=banzai_nres.main:reduce_dark_frames',
                                         'reduce_flat_frames=banzai_nres.main:reduce_flat_frames',
-                                        'stack_calibrations=banzai_nres.main:stack_calibrations']})
+                                        'make_master_calibration=banzai_nres.main:make_master_calibration']})

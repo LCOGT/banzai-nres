@@ -1,6 +1,6 @@
 """
 main.py: Main driver script for the banzai-NRES pipeline.
-    The reduce_X_frames() and stack_calibrations() are the entry points.
+    The reduce_X_frames() and make_master_calibration() are the entry points.
 Authors
     Curtis McCully (cmccully@lcogt.net)
 
@@ -54,7 +54,7 @@ def process_master_maker(pipeline_context, instrument, frame_type_to_stack, min_
         logger.error(logs.format_exception())
 
 
-def stack_calibrations(pipeline_context=None):
+def make_master_calibration(pipeline_context=None):
     nres_settings = settings.NRESSettings()
     extra_console_arguments = [{'args': ['--site'],
                                 'kwargs': {'dest': 'site', 'help': 'Site code (e.g. ogg)', 'required': True}},
