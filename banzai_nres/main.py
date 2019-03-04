@@ -6,6 +6,7 @@ Authors
 
     G. Mirek Brandt (gmbrandt@ucsb.edu)
 """
+import datetime
 
 from banzai_nres import settings
 from banzai.main import process_directory, parse_directory_args
@@ -17,21 +18,6 @@ from banzai.main import run_master_maker
 import logging
 
 logger = logging.getLogger(__name__)
-
-
-def reduce_bias_frames(pipeline_context=None, raw_path=None):
-    pipeline_context, raw_path = parse_directory_args(pipeline_context, raw_path, settings.NRESSettings())
-    process_directory(pipeline_context, raw_path, ['BIAS'])
-
-
-def reduce_dark_frames(pipeline_context=None, raw_path=None):
-    pipeline_context, raw_path = parse_directory_args(pipeline_context, raw_path, settings.NRESSettings())
-    process_directory(pipeline_context, raw_path, ['DARK'])
-
-
-def reduce_flat_frames(pipeline_context=None, raw_path=None):
-    pipeline_context, raw_path = parse_directory_args(pipeline_context, raw_path, settings.NRESSettings())
-    process_directory(pipeline_context, raw_path, ['LAMPFLAT'])
 
 
 def process_master_maker(pipeline_context, instrument, frame_type_to_stack, min_date, max_date,
@@ -54,7 +40,7 @@ def process_master_maker(pipeline_context, instrument, frame_type_to_stack, min_
         logger.error(logs.format_exception())
 
 
-def make_master_calibration(pipeline_context=None):
+def reduce_night(pipeline_context=None):
     nres_settings = settings.NRESSettings()
     extra_console_arguments = [{'args': ['--site'],
                                 'kwargs': {'dest': 'site', 'help': 'Site code (e.g. ogg)', 'required': True}},
@@ -64,16 +50,22 @@ def make_master_calibration(pipeline_context=None):
                                 'kwargs': {'dest': 'frame_type', 'help': 'Type of frames to process',
                                            'choices': nres_settings.CALIBRATION_STACKER_STAGE.keys(), 'required': True}},
                                {'args': ['--min-date'],
-                                'kwargs': {'dest': 'min_date', 'required': True, 'type': date_utils.valid_date,
+                                'kwargs': {'dest': 'min_date', 'required': False, 'type': date_utils.valid_date,
                                            'help': 'Earliest observation time of the individual calibration frames. '
                                                    'Must be in the format "YYYY-MM-DDThh:mm:ss".'}},
                                {'args': ['--max-date'],
-                                'kwargs': {'dest': 'max_date', 'required': True, 'type': date_utils.valid_date,
+                                'kwargs': {'dest': 'max_date', 'required': False, 'type': date_utils.valid_date,
                                            'help': 'Latest observation time of the individual calibration frames. '
                                                    'Must be in the format "YYYY-MM-DDThh:mm:ss".'}}]
 
     pipeline_context, raw_path = parse_directory_args(pipeline_context, None, nres_settings,
                                                       extra_console_arguments=extra_console_arguments)
+    if pipeline_context.max_date is None:
+        pipeline_context.max_date = datetime.datetime.now()
+
+    if pipeline_context.min_date is None:
+        pipeline_context.min_date = datetime.datetime.now() - datetime.timedelta(hours=24)
+
     instrument = dbs.query_for_instrument(pipeline_context.db_address, pipeline_context.site, pipeline_context.camera)
     if pipeline_context.frame_type == 'TRACE':
         frame_type_to_stack = 'LAMPFLAT'
@@ -83,6 +75,9 @@ def make_master_calibration(pipeline_context=None):
         frame_type_to_stack = pipeline_context.frame_type
         use_masters = False
         master_frame_type = None
+        # must reduce frames before stacking, unless we are doing tracing.
+        process_directory(pipeline_context, raw_path, [frame_type_to_stack])
+
     process_master_maker(pipeline_context, instrument,  frame_type_to_stack.upper(),
                          pipeline_context.min_date, pipeline_context.max_date,
                          master_frame_type=master_frame_type, use_masters=use_masters)
