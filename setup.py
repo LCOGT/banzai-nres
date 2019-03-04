@@ -22,7 +22,4 @@ setup(name='lco-banzai-nres',
       setup_requires=['pytest-runner'],
       install_requires=['lco-banzai==0.19.3', 'numpy>=1.13', 'sphinx', 'coveralls'],
       tests_require=['pytest>=3.5'],
-      entry_points={'console_scripts': ['reduce_bias_frames=banzai_nres.main:reduce_bias_frames',
-                                        'reduce_dark_frames=banzai_nres.main:reduce_dark_frames',
-                                        'reduce_flat_frames=banzai_nres.main:reduce_flat_frames',
-                                        'make_master_calibration=banzai_nres.main:make_master_calibration']})
+      entry_points={'console_scripts': ['reduce_night=banzai_nres.main:reduce_night']})

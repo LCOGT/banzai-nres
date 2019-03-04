@@ -1,6 +1,6 @@
 """
 main.py: Main driver script for the banzai-NRES pipeline.
-    The reduce_X_frames() and make_master_calibration() are the entry points.
+    reduce_night() is the console entry point.
 Authors
     Curtis McCully (cmccully@lcogt.net)
 
