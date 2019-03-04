@@ -75,7 +75,7 @@ def reduce_night(pipeline_context=None):
         frame_type_to_stack = pipeline_context.frame_type
         use_masters = False
         master_frame_type = None
-        # must reduce frames before stacking, unless we are doing tracing.
+        # must reduce frames before making the master calibration, unless we are making a master trace.
         process_directory(pipeline_context, raw_path, [frame_type_to_stack])
 
     process_master_maker(pipeline_context, instrument,  frame_type_to_stack.upper(),
