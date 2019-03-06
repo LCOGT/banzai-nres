@@ -100,6 +100,8 @@ class TestTrace:
         assert np.allclose(trace.data['id'], [1, 2])
 
     def test_load_and_write(self):
+        if not os.path.exists('/tmp'):
+            os.makedirs('/tmp')
         name = 'trace'
         trace = Trace(data={'id': [1], 'centers': [np.arange(3)]}, trace_table_name=name)
         pipeline_context = FakeContext(settings=banzai_nres.settings.NRESSettings())
