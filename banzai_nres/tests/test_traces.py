@@ -99,25 +99,17 @@ class TestTrace:
         assert np.allclose(trace.data['centers'], [centers, centers])
         assert np.allclose(trace.data['id'], [1, 2])
 
-    @staticmethod
-    def simple_write(hdu_list, filepath, *args, **kwargs):
-        hdu_list.writeto(filepath)
-
-    @mock.patch('banzai_nres.utils.file_utils.write')
-    def test_load_and_write(self, file_write):
-        file_write.side_effect = self.simple_write
+    def test_load_and_write(self):
         name = 'trace'
         trace = Trace(data={'id': [1], 'centers': [np.arange(3)]}, trace_table_name=name)
         pipeline_context = FakeContext(settings=banzai_nres.settings.NRESSettings())
-        for fpack, output_extension in zip([True, False], ['.fits.fz', '.fits']):
-            with tempfile.TemporaryDirectory() as tmp_directory_name:
-                output_filename = 'test_trace_table' + output_extension
-                pipeline_context.fpack = fpack
-                path = os.path.join(tmp_directory_name, output_filename)
-                trace.filepath = path
-                trace.header = {'bla': 1}
-                trace.write(pipeline_context)
-                loaded_trace = Trace.load(path=path, trace_table_name=name)
+        with tempfile.TemporaryDirectory() as tmp_directory_name:
+            pipeline_context.fpack = False
+            path = os.path.join(tmp_directory_name, 'test_trace_table.fits')
+            trace.filepath = path
+            trace.header = {'bla': 1}
+            trace.write(pipeline_context)
+            loaded_trace = Trace.load(path=path, trace_table_name=name)
             assert np.allclose(loaded_trace.get_centers(0), trace.get_centers(0))
             assert np.allclose(loaded_trace.get_id(0), trace.get_id(0))
             assert np.isclose(loaded_trace.header['bla'], 1)
