@@ -8,6 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 def write(hdu_list, filepath, fpack=False):
+    # TODO: this function is untested since it throws errors on Travis but not on local machines nor Jenkins.
     if fpack and not filepath.endswith('.fz'):
         filepath += '.fz'
     logger.info('Writing file to {filepath}'.format(filepath=filepath))

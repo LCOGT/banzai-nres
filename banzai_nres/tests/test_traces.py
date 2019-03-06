@@ -99,9 +99,13 @@ class TestTrace:
         assert np.allclose(trace.data['centers'], [centers, centers])
         assert np.allclose(trace.data['id'], [1, 2])
 
-    def test_load_and_write(self):
-        if not os.path.exists('/tmp'):
-            os.makedirs('/tmp')
+    @staticmethod
+    def simple_write(hdu_list, filepath, *args, **kwargs):
+        hdu_list.writeto(filepath)
+
+    @mock.patch('banzai_nres.utils.file_utils.write')
+    def test_load_and_write(self, file_write):
+        file_write.side_effect = self.simple_write
         name = 'trace'
         trace = Trace(data={'id': [1], 'centers': [np.arange(3)]}, trace_table_name=name)
         pipeline_context = FakeContext(settings=banzai_nres.settings.NRESSettings())
