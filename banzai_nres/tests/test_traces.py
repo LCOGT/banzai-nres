@@ -102,15 +102,19 @@ class TestTrace:
     def test_load_and_write(self):
         name = 'trace'
         trace = Trace(data={'id': [1], 'centers': [np.arange(3)]}, trace_table_name=name)
-        with tempfile.TemporaryDirectory() as tmp_directory_name:
-            path = os.path.join(tmp_directory_name, 'test_trace_table.fits')
-            trace.filepath = path
-            trace.header = {'bla': 1}
-            trace.write()
-            loaded_trace = Trace.load(path=path, trace_table_name=name)
-        assert np.allclose(loaded_trace.get_centers(0), trace.get_centers(0))
-        assert np.allclose(loaded_trace.get_id(0), trace.get_id(0))
-        assert np.isclose(loaded_trace.header['bla'], 1)
+        pipeline_context = FakeContext(settings=banzai_nres.settings.NRESSettings())
+        for fpack, output_extension in zip([True, False], ['.fits.fz', '.fits']):
+            with tempfile.TemporaryDirectory() as tmp_directory_name:
+                output_filename = 'test_trace_table' + output_extension
+                pipeline_context.fpack = fpack
+                path = os.path.join(tmp_directory_name, output_filename)
+                trace.filepath = path
+                trace.header = {'bla': 1}
+                trace.write(pipeline_context)
+                loaded_trace = Trace.load(path=path, trace_table_name=name)
+            assert np.allclose(loaded_trace.get_centers(0), trace.get_centers(0))
+            assert np.allclose(loaded_trace.get_id(0), trace.get_id(0))
+            assert np.isclose(loaded_trace.header['bla'], 1)
 
     def test_sorting_trace_centers(self):
         centers = np.array([1, 2, 3])

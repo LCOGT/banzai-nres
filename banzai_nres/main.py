@@ -66,6 +66,10 @@ def reduce_night(pipeline_context=None):
     if pipeline_context.min_date is None:
         pipeline_context.min_date = datetime.datetime.now() - datetime.timedelta(hours=24)
 
+    if pipeline_context.min_date > pipeline_context.max_date:
+        logger.error('The start cannot be after the end. Aborting reduction!')
+        return ValueError('min_date > max_date.')
+
     instrument = dbs.query_for_instrument(pipeline_context.db_address, pipeline_context.site, pipeline_context.camera)
     if pipeline_context.frame_type == 'TRACE':
         frame_type_to_stack = 'LAMPFLAT'

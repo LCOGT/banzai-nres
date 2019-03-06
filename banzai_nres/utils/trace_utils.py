@@ -9,10 +9,10 @@ Authors
 """
 
 import numpy as np
-
 from scipy import ndimage, optimize, signal
 from astropy.table import Table, Column
 from astropy.io import fits
+from banzai_nres.utils import file_utils
 
 import logging
 
@@ -56,9 +56,9 @@ class Trace(object):
         return len(self.data['id'])
 
     def write(self, pipeline_context=None):
-        logger.info('Writing Trace file to {filepath}'.format(filepath=self.filepath))
         hdu = fits.BinTableHDU(self.data, name=self.trace_table_name, header=fits.Header(self.header))
-        fits.HDUList([fits.PrimaryHDU(), hdu]).writeto(self.filepath)
+        hdu_list = fits.HDUList([fits.PrimaryHDU(), hdu])
+        file_utils.write(hdu_list=hdu_list, filepath=self.filepath, fpack=getattr(pipeline_context, 'fpack', False))
 
     @staticmethod
     def load(path, trace_table_name):
