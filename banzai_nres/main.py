@@ -48,7 +48,7 @@ def reduce_night(pipeline_context=None):
                                 'kwargs': {'dest': 'camera', 'help': 'Camera (e.g. kb95)', 'required': True}},
                                {'args': ['--frame-type'],
                                 'kwargs': {'dest': 'frame_type', 'help': 'Type of frames to process',
-                                           'choices': nres_settings.CALIBRATION_STACKER_STAGE.keys(), 'required': True}},
+                                           'choices': nres_settings.CALIBRATION_STACKER_STAGE.keys(), 'required': False}},
                                {'args': ['--min-date'],
                                 'kwargs': {'dest': 'min_date', 'required': False, 'type': date_utils.valid_date,
                                            'help': 'Earliest observation time of the individual calibration frames. '
@@ -69,19 +69,25 @@ def reduce_night(pipeline_context=None):
     if pipeline_context.min_date > pipeline_context.max_date:
         logger.error('The start cannot be after the end. Aborting reduction!')
         return ValueError('min_date > max_date.')
-
     instrument = dbs.query_for_instrument(pipeline_context.db_address, pipeline_context.site, pipeline_context.camera)
-    if pipeline_context.frame_type == 'TRACE':
-        frame_type_to_stack = 'LAMPFLAT'
-        use_masters = True
-        master_frame_type = 'TRACE'
-    else:
-        frame_type_to_stack = pipeline_context.frame_type
-        use_masters = False
-        master_frame_type = None
-        # must reduce frames before making the master calibration, unless we are making a master trace.
-        process_directory(pipeline_context, raw_path, [frame_type_to_stack])
 
-    process_master_maker(pipeline_context, instrument,  frame_type_to_stack.upper(),
-                         pipeline_context.min_date, pipeline_context.max_date,
-                         master_frame_type=master_frame_type, use_masters=use_masters)
+    if pipeline_context.frame_type is None:
+        frame_types = nres_settings.REDUCE_NIGHT_FRAME_TYPES
+    else:
+        frame_types = [pipeline_context.frame_type]
+
+    for frame_type in frame_types:
+        if frame_type == 'TRACE':
+            frame_type_to_stack = 'LAMPFLAT'
+            use_masters = True
+            master_frame_type = 'TRACE'
+        else:
+            frame_type_to_stack = frame_type
+            use_masters = False
+            master_frame_type = None
+            # must reduce frames before making the master calibration, unless we are making a master trace.
+            process_directory(pipeline_context, raw_path, [frame_type_to_stack])
+
+        process_master_maker(pipeline_context, instrument,  frame_type_to_stack.upper(),
+                             pipeline_context.min_date, pipeline_context.max_date,
+                             master_frame_type=master_frame_type, use_masters=use_masters)
