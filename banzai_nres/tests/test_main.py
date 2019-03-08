@@ -41,7 +41,7 @@ def test_reduction_criterion_outputs_single_frame_types():
     assert reduction_criterion.frame_types == [fake_context.frame_type]
 
 
-def test_error_if_min_date_greater_than_max_date():
+def test_raise_exception_if_min_date_greater_than_max_date():
     fake_context = FakeContext(settings=NRESSettings())
     fake_context.min_date = datetime.datetime.utcnow()
     fake_context.max_date = fake_context.min_date - datetime.timedelta(hours=1)
