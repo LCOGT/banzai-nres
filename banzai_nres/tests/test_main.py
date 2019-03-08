@@ -36,4 +36,3 @@ def test_reduction_criterion_outputs_single_frame_types():
     fake_context.frame_type = 'TYPE'
     reduction_criterion = ReductionCriterion(pipeline_context=fake_context)
     assert reduction_criterion.frame_types == [fake_context.frame_type]
-
