@@ -8,7 +8,7 @@ Authors
 """
 import datetime
 
-from banzai_nres import settings
+from banzai_nres.settings import NRESSettings
 from banzai.main import process_directory, parse_directory_args
 from banzai.utils import date_utils
 from banzai import dbs
@@ -18,6 +18,27 @@ from banzai.main import run_master_maker
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+class ReductionCriterion(object):
+    def __init__(self, pipeline_context=None, settings=NRESSettings()):
+        max_date = getattr(pipeline_context, 'max_date', None)
+        min_date = getattr(pipeline_context, 'min_date', None)
+        if max_date is None:
+            max_date = datetime.datetime.utcnow()
+
+        if min_date is None:
+            min_date = max_date - datetime.timedelta(hours=24)
+
+        if min_date > max_date:
+            logger.error('The start cannot be after the end. Aborting reduction!')
+            raise ValueError('min_date > max_date.')
+        self.min_date, self.max_date = min_date, max_date
+
+        if getattr(pipeline_context, 'frame_type', None) is None:
+            self.frame_types = settings.REDUCE_NIGHT_FRAME_TYPES
+        else:
+            self.frame_types = [pipeline_context.frame_type]
 
 
 def process_master_maker(pipeline_context, instrument, frame_type_to_stack, min_date, max_date,
@@ -41,7 +62,7 @@ def process_master_maker(pipeline_context, instrument, frame_type_to_stack, min_
 
 
 def reduce_night(pipeline_context=None):
-    nres_settings = settings.NRESSettings()
+    nres_settings = NRESSettings()
     extra_console_arguments = [{'args': ['--site'],
                                 'kwargs': {'dest': 'site', 'help': 'Site code (e.g. ogg)', 'required': True}},
                                {'args': ['--camera'],
@@ -60,23 +81,10 @@ def reduce_night(pipeline_context=None):
 
     pipeline_context, raw_path = parse_directory_args(pipeline_context, None, nres_settings,
                                                       extra_console_arguments=extra_console_arguments)
-    if pipeline_context.max_date is None:
-        pipeline_context.max_date = datetime.datetime.now()
-
-    if pipeline_context.min_date is None:
-        pipeline_context.min_date = datetime.datetime.now() - datetime.timedelta(hours=24)
-
-    if pipeline_context.min_date > pipeline_context.max_date:
-        logger.error('The start cannot be after the end. Aborting reduction!')
-        return ValueError('min_date > max_date.')
     instrument = dbs.query_for_instrument(pipeline_context.db_address, pipeline_context.site, pipeline_context.camera)
+    reduction_criterion = ReductionCriterion(pipeline_context, settings=nres_settings)
 
-    if pipeline_context.frame_type is None:
-        frame_types = nres_settings.REDUCE_NIGHT_FRAME_TYPES
-    else:
-        frame_types = [pipeline_context.frame_type]
-
-    for frame_type in frame_types:
+    for frame_type in reduction_criterion.frame_types:
         if frame_type == 'TRACE':
             frame_type_to_stack = 'LAMPFLAT'
             use_masters = True
@@ -89,5 +97,5 @@ def reduce_night(pipeline_context=None):
             process_directory(pipeline_context, raw_path, [frame_type_to_stack])
 
         process_master_maker(pipeline_context, instrument,  frame_type_to_stack.upper(),
-                             pipeline_context.min_date, pipeline_context.max_date,
+                             min_date=reduction_criterion.min_date, max_date=reduction_criterion.max_date,
                              master_frame_type=master_frame_type, use_masters=use_masters)

@@ -65,7 +65,7 @@ class NRESSettings(Settings):
                   'LAMPFLAT': dark.DarkSubtractor,
                   'TRACE': dark.DarkSubtractor}
 
-    EXTRA_STAGES = {'BIAS': [bias.BiasMasterLevelSubtractor, bias.BiasComparer],
+    EXTRA_STAGES = {'BIAS': [bias.BiasMasterLevelSubtractor], #, bias.BiasComparer],
                     'DARK': [dark.DarkNormalizer, dark.DarkComparer],
                     'LAMPFLAT': [],
                     'TRACE': []}
