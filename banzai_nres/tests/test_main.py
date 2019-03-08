@@ -7,7 +7,6 @@ from banzai_nres.settings import NRESSettings
 from banzai.tests.utils import FakeContext
 
 
-
 def test_reduction_criterion_auto_fill():
     expected_max_date = datetime.datetime.utcnow()
     expected_min_date = expected_max_date - datetime.timedelta(hours=24)
