@@ -25,7 +25,7 @@ class TraceMaker(CalibrationMaker):
         self.trace_table_name = self.pipeline_context.TRACE_TABLE_NAME
         self.xmin = self.pipeline_context.WINDOW_FOR_TRACE_IDENTIFICATION['min']
         self.xmax = self.pipeline_context.WINDOW_FOR_TRACE_IDENTIFICATION['max']
-        self.min_peak_to_peak_spacing = self.pipeline_context.MIN_PEAK_TO_PEAK_SPACING
+        self.min_peak_to_peak_spacing = self.pipeline_context.MIN_FIBER_TO_FIBER_SPACING
         self.min_snr = self.pipeline_context.MIN_SNR_FOR_TRACE_IDENTIFICATION
 
     @property
