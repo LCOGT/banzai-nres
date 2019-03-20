@@ -68,5 +68,5 @@ def test_rectification_does_not_change_box_extract():
                                                               nullify_mapped_values=False)
     rectified_spectrum = BoxExtract().extract_order(rectified_order)
     spectrum = BoxExtract().extract_order(image_data)
-    assert not np.allclose(spectrum, 0)
+    assert np.allclose(spectrum / np.median(spectrum), 1)
     assert np.allclose(rectified_spectrum, spectrum)
