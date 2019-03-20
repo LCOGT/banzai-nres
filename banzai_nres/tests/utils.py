@@ -75,6 +75,7 @@ def fill_image_with_traces(image, poly_order_of_traces=4, order_width=1.5, fiber
         coefficients[:, 3] = np.linspace(1, 3, num=num_fake_traces)
     if poly_order_of_traces >= 4:
         coefficients[:, 4] = np.linspace(5, 10, num=num_fake_traces)
+
     trace_centers = trace_fitter._centers_from_coefficients(coefficients)
     trace_overlay = np.zeros_like(image.data).astype(np.float64)
     vectorized_gaussian = np.vectorize(gaussian)

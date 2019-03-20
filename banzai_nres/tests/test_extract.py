@@ -11,11 +11,18 @@ import matplotlib.pyplot as plt
 
 def test_rectify_orders():
     image = FakeTraceImage()
+    hw = 10
+    peak_intensity = 1E4
     image, trace_centers, second_order_coefficient_guess = fill_image_with_traces(image, poly_order_of_traces=4,
-                                                                                  max_num_traces=1)
+                                                                                  max_num_traces=10,
+                                                                                  fiber_intensity=peak_intensity)
     trace = Trace(data={'id': np.arange(trace_centers.shape[0]), 'centers': trace_centers})
-
-    assert True
+    rectified_orders, zeroed_image_data = extract_utils.rectify_orders(image.data, trace,
+                                                                       half_window=hw,
+                                                                       debug=True)
+    assert np.allclose(zeroed_image_data, 0)
+    for key, item in rectified_orders.items():
+        assert np.isclose(np.median(item[hw]), peak_intensity, rtol=0.02)
 
 
 def test_rectify_curved_order_maps_all_values():
@@ -25,10 +32,10 @@ def test_rectify_curved_order_maps_all_values():
     x_coordinates, y_coordinates = np.meshgrid(np.arange(image.data.shape[1]), np.arange(image.data.shape[0]))
     image_coordinates = {'x': x_coordinates, 'y': y_coordinates}
     single_order_centers = trace_centers[0]
-    rectified_order, image_data = extract_utils.rectify_order(image.data, image_coordinates,
-                                                              single_order_centers, half_window=10,
-                                                              null_mapped_values=True)
-    assert np.allclose(image_data, 0)
+    rectified_order, zeroed_image_data = extract_utils.rectify_order(image.data, image_coordinates,
+                                                                     single_order_centers, half_window=10,
+                                                                     nullify_mapped_values=True)
+    assert np.allclose(zeroed_image_data, 0)
 
 
 def test_rectify_flat_order():
@@ -41,6 +48,6 @@ def test_rectify_flat_order():
     single_order_centers = trace_centers[0]
     rectified_order, image_data = extract_utils.rectify_order(image.data, image_coordinates,
                                                               single_order_centers, half_window=hw,
-                                                              null_mapped_values=False)
+                                                              nullify_mapped_values=False)
     trace_y_value = int(trace_centers[0][0])
     assert np.allclose(rectified_order, image_data[trace_y_value - hw: trace_y_value + hw + 1, :])
