@@ -56,6 +56,14 @@ def test_rectify_flat_order():
     assert np.allclose(rectified_order, image_data[trace_y_value - hw: trace_y_value + hw + 1, :])
 
 
+def test_box_extract_accuracy():
+    image = FakeTraceImage()
+    image, trace_centers, second_order_coefficient_guess = fill_image_with_traces(image, poly_order_of_traces=4,
+                                                                                  max_num_traces=1)
+    spectrum = BoxExtract().extract_order(image.data)
+    assert np.allclose(spectrum / np.median(spectrum), 1)
+
+
 def test_rectification_does_not_change_box_extract():
     image = FakeTraceImage()
     image, trace_centers, second_order_coefficient_guess = fill_image_with_traces(image, poly_order_of_traces=4,
