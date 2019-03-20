@@ -1,5 +1,19 @@
 import numpy as np
+import abc
 from scipy.ndimage import map_coordinates
+
+
+class Extract(object):
+    @abc.abstractmethod
+    def extract(self):
+        pass
+
+    @staticmethod
+    def extract_order(twod_spectrum, weights=None):
+        if weights is None:
+            return np.sum(twod_spectrum, axis=0)
+        else:
+            return np.sum(twod_spectrum * weights, axis=0)
 
 
 def rectify_orders(image_data, trace, half_window=10, debug=False):
@@ -20,6 +34,17 @@ def rectify_orders(image_data, trace, half_window=10, debug=False):
 
 
 def rectify_order(image_data, image_coordinates, single_order_centers, half_window=10, nullify_mapped_values=True):
+    """
+    :param image_data:
+    :param image_coordinates: dictionary with x and y coordinates for each pixel.
+    :param single_order_centers: the y centers of the center of the rectification window
+    :param half_window: the half width of the window about which one is rectifying the trace/order
+    :param nullify_mapped_values: Default true, this sets to zero the values which have been mapped to the
+                                  rectified grid.
+    :return: An array of 2*half_window + 1 rows by width(image_data) about the order. The center of the order
+             is right at the index of half_window, e.g. rectified_order[half_window] gives the flux down the
+             center of the order.
+    """
     # should test this function in two ways, one should verify that an already flattened trace is not modified.
     rectified_order = np.zeros((2*half_window + 1, image_data.shape[1]))
     x_coords = np.arange(image_data.shape[1])
@@ -29,4 +54,5 @@ def rectify_order(image_data, image_coordinates, single_order_centers, half_wind
         rectified_order[row] = image_data[(mapped_y_values, x_coords)]
         if nullify_mapped_values:
             image_data[(mapped_y_values, x_coords)] = 0
+    # TODO we will need to adopt the true x, y positions relative to the trace center from this as well.
     return rectified_order, image_data
