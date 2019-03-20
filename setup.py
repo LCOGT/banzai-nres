@@ -20,6 +20,6 @@ setup(name='lco-banzai-nres',
       packages=find_packages(),
       package_dir={'banzai_nres': 'banzai_nres'},
       setup_requires=['pytest-runner'],
-      install_requires=['lco-banzai==0.19.3', 'numpy>=1.13', 'sphinx', 'coveralls'],
+      install_requires=['lco-banzai==0.20.1', 'numpy>=1.13', 'sphinx', 'coveralls'],
       tests_require=['pytest>=3.5'],
       entry_points={'console_scripts': ['banzai_nres_reduce_night=banzai_nres.main:reduce_night']})
