@@ -53,16 +53,19 @@ def array_with_peaks(x, centroids, amplitudes, stds):
     return y
 
 
-def fill_image_with_traces(image, poly_fit_order=4, order_width=1.5, fiber_intensity=1E4):
+def fill_image_with_traces(image, poly_fit_order=4, order_width=1.5, fiber_intensity=1E4, max_num_traces=1000):
     trace_fitter = SingleTraceFitter(image_data=image.data,
                                      second_order_coefficient_guess=0,
                                      poly_fit_order=poly_fit_order)
-    num_fake_traces = int((image.data.shape[1] - 60)/20)
-    coefficients = np.ones((num_fake_traces, poly_fit_order+1))
+    num_fake_traces = min(int((image.data.shape[1] - 60)/20), max_num_traces)
+    coefficients = np.zeros((num_fake_traces, poly_fit_order+1))
     coefficients[:, 0] = np.linspace(30, image.data.shape[0] - 30, num=num_fake_traces)
-    coefficients[:, 2] = np.linspace(30, 40, num=num_fake_traces)
-    coefficients[:, 3] = np.linspace(1, 3, num=num_fake_traces)
-    coefficients[:, 4] = np.linspace(5, 10, num=num_fake_traces)
+    if poly_fit_order >= 2:
+        coefficients[:, 2] = np.linspace(30, 40, num=num_fake_traces)
+    if poly_fit_order >= 3:
+        coefficients[:, 3] = np.linspace(1, 3, num=num_fake_traces)
+    if poly_fit_order >= 4:
+        coefficients[:, 4] = np.linspace(5, 10, num=num_fake_traces)
     trace_centers = trace_fitter._centers_from_coefficients(coefficients)
     trace_overlay = np.zeros_like(image.data).astype(np.float64)
     vectorized_gaussian = np.vectorize(gaussian)
