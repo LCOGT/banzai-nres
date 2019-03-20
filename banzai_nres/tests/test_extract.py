@@ -8,8 +8,6 @@ from banzai_nres.utils import extract_utils
 
 from banzai_nres.extract import BoxExtract
 
-import matplotlib.pyplot as plt
-
 
 def test_rectify_orders():
     image = FakeTraceImage()
