@@ -381,7 +381,7 @@ class TestTraceMaker:
         image.header['RDNOISE'] = read_noise
 
         image, trace_centers, second_order_coefficient_guess = fill_image_with_traces(image,
-                                                                                      poly_fit_order=poly_fit_order)
+                                                                                      poly_order_of_traces=poly_fit_order)
         noisify_image(image)
         fake_context = FakeContext(settings=banzai_nres.settings.NRESSettings())
         images = [image]
