@@ -67,6 +67,8 @@ def reduce_night(pipeline_context=None):
                                 'kwargs': {'dest': 'site', 'help': 'Site code (e.g. ogg)', 'required': True}},
                                {'args': ['--camera'],
                                 'kwargs': {'dest': 'camera', 'help': 'Camera (e.g. kb95)', 'required': True}},
+                               {'args': ['--name'],
+                                'kwargs': {'dest': 'name', 'help': 'Instrument (e.g. nres04)', 'required': True}},
                                {'args': ['--enclosure'],
                                 'kwargs': {'dest': 'enclosure', 'help': 'Enclosure code (e.g. clma)',
                                            'required': False}},
@@ -87,8 +89,9 @@ def reduce_night(pipeline_context=None):
 
     pipeline_context, raw_path = parse_directory_args(pipeline_context, None, nres_settings,
                                                       extra_console_arguments=extra_console_arguments)
-    instrument = dbs.query_for_instrument(pipeline_context.db_address, pipeline_context.site, pipeline_context.camera,
-                                          None, None)
+    instrument = dbs.query_for_instrument(pipeline_context.db_address, pipeline_context.site,
+                                          camera=pipeline_context.camera, name=pipeline_context.name,
+                                          enclosure=None, telescope=None)
     reduction_criterion = ReductionCriterion(pipeline_context, settings=nres_settings)
 
     for frame_type in reduction_criterion.frame_types:
