@@ -1,4 +1,4 @@
-FROM docker.lco.global/banzai:0.15.1-59-gbc802be
+FROM docker.lco.global/banzai:0.20.1-6-g9fc656d
 ENTRYPOINT  ["/bin/bash", "-c", "while true; do sleep 100; done"]
 USER root
 
