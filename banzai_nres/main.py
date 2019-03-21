@@ -7,14 +7,17 @@ Authors
     G. Mirek Brandt (gmbrandt@ucsb.edu)
 """
 import datetime
+import os
 
 from banzai_nres.settings import NRESSettings
+from banzai_nres.utils.db_utils import get_raw_path
+
 from banzai.main import process_directory, parse_directory_args
 from banzai.utils import date_utils
 from banzai import dbs
 from banzai import logs
 from banzai.main import run_master_maker
-import os
+
 
 import logging
 
@@ -40,11 +43,8 @@ class ReductionCriterion(object):
             self.frame_types = settings.REDUCE_NIGHT_FRAME_TYPES
         else:
             self.frame_types = [pipeline_context.frame_type]
-        self.raw_path = raw_path
-        if raw_path is not None:
-            timezone = dbs.get_timezone(pipeline_context.site, db_address=pipeline_context.db_address)
-            dayobs = date_utils.get_dayobs(timezone=timezone)
-            self.raw_path = os.path.join(raw_path, pipeline_context.site, pipeline_context.instrument_name, dayobs, 'raw')
+
+        self.raw_path = get_raw_path(base_raw_path=raw_path, pipeline_context=pipeline_context)
 
 
 def process_master_maker(pipeline_context, instrument, frame_type_to_stack, min_date, max_date,
