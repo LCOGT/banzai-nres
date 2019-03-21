@@ -12,7 +12,7 @@ def test_reduction_criterion_auto_fill():
     expected_max_date = datetime.datetime.utcnow()
     expected_min_date = expected_max_date - datetime.timedelta(hours=24)
     reduction_criterion = ReductionCriterion()
-    assert reduction_criterion.frame_types == NRESSettings().REDUCE_NIGHT_FRAME_TYPES
+    assert reduction_criterion.frame_types == NRESSettings().CALIBRATION_FRAME_TYPES
     assert reduction_criterion.min_date > expected_min_date - datetime.timedelta(seconds=10)
     assert reduction_criterion.min_date < expected_min_date + datetime.timedelta(seconds=10)
     assert reduction_criterion.max_date > expected_max_date - datetime.timedelta(seconds=10)

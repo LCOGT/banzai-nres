@@ -40,7 +40,7 @@ class ReductionCriterion(object):
         self.min_date, self.max_date = min_date, max_date
 
         if getattr(pipeline_context, 'frame_type', None) is None:
-            self.frame_types = settings.REDUCE_NIGHT_FRAME_TYPES
+            self.frame_types = settings.CALIBRATION_FRAME_TYPES
         else:
             self.frame_types = [pipeline_context.frame_type]
 
@@ -85,7 +85,7 @@ def reduce_night(pipeline_context=None):
                                            'required': False}},
                                {'args': ['--frame-type'],
                                 'kwargs': {'dest': 'frame_type', 'help': 'Type of frames to process',
-                                           'choices': nres_settings.CALIBRATION_STACKER_STAGE.keys(), 'required': False}},
+                                           'choices': nres_settings.LAST_STAGE.keys(), 'required': False}},
                                {'args': ['--min-date'],
                                 'kwargs': {'dest': 'min_date', 'required': False, 'type': date_utils.valid_date,
                                            'help': 'Earliest observation time of the individual calibration frames. '
@@ -114,6 +114,7 @@ def reduce_night(pipeline_context=None):
             # must reduce frames before making the master calibration, unless we are making a master trace.
             process_directory(pipeline_context, reduction_criterion.raw_path, [frame_type_to_stack])
 
-        process_master_maker(pipeline_context, instrument,  frame_type_to_stack.upper(),
-                             min_date=reduction_criterion.min_date, max_date=reduction_criterion.max_date,
-                             master_frame_type=master_frame_type, use_masters=use_masters)
+        if frame_type in nres_settings.CALIBRATION_FRAME_TYPES:
+            process_master_maker(pipeline_context, instrument,  frame_type_to_stack.upper(),
+                                 min_date=reduction_criterion.min_date, max_date=reduction_criterion.max_date,
+                                 master_frame_type=master_frame_type, use_masters=use_masters)

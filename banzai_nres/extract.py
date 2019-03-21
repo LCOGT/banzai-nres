@@ -1,11 +1,13 @@
 import numpy as np
 import abc
 import logging
+from astropy.table import Table
 
 from banzai_nres.utils.extract_utils import Extract
 from banzai_nres.utils import extract_utils
 
 from banzai.stages import Stage
+from banzai.images import DataTable
 
 
 logger = logging.getLogger(__name__)
@@ -17,12 +19,13 @@ class BoxExtract(Extract):
 
     @abc.abstractmethod
     def extract(self):
-        extracted_spectrum_per_order = {}
-        # this relies on rectified spectrum being a dict, which will not be the case.
-        # this class still seems clunky. Do we need it? Can we wrap this action into the BoxExtractor class?
+        extracted_spectrum_per_order = {'id': [], 'flux': [], 'pixel': []}
         for order_id in list(self.rectified_spectrum_per_order.keys()):
-            extracted_spectrum_per_order[order_id] = self.extract_order(self.rectified_spectrum_per_order[order_id])
-        return extracted_spectrum_per_order
+            flux = self.extract_order(self.rectified_spectrum_per_order[order_id])
+            extracted_spectrum_per_order['flux'].append(flux)
+            extracted_spectrum_per_order['pixel'].append(np.arange(len(flux)))
+            extracted_spectrum_per_order['id'].append(order_id)
+        return Table(extracted_spectrum_per_order)
 
 
 class BoxExtractor(Stage):
@@ -31,12 +34,8 @@ class BoxExtractor(Stage):
 
     def do_stage(self, image):
         logger.info('Box extracting spectrum', image=image)
-        if image.extracted_spectrum is None:
-            image.extracted_spectrum = {}
-        image.extracted_spectrum['box'] = BoxExtract(image.rectified_data).extract()
-        # we need to append the extracted spectrum onto the image in a more intelligent way.
-        # maybe we should append this as a table, then it can be saved through banzai in the same way as other tables,
-        # and then we can clearly label wavelength etc.
+        spectrum = BoxExtract(image.rectified_data).extract()
+        image.data_tables['SPCBOX'] = DataTable(data_table=spectrum, name='box')
         return image
 
 

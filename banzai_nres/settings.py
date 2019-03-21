@@ -9,7 +9,7 @@ from banzai import bias, trim, dark, gain, bpm, qc
 from banzai_nres.images import NRESImage
 from banzai_nres.fibers import fibers_state_to_filename
 from banzai_nres.utils.munge_utils import get_telescope_filename
-from banzai_nres import traces
+from banzai_nres import traces, extract
 
 from banzai_nres.flats import FlatStacker
 
@@ -26,7 +26,9 @@ class NRESSettings(Settings):
                       trim.Trimmer,
                       bias.BiasSubtractor,
                       dark.DarkSubtractor,
-                      traces.LoadTrace]
+                      traces.LoadTrace,
+                      extract.RectifyTwodSpectrum,
+                      extract.BoxExtractor]
 
     CALIBRATION_MIN_FRAMES = {'BIAS': 5,
                               'DARK': 3,
@@ -57,20 +59,23 @@ class NRESSettings(Settings):
                                                                                   fibers_state_to_filename],
                                                                                   get_telescope_filename)}
 
-    CALIBRATION_IMAGE_TYPES = ['BIAS', 'DARK', 'LAMPFLAT']
-    REDUCE_NIGHT_FRAME_TYPES = ['BIAS', 'DARK', 'LAMPFLAT', 'TRACE']
+    CALIBRATION_IMAGE_TYPES = ['BIAS', 'DARK', 'LAMPFLAT']  # try deleting this and reducing the night.
+    CALIBRATION_FRAME_TYPES = ['BIAS', 'DARK', 'LAMPFLAT', 'TRACE']
 
     LAST_STAGE = {'BIAS': trim.Trimmer,
                   'DARK': bias.BiasSubtractor,
                   'LAMPFLAT': dark.DarkSubtractor,
-                  'TRACE': dark.DarkSubtractor}
+                  'TRACE': dark.DarkSubtractor,
+                  'DOUBLE': extract.BoxExtractor}
 
     EXTRA_STAGES = {'BIAS': [bias.BiasMasterLevelSubtractor, bias.BiasComparer],
                     'DARK': [dark.DarkNormalizer, dark.DarkComparer],
                     'LAMPFLAT': [],
-                    'TRACE': []}
+                    'TRACE': [],
+                    'DOUBLE': []}
 
     CALIBRATION_STACKER_STAGE = {'BIAS': bias.BiasMaker,
                                  'DARK': dark.DarkMaker,
                                  'LAMPFLAT': FlatStacker,
                                  'TRACE': traces.TraceMaker}
+
