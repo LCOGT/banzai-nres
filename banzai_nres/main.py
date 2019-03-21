@@ -7,13 +7,17 @@ Authors
     G. Mirek Brandt (gmbrandt@ucsb.edu)
 """
 import datetime
+import os
 
 from banzai_nres.settings import NRESSettings
+from banzai_nres.utils.db_utils import get_raw_path
+
 from banzai.main import process_directory, parse_directory_args
 from banzai.utils import date_utils
 from banzai import dbs
 from banzai import logs
 from banzai.main import run_master_maker
+
 
 import logging
 
@@ -21,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 class ReductionCriterion(object):
-    def __init__(self, pipeline_context=None, settings=NRESSettings()):
+    def __init__(self, raw_path=None, pipeline_context=None, settings=NRESSettings()):
         max_date = getattr(pipeline_context, 'max_date', None)
         min_date = getattr(pipeline_context, 'min_date', None)
         if max_date is None:
@@ -39,6 +43,10 @@ class ReductionCriterion(object):
             self.frame_types = settings.REDUCE_NIGHT_FRAME_TYPES
         else:
             self.frame_types = [pipeline_context.frame_type]
+
+        self.raw_path = raw_path
+        if raw_path is not None and 'raw' not in raw_path.lower():
+            self.raw_path = get_raw_path(base_raw_path=raw_path, pipeline_context=pipeline_context)
 
 
 def process_master_maker(pipeline_context, instrument, frame_type_to_stack, min_date, max_date,
@@ -67,8 +75,8 @@ def reduce_night(pipeline_context=None):
                                 'kwargs': {'dest': 'site', 'help': 'Site code (e.g. ogg)', 'required': True}},
                                {'args': ['--camera'],
                                 'kwargs': {'dest': 'camera', 'help': 'Camera (e.g. kb95)', 'required': True}},
-                               {'args': ['--name'],
-                                'kwargs': {'dest': 'name', 'help': 'Instrument (e.g. nres04)', 'required': True}},
+                               {'args': ['--instrument-name'],
+                                'kwargs': {'dest': 'instrument_name', 'help': 'Instrument (e.g. nres04)', 'required': True}},
                                {'args': ['--enclosure'],
                                 'kwargs': {'dest': 'enclosure', 'help': 'Enclosure code (e.g. clma)',
                                            'required': False}},
@@ -87,12 +95,12 @@ def reduce_night(pipeline_context=None):
                                            'help': 'Latest observation time of the individual calibration frames. '
                                                    'Must be in the format "YYYY-MM-DDThh:mm:ss".'}}]
 
-    pipeline_context, raw_path = parse_directory_args(pipeline_context, None, nres_settings,
+    pipeline_context, raw_path = parse_directory_args(pipeline_context, None, settings=nres_settings,
                                                       extra_console_arguments=extra_console_arguments)
     instrument = dbs.query_for_instrument(pipeline_context.db_address, pipeline_context.site,
-                                          camera=pipeline_context.camera, name=pipeline_context.name,
+                                          camera=pipeline_context.camera, name=pipeline_context.instrument_name,
                                           enclosure=None, telescope=None)
-    reduction_criterion = ReductionCriterion(pipeline_context, settings=nres_settings)
+    reduction_criterion = ReductionCriterion(raw_path, pipeline_context, settings=nres_settings)
 
     for frame_type in reduction_criterion.frame_types:
         if frame_type == 'TRACE':
@@ -104,7 +112,7 @@ def reduce_night(pipeline_context=None):
             use_masters = False
             master_frame_type = None
             # must reduce frames before making the master calibration, unless we are making a master trace.
-            process_directory(pipeline_context, raw_path, [frame_type_to_stack])
+            process_directory(pipeline_context, reduction_criterion.raw_path, [frame_type_to_stack])
 
         process_master_maker(pipeline_context, instrument,  frame_type_to_stack.upper(),
                              min_date=reduction_criterion.min_date, max_date=reduction_criterion.max_date,
