@@ -44,7 +44,9 @@ class ReductionCriterion(object):
         else:
             self.frame_types = [pipeline_context.frame_type]
 
-        self.raw_path = get_raw_path(base_raw_path=raw_path, pipeline_context=pipeline_context)
+        self.raw_path = raw_path
+        if raw_path is not None and 'raw' not in raw_path.lower():
+            self.raw_path = get_raw_path(base_raw_path=raw_path, pipeline_context=pipeline_context)
 
 
 def process_master_maker(pipeline_context, instrument, frame_type_to_stack, min_date, max_date,
