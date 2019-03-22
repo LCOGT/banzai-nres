@@ -115,6 +115,19 @@ class TestTrace:
             assert np.allclose(loaded_trace.get_id(0), trace.get_id(0))
             assert np.isclose(loaded_trace.header['bla'], 1)
 
+    def test_write_gets_correct_filename(self):
+        name = 'trace'
+        trace = Trace(data={'id': [1], 'centers': [np.arange(3)]}, trace_table_name=name)
+        pipeline_context = FakeContext(settings=banzai_nres.settings.NRESSettings())
+        with tempfile.TemporaryDirectory() as tmp_directory_name:
+            for fpack, extension in zip([True, False], ['.fz', 'its']):
+                pipeline_context.fpack = fpack
+                path = os.path.join(tmp_directory_name, 'test_trace_table.fits')
+                trace.filepath = path
+                trace.header = {'bla': 1}
+                trace.write(pipeline_context, update_db=False)
+                assert trace.filepath[-3:] == extension
+
     def test_sorting_trace_centers(self):
         centers = np.array([1, 2, 3])
         data = {'id': [1, 2, 3, 4],

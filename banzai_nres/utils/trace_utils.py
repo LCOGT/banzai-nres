@@ -61,6 +61,8 @@ class Trace(object):
     def write(self, pipeline_context=None, update_db=True):
         hdu = fits.BinTableHDU(self.data, name=self.trace_table_name, header=fits.Header(self.header))
         hdu_list = fits.HDUList([fits.PrimaryHDU(), hdu])
+        if getattr(pipeline_context, 'fpack', False) and '.fz' not in self.filepath:
+            self.filepath += '.fz'
         fits_utils.writeto(hdu_list=hdu_list, filepath=self.filepath,
                            fpack=getattr(pipeline_context, 'fpack', False),
                            overwrite=True, output_verify='fix+warn')
