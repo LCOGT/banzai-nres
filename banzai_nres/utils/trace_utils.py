@@ -26,7 +26,7 @@ class Trace(object):
     the jth row are the y centers across the detector for the trace with identification trace_centers['id'][j]
     """
     def __init__(self, data=None, trace_table_name=None, num_centers_per_trace=0, filepath=None,
-                 header=None, image=None):
+                 header=None, image_db_info=None):
         if data is None and num_centers_per_trace <= 0:
             raise ValueError('Trace object instantiated but no trace data given and num_centers_per_trace is not > 0')
         if data is None:
@@ -38,7 +38,7 @@ class Trace(object):
         if header is None:
             header = {}
         self.header = header
-        self.image = image
+        self.image_db_info = image_db_info
         self.filepath = filepath
         self.data = Table(data)
         self.trace_table_name = trace_table_name
@@ -61,17 +61,20 @@ class Trace(object):
     def write(self, pipeline_context=None, update_db=True):
         hdu = fits.BinTableHDU(self.data, name=self.trace_table_name, header=fits.Header(self.header))
         hdu_list = fits.HDUList([fits.PrimaryHDU(), hdu])
-        if getattr(pipeline_context, 'fpack', False) and '.fz' not in self.filepath:
-            self.filepath += '.fz'
+        self._update_filepath(pipeline_context)
         fits_utils.writeto(hdu_list=hdu_list, filepath=self.filepath,
                            fpack=getattr(pipeline_context, 'fpack', False),
                            overwrite=True, output_verify='fix+warn')
         if update_db:
-            self.image.obstype = self.header.get('OBSTYPE')
-            dbs.save_calibration_info(self.filepath, image=self.image,
+            self.image_db_info.obstype = self.header.get('OBSTYPE')
+            dbs.save_calibration_info(self.filepath, image=self.image_db_info,
                                       db_address=pipeline_context.db_address)
             if pipeline_context.post_to_archive:
                 db_utils.post_to_archive(self.filepath)
+
+    def _update_filepath(self, pipeline_context):
+        if getattr(pipeline_context, 'fpack', False) and not self.filepath.endswith('.fz'):
+            self.filepath += '.fz'
 
     @staticmethod
     def load(path, trace_table_name):

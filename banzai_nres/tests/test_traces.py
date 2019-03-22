@@ -60,7 +60,7 @@ class TestTrace:
         assert trace.trace_table_name is None
         assert trace.filepath is None
         assert trace.header == {}
-        assert trace.image is None
+        assert trace.image_db_info is None
         for name in ['id', 'centers']:
             assert name in trace.data.colnames
         assert len(trace.data.colnames) == 2
