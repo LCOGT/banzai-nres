@@ -86,5 +86,5 @@ class TestBoxExtract:
         image.trace = Trace(data={'id': np.arange(trace_centers.shape[0]), 'centers': trace_centers})
         image = RectifyTwodSpectrum(fake_context).do_stage(image)
         image = BoxExtractor(fake_context).do_stage(image)
-        for spectrum in image.data_tables['SPCBOX']['flux']:
+        for spectrum in image.data_tables['box_extracted_spectrum']['flux']:
             assert np.median(spectrum) > 1E4
