@@ -36,11 +36,13 @@ class TraceMaker(CalibrationMaker):
         traces = []
         for image in images:
             master_header = create_master_calibration_header(old_header=image.header, images=[image])
+            master_header['OBSTYPE'] = self.calibration_type
             master_filename = self.pipeline_context.CALIBRATION_FILENAME_FUNCTIONS[self.calibration_type](image)
             master_filepath = self._get_filepath(self.pipeline_context, image, master_filename)
             bkg_subtracted_image_data = image.data - sep.Background(image.data).back()
 
-            logger.info('fitting traces order by order', image=image)
+            logger.info('fitting traces order by order', image=image) # TODO don't append image to trace, append just
+                                                                      # information pertinant to updating the database
             fitter = AllTraceFitter(xmin=self.xmin, xmax=self.xmax,
                                     min_peak_to_peak_spacing=self.min_peak_to_peak_spacing,
                                     min_snr=self.min_snr)
@@ -52,7 +54,8 @@ class TraceMaker(CalibrationMaker):
                                       image_noise_estimate=image.header['RDNOISE'])
             traces.append(trace)
             logger.info('Created master trace', image=image, extra_tags={'calibration_type': self.calibration_type,
-                                                                         'output_path': master_filepath})
+                                                                         'output_path': master_filepath,
+                                                                         'calibration_obstype': master_header['OBSTYPE']})
         return traces
 
     @staticmethod
