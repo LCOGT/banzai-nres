@@ -42,8 +42,7 @@ class TraceMaker(CalibrationMaker):
             master_filepath = self._get_filepath(self.pipeline_context, image, master_filename)
             bkg_subtracted_image_data = image.data - sep.Background(image.data).back()
 
-            logger.info('fitting traces order by order', image=image) # TODO don't append image to trace, append just
-                                                                      # information pertinant to updating the database
+            logger.info('fitting traces order by order', image=image)
             fitter = AllTraceFitter(xmin=self.xmin, xmax=self.xmax,
                                     min_peak_to_peak_spacing=self.min_peak_to_peak_spacing,
                                     min_snr=self.min_snr)
