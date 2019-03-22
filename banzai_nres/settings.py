@@ -57,8 +57,7 @@ class NRESSettings(Settings):
                                                                                   fibers_state_to_filename],
                                                                                   get_telescope_filename)}
 
-    CALIBRATION_IMAGE_TYPES = ['BIAS', 'DARK', 'LAMPFLAT']
-    REDUCE_NIGHT_FRAME_TYPES = ['BIAS', 'DARK', 'LAMPFLAT', 'TRACE']
+    CALIBRATION_IMAGE_TYPES = ['BIAS', 'DARK', 'LAMPFLAT', 'TRACE']
 
     LAST_STAGE = {'BIAS': trim.Trimmer,
                   'DARK': bias.BiasSubtractor,
