@@ -35,7 +35,7 @@ class BoxExtractor(Stage):
     def do_stage(self, image):
         logger.info('Box extracting spectrum', image=image)
         spectrum = BoxExtract(image.rectified_data).extract()
-        image.data_tables['SPCBOX'] = DataTable(data_table=spectrum, name='box')
+        image.data_tables['box_extracted_spectrum'] = DataTable(data_table=spectrum, name='SPECBOX')
         return image
 
 
