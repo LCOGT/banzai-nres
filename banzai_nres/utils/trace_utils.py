@@ -65,7 +65,7 @@ class Trace(object):
                            fpack=getattr(pipeline_context, 'fpack', False),
                            overwrite=True, output_verify='fix+warn')
         if update_db:
-            self.image.obstype = 'TRACE'
+            self.image.obstype = self.header.get('OBSTYPE')
             dbs.save_calibration_info(self.filepath, image=self.image,
                                       db_address=pipeline_context.db_address)
             if pipeline_context.post_to_archive:
