@@ -60,6 +60,7 @@ class TestTrace:
         assert trace.trace_table_name is None
         assert trace.filepath is None
         assert trace.header == {}
+        assert trace.image is None
         for name in ['id', 'centers']:
             assert name in trace.data.colnames
         assert len(trace.data.colnames) == 2
@@ -108,7 +109,7 @@ class TestTrace:
             path = os.path.join(tmp_directory_name, 'test_trace_table.fits')
             trace.filepath = path
             trace.header = {'bla': 1}
-            trace.write(pipeline_context)
+            trace.write(pipeline_context, update_db=False)
             loaded_trace = Trace.load(path=path, trace_table_name=name)
             assert np.allclose(loaded_trace.get_centers(0), trace.get_centers(0))
             assert np.allclose(loaded_trace.get_id(0), trace.get_id(0))
