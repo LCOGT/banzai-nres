@@ -6,6 +6,7 @@ Authors
 """
 
 from banzai_nres.utils.trace_utils import Trace, AllTraceFitter
+from banzai_nres.utils.db_utils import DataProduct
 from banzai.calibrations import CalibrationMaker, ApplyCalibration, create_master_calibration_header
 from banzai.utils import file_utils
 
@@ -46,7 +47,8 @@ class TraceMaker(CalibrationMaker):
             fitter = AllTraceFitter(xmin=self.xmin, xmax=self.xmax,
                                     min_peak_to_peak_spacing=self.min_peak_to_peak_spacing,
                                     min_snr=self.min_snr)
-            trace = Trace(data=None, filepath=master_filepath, header=master_header, image=image,
+            trace = Trace(data=None, filepath=master_filepath, header=master_header,
+                          image_db_info=DataProduct(image=image),
                           num_centers_per_trace=image.data.shape[1], trace_table_name=self.trace_table_name)
             trace = fitter.fit_traces(trace=trace, image_data=bkg_subtracted_image_data,
                                       poly_fit_order=self.order_of_poly_fit,
