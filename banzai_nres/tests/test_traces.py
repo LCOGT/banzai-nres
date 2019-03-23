@@ -406,6 +406,7 @@ class TestTraceMaker:
         trace_maker.order_of_poly_fit = poly_fit_order
         trace_maker.second_order_coefficient_guess = second_order_coefficient_guess
         traces = trace_maker.do_stage(images)
+        assert traces[0].image_db_info.is_master
         assert traces[0].data['centers'].shape[0] == trace_centers.shape[0]
         difference = traces[0].data['centers'] - trace_centers
         logger.debug('median absolute deviation in unit-test trace fitting is {0} pixels'
