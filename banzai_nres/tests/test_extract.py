@@ -77,6 +77,17 @@ class TestBoxExtract:
         spectrum = BoxExtract().extract_order(image.data)
         assert np.allclose(spectrum / np.median(spectrum), 1)
 
+    def test_box_extract_trims_rectified_data(self):
+        fake_context = FakeContext(settings=settings.NRESSettings())
+        fake_context.MAX_EXTRACTION_HALF_WINDOW = 10
+        for half_window in [2, 6, 10, 15]:
+            fake_context.BOX_EXTRACTION_HALF_WINDOW = half_window
+            fake_spectrum = np.zeros((2 * fake_context.MAX_EXTRACTION_HALF_WINDOW + 1, 5))
+            fake_spectrum[fake_context.MAX_EXTRACTION_HALF_WINDOW] = 1
+            trimmed_spectrum = BoxExtractor(fake_context)._trim_rectified_data(rectified_twod_spectrum={'1': fake_spectrum})
+            center = min(fake_context.BOX_EXTRACTION_HALF_WINDOW, fake_context.MAX_EXTRACTION_HALF_WINDOW)
+            assert np.allclose(trimmed_spectrum['1'][center], 1)
+
     def test_integration_box_extract(self):
         fake_context = FakeContext(settings=settings.NRESSettings())
         image = FakeTraceImage()

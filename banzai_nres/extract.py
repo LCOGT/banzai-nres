@@ -31,18 +31,44 @@ class BoxExtract(Extract):
 class BoxExtractor(Stage):
     def __init__(self, pipeline_context):
         super(BoxExtractor, self).__init__(pipeline_context)
+        self.extraction_half_window = self.pipeline_context.BOX_EXTRACTION_HALF_WINDOW
+        self.max_extraction_half_window = self.pipeline_context.MAX_EXTRACTION_HALF_WINDOW
 
     def do_stage(self, image):
         logger.info('Box extracting spectrum', image=image)
-        spectrum = BoxExtract(image.rectified_data).extract()
+        rectified_twod_spectrum = self._trim_rectified_data(image.rectified_data)
+        spectrum = BoxExtract(rectified_twod_spectrum).extract()
         image.data_tables['box_extracted_spectrum'] = DataTable(data_table=spectrum, name='SPECBOX')
         return image
+
+    def _trim_rectified_data(self, rectified_twod_spectrum):
+        """
+        :param rectified_twod_spectrum: dictionary of 2d spectra, where each index order_id gives a spectrum in a window
+        of size 2 * MAX_EXTRACTION_HALF_WINDOW + 1 around the trace labelled by order_id.
+        :return: dictionary of 2d spectra, where each index order_id gives a spectrum in a window of size
+        2 * BOX_EXTRACTION_HALF_WINDOW + 1 around the trace labelled by order_id.
+
+        NOTE: this assumes implicitly that the center of the rectified traces lies at the array index
+        MAX_EXTRACTION_HALF_WINDOW in each of the elements of rectified_twod_spectrum. I.e. the center of the trace
+        is always at the center of the rectified spectrum.
+        """
+        trimmed_rectified_spectrum = {}
+        if self.extraction_half_window >= self.max_extraction_half_window:
+            # short circuit
+            logger.warning('Box extraction window was chosen to be >= the max extraction window '
+                           '(which was used in rectification). Defaulting to the max extraction window.')
+            return rectified_twod_spectrum
+        for order_id in list(rectified_twod_spectrum.keys()):
+            center_idx = self.max_extraction_half_window
+            trimmed_rectified_spectrum[order_id] = rectified_twod_spectrum[order_id][center_idx - self.extraction_half_window:
+                                                                                     center_idx + self.extraction_half_window]
+        return trimmed_rectified_spectrum
 
 
 class RectifyTwodSpectrum(Stage):
     def __init__(self, pipeline_context):
         super(RectifyTwodSpectrum, self).__init__(pipeline_context)
-        self.max_extraction_half_window = 10
+        self.max_extraction_half_window = self.pipeline_context.MAX_EXTRACTION_HALF_WINDOW
 
     def do_stage(self, image):
         logger.info('Rectifying the 2d spectrum', image=image)

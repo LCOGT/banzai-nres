@@ -35,13 +35,6 @@ class NRESSettings(Settings):
                               'LAMPFLAT': 5,
                               'TRACE': 1}
 
-    TRACE_FIT_INITIAL_DEGREE_TWO_GUESS = 90  # DO NOT HAPHAZARDLY CHANGE THIS
-    TRACE_FIT_POLYNOMIAL_ORDER = 4  # DO NOT HAPHAZARDLY CHANGE THIS
-    TRACE_TABLE_NAME = 'TRACE'
-    WINDOW_FOR_TRACE_IDENTIFICATION = {'max': 2100, 'min': 2000}  # pixels
-    MIN_FIBER_TO_FIBER_SPACING = 10  # pixels
-    MIN_SNR_FOR_TRACE_IDENTIFICATION = 6
-
     CALIBRATION_SET_CRITERIA = {'BIAS': ['ccdsum'],
                                 'DARK': ['ccdsum'],
                                 'LAMPFLAT': ['ccdsum', 'fiber0_lit', 'fiber1_lit', 'fiber2_lit'],
@@ -78,3 +71,12 @@ class NRESSettings(Settings):
                                  'LAMPFLAT': FlatStacker,
                                  'TRACE': traces.TraceMaker}
 
+    TRACE_FIT_INITIAL_DEGREE_TWO_GUESS = 90  # DO NOT HAPHAZARDLY CHANGE THIS
+    TRACE_FIT_POLYNOMIAL_ORDER = 4  # DO NOT HAPHAZARDLY CHANGE THIS
+    TRACE_TABLE_NAME = 'TRACE'
+    WINDOW_FOR_TRACE_IDENTIFICATION = {'max': 2100, 'min': 2000}  # pixels
+    MIN_FIBER_TO_FIBER_SPACING = 10  # pixels
+    MIN_SNR_FOR_TRACE_IDENTIFICATION = 6
+
+    MAX_EXTRACTION_HALF_WINDOW = 10
+    BOX_EXTRACTION_HALF_WINDOW = 10
