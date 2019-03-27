@@ -85,8 +85,9 @@ class TestBoxExtract:
             fake_spectrum = np.zeros((2 * fake_context.MAX_EXTRACTION_HALF_WINDOW + 1, 5))
             fake_spectrum[fake_context.MAX_EXTRACTION_HALF_WINDOW] = 1
             trimmed_spectrum = BoxExtractor(fake_context)._trim_rectified_data(rectified_twod_spectrum={'1': fake_spectrum})
-            center = min(fake_context.BOX_EXTRACTION_HALF_WINDOW, fake_context.MAX_EXTRACTION_HALF_WINDOW)
-            assert np.allclose(trimmed_spectrum['1'][center], 1)
+            hw = min(fake_context.BOX_EXTRACTION_HALF_WINDOW, fake_context.MAX_EXTRACTION_HALF_WINDOW)
+            assert np.allclose(trimmed_spectrum['1'][hw], 1)
+            assert np.isclose(trimmed_spectrum['1'].shape[0], 2*hw + 1)
 
     def test_integration_box_extract(self):
         fake_context = FakeContext(settings=settings.NRESSettings())

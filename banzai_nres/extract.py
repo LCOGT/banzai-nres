@@ -59,9 +59,8 @@ class BoxExtractor(Stage):
                            '(which was used in rectification). Defaulting to the max extraction window.')
             return rectified_twod_spectrum
         for order_id in list(rectified_twod_spectrum.keys()):
-            center_idx = self.max_extraction_half_window
-            trimmed_rectified_spectrum[order_id] = rectified_twod_spectrum[order_id][center_idx - self.extraction_half_window:
-                                                                                     center_idx + self.extraction_half_window]
+            trim = self.max_extraction_half_window - self.extraction_half_window
+            trimmed_rectified_spectrum[order_id] = rectified_twod_spectrum[order_id][trim:-trim]
         return trimmed_rectified_spectrum
 
 
