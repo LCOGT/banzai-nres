@@ -10,7 +10,7 @@ from banzai_nres.fibers import fibers_state_to_filename
 from banzai_nres.utils.munge_utils import get_telescope_filename
 
 
-settings.FRAME_CLASS = 'banzai_nres.images.Image'
+settings.FRAME_CLASS = 'banzai_nres.images.NRESImage'
 
 settings.FRAME_SELECTION_CRITERIA = [InstrumentCriterion('type', operator.contains, 'NRES')]
 

@@ -8,8 +8,9 @@ Authors
 """
 import datetime
 
+import banzai_nres.settings as nres_settings  # import to override banzai settings.
 import banzai.settings as banzai_settings
-import banzai_nres.settings as nres_settings
+
 from banzai_nres.utils.db_utils import get_raw_path
 
 from banzai.main import process_directory, parse_directory_args
