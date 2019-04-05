@@ -21,7 +21,7 @@ settings.ORDERED_STAGES = ['banzai.bpm.BPMUpdater',
                            'banzai.trim.Trimmer',
                            'banzai.bias.BiasSubtractor',
                            'banzai.dark.DarkSubtractor',
-                           'banzai._nres.traces.LoadTrace']
+                           'banzai_nres.traces.LoadTrace']
 
 settings.CALIBRATION_MIN_FRAMES = {'BIAS': 5,
                                    'DARK': 3,
