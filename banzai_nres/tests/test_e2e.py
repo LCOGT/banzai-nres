@@ -1,13 +1,13 @@
 import pytest
 from banzai.dbs import create_db, populate_calibration_table_with_bpms
-from banzai_nres.settings import NRESSettings
+import banzai_nres.settings as nres_settings
 import os
 import numpy as np
 import shutil
 from astropy.io import fits
 
 
-def make_dummy_bpm(bpm_path, output_bpm_name_addition, fits_file_to_copy, date_marker, telescope_name, site_name):
+def make_dummy_bpm(bpm_path, output_bpm_name_addition, fits_file_to_copy, date_marker, camera, instrument, site_name):
     """
     Creates and saves a dummy bpm in the format of a real fits file.
     """
@@ -25,9 +25,9 @@ def make_dummy_bpm(bpm_path, output_bpm_name_addition, fits_file_to_copy, date_m
         hdu_list[0].data = np.zeros(hdu_list[0].data.shape, dtype=np.uint8)
         hdu_list[0].header['OBSTYPE'] = 'BPM'
         hdu_list[0].header['EXTNAME'] = 'BPM'
-        hdu_list[0].header['INSTRUME'] = telescope_name
+        hdu_list[0].header['INSTRUME'] = camera
         hdu_list[0].header['SITEID'] = site_name
-        hdu_list[0].header['TELESCOP'] = telescope_name
+        hdu_list[0].header['TELESCOP'] = instrument
         hdu_list.writeto(output_filename, overwrite=True)
 
     # fpack the file and delete the funpacked input.
@@ -48,15 +48,16 @@ def setup_module(module):
               configdb_address=os.environ['CONFIG_DB_URL'])
 
     # using an arbitrary fits as a template for the bpm fits. Then making and saving the bpm's
+    # TODO update test data to newer lsc with fa09 data, and change elp fl17 to fa17.
     fits_file_to_copy = '/archive/engineering/lsc/nres01/20180228/raw/lscnrs01-fl09-20180228-0010-e00.fits'
     date_marker = '20180727'
 
     make_dummy_bpm('/archive/engineering/lsc/nres01/bpm', '/bpm_lsc_fl09_',
                    fits_file_to_copy=fits_file_to_copy, date_marker=date_marker,
-                   telescope_name='nres01', site_name='lsc')
+                   instrument='nres01', site_name='lsc', camera='fl09')
     make_dummy_bpm('/archive/engineering/elp/nres02/bpm', '/bpm_elp_fl17_',
                    fits_file_to_copy=fits_file_to_copy, date_marker=date_marker,
-                   telescope_name='nres02', site_name='elp')
+                   instrument='nres02', site_name='elp', camera='fl17')
 
     # adding the bpm folder to database and populating the sqlite tables.
     populate_calibration_table_with_bpms('/archive/engineering/lsc/nres01/bpm', db_address=os.environ['DB_URL'])
@@ -116,7 +117,7 @@ def test_e2e():
               '--db-address {0} --raw-path {1} --ignore-schedulability '
               '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
 
-    trace_table_name = NRESSettings.TRACE_TABLE_NAME
+    trace_table_name = nres_settings.TRACE_TABLE_NAME
     for filename in expected_trace_filenames:
         with fits.open(os.path.join(expected_processed_path, filename)) as hdu_list:
             assert hdu_list[trace_table_name] is not None

@@ -7,9 +7,10 @@ Authors
     G. Mirek Brandt (gmbrandt@ucsb.edu)
 """
 import datetime
-import os
 
-from banzai_nres.settings import NRESSettings
+import banzai_nres.settings as nres_settings  # import to override banzai settings.
+import banzai.settings as banzai_settings
+
 from banzai_nres.utils.db_utils import get_raw_path
 
 from banzai.main import process_directory, parse_directory_args
@@ -25,9 +26,9 @@ logger = logging.getLogger(__name__)
 
 
 class ReductionCriterion(object):
-    def __init__(self, raw_path=None, pipeline_context=None, settings=NRESSettings()):
-        max_date = getattr(pipeline_context, 'max_date', None)
-        min_date = getattr(pipeline_context, 'min_date', None)
+    def __init__(self, raw_path=None, runtime_context=None):
+        max_date = getattr(runtime_context, 'max_date', None)
+        min_date = getattr(runtime_context, 'min_date', None)
         if max_date is None:
             max_date = datetime.datetime.utcnow()
 
@@ -39,17 +40,17 @@ class ReductionCriterion(object):
             raise ValueError('min_date > max_date.')
         self.min_date, self.max_date = min_date, max_date
 
-        if getattr(pipeline_context, 'frame_type', None) is None:
-            self.frame_types = settings.CALIBRATION_IMAGE_TYPES
+        if getattr(runtime_context, 'frame_type', None) is None:
+            self.frame_types = banzai_settings.CALIBRATION_IMAGE_TYPES
         else:
-            self.frame_types = [pipeline_context.frame_type]
+            self.frame_types = [runtime_context.frame_type]
 
         self.raw_path = raw_path
         if raw_path is not None and 'raw' not in raw_path.lower():
-            self.raw_path = get_raw_path(base_raw_path=raw_path, pipeline_context=pipeline_context)
+            self.raw_path = get_raw_path(base_raw_path=raw_path, runtime_context=runtime_context)
 
 
-def process_master_maker(pipeline_context, instrument, frame_type_to_stack, min_date, max_date,
+def process_master_maker(runtime_context, instrument, frame_type_to_stack, min_date, max_date,
                          master_frame_type=None, use_masters=False):
     if master_frame_type is None:
         master_frame_type = frame_type_to_stack
@@ -59,18 +60,17 @@ def process_master_maker(pipeline_context, instrument, frame_type_to_stack, min_
     logger.info("Making master frames", extra_tags=extra_tags)
     image_path_list = dbs.get_individual_calibration_images(instrument, frame_type_to_stack, min_date, max_date,
                                                             use_masters=use_masters,
-                                                            db_address=pipeline_context.db_address)
+                                                            db_address=runtime_context.db_address)
     if len(image_path_list) == 0:
         logger.info("No calibration frames found to stack", extra_tags=extra_tags)
 
     try:
-        run_master_maker(image_path_list, pipeline_context, master_frame_type)
+        run_master_maker(image_path_list, runtime_context, master_frame_type)
     except Exception:
         logger.error(logs.format_exception())
 
 
-def reduce_night(pipeline_context=None):
-    nres_settings = NRESSettings()
+def reduce_night(runtime_context=None, raw_path=None):
     extra_console_arguments = [{'args': ['--site'],
                                 'kwargs': {'dest': 'site', 'help': 'Site code (e.g. ogg)', 'required': True}},
                                {'args': ['--camera'],
@@ -85,7 +85,7 @@ def reduce_night(pipeline_context=None):
                                            'required': False}},
                                {'args': ['--frame-type'],
                                 'kwargs': {'dest': 'frame_type', 'help': 'Type of frames to process',
-                                           'choices': nres_settings.LAST_STAGE.keys(), 'required': False}},
+                                           'choices': banzai_settings.LAST_STAGE.keys(), 'required': False}},
                                {'args': ['--min-date'],
                                 'kwargs': {'dest': 'min_date', 'required': False, 'type': date_utils.valid_date,
                                            'help': 'Earliest observation time of the individual calibration frames. '
@@ -95,12 +95,12 @@ def reduce_night(pipeline_context=None):
                                            'help': 'Latest observation time of the individual calibration frames. '
                                                    'Must be in the format "YYYY-MM-DDThh:mm:ss".'}}]
 
-    pipeline_context, raw_path = parse_directory_args(pipeline_context, None, settings=nres_settings,
-                                                      extra_console_arguments=extra_console_arguments)
-    instrument = dbs.query_for_instrument(pipeline_context.db_address, pipeline_context.site,
-                                          camera=pipeline_context.camera, name=pipeline_context.instrument_name,
+    runtime_context, raw_path = parse_directory_args(runtime_context, raw_path=raw_path,
+                                                     extra_console_arguments=extra_console_arguments)
+    instrument = dbs.query_for_instrument(runtime_context.db_address, runtime_context.site,
+                                          camera=runtime_context.camera, name=runtime_context.instrument_name,
                                           enclosure=None, telescope=None)
-    reduction_criterion = ReductionCriterion(raw_path, pipeline_context, settings=nres_settings)
+    reduction_criterion = ReductionCriterion(raw_path, runtime_context)
 
     for frame_type in reduction_criterion.frame_types:
         if frame_type == 'TRACE':
@@ -112,9 +112,8 @@ def reduce_night(pipeline_context=None):
             use_masters = False
             master_frame_type = None
             # must reduce frames before making the master calibration, unless we are making a master trace.
-            process_directory(pipeline_context, reduction_criterion.raw_path, [frame_type_to_stack])
+            process_directory(runtime_context, reduction_criterion.raw_path, [frame_type_to_stack])
 
-        if frame_type in nres_settings.CALIBRATION_IMAGE_TYPES:
-            process_master_maker(pipeline_context, instrument,  frame_type_to_stack.upper(),
-                                 min_date=reduction_criterion.min_date, max_date=reduction_criterion.max_date,
-                                 master_frame_type=master_frame_type, use_masters=use_masters)
+        process_master_maker(runtime_context, instrument, frame_type_to_stack.upper(),
+                             min_date=reduction_criterion.min_date, max_date=reduction_criterion.max_date,
+                             master_frame_type=master_frame_type, use_masters=use_masters)

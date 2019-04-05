@@ -26,13 +26,13 @@ class DataProduct(object):
                 setattr(self, attribute, getattr(image, attribute))
 
 
-def get_raw_path(base_raw_path, pipeline_context):
+def get_raw_path(base_raw_path, runtime_context):
     if base_raw_path is None:
         return None
-    timezone = dbs.get_timezone(site=getattr(pipeline_context, 'site', None),
-                                db_address=getattr(pipeline_context, 'db_address', None))
+    timezone = dbs.get_timezone(site=getattr(runtime_context, 'site', None),
+                                db_address=getattr(runtime_context, 'db_address', None))
     dayobs = date_utils.get_dayobs(timezone=timezone)
-    return os.path.join(base_raw_path, pipeline_context.site, pipeline_context.instrument_name, dayobs, 'raw')
+    return os.path.join(base_raw_path, runtime_context.site, runtime_context.instrument_name, dayobs, 'raw')
 
 
 def post_to_archive(filepath, image=None):

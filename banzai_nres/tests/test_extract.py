@@ -78,7 +78,7 @@ class TestBoxExtract:
         assert np.allclose(spectrum / np.median(spectrum), 1)
 
     def test_box_extract_trims_rectified_data(self):
-        fake_context = FakeContext(settings=settings.NRESSettings())
+        fake_context = FakeContext()
         fake_context.MAX_EXTRACTION_HALF_WINDOW = 10
         for half_window in [2, 6, 10, 15]:
             fake_context.BOX_EXTRACTION_HALF_WINDOW = half_window
@@ -90,7 +90,7 @@ class TestBoxExtract:
             assert np.isclose(trimmed_spectrum['1'].shape[0], 2*hw + 1)
 
     def test_integration_box_extract(self):
-        fake_context = FakeContext(settings=settings.NRESSettings())
+        fake_context = FakeContext()
         image = FakeTraceImage()
         image, trace_centers, second_order_coefficient_guess = fill_image_with_traces(image, poly_order_of_traces=4,
                                                                                       max_num_traces=2,
