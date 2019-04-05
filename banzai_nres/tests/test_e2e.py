@@ -1,6 +1,6 @@
 import pytest
 from banzai.dbs import create_db, populate_calibration_table_with_bpms
-from banzai_nres.settings import NRESSettings
+import banzai_nres.settings as nres_settings
 import os
 import numpy as np
 import shutil
@@ -117,7 +117,7 @@ def test_e2e():
               '--db-address {0} --raw-path {1} --ignore-schedulability '
               '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
 
-    trace_table_name = NRESSettings.TRACE_TABLE_NAME
+    trace_table_name = nres_settings.TRACE_TABLE_NAME
     for filename in expected_trace_filenames:
         with fits.open(os.path.join(expected_processed_path, filename)) as hdu_list:
             assert hdu_list[trace_table_name] is not None

@@ -3,6 +3,7 @@ import pytest
 import mock
 
 from banzai_nres.main import ReductionCriterion
+import banzai_nres.settings  # import for overriding banzai settings.
 import banzai.settings as banzai_settings
 
 from banzai.tests.utils import FakeContext

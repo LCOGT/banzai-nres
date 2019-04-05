@@ -14,7 +14,7 @@ from banzai_nres.traces import TraceMaker, LoadTrace
 from banzai_nres.tests.utils import array_with_peaks, FakeImage, noisify_image
 from banzai_nres.utils.trace_utils import Trace, SingleTraceFitter, AllTraceFitter
 from banzai_nres.tests.utils import fill_image_with_traces
-import banzai_nres.settings
+import banzai_nres.settings as nres_settings
 
 import logging
 
@@ -103,7 +103,7 @@ class TestTrace:
     def test_load_and_write(self):
         name = 'trace'
         trace = Trace(data={'id': [1], 'centers': [np.arange(3)]}, trace_table_name=name)
-        runtime_context = FakeContext(settings=banzai_nres.settings.NRESSettings())
+        runtime_context = FakeContext()
         with tempfile.TemporaryDirectory() as tmp_directory_name:
             runtime_context.fpack = False
             path = os.path.join(tmp_directory_name, 'test_trace_table.fits')
@@ -118,7 +118,7 @@ class TestTrace:
     def test_write_gets_correct_filename(self):
         name = 'trace'
         trace = Trace(data={'id': [1], 'centers': [np.arange(3)]}, trace_table_name=name)
-        runtime_context = FakeContext(settings=banzai_nres.settings.NRESSettings())
+        runtime_context = FakeContext()
         with tempfile.TemporaryDirectory() as tmp_directory_name:
             for fpack, extension in zip([True, False], ['.fz', 'its']):
                 runtime_context.fpack = fpack
@@ -341,7 +341,7 @@ class TestSingleTraceFitter:
 
 class TestTraceMaker:
     def test_properties(self):
-        assert TraceMaker(FakeContext(settings=banzai_nres.settings.NRESSettings())).calibration_type is 'TRACE'
+        assert TraceMaker(FakeContext()).calibration_type is 'TRACE'
 
     @mock.patch('banzai.utils.file_utils.make_output_directory', return_value='/tmp')
     def test_get_file_path(self, mock_dir):
@@ -353,7 +353,7 @@ class TestTraceMaker:
         image = FakeTraceImage(nx=100, ny=100)
         image.header['RDNOISE'] = 11
         noisify_image(image)
-        fake_context = FakeContext(settings=banzai_nres.settings.NRESSettings())
+        fake_context = FakeContext()
         fake_context.db_address = ''
         trace_fitter = TraceMaker(fake_context)
         trace_fitter.order_of_poly_fit = order_of_poly_fit
@@ -368,7 +368,7 @@ class TestTraceMaker:
         data = {'id': [1], 'centers': [np.arange(3)]}
         fit_traces.return_value = Trace(data=data)
         expected_trace = Trace(data=data)
-        fake_context = FakeContext(settings=banzai_nres.settings.NRESSettings())
+        fake_context = FakeContext()
         trace_maker = TraceMaker(fake_context)
         trace_maker.xmin = 5
         trace_maker.xmax = 10
@@ -397,7 +397,7 @@ class TestTraceMaker:
         image, trace_centers, second_order_coefficient_guess = fill_image_with_traces(image,
                                                                                       poly_fit_order=poly_fit_order)
         noisify_image(image)
-        fake_context = FakeContext(settings=banzai_nres.settings.NRESSettings())
+        fake_context = FakeContext()
         images = [image]
 
         trace_maker = TraceMaker(fake_context)
@@ -423,11 +423,11 @@ class TestTraceMaker:
 
 class TestLoadTrace:
     def test_properties(self):
-        assert LoadTrace(FakeContext(settings=banzai_nres.settings.NRESSettings())).calibration_type is 'TRACE'
+        assert LoadTrace(FakeContext()).calibration_type is 'TRACE'
 
     @mock.patch('banzai_nres.traces.LoadTrace.get_calibration_filename', return_value=None)
     def test_load_trace_flags_images_without_calibration(self, mock_get_cal):
-        fake_context = FakeContext(settings=banzai_nres.settings.NRESSettings())
+        fake_context = FakeContext()
         setattr(fake_context, 'db_address', None)
         trace_loader = LoadTrace(fake_context)
         image = trace_loader.do_stage(image=FakeImage())
@@ -441,7 +441,7 @@ class TestLoadTrace:
         data = {'id': [1], 'centers': [np.arange(3)]}
         expected_trace = Trace(data=data)
         mock_load.return_value = Trace(data=data)
-        fake_context = FakeContext(settings=banzai_nres.settings.NRESSettings())
+        fake_context = FakeContext()
         setattr(fake_context, 'db_address', None)
         trace_loader = LoadTrace(fake_context)
         image = trace_loader.do_stage(image=FakeImage())

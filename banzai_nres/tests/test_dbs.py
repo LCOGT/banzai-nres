@@ -2,7 +2,6 @@ import mock
 import numpy as np
 
 from banzai_nres.utils import db_utils
-from banzai_nres.settings import NRESSettings
 
 from banzai.tests.utils import FakeContext, FakeImage
 
@@ -10,7 +9,7 @@ from banzai.tests.utils import FakeContext, FakeImage
 @mock.patch('banzai_nres.utils.db_utils.dbs.get_timezone', return_value='UTC')
 @mock.patch('banzai_nres.utils.db_utils.date_utils.get_dayobs', return_value='42')
 def test_get_raw_path(mockday, mockzone):
-    fake_context = FakeContext(settings=NRESSettings())
+    fake_context = FakeContext()
     fake_context.site = 'site'
     fake_context.instrument_name = 'nres'
     new_path = db_utils.get_raw_path(base_raw_path='base/', runtime_context=fake_context)
