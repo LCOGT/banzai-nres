@@ -1,6 +1,6 @@
 import numpy as np
 
-from banzai_nres import settings
+from banzai_nres import settings as nres_settings
 from banzai_nres.tests.test_traces import FakeTraceImage
 from banzai_nres.tests.utils import fill_image_with_traces
 from banzai_nres.utils.trace_utils import Trace
@@ -79,15 +79,17 @@ class TestBoxExtract:
 
     def test_box_extract_trims_rectified_data(self):
         fake_context = FakeContext()
-        fake_context.MAX_EXTRACTION_HALF_WINDOW = 10
+        max_extract_window = 10
         for half_window in [2, 6, 10, 15]:
-            fake_context.BOX_EXTRACTION_HALF_WINDOW = half_window
-            fake_spectrum = np.zeros((2 * fake_context.MAX_EXTRACTION_HALF_WINDOW + 1, 5))
-            fake_spectrum[fake_context.MAX_EXTRACTION_HALF_WINDOW] = 1
-            trimmed_spectrum = BoxExtractor(fake_context)._trim_rectified_data(rectified_twod_spectrum={'1': fake_spectrum})
-            hw = min(fake_context.BOX_EXTRACTION_HALF_WINDOW, fake_context.MAX_EXTRACTION_HALF_WINDOW)
-            assert np.allclose(trimmed_spectrum['1'][hw], 1)
+            fake_spectrum = np.zeros((2 * max_extract_window + 1, 5))
+            fake_spectrum[max_extract_window] = 1
+            extractor = BoxExtractor(fake_context)
+            extractor.extraction_half_window = half_window
+            extractor.max_extraction_half_window = max_extract_window
+            trimmed_spectrum = extractor._trim_rectified_data(rectified_twod_spectrum={'1': fake_spectrum})
+            hw = min(half_window, max_extract_window)
             assert np.isclose(trimmed_spectrum['1'].shape[0], 2*hw + 1)
+            assert np.allclose(trimmed_spectrum['1'][hw], 1)
 
     def test_integration_box_extract(self):
         fake_context = FakeContext()

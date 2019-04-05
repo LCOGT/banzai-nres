@@ -5,6 +5,7 @@ from astropy.table import Table
 
 from banzai_nres.utils.extract_utils import Extract
 from banzai_nres.utils import extract_utils
+import banzai_nres.settings as nres_settings
 
 from banzai.stages import Stage
 from banzai.images import DataTable
@@ -31,8 +32,8 @@ class BoxExtract(Extract):
 class BoxExtractor(Stage):
     def __init__(self, pipeline_context):
         super(BoxExtractor, self).__init__(pipeline_context)
-        self.extraction_half_window = self.pipeline_context.BOX_EXTRACTION_HALF_WINDOW
-        self.max_extraction_half_window = self.pipeline_context.MAX_EXTRACTION_HALF_WINDOW
+        self.extraction_half_window = nres_settings.BOX_EXTRACTION_HALF_WINDOW
+        self.max_extraction_half_window = nres_settings.MAX_EXTRACTION_HALF_WINDOW
 
     def do_stage(self, image):
         logger.info('Box extracting spectrum', image=image)
@@ -67,7 +68,7 @@ class BoxExtractor(Stage):
 class RectifyTwodSpectrum(Stage):
     def __init__(self, pipeline_context):
         super(RectifyTwodSpectrum, self).__init__(pipeline_context)
-        self.max_extraction_half_window = self.pipeline_context.MAX_EXTRACTION_HALF_WINDOW
+        self.max_extraction_half_window = nres_settings.MAX_EXTRACTION_HALF_WINDOW
 
     def do_stage(self, image):
         logger.info('Rectifying the 2d spectrum', image=image)
