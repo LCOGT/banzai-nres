@@ -18,16 +18,16 @@ logger = logging.getLogger(__name__)
 
 
 class TraceMaker(CalibrationMaker):
-    def __init__(self, pipeline_context):
-        super(TraceMaker, self).__init__(pipeline_context)
-        self.pipeline_context = pipeline_context
-        self.order_of_poly_fit = self.pipeline_context.TRACE_FIT_POLYNOMIAL_ORDER
-        self.second_order_coefficient_guess = self.pipeline_context.TRACE_FIT_INITIAL_DEGREE_TWO_GUESS
-        self.trace_table_name = self.pipeline_context.TRACE_TABLE_NAME
-        self.xmin = self.pipeline_context.WINDOW_FOR_TRACE_IDENTIFICATION['min']
-        self.xmax = self.pipeline_context.WINDOW_FOR_TRACE_IDENTIFICATION['max']
-        self.min_peak_to_peak_spacing = self.pipeline_context.MIN_FIBER_TO_FIBER_SPACING
-        self.min_snr = self.pipeline_context.MIN_SNR_FOR_TRACE_IDENTIFICATION
+    def __init__(self, runtime_context):
+        super(TraceMaker, self).__init__(runtime_context)
+        self.runtime_context = runtime_context
+        self.order_of_poly_fit = self.runtime_context.TRACE_FIT_POLYNOMIAL_ORDER
+        self.second_order_coefficient_guess = self.runtime_context.TRACE_FIT_INITIAL_DEGREE_TWO_GUESS
+        self.trace_table_name = self.runtime_context.TRACE_TABLE_NAME
+        self.xmin = self.runtime_context.WINDOW_FOR_TRACE_IDENTIFICATION['min']
+        self.xmax = self.runtime_context.WINDOW_FOR_TRACE_IDENTIFICATION['max']
+        self.min_peak_to_peak_spacing = self.runtime_context.MIN_FIBER_TO_FIBER_SPACING
+        self.min_snr = self.runtime_context.MIN_SNR_FOR_TRACE_IDENTIFICATION
 
     @property
     def calibration_type(self):
@@ -38,8 +38,8 @@ class TraceMaker(CalibrationMaker):
         for image in images:
             master_header = create_master_calibration_header(old_header=image.header, images=[image])
             master_header['OBSTYPE'] = self.calibration_type
-            master_filename = self.pipeline_context.CALIBRATION_FILENAME_FUNCTIONS[self.calibration_type](image)
-            master_filepath = self._get_filepath(self.pipeline_context, image, master_filename)
+            master_filename = self.runtime_context.CALIBRATION_FILENAME_FUNCTIONS[self.calibration_type](image)
+            master_filepath = self._get_filepath(self.runtime_context, image, master_filename)
             db_info = DataProduct(image=image)
             db_info.is_master = True
 
@@ -62,8 +62,8 @@ class TraceMaker(CalibrationMaker):
         return traces
 
     @staticmethod
-    def _get_filepath(pipeline_context, lampflat_image, master_filename):
-        output_directory = file_utils.make_output_directory(pipeline_context, lampflat_image)
+    def _get_filepath(runtime_context, lampflat_image, master_filename):
+        output_directory = file_utils.make_output_directory(runtime_context, lampflat_image)
         return os.path.join(output_directory, os.path.basename(master_filename))
 
     def do_stage(self, images):
@@ -84,16 +84,16 @@ class LoadTrace(ApplyCalibration):
     """
     Loads trace coefficients from file and appends them onto the image object.
     """
-    def __init__(self, pipeline_context):
-        super(LoadTrace, self).__init__(pipeline_context)
-        self.pipeline_context = pipeline_context
+    def __init__(self, runtime_context):
+        super(LoadTrace, self).__init__(runtime_context)
+        self.runtime_context = runtime_context
 
     @property
     def calibration_type(self):
         return 'TRACE'
 
     def apply_master_calibration(self, image, master_calibration_path):
-        image.trace = Trace.load(master_calibration_path, trace_table_name=self.pipeline_context.TRACE_TABLE_NAME)
+        image.trace = Trace.load(master_calibration_path, trace_table_name=self.runtime_context.TRACE_TABLE_NAME)
         master_trace_filename = os.path.basename(master_calibration_path)
         image.header['L1IDTRAC'] = (master_trace_filename, 'ID of trace centers file')
         logger.info('Loading trace centers', image=image,  extra_tags={'L1IDTRAC': image.header['L1IDTRAC']})

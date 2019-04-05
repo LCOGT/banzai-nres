@@ -13,9 +13,9 @@ def test_get_raw_path(mockday, mockzone):
     fake_context = FakeContext(settings=NRESSettings())
     fake_context.site = 'site'
     fake_context.instrument_name = 'nres'
-    new_path = db_utils.get_raw_path(base_raw_path='base/', pipeline_context=fake_context)
+    new_path = db_utils.get_raw_path(base_raw_path='base/', runtime_context=fake_context)
     assert new_path == 'base/site/nres/42/raw'
-    assert db_utils.get_raw_path(base_raw_path=None, pipeline_context=fake_context) is None
+    assert db_utils.get_raw_path(base_raw_path=None, runtime_context=fake_context) is None
 
 
 def test_data_product_instantiates_from_image():

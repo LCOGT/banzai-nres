@@ -58,22 +58,22 @@ class Trace(object):
     def num_traces_found(self):
         return len(self.data['id'])
 
-    def write(self, pipeline_context=None, update_db=True):
+    def write(self, runtime_context=None, update_db=True):
         hdu = fits.BinTableHDU(self.data, name=self.trace_table_name, header=fits.Header(self.header))
         hdu_list = fits.HDUList([fits.PrimaryHDU(), hdu])
-        self._update_filepath(pipeline_context)
+        self._update_filepath(runtime_context)
         fits_utils.writeto(hdu_list=hdu_list, filepath=self.filepath,
-                           fpack=getattr(pipeline_context, 'fpack', False),
+                           fpack=getattr(runtime_context, 'fpack', False),
                            overwrite=True, output_verify='fix+warn')
         if update_db:
             self.image_db_info.obstype = self.header.get('OBSTYPE')
             dbs.save_calibration_info(self.filepath, image=self.image_db_info,
-                                      db_address=pipeline_context.db_address)
-            if pipeline_context.post_to_archive:
+                                      db_address=runtime_context.db_address)
+            if runtime_context.post_to_archive:
                 db_utils.post_to_archive(self.filepath)
 
-    def _update_filepath(self, pipeline_context):
-        if getattr(pipeline_context, 'fpack', False) and not self.filepath.endswith('.fz'):
+    def _update_filepath(self, runtime_context):
+        if getattr(runtime_context, 'fpack', False) and not self.filepath.endswith('.fz'):
             self.filepath += '.fz'
 
     @staticmethod
