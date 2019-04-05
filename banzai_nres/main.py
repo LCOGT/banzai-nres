@@ -114,6 +114,8 @@ def reduce_night(runtime_context=None, raw_path=None):
             # must reduce frames before making the master calibration, unless we are making a master trace.
             process_directory(runtime_context, reduction_criterion.raw_path, [frame_type_to_stack])
 
-        process_master_maker(runtime_context, instrument, frame_type_to_stack.upper(),
-                             min_date=reduction_criterion.min_date, max_date=reduction_criterion.max_date,
-                             master_frame_type=master_frame_type, use_masters=use_masters)
+        if frame_type in banzai_settings.CALIBRATION_STACKER_STAGE.keys():
+            # do not try to 'stack' DOUBLE frames.
+            process_master_maker(runtime_context, instrument, frame_type_to_stack.upper(),
+                                 min_date=reduction_criterion.min_date, max_date=reduction_criterion.max_date,
+                                 master_frame_type=master_frame_type, use_masters=use_masters)
