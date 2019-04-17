@@ -77,7 +77,7 @@ class TestBoxExtract:
         spectrum = BoxExtract().extract_order(image.data)
         assert np.allclose(spectrum / np.median(spectrum), 1)
 
-    def test_box_extract_trims_rectified_data(self):
+    def test_box_extract_trims_rectified_2d_spectrum(self):
         fake_context = FakeContext()
         max_extract_window = 10
         for half_window in [2, 6, 10, 15]:
@@ -86,7 +86,7 @@ class TestBoxExtract:
             extractor = BoxExtractor(fake_context)
             extractor.extraction_half_window = half_window
             extractor.max_extraction_half_window = max_extract_window
-            trimmed_spectrum = extractor._trim_rectified_data(rectified_twod_spectrum={'1': fake_spectrum})
+            trimmed_spectrum = extractor._trim_rectified_2d_spectrum(rectified_2d_spectrum={'1': fake_spectrum})
             hw = min(half_window, max_extract_window)
             assert np.isclose(trimmed_spectrum['1'].shape[0], 2*hw + 1)
             assert np.allclose(trimmed_spectrum['1'][hw], 1)

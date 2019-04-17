@@ -37,14 +37,14 @@ class BoxExtractor(Stage):
 
     def do_stage(self, image):
         logger.info('Box extracting spectrum', image=image)
-        rectified_twod_spectrum = self._trim_rectified_data(image.rectified_data)
+        rectified_twod_spectrum = self._trim_rectified_2d_spectrum(image.rectified_2d_spectrum)
         spectrum = BoxExtract(rectified_twod_spectrum).extract()
         image.data_tables['box_extracted_spectrum'] = DataTable(data_table=spectrum, name='SPECBOX')
         return image
 
-    def _trim_rectified_data(self, rectified_twod_spectrum):
+    def _trim_rectified_2d_spectrum(self, rectified_2d_spectrum):
         """
-        :param rectified_twod_spectrum: dictionary of 2d spectra, where each index order_id gives a spectrum in a window
+        :param rectified_2d_spectrum: dictionary of 2d spectra, where each index order_id gives a spectrum in a window
         of size 2 * MAX_EXTRACTION_HALF_WINDOW + 1 around the trace labelled by order_id.
         :return: dictionary of 2d spectra, where each index order_id gives a spectrum in a window of size
         2 * BOX_EXTRACTION_HALF_WINDOW + 1 around the trace labelled by order_id.
@@ -58,10 +58,10 @@ class BoxExtractor(Stage):
             # short circuit
             logger.warning('Box extraction window was chosen to be >= the max extraction window '
                            '(which was used in rectification). Defaulting to the max extraction window.')
-            return rectified_twod_spectrum
-        for order_id in list(rectified_twod_spectrum.keys()):
+            return rectified_2d_spectrum
+        for order_id in list(rectified_2d_spectrum.keys()):
             trim = self.max_extraction_half_window - self.extraction_half_window
-            trimmed_rectified_spectrum[order_id] = rectified_twod_spectrum[order_id][trim:-trim]
+            trimmed_rectified_spectrum[order_id] = rectified_2d_spectrum[order_id][trim:-trim]
         return trimmed_rectified_spectrum
 
 
@@ -75,10 +75,7 @@ class RectifyTwodSpectrum(Stage):
         if image.trace is None:
             logger.error('Image has empty trace attribute', image=image)
             raise ValueError('image.trace is None')
-        rectified_data = extract_utils.rectify_orders(image.data, image.trace,
+        rectified_2d_spectrum = extract_utils.rectify_orders(image.data, image.trace,
                                                       half_window=self.max_extraction_half_window)
-        image.rectified_data = rectified_data
-        # rectified_data should probably be a class like Trace,
-        # which has a get_spectrum for an order id as an attribute etc.
-        # also we need to append rectified_data onto the image in a more intelligent way.
+        image.rectified_2d_spectrum = rectified_2d_spectrum
         return image

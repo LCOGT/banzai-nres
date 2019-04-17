@@ -10,6 +10,7 @@ def test_image_class_loads(mock_instrument):
     image = NRESImage(runtime_context=FakeContext(),
                       header={'OBJECTS': 'tung&tung&none'})
     assert image.trace is None
+    assert image.rectified_2d_spectrum is None
 
 
 @mock.patch('banzai.images.Image._init_instrument_info')
