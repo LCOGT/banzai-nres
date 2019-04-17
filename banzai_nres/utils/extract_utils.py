@@ -17,6 +17,17 @@ class Extract(object):
 
 
 def rectify_orders(image_data, trace, half_window=10, debug=False):
+    """
+    :param image_data: NresImage
+    :param trace: Trace object
+    :param half_window: half of the size of the extraction window about the center of the traces. E.g. 10 means 21 pixel
+                        window will be extracted.
+    :param debug: boolean for returning an internal copy of the image which is used in extract.
+    :return rectified_orders: A dictionary keyed by the trace id's from trace.get_id(), where rectified_orders[trace_id]
+                              gives a two dimensional spectrum. If half extraction window was 10, then rectified_orders[trace_id]
+                              is 21 rows by 4096 columns (for a 4096 pixel wide image). One would column-sum this 2d
+                              spectrum to get a box extracted spectrum.
+    """
     rectified_orders = {}
     num_orders = trace.num_traces_found()
     image_copy = np.copy(image_data)
