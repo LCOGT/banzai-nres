@@ -13,8 +13,8 @@ def test_reduction_criterion_auto_fill():
     expected_max_date = datetime.datetime.utcnow()
     expected_min_date = expected_max_date - datetime.timedelta(hours=24)
     reduction_criterion = ReductionCriterion()
-    assert 'TRACE' in reduction_criterion.frame_types
-    assert reduction_criterion.frame_types == banzai_settings.CALIBRATION_IMAGE_TYPES
+    for frame_type in banzai_settings.LAST_STAGE.keys():
+        assert frame_type in reduction_criterion.frame_types
     assert reduction_criterion.min_date > expected_min_date - datetime.timedelta(seconds=10)
     assert reduction_criterion.min_date < expected_min_date + datetime.timedelta(seconds=10)
     assert reduction_criterion.max_date > expected_max_date - datetime.timedelta(seconds=10)
