@@ -66,14 +66,14 @@ settings.LAST_STAGE = {'BIAS': 'banzai.trim.Trimmer',
                        'LAMPFLAT': 'banzai.dark.DarkSubtractor',
                        'TRACE': 'banzai.dark.DarkSubtractor',
                        'DOUBLE': None,
-                       'SPECTRUM': None}
+                       'TARGET': None}
 
 settings.EXTRA_STAGES = {'BIAS': ['banzai.bias.BiasMasterLevelSubtractor', 'banzai.bias.BiasComparer'],
                          'DARK': ['banzai.dark.DarkNormalizer', 'banzai.dark.DarkComparer'],
                          'LAMPFLAT': None,
                          'TRACE': None,
                          'DOUBLE': None,
-                         'SPECTRUM': None}
+                         'TARGET': None}
 
 settings.CALIBRATION_STACKER_STAGE = {'BIAS': 'banzai.bias.BiasMaker',
                                       'DARK': 'banzai.dark.DarkMaker',
