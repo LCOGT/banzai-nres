@@ -5,7 +5,7 @@ from banzai_nres.tests.test_traces import FakeTraceImage
 from banzai_nres.tests.utils import fill_image_with_traces
 from banzai_nres.utils.trace_utils import Trace
 from banzai_nres.utils import extract_utils
-from banzai_nres.extract import BoxExtract, BoxExtractor, RectifyTwodSpectrum
+from banzai_nres.extract import BoxExtract, RectifyTwodSpectrum
 
 from banzai.tests.utils import FakeContext
 
@@ -83,7 +83,7 @@ class TestBoxExtract:
         for half_window in [2, 6, 10, 15]:
             fake_spectrum = np.zeros((2 * max_extract_window + 1, 5))
             fake_spectrum[max_extract_window] = 1
-            extractor = BoxExtractor(fake_context)
+            extractor = BoxExtract(fake_context)
             extractor.extraction_half_window = half_window
             extractor.max_extraction_half_window = max_extract_window
             trimmed_spectrum = extractor._trim_rectified_2d_spectrum(rectified_2d_spectrum={'1': fake_spectrum})
@@ -99,6 +99,6 @@ class TestBoxExtract:
                                                                                       fiber_intensity=1E4)
         image.trace = Trace(data={'id': np.arange(trace_centers.shape[0]), 'centers': trace_centers})
         image = RectifyTwodSpectrum(fake_context).do_stage(image)
-        image = BoxExtractor(fake_context).do_stage(image)
+        image = BoxExtract(fake_context).do_stage(image)
         for spectrum in image.data_tables['box_extracted_spectrum']['flux']:
             assert np.median(spectrum) > 1E4

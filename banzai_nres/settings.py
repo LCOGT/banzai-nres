@@ -23,7 +23,7 @@ settings.ORDERED_STAGES = ['banzai.bpm.BPMUpdater',
                            'banzai.dark.DarkSubtractor',
                            'banzai_nres.traces.LoadTrace',
                            'banzai_nres.extract.RectifyTwodSpectrum',
-                           'banzai_nres.extract.BoxExtractor']
+                           'banzai_nres.extract.BoxExtract']
 
 settings.CALIBRATION_MIN_FRAMES = {'BIAS': 5,
                                    'DARK': 3,
@@ -65,15 +65,17 @@ settings.LAST_STAGE = {'BIAS': 'banzai.trim.Trimmer',
                        'DARK': 'banzai.bias.BiasSubtractor',
                        'LAMPFLAT': 'banzai.dark.DarkSubtractor',
                        'TRACE': 'banzai.dark.DarkSubtractor',
-                       'DOUBLE': None}  # 'EXPOSE': None
+                       'DOUBLE': None,
+                       'EXPOSE': None}
 
 settings.EXTRA_STAGES = {'BIAS': ['banzai.bias.BiasMasterLevelSubtractor', 'banzai.bias.BiasComparer'],
                          'DARK': ['banzai.dark.DarkNormalizer', 'banzai.dark.DarkComparer'],
                          'LAMPFLAT': None,
                          'TRACE': None,
-                         'DOUBLE': None}  # 'EXPOSE': None
+                         'DOUBLE': None,
+                         'EXPOSE': None}
 
 settings.CALIBRATION_STACKER_STAGE = {'BIAS': 'banzai.bias.BiasMaker',
                                       'DARK': 'banzai.dark.DarkMaker',
                                       'LAMPFLAT': 'banzai_nres.flats.FlatStacker',
-                                      'TRACE': 'banzai_nres.traces.TraceMaker'}  # 'WAVELENGTH': Something
+                                      'TRACE': 'banzai_nres.traces.TraceMaker'}  # 'WAVELENGTH':

@@ -1,19 +1,5 @@
 import numpy as np
-import abc
 from scipy.ndimage import map_coordinates
-
-
-class Extract(object):
-    @abc.abstractmethod
-    def extract(self):
-        pass
-
-    @staticmethod
-    def extract_order(twod_spectrum, weights=None):
-        if weights is None:
-            return np.sum(twod_spectrum, axis=0)
-        else:
-            return np.sum(twod_spectrum * weights, axis=0)
 
 
 def rectify_orders(image_data, trace, half_window=10, debug=False):
