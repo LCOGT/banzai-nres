@@ -44,8 +44,7 @@ def setup_module(module):
     This function creates the sqlite database and populates it with
     telescopes and BPM's for the test data sets elp/nres02 and lsc/nres01.
     """
-    create_db('./', db_address=os.environ['DB_URL'],
-              configdb_address=os.environ['CONFIG_DB_URL'])
+    create_db('./', db_address=os.environ['DB_URL'])
 
     # using an arbitrary fits as a template for the bpm fits. Then making and saving the bpm's
     # TODO update test data to newer lsc with fa09 data, and change elp fl17 to fa17.
