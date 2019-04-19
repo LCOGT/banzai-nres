@@ -49,3 +49,9 @@ def test_db_instantiates_from_example(fake_configdb):
                                               name='nres01',
                                               enclosure=None, telescope=None)
         assert instrument is not None
+        instrument = dbs.query_for_instrument(os.path.join('sqlite:///' + bpm_dir, 'test.db'),
+                                              'lsc',
+                                              camera='fl09',
+                                              name='nres01',
+                                              enclosure=None, telescope=None)
+        assert instrument is not None
