@@ -39,9 +39,10 @@ def make_dummy_bpm(bpm_path, output_bpm_name_addition, fits_file_to_copy, date_m
     os.system('rm {0}'.format(fits_file_to_copy))
 
 
+@pytest.mark.e2e
 @pytest.fixture(scope='module')
 @mock.patch('banzai.dbs.requests.get', return_value=FakeResponse())
-def setup_module(fake_configdb):
+def init(fake_configdb):
     """
     This function creates the sqlite database and populates it with
     telescopes and BPM's for the test data sets elp/nres02 and lsc/nres01.
