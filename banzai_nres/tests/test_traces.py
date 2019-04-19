@@ -125,7 +125,7 @@ class TestTrace:
                 path = os.path.join(tmp_directory_name, 'test_trace_table.fits')
                 trace.filepath = path
                 trace.header = {'bla': 1}
-                trace.write(runtime_context, update_db=False)
+                trace._update_filepath(runtime_context)
                 assert trace.filepath[-3:] == extension
 
     def test_sorting_trace_centers(self):
