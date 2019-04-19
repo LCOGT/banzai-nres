@@ -40,16 +40,12 @@ def make_dummy_bpm(bpm_path, output_bpm_name_addition, fits_file_to_copy, date_m
 
 
 @mock.patch('banzai.dbs.requests.get', return_value=FakeResponse())
-def setup_module(module, fake_configdb):
+@pytest.fixture(scope='module')
+def setup_module(fake_configdb):
     """
-    :param module: Pytest placeholder argument.
-
     This function creates the sqlite database and populates it with
     telescopes and BPM's for the test data sets elp/nres02 and lsc/nres01.
     """
-    # TODO see https://github.com/LCOGT/banzai/blob/master/banzai/tests/test_end_to_end.py#L121
-    # to mock the db request to yield a fake response.
-    # and https://github.com/LCOGT/banzai/blob/master/banzai/tests/utils.py#L102
     create_db('./', db_address=os.environ['DB_URL'], configdb_address=os.environ['CONFIG_DB_URL'])
 
     # using an arbitrary fits as a template for the bpm fits. Then making and saving the bpm's
