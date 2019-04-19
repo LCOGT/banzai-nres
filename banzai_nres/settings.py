@@ -25,6 +25,7 @@ settings.ORDERED_STAGES = ['banzai.bpm.BPMUpdater',
                            'banzai_nres.extract.RectifyTwodSpectrum',
                            'banzai_nres.extract.BoxExtract']
 
+
 settings.CALIBRATION_MIN_FRAMES = {'BIAS': 5,
                                    'DARK': 3,
                                    'LAMPFLAT': 5,

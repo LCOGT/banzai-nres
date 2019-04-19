@@ -1,7 +1,12 @@
 import mock
 import numpy as np
+import tempfile
+import os
+import pytest
 
 from banzai_nres.utils import db_utils
+from banzai.tests.utils import FakeResponse
+from banzai import dbs
 
 from banzai.tests.utils import FakeContext, FakeImage
 
@@ -30,3 +35,23 @@ def test_data_product_instantiates_from_image():
     for attribute in possible_attributes:
         assert getattr(image, attribute) == getattr(image_db_info, attribute)
     assert image_db_info.other_attribute == image.other_attribute
+
+
+@pytest.mark.integration
+@mock.patch('banzai.dbs.requests.get', return_value=FakeResponse())
+def test_db_instantiates_from_example(fake_configdb):
+    with tempfile.TemporaryDirectory() as bpm_dir:
+        dbs.create_db(bpm_dir, db_address=os.path.join('sqlite:///' + bpm_dir, 'test.db'),
+                  configdb_address='http://configdbdev.lco.gtn/sites/')
+        instrument = dbs.query_for_instrument(os.path.join('sqlite:///' + bpm_dir, 'test.db'),
+                                              'lsc',
+                                              camera='fa09',
+                                              name='nres01',
+                                              enclosure=None, telescope=None)
+        assert instrument is not None
+        instrument = dbs.query_for_instrument(os.path.join('sqlite:///' + bpm_dir, 'test.db'),
+                                              'lsc',
+                                              camera='fl09',
+                                              name='nres01',
+                                              enclosure=None, telescope=None)
+        assert instrument is not None

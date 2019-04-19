@@ -1,10 +1,16 @@
 import pytest
 from banzai.dbs import create_db, populate_calibration_table_with_bpms
 import banzai_nres.settings as nres_settings
+from banzai.tests.utils import FakeResponse
 import os
 import numpy as np
 import shutil
+import mock
 from astropy.io import fits
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def make_dummy_bpm(bpm_path, output_bpm_name_addition, fits_file_to_copy, date_marker, camera, instrument, site_name):
@@ -37,17 +43,20 @@ def make_dummy_bpm(bpm_path, output_bpm_name_addition, fits_file_to_copy, date_m
     os.system('rm {0}'.format(fits_file_to_copy))
 
 
-def setup_module(module):
+@pytest.mark.e2e
+@pytest.fixture(scope='module')
+@mock.patch('banzai.dbs.requests.get', return_value=FakeResponse())
+def init(fake_configdb):
     """
-    :param module: Pytest placeholder argument.
-
     This function creates the sqlite database and populates it with
     telescopes and BPM's for the test data sets elp/nres02 and lsc/nres01.
     """
-    create_db('./', db_address=os.environ['DB_URL'])
+    logger.debug('Setting up e2e test database')
+
+    create_db('./', db_address=os.environ['DB_URL'], configdb_address=os.environ['CONFIG_DB_URL'])
 
     # using an arbitrary fits as a template for the bpm fits. Then making and saving the bpm's
-    # TODO update test data to newer lsc with fa09 data, and change elp fl17 to fa17.
+
     fits_file_to_copy = '/archive/engineering/lsc/nres01/20180228/raw/lscnrs01-fl09-20180228-0010-e00.fits'
     date_marker = '20180727'
 
@@ -64,7 +73,7 @@ def setup_module(module):
 
 
 @pytest.mark.e2e
-def test_e2e():
+def test_e2e(init):
     db_address = os.environ['DB_URL']
     raw_data_path = '/archive/engineering/lsc/nres01/20180311/raw'
     instrument = 'nres01'
@@ -79,8 +88,9 @@ def test_e2e():
                                 'lscnrs01-fl09-20180311-trace-bin1x1-011.fits']
     expected_processed_path = os.path.join('/tmp', site, instrument, epoch, 'processed')
 
-    # executing the master bias maker as one would from the command line.
-    os.system('banzai_nres_reduce_night --site lsc --camera fa09 --instrument-name nres01 --frame-type BIAS '
+    logger.debug('Executing master bias making from the command line')
+
+    os.system('banzai_nres_reduce_night --site lsc --camera fl09 --instrument-name nres01 --frame-type BIAS '
               '--min-date 2018-03-11T00:00:00 --max-date 2018-03-12T23:59:59'
               ' --db-address {0} --raw-path {1} --ignore-schedulability '
               '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
@@ -89,8 +99,9 @@ def test_e2e():
         assert hdu_list[0].data.shape is not None
         assert hdu_list['BPM'].data.shape == hdu_list[1].data.shape
 
-    # executing the master dark maker as one would from the command line.
-    os.system('banzai_nres_reduce_night --site lsc --camera fa09 --instrument-name nres01 --frame-type DARK '
+    logger.debug('Executing master dark making from the command line')
+
+    os.system('banzai_nres_reduce_night --site lsc --camera fl09 --instrument-name nres01 --frame-type DARK '
               '--min-date 2018-03-11T00:00:00 --max-date 2018-03-12T23:59:59 '
               '--db-address {0} --raw-path {1} --ignore-schedulability '
               '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
@@ -99,8 +110,9 @@ def test_e2e():
         assert hdu_list[0].data.shape is not None
         assert hdu_list['BPM'].data.shape == hdu_list[1].data.shape
 
-    # executing the master flat maker as one would from the command line.
-    os.system('banzai_nres_reduce_night --site lsc --camera fa09 --instrument-name nres01 --frame-type LAMPFLAT '
+    logger.debug('Executing master flat making from the command line')
+
+    os.system('banzai_nres_reduce_night --site lsc --camera fl09 --instrument-name nres01 --frame-type LAMPFLAT '
               '--min-date 2018-03-11T00:00:00 --max-date 2018-03-12T23:59:59 '
               '--db-address {0} --raw-path {1} --ignore-schedulability '
               '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
@@ -110,8 +122,9 @@ def test_e2e():
             assert hdu_list[0].data.shape is not None
             assert hdu_list['BPM'].data.shape == hdu_list[1].data.shape
 
-    # executing the master trace maker as one would from the command line
-    os.system('banzai_nres_reduce_night --site lsc --camera fa09 --instrument-name nres01 --frame-type TRACE '
+    logger.debug('Fitting traces from the command line')
+
+    os.system('banzai_nres_reduce_night --site lsc --camera fl09 --instrument-name nres01 --frame-type TRACE '
               '--min-date 2018-03-11T00:00:00 --max-date 2018-03-12T23:59:59 '
               '--db-address {0} --raw-path {1} --ignore-schedulability '
               '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
