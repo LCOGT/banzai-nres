@@ -7,6 +7,7 @@ import numpy as np
 import shutil
 import mock
 from astropy.io import fits
+import glob
 
 import logging
 
@@ -134,3 +135,15 @@ def test_e2e(init):
         with fits.open(os.path.join(expected_processed_path, filename)) as hdu_list:
             assert hdu_list[trace_table_name] is not None
             assert hdu_list[trace_table_name].data['centers'].shape[0] > 100
+
+    logger.debug('Extracting spectrum form Arc (DOUBLE) frames from the command line')
+    os.system('banzai_nres_reduce_night --site lsc --camera fl09 --instrument-name nres01 --frame-type DOUBLE '
+              '--min-date 2018-03-11T00:00:00 --max-date 2018-03-12T23:59:59 '
+              '--db-address {0} --raw-path {1} --ignore-schedulability '
+              '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
+
+    spectrum_name = nres_settings.BOX_SPECTRUM_EXTNAME
+    arc = glob.glob(os.path.join(expected_processed_path, '*a91*'))[0]
+    with fits.open(arc) as hdu_list:
+        assert hdu_list[spectrum_name] is not None
+        assert hdu_list[spectrum_name].data.shape[0] > 100

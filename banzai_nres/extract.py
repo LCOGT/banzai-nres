@@ -51,7 +51,9 @@ class BoxExtract(Extract):
         logger.info('Box extracting spectrum', image=image)
         rectified_2d_spectrum = self._trim_rectified_2d_spectrum(image.rectified_2d_spectrum)
         spectrum = self.extract(rectified_2d_spectrum)
-        image.data_tables['box_extracted_spectrum'] = DataTable(data_table=spectrum, name='SPECBOX')
+        table_name = nres_settings.BOX_SPECTRUM_EXTNAME
+        image.data_tables[table_name] = DataTable(data_table=spectrum,
+                                                  name=table_name)
         return image
 
     def _trim_rectified_2d_spectrum(self, rectified_2d_spectrum):
