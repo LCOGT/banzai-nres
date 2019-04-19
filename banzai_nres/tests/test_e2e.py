@@ -44,7 +44,7 @@ def setup_module(module):
     This function creates the sqlite database and populates it with
     telescopes and BPM's for the test data sets elp/nres02 and lsc/nres01.
     """
-    create_db('./', db_address=os.environ['DB_URL'])
+    create_db('./', db_address=os.environ['DB_URL'], configdb_address=os.environ['CONFIG_DB_URL'])
 
     # using an arbitrary fits as a template for the bpm fits. Then making and saving the bpm's
     # TODO update test data to newer lsc with fa09 data, and change elp fl17 to fa17.
@@ -70,7 +70,7 @@ def test_e2e():
     instrument = 'nres01'
     site = 'lsc'
     epoch = '20180311'
-
+    #TODO this will probably break since we have fl09 instead of fa09 and these do not exist in db.
     expected_bias_filename = 'lscnrs01-fl09-20180311-bias-bin1x1.fits'
     expected_dark_filename = 'lscnrs01-fl09-20180311-dark-bin1x1.fits'
     expected_flat_filenames = ['lscnrs01-fl09-20180311-lampflat-bin1x1-110.fits',
