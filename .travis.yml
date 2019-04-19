@@ -76,7 +76,7 @@ install:
   - $PYTHON_INSTALL_COMMAND
 
 script:
-   - if [[ "$RUN_TESTS" == 1 ]]; then SETUP_ARRAY=(test --addopts '-m "not e2e"'); else SETUP_ARRAY=(); fi
+   - if [[ "$RUN_TESTS" == 1 ]]; then SETUP_ARRAY=(test --addopts '-m "not e2e and not integration"'); else SETUP_ARRAY=(); fi
    - $MAIN_CMD "${SETUP_ARRAY[@]}" $SETUP_CMD
 
 after_success:

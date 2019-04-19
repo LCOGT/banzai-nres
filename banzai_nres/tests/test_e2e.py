@@ -1,9 +1,11 @@
 import pytest
 from banzai.dbs import create_db, populate_calibration_table_with_bpms
 import banzai_nres.settings as nres_settings
+from banzai.tests.utils import FakeResponse
 import os
 import numpy as np
 import shutil
+import mock
 from astropy.io import fits
 
 
@@ -37,13 +39,17 @@ def make_dummy_bpm(bpm_path, output_bpm_name_addition, fits_file_to_copy, date_m
     os.system('rm {0}'.format(fits_file_to_copy))
 
 
-def setup_module(module):
+@mock.patch('banzai.dbs.requests.get', return_value=FakeResponse())
+def setup_module(module, fake_configdb):
     """
     :param module: Pytest placeholder argument.
 
     This function creates the sqlite database and populates it with
     telescopes and BPM's for the test data sets elp/nres02 and lsc/nres01.
     """
+    # TODO see https://github.com/LCOGT/banzai/blob/master/banzai/tests/test_end_to_end.py#L121
+    # to mock the db request to yield a fake response.
+    # and https://github.com/LCOGT/banzai/blob/master/banzai/tests/utils.py#L102
     create_db('./', db_address=os.environ['DB_URL'], configdb_address=os.environ['CONFIG_DB_URL'])
 
     # using an arbitrary fits as a template for the bpm fits. Then making and saving the bpm's
