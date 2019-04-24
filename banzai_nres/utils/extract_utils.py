@@ -9,8 +9,11 @@ def rectify_orders(image_data, trace, half_window=10, debug=False):
     :param half_window: half of the size of the extraction window about the center of the traces. E.g. 10 means 21 pixel
                         window will be extracted.
     :param debug: boolean for returning an internal copy of the image which is used in extract.
-    :return rectified_orders: A dictionary keyed by the trace id's from trace.get_id(), where rectified_orders[trace_id]
-                              gives a two dimensional spectrum. If half extraction window was 10, then rectified_orders[trace_id]
+    :return rectified_orders: A nested dictionary keyed by flux, coordinates and the trace id's from trace.get_id(),
+                              where rectified_orders[trace_id]['flux'] gives a two dimensional spectrum. And
+                              rectified_orders[trace_id]['y'] gives the pixel y coordinates for each pixel
+                              in the two dimensional spectrum. Likewise for rectified_orders[trace_id]['x']
+                              If half extraction window was 10, then rectified_orders[trace_id]
                               is 21 rows by 4096 columns (for a 4096 pixel wide image). One would column-sum this 2d
                               spectrum to get a box extracted spectrum.
     """
@@ -43,13 +46,17 @@ def rectify_order(image_data, image_coordinates, single_order_centers, half_wind
              center of the order.
     """
     # should test this function in two ways, one should verify that an already flattened trace is not modified.
-    rectified_order = np.zeros((2*half_window + 1, image_data.shape[1]))
+    spectrum_shape = (2*half_window + 1, image_data.shape[1])
+    rectified_order = {'flux': np.zeros(spectrum_shape),
+                       'y': np.zeros(spectrum_shape),
+                       'x': np.zeros(spectrum_shape)}
     x_coords = np.arange(image_data.shape[1])
-    for offset, row in zip(np.arange(-half_window, half_window + 1), np.arange(rectified_order.shape[0])):
+    for offset, row in zip(np.arange(-half_window, half_window + 1), np.arange(spectrum_shape[0])):
         mapped_y_values = map_coordinates(image_coordinates['y'], [single_order_centers + offset, x_coords],
                                           order=0, mode='constant', cval=0, prefilter=False)
-        rectified_order[row] = image_data[(mapped_y_values, x_coords)]
+        rectified_order['flux'][row] = image_data[(mapped_y_values, x_coords)]
+        rectified_order['y'][row] = mapped_y_values
+        rectified_order['x'][row] = x_coords
         if nullify_mapped_values:
             image_data[(mapped_y_values, x_coords)] = 0
-    # TODO we will need to adopt the true x, y positions relative to the trace center from this as well.
     return rectified_order, image_data

@@ -1,6 +1,7 @@
 import numpy as np
 import abc
 import logging
+import copy
 from astropy.table import Table
 
 from banzai_nres.utils import extract_utils
@@ -12,6 +13,9 @@ from banzai.images import DataTable
 
 logger = logging.getLogger(__name__)
 
+
+# TODO consider making a 2d spectrum object which has a get spectrum method for a given trace id and
+# returns the two spectrum or the x or y coordinate, or whatever. Nested dictionaries are bad.
 
 class Extract(Stage):
     def __init__(self, runtime_context=None):
@@ -41,7 +45,7 @@ class BoxExtract(Extract):
     def extract(self, rectified_2d_spectrum):
         extracted_spectrum_per_order = {'id': [], 'flux': [], 'pixel': []}
         for order_id in list(rectified_2d_spectrum.keys()):
-            flux = self.extract_order(rectified_2d_spectrum[order_id])
+            flux = self.extract_order(rectified_2d_spectrum[order_id]['flux'])
             extracted_spectrum_per_order['flux'].append(flux)
             extracted_spectrum_per_order['pixel'].append(np.arange(len(flux)))
             extracted_spectrum_per_order['id'].append(order_id)
@@ -58,8 +62,9 @@ class BoxExtract(Extract):
 
     def _trim_rectified_2d_spectrum(self, rectified_2d_spectrum):
         """
-        :param rectified_2d_spectrum: A dictionary keyed by the trace id's from trace.get_id(), where rectified_2d_spectrum[trace_id]
-               gives a two dimensional spectrum. If half extraction window was 10, then rectified_2d_spectrum[trace_id]
+        :param rectified_2d_spectrum: A nested dictionary keyed by the trace id's from trace.get_id(),
+               where rectified_2d_spectrum[trace_id]['flux']
+               gives a two dimensional spectrum. If half extraction window was 10, then rectified_2d_spectrum[trace_id]['flux']
                is 21 rows by 4096 columns (for a 4096 pixel wide image). One would column-sum this 2d
                spectrum to get a box extracted spectrum.
         :return rectified_2d_spectrum: Same as input but trimmed so that each order's 2d spectrum only
@@ -69,15 +74,16 @@ class BoxExtract(Extract):
         extraction_half_window is 10, then the 2d spectra have 21 rows and the trace center (peak flux) lies at
         index 10 (indexing from 0).
         """
-        trimmed_rectified_spectrum = {}
+        trimmed_rectified_spectrum = copy.deepcopy(rectified_2d_spectrum)
         if self.extraction_half_window >= self.max_extraction_half_window:
             # short circuit
             logger.warning('Box extraction window was chosen to be >= the max extraction window defined in settings.py.'
                            ' Defaulting to the max extraction window.')
             return rectified_2d_spectrum
+        trim = self.max_extraction_half_window - self.extraction_half_window
         for order_id in list(rectified_2d_spectrum.keys()):
-            trim = self.max_extraction_half_window - self.extraction_half_window
-            trimmed_rectified_spectrum[order_id] = rectified_2d_spectrum[order_id][trim:-trim]
+            for data_type in list(rectified_2d_spectrum[order_id].keys()):
+                trimmed_rectified_spectrum[order_id][data_type] = rectified_2d_spectrum[order_id][data_type][trim:-trim]
         return trimmed_rectified_spectrum
 
 
