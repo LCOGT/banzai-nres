@@ -32,14 +32,7 @@ pipeline {
 		stage('Test') {
 			steps {
 				script {
-					sh 'docker run --rm --user=root --entrypoint=pytest ${DOCKER_IMG} -m "not e2e and not integration" /lco/banzai-nres/'
-				}
-			}
-		}
-		stage('TestIntegration') {
-			steps {
-				script {
-					sh 'docker run --rm --user=root --entrypoint=pytest ${DOCKER_IMG} -m "integration" /lco/banzai-nres/'
+					sh 'docker run --rm --user=root --entrypoint=pytest ${DOCKER_IMG} -m "not e2e" /lco/banzai-nres/'
 				}
 			}
 		}
