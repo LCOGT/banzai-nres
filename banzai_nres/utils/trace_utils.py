@@ -8,12 +8,16 @@ Authors
     Curtis McCully (cmccully@lcogt.net)
 """
 
+
 import numpy as np
 from scipy import ndimage, optimize, signal
 from astropy.table import Table, Column
 from astropy.io import fits
 from banzai_nres.utils import fits_utils, db_utils
 from banzai import dbs
+
+import banzai_nres.settings as nres_settings  # import to override banzai settings
+from banzai import settings
 
 import logging
 
@@ -26,7 +30,7 @@ class Trace(object):
     the jth row are the y centers across the detector for the trace with identification trace_centers['id'][j]
     """
     def __init__(self, data=None, trace_table_name=None, num_centers_per_trace=0, filepath=None,
-                 header=None, image_db_info=None):
+                 header=None, image=None, obstype='TRACE'):
         if data is None and num_centers_per_trace <= 0:
             raise ValueError('Trace object instantiated but no trace data given and num_centers_per_trace is not > 0')
         if data is None:
@@ -37,8 +41,17 @@ class Trace(object):
             data['centers'].unit = 'pixel'
         if header is None:
             header = {}
+        self.obstype = obstype
+        self.dateobs = getattr(image, 'dateobs', None)
+        self.datecreated = getattr(image, 'datecreated', None)
+        self.instrument = getattr(image, 'instrument', None)
+        self.is_master = getattr(image, 'is_master', False)
+        self.is_bad = getattr(image, 'is_bad', False)
+        self.attributes = settings.CALIBRATION_SET_CRITERIA.get(self.obstype, {})
+        for attribute in self.attributes:
+            setattr(self, attribute, getattr(image, attribute))
+
         self.header = header
-        self.image_db_info = image_db_info
         self.filepath = filepath
         self.data = Table(data)
         self.trace_table_name = trace_table_name
@@ -66,8 +79,7 @@ class Trace(object):
                            fpack=getattr(runtime_context, 'fpack', False),
                            overwrite=True, output_verify='fix+warn')
         if update_db:
-            self.image_db_info.obstype = self.header.get('OBSTYPE')
-            dbs.save_calibration_info(self.filepath, image=self.image_db_info,
+            dbs.save_calibration_info(self.filepath, image=self,
                                       db_address=runtime_context.db_address)
             if runtime_context.post_to_archive:
                 db_utils.post_to_archive(self.filepath)
