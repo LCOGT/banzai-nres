@@ -7,7 +7,7 @@ from banzai.utils.instrument_utils import InstrumentCriterion
 from banzai import settings
 
 from banzai_nres.fibers import fibers_state_to_filename
-from banzai_nres.utils.munge_utils import get_telescope_filename
+from banzai_nres.utils.runtime_utils import get_telescope_filename
 
 
 settings.FRAME_CLASS = 'banzai_nres.images.NRESImage'

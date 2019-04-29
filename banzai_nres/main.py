@@ -10,44 +10,18 @@ import datetime
 
 import banzai_nres.settings as nres_settings  # import to override banzai settings.
 import banzai.settings as banzai_settings
-
-from banzai_nres.utils.db_utils import get_raw_path
-
 from banzai.main import process_directory, parse_directory_args
 from banzai.utils import date_utils
 from banzai import dbs
 from banzai import logs
 from banzai.main import run_master_maker
 
+from banzai_nres.utils.runtime_utils import validate_raw_path, get_frame_types, get_reduction_date_window
+
 
 import logging
 
 logger = logging.getLogger(__name__)
-
-
-class ReductionCriterion(object):
-    def __init__(self, raw_path=None, runtime_context=None):
-        max_date = getattr(runtime_context, 'max_date', None)
-        min_date = getattr(runtime_context, 'min_date', None)
-        if max_date is None:
-            max_date = datetime.datetime.utcnow()
-
-        if min_date is None:
-            min_date = max_date - datetime.timedelta(hours=24)
-
-        if min_date > max_date:
-            logger.error('The start cannot be after the end. Aborting reduction!')
-            raise ValueError('min_date > max_date.')
-        self.min_date, self.max_date = min_date, max_date
-
-        if getattr(runtime_context, 'frame_type', None) is None:
-            self.frame_types = banzai_settings.CALIBRATION_IMAGE_TYPES
-        else:
-            self.frame_types = [runtime_context.frame_type]
-
-        self.raw_path = raw_path
-        if raw_path is not None and 'raw' not in raw_path.lower():
-            self.raw_path = get_raw_path(base_raw_path=raw_path, runtime_context=runtime_context)
 
 
 def process_master_maker(runtime_context, instrument, frame_type_to_stack, min_date, max_date,
@@ -100,9 +74,11 @@ def reduce_night(runtime_context=None, raw_path=None):
     instrument = dbs.query_for_instrument(runtime_context.db_address, runtime_context.site,
                                           camera=runtime_context.camera, name=runtime_context.instrument_name,
                                           enclosure=None, telescope=None)
-    reduction_criterion = ReductionCriterion(raw_path, runtime_context)
+    frame_types = get_frame_types(runtime_context, default_frames_to_reduce=list(banzai_settings.LAST_STAGE.keys()))
+    min_date, max_date = get_reduction_date_window(runtime_context)
+    raw_path = validate_raw_path(runtime_context, raw_path)
 
-    for frame_type in reduction_criterion.frame_types:
+    for frame_type in frame_types:
         if frame_type == 'TRACE':
             frame_type_to_stack = 'LAMPFLAT'
             use_masters = True
@@ -112,8 +88,8 @@ def reduce_night(runtime_context=None, raw_path=None):
             use_masters = False
             master_frame_type = None
             # must reduce frames before making the master calibration, unless we are making a master trace.
-            process_directory(runtime_context, reduction_criterion.raw_path, [frame_type_to_stack])
+            process_directory(runtime_context, raw_path, [frame_type_to_stack])
 
         process_master_maker(runtime_context, instrument, frame_type_to_stack.upper(),
-                             min_date=reduction_criterion.min_date, max_date=reduction_criterion.max_date,
-                             master_frame_type=master_frame_type, use_masters=use_masters)
+                             min_date=min_date, max_date=max_date, master_frame_type=master_frame_type,
+                             use_masters=use_masters)
