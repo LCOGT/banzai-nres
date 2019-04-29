@@ -98,6 +98,12 @@ class TestRectify:
         assert np.allclose(spectrum / np.median(spectrum), 1)
         assert np.allclose(rectified_spectrum, spectrum)
 
+    def test_raises_error_on_missing_trace(self):
+        image = FakeTraceImage()
+        image.trace = None
+        with pytest.raises(Exception):
+            RectifyTwodSpectrum(runtime_context=FakeContext()).do_stage(image=image)
+
 
 class TestBoxExtract:
     def test_box_extract_accuracy(self):
