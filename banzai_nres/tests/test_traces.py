@@ -15,6 +15,7 @@ from banzai_nres.tests.utils import array_with_peaks, FakeImage, noisify_image
 from banzai_nres.utils.trace_utils import Trace, SingleTraceFitter, AllTraceFitter
 from banzai_nres.tests.utils import fill_image_with_traces
 import banzai_nres.settings as nres_settings
+from banzai import settings
 
 import logging
 
@@ -60,7 +61,12 @@ class TestTrace:
         assert trace.trace_table_name is None
         assert trace.filepath is None
         assert trace.header == {}
-        assert trace.image_db_info is None
+        assert trace.obstype is 'TRACE'
+        assert trace.dateobs is None
+        assert trace.datecreated is None
+        assert trace.instrument is None
+        assert trace.is_master is False
+        assert trace.is_bad is False
         for name in ['id', 'centers']:
             assert name in trace.data.colnames
         assert len(trace.data.colnames) == 2
@@ -152,6 +158,17 @@ class TestTrace:
         trace.del_centers([-1, -2])
         assert np.allclose(trace.data['id'], [1])
         assert np.allclose(trace.data['centers'], [centers])
+
+    def test_instantiates_db_context_from_image(self):
+        image = FakeImage()
+        possible_attributes = ['dateobs', 'datecreated', 'instrument', 'is_master', 'is_bad']
+        counter = np.arange(len(possible_attributes))
+        for attribute, i in zip(possible_attributes, counter):
+            setattr(image, attribute, str(i))
+        trace = Trace(data={'id': [1], 'centers': [np.arange(3)]}, image=image)
+        for attribute in possible_attributes:
+            assert getattr(image, attribute) == getattr(trace, attribute)
+        assert trace.attributes == settings.CALIBRATION_SET_CRITERIA.get('TRACE', {})
 
 
 class TestAllTraceFitter:
@@ -393,6 +410,7 @@ class TestTraceMaker:
         image = FakeTraceImage()
         image.fiber0_lit, image.fiber1_lit, image.fiber2_lit = False, True, True
         image.header['RDNOISE'] = read_noise
+        image.is_master = True
 
         image, trace_centers, second_order_coefficient_guess = fill_image_with_traces(image,
                                                                                       poly_fit_order=poly_fit_order)
@@ -406,7 +424,7 @@ class TestTraceMaker:
         trace_maker.order_of_poly_fit = poly_fit_order
         trace_maker.second_order_coefficient_guess = second_order_coefficient_guess
         traces = trace_maker.do_stage(images)
-        assert traces[0].image_db_info.is_master
+        assert traces[0].is_master
         assert traces[0].data['centers'].shape[0] == trace_centers.shape[0]
         difference = traces[0].data['centers'] - trace_centers
         logger.debug('median absolute deviation in unit-test trace fitting is {0} pixels'

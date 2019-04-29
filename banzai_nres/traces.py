@@ -6,7 +6,6 @@ Authors
 """
 
 from banzai_nres.utils.trace_utils import Trace, AllTraceFitter
-from banzai_nres.utils.db_utils import DataProduct
 from banzai.calibrations import CalibrationMaker, ApplyCalibration, create_master_calibration_header
 from banzai.utils import file_utils
 
@@ -43,17 +42,14 @@ class TraceMaker(CalibrationMaker):
             master_header['OBSTYPE'] = self.calibration_type
             master_filename = banzai_settings.CALIBRATION_FILENAME_FUNCTIONS[self.calibration_type](image)
             master_filepath = self._get_filepath(self.runtime_context, image, master_filename)
-            db_info = DataProduct(image=image)
-            db_info.is_master = True
-
             logger.info('fitting traces order by order', image=image)
             bkg_subtracted_image_data = image.data - sep.Background(image.data).back()
             fitter = AllTraceFitter(xmin=self.xmin, xmax=self.xmax,
                                     min_peak_to_peak_spacing=self.min_peak_to_peak_spacing,
                                     min_snr=self.min_snr)
-            trace = Trace(data=None, filepath=master_filepath, header=master_header,
-                          image_db_info=db_info,
-                          num_centers_per_trace=image.data.shape[1], trace_table_name=self.trace_table_name)
+            trace = Trace(data=None, filepath=master_filepath, header=master_header, image=image,
+                          num_centers_per_trace=image.data.shape[1], trace_table_name=self.trace_table_name,
+                          obstype=self.calibration_type)
             trace = fitter.fit_traces(trace=trace, image_data=bkg_subtracted_image_data,
                                       poly_fit_order=self.order_of_poly_fit,
                                       second_order_coefficient_guess=self.second_order_coefficient_guess,
