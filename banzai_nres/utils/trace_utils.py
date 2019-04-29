@@ -47,9 +47,11 @@ class Trace(object):
         self.instrument = getattr(image, 'instrument', None)
         self.is_master = getattr(image, 'is_master', False)
         self.is_bad = getattr(image, 'is_bad', False)
+        self.attributes = settings.CALIBRATION_SET_CRITERIA.get(self.obstype, {})
+        for attribute in self.attributes:
+            setattr(self, attribute, getattr(image, attribute))
 
         self.header = header
-        self.attributes = settings.CALIBRATION_SET_CRITERIA.get(self.obstype, {})
         self.filepath = filepath
         self.data = Table(data)
         self.trace_table_name = trace_table_name

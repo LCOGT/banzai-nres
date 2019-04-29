@@ -45,6 +45,7 @@ def process_master_maker(runtime_context, instrument, frame_type_to_stack, min_d
 
 
 def reduce_night(runtime_context=None, raw_path=None):
+    all_frame_types = list(banzai_settings.LAST_STAGE.keys())
     extra_console_arguments = [{'args': ['--site'],
                                 'kwargs': {'dest': 'site', 'help': 'Site code (e.g. ogg)', 'required': True}},
                                {'args': ['--camera'],
@@ -59,7 +60,7 @@ def reduce_night(runtime_context=None, raw_path=None):
                                            'required': False}},
                                {'args': ['--frame-type'],
                                 'kwargs': {'dest': 'frame_type', 'help': 'Type of frames to process',
-                                           'choices': banzai_settings.LAST_STAGE.keys(), 'required': False}},
+                                           'choices': all_frame_types, 'required': False}},
                                {'args': ['--min-date'],
                                 'kwargs': {'dest': 'min_date', 'required': False, 'type': date_utils.valid_date,
                                            'help': 'Earliest observation time of the individual calibration frames. '
@@ -74,7 +75,7 @@ def reduce_night(runtime_context=None, raw_path=None):
     instrument = dbs.query_for_instrument(runtime_context.db_address, runtime_context.site,
                                           camera=runtime_context.camera, name=runtime_context.instrument_name,
                                           enclosure=None, telescope=None)
-    frame_types = get_frame_types(runtime_context, default_frames_to_reduce=list(banzai_settings.LAST_STAGE.keys()))
+    frame_types = get_frame_types(runtime_context, default_frames_to_reduce=all_frame_types)
     min_date, max_date = get_reduction_date_window(runtime_context)
     raw_path = validate_raw_path(runtime_context, raw_path)
 
