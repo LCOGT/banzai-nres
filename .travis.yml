@@ -38,13 +38,10 @@ matrix:
     include:
         - env: SETUP_CMD='egg_info' RUN_TESTS=0 PYTHON_INSTALL_COMMAND='true' INSTALL_DEPS=0
 
-        - python: 3.5
+        - python: 3.6
           env: SETUP_CMD='egg_info' RUN_TESTS=0 PYTHON_INSTALL_COMMAND='true' INSTALL_DEPS=0
 
         - env: RUN_TESTS=1
-
-        - python: 3.5
-          env: RUN_TESTS=1
 
         # Do a coverage test.
         - os: linux
@@ -60,8 +57,6 @@ matrix:
         # versions of Python, we can vary Python and Numpy versions at the same
         # time.
         - os: linux
-          env: NUMPY_VERSION=1.13
-        - os: linux
           env: NUMPY_VERSION=1.14
         - os: linux
           env: NUMPY_VERSION=1.15
@@ -76,6 +71,7 @@ before_install:
 
 install:
   - if [[ "$INSTALL_DEPS" == 1 ]]; then pip install numpy==$NUMPY_VERSION coverage pycodestyle; fi
+  - pip install git+https://github.com/lcogt/banzai@0.20.1-40-g7902cb9
   - $PYTHON_INSTALL_COMMAND
 
 script:
