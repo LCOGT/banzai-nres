@@ -1,3 +1,7 @@
+0.5.0 (2019-02-25)
+------------------
+- Box extraction for ARC and TARGET exposures.
+
 0.4.0 (2019-02-25)
 ------------------
 - Blind master tracing on lampflats
