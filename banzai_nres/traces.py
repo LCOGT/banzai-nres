@@ -49,7 +49,7 @@ class TraceMaker(CalibrationMaker):
                                     min_peak_to_peak_spacing=self.min_peak_to_peak_spacing,
                                     min_snr=self.min_snr)
             trace = Trace(data=None, filepath=master_filepath, header=master_header, image=image,
-                          num_centers_per_trace=image.data.shape[1], trace_table_name=self.trace_table_name,
+                          num_centers_per_trace=image.data.shape[1], table_name=self.trace_table_name,
                           obstype=self.calibration_type)
             trace = fitter.fit_traces(trace=trace, image_data=bkg_subtracted_image_data,
                                       poly_fit_order=self.order_of_poly_fit,
@@ -92,7 +92,7 @@ class LoadTrace(ApplyCalibration):
         return 'TRACE'
 
     def apply_master_calibration(self, image, master_calibration_path):
-        image.trace = Trace.load(master_calibration_path, trace_table_name=nres_settings.TRACE_TABLE_NAME)
+        image.trace = Trace.load(master_calibration_path, table_name=nres_settings.TRACE_TABLE_NAME)
         master_trace_filename = os.path.basename(master_calibration_path)
         image.header['L1IDTRAC'] = (master_trace_filename, 'ID of trace centers file')
         logger.info('Loading trace centers', image=image,  extra_tags={'L1IDTRAC': image.header['L1IDTRAC']})

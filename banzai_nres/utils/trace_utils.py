@@ -29,7 +29,7 @@ class Trace(object):
     :param data = {'id': ndarray, 'centers': ndarray}. 'centers' gives a 2d array, where
     the jth row are the y centers across the detector for the trace with identification trace_centers['id'][j]
     """
-    def __init__(self, data=None, trace_table_name=None, num_centers_per_trace=0, filepath=None,
+    def __init__(self, data=None, table_name=None, num_centers_per_trace=0, filepath=None,
                  header=None, image=None, obstype='TRACE'):
         if data is None and num_centers_per_trace <= 0:
             raise ValueError('Trace object instantiated but no trace data given and num_centers_per_trace is not > 0')
@@ -54,7 +54,7 @@ class Trace(object):
         self.header = header
         self.filepath = filepath
         self.data = Table(data)
-        self.trace_table_name = trace_table_name
+        self.table_name = table_name
 
     def get_centers(self, row):
         return self.data['centers'][row]
@@ -72,7 +72,7 @@ class Trace(object):
         return len(self.data['id'])
 
     def write(self, runtime_context=None, update_db=True):
-        hdu = fits.BinTableHDU(self.data, name=self.trace_table_name, header=fits.Header(self.header))
+        hdu = fits.BinTableHDU(self.data, name=self.table_name, header=fits.Header(self.header))
         hdu_list = fits.HDUList([fits.PrimaryHDU(), hdu])
         self._update_filepath(runtime_context)
         fits_utils.writeto(hdu_list=hdu_list, filepath=self.filepath,
@@ -89,9 +89,9 @@ class Trace(object):
             self.filepath += '.fz'
 
     @staticmethod
-    def load(path, trace_table_name):
+    def load(path, table_name):
         hdu_list = fits.open(path)
-        return Trace(data=hdu_list[trace_table_name].data, header=hdu_list[trace_table_name].header)
+        return Trace(data=hdu_list[table_name].data, header=hdu_list[table_name].header)
 
     def sort(self):
         center = int(self.data['centers'].shape[1] / 2)

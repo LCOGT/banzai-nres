@@ -46,7 +46,7 @@ class TestTrace:
     """
     def test_trace_instantiates_from_num_centers(self):
         trace = Trace(num_centers_per_trace=5)
-        assert trace.trace_table_name is None
+        assert trace.table_name is None
         assert trace.data.colnames == ['id', 'centers']
         assert len(trace.data['id']) == 0
         assert trace.data['centers'].shape == (0, 5)
@@ -58,7 +58,7 @@ class TestTrace:
         data['id'].description = 'test'
         data['centers'].description = 'test_2'
         trace = Trace(data=data)
-        assert trace.trace_table_name is None
+        assert trace.table_name is None
         assert trace.filepath is None
         assert trace.header == {}
         assert trace.obstype is 'TRACE'
@@ -108,7 +108,7 @@ class TestTrace:
 
     def test_load_and_write(self):
         name = 'trace'
-        trace = Trace(data={'id': [1], 'centers': [np.arange(3)]}, trace_table_name=name)
+        trace = Trace(data={'id': [1], 'centers': [np.arange(3)]}, table_name=name)
         runtime_context = FakeContext()
         with tempfile.TemporaryDirectory() as tmp_directory_name:
             runtime_context.fpack = False
@@ -116,14 +116,14 @@ class TestTrace:
             trace.filepath = path
             trace.header = {'bla': 1}
             trace.write(runtime_context, update_db=False)
-            loaded_trace = Trace.load(path=path, trace_table_name=name)
+            loaded_trace = Trace.load(path=path, table_name=name)
             assert np.allclose(loaded_trace.get_centers(0), trace.get_centers(0))
             assert np.allclose(loaded_trace.get_id(0), trace.get_id(0))
             assert np.isclose(loaded_trace.header['bla'], 1)
 
     def test_write_gets_correct_filename(self):
         name = 'trace'
-        trace = Trace(data={'id': [1], 'centers': [np.arange(3)]}, trace_table_name=name)
+        trace = Trace(data={'id': [1], 'centers': [np.arange(3)]}, table_name=name)
         runtime_context = FakeContext()
         with tempfile.TemporaryDirectory() as tmp_directory_name:
             for fpack, extension in zip([True, False], ['.fz', 'its']):

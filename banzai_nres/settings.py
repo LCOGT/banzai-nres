@@ -38,6 +38,8 @@ TRACE_TABLE_NAME = 'TRACE'
 WINDOW_FOR_TRACE_IDENTIFICATION = {'max': 2100, 'min': 2000}  # pixels
 MIN_FIBER_TO_FIBER_SPACING = 10  # pixels
 MIN_SNR_FOR_TRACE_IDENTIFICATION = 6
+# Blaze settings
+BLAZE_TABLE_NAME = 'BLAZE'
 # extraction settings
 MAX_EXTRACTION_HALF_WINDOW = 10
 BOX_EXTRACTION_HALF_WINDOW = 10
@@ -61,12 +63,13 @@ settings.CALIBRATION_FILENAME_FUNCTIONS = {'BIAS': make_calibration_filename_fun
                                                                                        fibers_state_to_filename],
                                                                                        get_telescope_filename)}
 
-settings.CALIBRATION_IMAGE_TYPES = ['BIAS', 'DARK', 'LAMPFLAT', 'TRACE']  # 'WAVELENGTH'
+settings.CALIBRATION_IMAGE_TYPES = ['BIAS', 'DARK', 'LAMPFLAT', 'TRACE', 'BLAZE']
 
 settings.LAST_STAGE = {'BIAS': 'banzai.trim.Trimmer',
                        'DARK': 'banzai.bias.BiasSubtractor',
                        'LAMPFLAT': 'banzai.dark.DarkSubtractor',
                        'TRACE': 'banzai.dark.DarkSubtractor',
+                       'BLAZE': 'banzai_nres.extract.BoxExtract',
                        'DOUBLE': None,
                        'TARGET': None}
 
@@ -74,10 +77,12 @@ settings.EXTRA_STAGES = {'BIAS': ['banzai.bias.BiasMasterLevelSubtractor', 'banz
                          'DARK': ['banzai.dark.DarkNormalizer', 'banzai.dark.DarkComparer'],
                          'LAMPFLAT': None,
                          'TRACE': None,
+                         'BLAZE': None,
                          'DOUBLE': None,
                          'TARGET': None}
 
 settings.CALIBRATION_STACKER_STAGE = {'BIAS': 'banzai.bias.BiasMaker',
                                       'DARK': 'banzai.dark.DarkMaker',
                                       'LAMPFLAT': 'banzai_nres.flats.FlatStacker',
-                                      'TRACE': 'banzai_nres.traces.TraceMaker'}  # 'WAVELENGTH':
+                                      'TRACE': 'banzai_nres.traces.TraceMaker',
+                                      'BLAZE': 'banzai_nres.blaze.BlazeMaker'}
