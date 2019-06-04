@@ -6,14 +6,17 @@ Authors
 """
 from astropy.table import Table, Column
 import os
-import logging
 
 from banzai.calibrations import CalibrationMaker, create_master_calibration_header
 from banzai.utils import file_utils
 from banzai_nres.images import ImageBase
 import banzai_nres.settings as nres_settings
 import banzai.settings as banzai_settings
+from banzai_nres.traces import LoadTrace
+from banzai_nres.extract import RectifyTwodSpectrum, BoxExtract
+from banzai import logs
 
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -22,13 +25,14 @@ class BlazeMaker(CalibrationMaker):
     def __init__(self, runtime_context):
         super(BlazeMaker, self).__init__(runtime_context)
         self.runtime_context = runtime_context
-        self.trace_table_name = nres_settings.BLAZE_TABLE_NAME
+        self.blaze_table_name = nres_settings.BLAZE_TABLE_NAME
 
     @property
     def calibration_type(self):
-        return 'TRACE'
+        return 'BLAZE'
 
     def make_master_calibration_frame(self, images):
+        images = self.do_extraction_stages(images)  # TODO remove this hotfix line
         blazes = []
         for image in images:
             master_header = create_master_calibration_header(old_header=image.header, images=[image])
@@ -37,11 +41,30 @@ class BlazeMaker(CalibrationMaker):
             master_filepath = self._get_filepath(self.runtime_context, image, master_filename)
             logger.info('Making blaze file', image=image)
             lampflat_spectrum = image.data_tables[nres_settings.BOX_SPECTRUM_EXTNAME]
-            blazes.append(blazes)
+            blaze = Blaze(data=None, filepath=master_filepath, header=master_header, image=image,
+                          table_name=self.blaze_table_name,
+                          obstype=self.calibration_type)
+            blazes.append(blaze)
             logger.info('Created master blaze file', image=image, extra_tags={'calibration_type': self.calibration_type,
                                                                               'output_path': master_filepath,
                                                                               'calibration_obstype': master_header['OBSTYPE']})
         return blazes
+
+    def do_extraction_stages(self, images):
+        # TODO remove this hotfix
+        # HOTFIX since banzai master maker loads the master images fresh from disc, and
+        # does not allow extra_stages to run on the image prior to the calibration stacker stage.
+        extraction_stages = [LoadTrace, RectifyTwodSpectrum, BoxExtract]
+        processed_images = []
+        for image in images:
+            for stage in extraction_stages:
+                processed_image = []
+                try:
+                    processed_image = [stage(self.runtime_context).do_stage(image)]
+                except Exception:
+                    logger.error(logs.format_exception())
+                processed_image.extend(processed_image)
+        return processed_images
 
     @staticmethod
     def _get_filepath(runtime_context, lampflat_image, master_filename):

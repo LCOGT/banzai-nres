@@ -79,16 +79,16 @@ def reduce_night(runtime_context=None, raw_path=None):
     raw_path = validate_raw_path(runtime_context, raw_path)
 
     for frame_type in frame_types:
-        if frame_type == 'TRACE':
+        if frame_type == 'TRACE' or 'BLAZE':
             frame_type_to_stack = 'LAMPFLAT'
             use_masters = True
-            master_frame_type = 'TRACE'
+            master_frame_type = frame_type
         else:
             frame_type_to_stack = frame_type
             use_masters = False
             master_frame_type = None
-
-        process_directory(runtime_context, raw_path, [frame_type_to_stack])
+            # we only reduce data for types other than BLAZE and TRACE. BLAZE and TRACE run on masters.
+            process_directory(runtime_context, raw_path, [frame_type_to_stack])
         if frame_type in banzai_settings.CALIBRATION_IMAGE_TYPES:
             process_master_maker(runtime_context, instrument, frame_type_to_stack.upper(),
                                  min_date=min_date, max_date=max_date,
