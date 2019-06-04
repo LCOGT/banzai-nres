@@ -1,6 +1,5 @@
 import abc
-from astropy.table import Table
-from astropy import fits
+from astropy.io import fits
 
 from banzai.images import Image
 from banzai_nres.fibers import fiber_states_from_header
@@ -23,26 +22,28 @@ class NRESImage(Image):
         return 1 * self.fiber0_lit + 1 * self.fiber1_lit + 1 * self.fiber2_lit
 
 
-class TableImage(object):
+class ImageBase(object):
     """
-    Image like object with .write and .load methods. For use in Trace and Blaze calibrations
+    Image like object with .write and .load methods. Used in trace and Blaze calibrations
     """
-    def __init__(self, data=None, table_name=None, num_centers_per_trace=0, filepath=None,
-                 header=None, image=None, obstype='TRACE'):
-        if data is None and num_centers_per_trace <= 0:
-            raise ValueError('Trace object instantiated but no trace data given and num_centers_per_trace is not > 0')
-        if data is None:
-            data = Table([Column(name='id'), Column(name='centers', shape=(num_centers_per_trace,))])
-            data['id'].description = 'Identification tag for trace'
-            data['centers'].description = 'Vertical position of the center of the' \
-                                          ' trace as a function of horizontal pixel'
-            data['centers'].unit = 'pixel'
+    def __init__(self, data=None, table_name=None, filepath=None, header=None, image=None, obstype='None'):
         if header is None:
             header = {}
         self.header = header
         self.filepath = filepath
-        self.data = Table(data)
+        self.data = data
         self.table_name = table_name
+
+        # banzai.images.Image attributes necessary for fits_utils.writeto
+        self.obstype = obstype
+        self.dateobs = getattr(image, 'dateobs', None)
+        self.datecreated = getattr(image, 'datecreated', None)
+        self.instrument = getattr(image, 'instrument', None)
+        self.is_master = getattr(image, 'is_master', False)
+        self.is_bad = getattr(image, 'is_bad', False)
+        self.attributes = settings.CALIBRATION_SET_CRITERIA.get(self.obstype, {})
+        for attribute in self.attributes:
+            setattr(self, attribute, getattr(image, attribute, None))
 
     def write(self, runtime_context=None, update_db=True):
         hdu = fits.BinTableHDU(self.data, name=self.table_name, header=fits.Header(self.header))
@@ -61,7 +62,7 @@ class TableImage(object):
         if getattr(runtime_context, 'fpack', False) and not self.filepath.endswith('.fz'):
             self.filepath += '.fz'
 
-    @staticmethod
-    @abc.abstractmethod
-    def load(path, table_name):
-        pass
+    @classmethod
+    def load(cls, path, extension_name):
+        hdu_list = fits.open(path)
+        return cls(data=hdu_list[extension_name].data, header=hdu_list[extension_name].header)

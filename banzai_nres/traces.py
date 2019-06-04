@@ -92,7 +92,7 @@ class LoadTrace(ApplyCalibration):
         return 'TRACE'
 
     def apply_master_calibration(self, image, master_calibration_path):
-        image.trace = Trace.load(master_calibration_path, table_name=nres_settings.TRACE_TABLE_NAME)
+        image.trace = Trace.load(master_calibration_path, extension_name=nres_settings.TRACE_TABLE_NAME)
         master_trace_filename = os.path.basename(master_calibration_path)
         image.header['L1IDTRAC'] = (master_trace_filename, 'ID of trace centers file')
         logger.info('Loading trace centers', image=image,  extra_tags={'L1IDTRAC': image.header['L1IDTRAC']})

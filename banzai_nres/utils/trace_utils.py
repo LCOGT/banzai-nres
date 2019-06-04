@@ -12,9 +12,7 @@ Authors
 import numpy as np
 from scipy import ndimage, optimize, signal
 from astropy.table import Table, Column
-from astropy.io import fits
-from banzai_nres.utils import fits_utils, db_utils
-from banzai import dbs
+from banzai_nres.images import ImageBase
 
 import banzai_nres.settings as nres_settings  # import to override banzai settings
 from banzai import settings
@@ -24,13 +22,15 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class Trace(object):
+class Trace(ImageBase):
     """
     :param data = {'id': ndarray, 'centers': ndarray}. 'centers' gives a 2d array, where
     the jth row are the y centers across the detector for the trace with identification trace_centers['id'][j]
     """
     def __init__(self, data=None, table_name=None, num_centers_per_trace=0, filepath=None,
                  header=None, image=None, obstype='TRACE'):
+        super(Trace, self).__init__(data=data, table_name=table_name, filepath=filepath,
+                                    header=header, image=image, obstype=obstype)
         if data is None and num_centers_per_trace <= 0:
             raise ValueError('Trace object instantiated but no trace data given and num_centers_per_trace is not > 0')
         if data is None:
@@ -39,22 +39,7 @@ class Trace(object):
             data['centers'].description = 'Vertical position of the center of the' \
                                           ' trace as a function of horizontal pixel'
             data['centers'].unit = 'pixel'
-        if header is None:
-            header = {}
-        self.obstype = obstype
-        self.dateobs = getattr(image, 'dateobs', None)
-        self.datecreated = getattr(image, 'datecreated', None)
-        self.instrument = getattr(image, 'instrument', None)
-        self.is_master = getattr(image, 'is_master', False)
-        self.is_bad = getattr(image, 'is_bad', False)
-        self.attributes = settings.CALIBRATION_SET_CRITERIA.get(self.obstype, {})
-        for attribute in self.attributes:
-            setattr(self, attribute, getattr(image, attribute, None))
-
-        self.header = header
-        self.filepath = filepath
         self.data = Table(data)
-        self.table_name = table_name
 
     def get_centers(self, row):
         return self.data['centers'][row]
@@ -70,28 +55,6 @@ class Trace(object):
 
     def num_traces_found(self):
         return len(self.data['id'])
-
-    def write(self, runtime_context=None, update_db=True):
-        hdu = fits.BinTableHDU(self.data, name=self.table_name, header=fits.Header(self.header))
-        hdu_list = fits.HDUList([fits.PrimaryHDU(), hdu])
-        self._update_filepath(runtime_context)
-        fits_utils.writeto(hdu_list=hdu_list, filepath=self.filepath,
-                           fpack=getattr(runtime_context, 'fpack', False),
-                           overwrite=True, output_verify='fix+warn')
-        if update_db:
-            dbs.save_calibration_info(self.filepath, image=self,
-                                      db_address=runtime_context.db_address)
-            if runtime_context.post_to_archive:
-                db_utils.post_to_archive(self.filepath)
-
-    def _update_filepath(self, runtime_context):
-        if getattr(runtime_context, 'fpack', False) and not self.filepath.endswith('.fz'):
-            self.filepath += '.fz'
-
-    @staticmethod
-    def load(path, table_name):
-        hdu_list = fits.open(path)
-        return Trace(data=hdu_list[table_name].data, header=hdu_list[table_name].header)
 
     def sort(self):
         center = int(self.data['centers'].shape[1] / 2)

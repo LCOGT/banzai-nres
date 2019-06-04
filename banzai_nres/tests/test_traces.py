@@ -106,34 +106,6 @@ class TestTrace:
         assert np.allclose(trace.data['centers'], [centers, centers])
         assert np.allclose(trace.data['id'], [1, 2])
 
-    def test_load_and_write(self):
-        name = 'trace'
-        trace = Trace(data={'id': [1], 'centers': [np.arange(3)]}, table_name=name)
-        runtime_context = FakeContext()
-        with tempfile.TemporaryDirectory() as tmp_directory_name:
-            runtime_context.fpack = False
-            path = os.path.join(tmp_directory_name, 'test_trace_table.fits')
-            trace.filepath = path
-            trace.header = {'bla': 1}
-            trace.write(runtime_context, update_db=False)
-            loaded_trace = Trace.load(path=path, table_name=name)
-            assert np.allclose(loaded_trace.get_centers(0), trace.get_centers(0))
-            assert np.allclose(loaded_trace.get_id(0), trace.get_id(0))
-            assert np.isclose(loaded_trace.header['bla'], 1)
-
-    def test_write_gets_correct_filename(self):
-        name = 'trace'
-        trace = Trace(data={'id': [1], 'centers': [np.arange(3)]}, table_name=name)
-        runtime_context = FakeContext()
-        with tempfile.TemporaryDirectory() as tmp_directory_name:
-            for fpack, extension in zip([True, False], ['.fz', 'its']):
-                runtime_context.fpack = fpack
-                path = os.path.join(tmp_directory_name, 'test_trace_table.fits')
-                trace.filepath = path
-                trace.header = {'bla': 1}
-                trace._update_filepath(runtime_context)
-                assert trace.filepath[-3:] == extension
-
     def test_sorting_trace_centers(self):
         centers = np.array([1, 2, 3])
         data = {'id': [1, 2, 3, 4],
@@ -158,17 +130,6 @@ class TestTrace:
         trace.del_centers([-1, -2])
         assert np.allclose(trace.data['id'], [1])
         assert np.allclose(trace.data['centers'], [centers])
-
-    def test_instantiates_db_context_from_image(self):
-        image = FakeImage()
-        possible_attributes = ['dateobs', 'datecreated', 'instrument', 'is_master', 'is_bad']
-        counter = np.arange(len(possible_attributes))
-        for attribute, i in zip(possible_attributes, counter):
-            setattr(image, attribute, str(i))
-        trace = Trace(data={'id': [1], 'centers': [np.arange(3)]}, image=image)
-        for attribute in possible_attributes:
-            assert getattr(image, attribute) == getattr(trace, attribute)
-        assert trace.attributes == settings.CALIBRATION_SET_CRITERIA.get('TRACE', {})
 
 
 class TestAllTraceFitter:
