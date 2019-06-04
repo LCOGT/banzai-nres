@@ -49,7 +49,8 @@ BOX_SPECTRUM_EXTNAME = 'SPECBOX'
 settings.CALIBRATION_SET_CRITERIA = {'BIAS': ['ccdsum'],
                                      'DARK': ['ccdsum'],
                                      'LAMPFLAT': ['ccdsum', 'fiber0_lit', 'fiber1_lit', 'fiber2_lit'],
-                                     'TRACE': ['ccdsum', 'fiber0_lit', 'fiber1_lit', 'fiber2_lit']}
+                                     'TRACE': ['ccdsum', 'fiber0_lit', 'fiber1_lit', 'fiber2_lit'],
+                                     'BLAZE': ['ccdsum', 'fiber0_lit', 'fiber1_lit', 'fiber2_lit']}
 
 settings.CALIBRATION_FILENAME_FUNCTIONS = {'BIAS': make_calibration_filename_function('BIAS', [ccdsum_to_filename],
                                                                                       get_telescope_filename),
@@ -61,6 +62,9 @@ settings.CALIBRATION_FILENAME_FUNCTIONS = {'BIAS': make_calibration_filename_fun
                                                                                           get_telescope_filename),
                                            'TRACE': make_calibration_filename_function('TRACE', [ccdsum_to_filename,
                                                                                        fibers_state_to_filename],
+                                                                                       get_telescope_filename),
+                                           'BLAZE': make_calibration_filename_function('BLAZE', [ccdsum_to_filename,
+                                                                                       fibers_state_to_filename],
                                                                                        get_telescope_filename)}
 
 settings.CALIBRATION_IMAGE_TYPES = ['BIAS', 'DARK', 'LAMPFLAT', 'TRACE', 'BLAZE']
@@ -68,8 +72,8 @@ settings.CALIBRATION_IMAGE_TYPES = ['BIAS', 'DARK', 'LAMPFLAT', 'TRACE', 'BLAZE'
 settings.LAST_STAGE = {'BIAS': 'banzai.trim.Trimmer',
                        'DARK': 'banzai.bias.BiasSubtractor',
                        'LAMPFLAT': 'banzai.dark.DarkSubtractor',
-                       'TRACE': 'banzai.dark.DarkSubtractor',
-                       'BLAZE': 'banzai_nres.extract.BoxExtract',
+                       'TRACE': 'banzai.bpm.BPMUpdater',  # TRACE runs on lampflats which are already reduced
+                       'BLAZE': 'banzai.bpm.BPMUpdater',  # BLAZE runs on lampflats which are already reduced
                        'DOUBLE': None,
                        'TARGET': None}
 
@@ -77,7 +81,8 @@ settings.EXTRA_STAGES = {'BIAS': ['banzai.bias.BiasMasterLevelSubtractor', 'banz
                          'DARK': ['banzai.dark.DarkNormalizer', 'banzai.dark.DarkComparer'],
                          'LAMPFLAT': None,
                          'TRACE': None,
-                         'BLAZE': None,
+                         'BLAZE': ['banzai_nres.traces.LoadTrace', 'banzai_nres.extract.RectifyTwodSpectrum',
+                                   'banzai_nres.extract.BoxExtract'],
                          'DOUBLE': None,
                          'TARGET': None}
 

@@ -4,15 +4,16 @@ blaze.py: Driver script for making blaze calibration files for echelle spectrogr
 Authors
     G. Mirek Brandt (gmbrandt@ucsb.edu)
 """
+from astropy.table import Table, Column
+import os
+import logging
 
 from banzai.calibrations import CalibrationMaker, create_master_calibration_header
 from banzai.utils import file_utils
-
+from banzai_nres.images import ImageBase
 import banzai_nres.settings as nres_settings
 import banzai.settings as banzai_settings
 
-import os
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -59,3 +60,15 @@ class BlazeMaker(CalibrationMaker):
         if len(master_calibrations) > 0:
             master_calibrations = master_calibrations[0]
         return master_calibrations
+
+
+class Blaze(ImageBase):
+    """
+    :param data = {'id': ndarray, 'centers': ndarray}. 'centers' gives a 2d array, where
+    the jth row are the y centers across the detector for the trace with identification trace_centers['id'][j]
+    """
+    def __init__(self, data=None, table_name=None, filepath=None,
+                 header=None, image=None, obstype='BLAZE'):
+        super(Blaze, self).__init__(data=data, table_name=table_name, filepath=filepath,
+                                    header=header, image=image, obstype=obstype)
+        self.data = Table(data)

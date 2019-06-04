@@ -49,16 +49,16 @@ class TestImageBase:
 
     def test_write_gets_correct_filename(self):
         name = 'trace'
-        trace = ImageBase(data=Table({'id': [1], 'centers': [np.arange(3)]}), table_name=name)
+        image = ImageBase(data=Table({'id': [1], 'centers': [np.arange(3)]}), table_name=name)
         runtime_context = FakeContext()
         with tempfile.TemporaryDirectory() as tmp_directory_name:
             for fpack, extension in zip([True, False], ['.fz', 'its']):
                 runtime_context.fpack = fpack
                 path = os.path.join(tmp_directory_name, 'test_trace_table.fits')
-                trace.filepath = path
-                trace.header = {'bla': 1}
-                trace._update_filepath(runtime_context)
-                assert trace.filepath[-3:] == extension
+                image.filepath = path
+                image.header = {'bla': 1}
+                image._update_filepath(runtime_context)
+                assert image.filepath[-3:] == extension
 
     def test_instantiates_db_context_from_image(self):
         image = FakeImage()
