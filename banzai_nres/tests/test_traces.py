@@ -336,7 +336,7 @@ class TestTraceMaker:
         trace_fitter = TraceMaker(fake_context)
         trace_fitter.order_of_poly_fit = order_of_poly_fit
         trace_fitter.xmin, trace_fitter.xmax = 50, 60
-        trace_fitter.do_stage([image])
+        trace_fitter.do_stage(image)
         assert True
 
     @mock.patch('banzai_nres.traces.TraceMaker._get_filepath', return_value=None)
@@ -351,8 +351,7 @@ class TestTraceMaker:
         trace_maker.xmin = 5
         trace_maker.xmax = 10
         trace_maker.trace_table_name = trace_table_name
-        traces = trace_maker.do_stage(images=[FakeImage()])
-        loaded_trace = traces[0]
+        loaded_trace = trace_maker.do_stage(image=FakeImage())
         assert np.allclose(loaded_trace.get_centers(0), expected_trace.get_centers(0))
         assert np.allclose(loaded_trace.get_id(0), expected_trace.get_id(0))
 
@@ -377,17 +376,16 @@ class TestTraceMaker:
                                                                                       poly_order_of_traces=poly_fit_order)
         noisify_image(image)
         fake_context = FakeContext()
-        images = [image]
 
         trace_maker = TraceMaker(fake_context)
         trace_maker.xmin = image.data.shape[1]//2 - 20
         trace_maker.xmax = image.data.shape[1]//2 + 20
         trace_maker.order_of_poly_fit = poly_fit_order
         trace_maker.second_order_coefficient_guess = second_order_coefficient_guess
-        traces = trace_maker.do_stage(images)
-        assert traces[0].is_master
-        assert traces[0].data['centers'].shape[0] == trace_centers.shape[0]
-        difference = traces[0].data['centers'] - trace_centers
+        trace = trace_maker.do_stage(image)
+        assert trace.is_master
+        assert trace.data['centers'].shape[0] == trace_centers.shape[0]
+        difference = trace.data['centers'] - trace_centers
         logger.debug('median absolute deviation in unit-test trace fitting is {0} pixels'
                      .format(np.median(np.abs(difference - np.median(difference)))))
         logger.debug('standard deviation in unit-test trace fitting is {0} pixels'
