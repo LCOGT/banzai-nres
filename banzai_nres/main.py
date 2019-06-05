@@ -8,12 +8,10 @@ Authors
 """
 
 import banzai_nres.settings as nres_settings  # import to override banzai settings.
-import banzai.settings as banzai_settings
-from banzai.main import process_directory, parse_directory_args
+import banzai.settings as settings
+from banzai.main import process_directory, parse_directory_args, process_master_maker
 from banzai.utils import date_utils
 from banzai import dbs
-from banzai import logs
-from banzai.main import run_master_maker
 
 from banzai_nres.utils.runtime_utils import validate_raw_path, get_frame_types, get_reduction_date_window
 
@@ -23,28 +21,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def process_master_maker(runtime_context, instrument, frame_type_to_stack, min_date, max_date,
-                         master_frame_type=None, use_masters=False):
-    if master_frame_type is None:
-        master_frame_type = frame_type_to_stack
-    extra_tags = {'instrument': instrument.camera, 'master_frame_type': master_frame_type,
-                  'min_date': min_date.strftime(date_utils.TIMESTAMP_FORMAT),
-                  'max_date': max_date.strftime(date_utils.TIMESTAMP_FORMAT)}
-    logger.info("Making master frames", extra_tags=extra_tags)
-    image_path_list = dbs.get_individual_calibration_images(instrument, frame_type_to_stack, min_date, max_date,
-                                                            use_masters=use_masters,
-                                                            db_address=runtime_context.db_address)
-    if len(image_path_list) == 0:
-        logger.info("No calibration frames found to stack", extra_tags=extra_tags)
-
-    try:
-        run_master_maker(image_path_list, runtime_context, master_frame_type)
-    except Exception:
-        logger.error(logs.format_exception())
-
-
 def reduce_night(runtime_context=None, raw_path=None):
-    all_frame_types = list(banzai_settings.LAST_STAGE.keys())
+    all_frame_types = list(settings.LAST_STAGE.keys())
     extra_console_arguments = [{'args': ['--site'],
                                 'kwargs': {'dest': 'site', 'help': 'Site code (e.g. ogg)', 'required': True}},
                                {'args': ['--camera'],
@@ -79,17 +57,16 @@ def reduce_night(runtime_context=None, raw_path=None):
     raw_path = validate_raw_path(runtime_context, raw_path)
 
     for frame_type in frame_types:
-        if frame_type == 'TRACE' or 'BLAZE':
-            frame_type_to_stack = 'LAMPFLAT'
+        if frame_type == 'TRACE' or frame_type == 'BLAZE':
+            frame_to_load = 'LAMPFLAT'
             use_masters = True
-            master_frame_type = frame_type
+            cal_type = frame_type
         else:
-            frame_type_to_stack = frame_type
+            frame_to_load = frame_type
             use_masters = False
-            master_frame_type = None
-            # we only reduce data for types other than BLAZE and TRACE. BLAZE and TRACE run on masters.
-            process_directory(runtime_context, raw_path, [frame_type_to_stack])
-        if frame_type in banzai_settings.CALIBRATION_IMAGE_TYPES:
-            process_master_maker(runtime_context, instrument, frame_type_to_stack.upper(),
-                                 min_date=min_date, max_date=max_date,
-                                 master_frame_type=master_frame_type, use_masters=use_masters)
+            cal_type = None
+        process_directory(runtime_context, raw_path, [frame_to_load], use_masters=use_masters,
+                          calibration_type=cal_type)
+        if frame_type in settings.CALIBRATION_IMAGE_TYPES:
+            process_master_maker(runtime_context, instrument, frame_to_load.upper(),
+                                 min_date=min_date, max_date=max_date)

@@ -67,13 +67,12 @@ settings.CALIBRATION_FILENAME_FUNCTIONS = {'BIAS': make_calibration_filename_fun
                                                                                        fibers_state_to_filename],
                                                                                        get_telescope_filename)}
 
-settings.CALIBRATION_IMAGE_TYPES = ['BIAS', 'DARK', 'LAMPFLAT', 'TRACE', 'BLAZE']
+settings.CALIBRATION_IMAGE_TYPES = ['BIAS', 'DARK', 'LAMPFLAT']
 
 settings.LAST_STAGE = {'BIAS': 'banzai.trim.Trimmer',
                        'DARK': 'banzai.bias.BiasSubtractor',
                        'LAMPFLAT': 'banzai.dark.DarkSubtractor',
                        'TRACE': 'banzai.bpm.BPMUpdater',  # TRACE runs on lampflats which are already reduced
-                       'BLAZE': 'banzai.bpm.BPMUpdater',  # BLAZE runs on lampflats which are already reduced
                        'DOUBLE': None,
                        'TARGET': None}
 
@@ -87,6 +86,4 @@ settings.EXTRA_STAGES = {'BIAS': ['banzai.bias.BiasMasterLevelSubtractor', 'banz
 
 settings.CALIBRATION_STACKER_STAGE = {'BIAS': 'banzai.bias.BiasMaker',
                                       'DARK': 'banzai.dark.DarkMaker',
-                                      'LAMPFLAT': 'banzai_nres.flats.FlatStacker',
-                                      'TRACE': 'banzai_nres.traces.TraceMaker',
-                                      'BLAZE': 'banzai_nres.blaze.BlazeMaker'}
+                                      'LAMPFLAT': 'banzai_nres.flats.FlatStacker'}
