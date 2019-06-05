@@ -80,7 +80,7 @@ settings.EXTRA_STAGES = {'BIAS': ['banzai.bias.BiasMasterLevelSubtractor', 'banz
                          'DARK': ['banzai.dark.DarkNormalizer', 'banzai.dark.DarkComparer'],
                          'LAMPFLAT': None,
                          'TRACE': ['banzai_nres.traces.TraceMaker'],
-                         'BLAZE': None,
+                         'BLAZE': ['banzai_nres.blaze.BlazeMaker'],
                          'DOUBLE': None,
                          'TARGET': None}
 

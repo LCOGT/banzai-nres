@@ -36,6 +36,8 @@ class TraceMaker(CalibrationMaker):
         return 'TRACE'
 
     def make_master_calibration_frame(self, images):
+        #TODO if we feed this stage into a standard extra_stage, we cannot have it be a
+        # multiframe stage, since it tries to sort an Image.
         traces = []
         for image in images:
             master_header = create_master_calibration_header(old_header=image.header, images=[image])

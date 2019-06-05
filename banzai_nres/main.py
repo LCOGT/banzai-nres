@@ -61,12 +61,16 @@ def reduce_night(runtime_context=None, raw_path=None):
             frame_to_load = 'LAMPFLAT'
             use_masters = True
             cal_type = frame_type
+            image_path_list = dbs.get_individual_calibration_images(instrument, frame_to_load, min_date, max_date,
+                                                                    use_masters=use_masters,
+                                                                    db_address=runtime_context.db_address)
         else:
             frame_to_load = frame_type
             use_masters = False
             cal_type = None
+            image_path_list = None
         process_directory(runtime_context, raw_path, [frame_to_load], use_masters=use_masters,
-                          calibration_type=cal_type)
+                          calibration_type=cal_type, image_path_list=image_path_list)
         if frame_type in settings.CALIBRATION_IMAGE_TYPES:
             process_master_maker(runtime_context, instrument, frame_to_load.upper(),
                                  min_date=min_date, max_date=max_date)
