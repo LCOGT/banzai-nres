@@ -79,7 +79,7 @@ settings.LAST_STAGE = {'BIAS': 'banzai.trim.Trimmer',
 settings.EXTRA_STAGES = {'BIAS': ['banzai.bias.BiasMasterLevelSubtractor', 'banzai.bias.BiasComparer'],
                          'DARK': ['banzai.dark.DarkNormalizer', 'banzai.dark.DarkComparer'],
                          'LAMPFLAT': None,
-                         'TRACE': None,
+                         'TRACE': ['banzai_nres.traces.TraceMaker'],
                          'BLAZE': None,
                          'DOUBLE': None,
                          'TARGET': None}
