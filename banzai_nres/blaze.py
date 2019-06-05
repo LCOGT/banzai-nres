@@ -5,6 +5,8 @@ Authors
     G. Mirek Brandt (gmbrandt@ucsb.edu)
 """
 from astropy.table import Table
+from scipy import ndimage
+import numpy as np
 import os
 
 from banzai.calibrations import Stage, create_master_calibration_header
@@ -35,9 +37,11 @@ class BlazeMaker(Stage):
         master_filepath = self._get_filepath(self.runtime_context, image, master_filename)
         logger.info('Making blaze file', image=image)
         lampflat_spectrum = image.data_tables[nres_settings.BOX_SPECTRUM_EXTNAME]
-        blaze = Blaze(data=None, filepath=master_filepath, header=master_header, image=image,
-                      table_name=self.blaze_table_name,
-                      obstype=self.calibration_type)
+        lampflat_spectrum['flux'] = ndimage.median_filter(lampflat_spectrum['flux'].data, (1, 101))
+        lampflat_spectrum = self._clip_spectrum(lampflat_spectrum, minval=10 * 100)  # 10 times the read noise.
+        lampflat_spectrum = self._normalize_max_value(lampflat_spectrum)
+        blaze = ImageBase(data=lampflat_spectrum, filepath=master_filepath, header=master_header,
+                          image=image, table_name=self.blaze_table_name, obstype=self.calibration_type)
         logger.info('Created master blaze file', image=image, extra_tags={'calibration_type': self.calibration_type,
                                                                           'output_path': master_filepath,
                                                                           'calibration_obstype': master_header['OBSTYPE']})
@@ -48,14 +52,12 @@ class BlazeMaker(Stage):
         output_directory = file_utils.make_output_directory(runtime_context, lampflat_image)
         return os.path.join(output_directory, os.path.basename(master_filename))
 
+    @staticmethod
+    def _clip_spectrum(spec, minval):
+        spec['flux'] = spec['flux'].data * (spec['flux'].data > minval) + minval * (spec['flux'].data <= minval)
+        return spec
 
-class Blaze(ImageBase):
-    """
-    :param data = {'id': ndarray, 'centers': ndarray}. 'centers' gives a 2d array, where
-    the jth row are the y centers across the detector for the trace with identification trace_centers['id'][j]
-    """
-    def __init__(self, data=None, table_name=None, filepath=None,
-                 header=None, image=None, obstype='BLAZE'):
-        super(Blaze, self).__init__(data=data, table_name=table_name, filepath=filepath,
-                                    header=header, image=image, obstype=obstype)
-        self.data = Table(data)
+    @staticmethod
+    def _normalize_max_value(spec):
+        spec['flux'] /= np.max(spec['flux'].data, axis=1).reshape(-1, 1)
+        return spec

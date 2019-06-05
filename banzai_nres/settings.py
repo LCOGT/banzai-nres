@@ -73,6 +73,7 @@ settings.LAST_STAGE = {'BIAS': 'banzai.trim.Trimmer',
                        'DARK': 'banzai.bias.BiasSubtractor',
                        'LAMPFLAT': 'banzai.dark.DarkSubtractor',
                        'TRACE': 'banzai.bpm.BPMUpdater',  # TRACE runs on lampflats which are already reduced
+                       'BLAZE': 'banzai.bpm.BPMUpdater',  # BLAZE runs on lampflats which are already reduced
                        'DOUBLE': None,
                        'TARGET': None}
 
@@ -80,7 +81,8 @@ settings.EXTRA_STAGES = {'BIAS': ['banzai.bias.BiasMasterLevelSubtractor', 'banz
                          'DARK': ['banzai.dark.DarkNormalizer', 'banzai.dark.DarkComparer'],
                          'LAMPFLAT': None,
                          'TRACE': ['banzai_nres.traces.TraceMaker'],
-                         'BLAZE': ['banzai_nres.blaze.BlazeMaker'],
+                         'BLAZE': ['banzai_nres.traces.LoadTrace', 'banzai_nres.extract.RectifyTwodSpectrum',
+                                   'banzai_nres.extract.BoxExtract', 'banzai_nres.blaze.BlazeMaker'],
                          'DOUBLE': None,
                          'TARGET': None}
 
