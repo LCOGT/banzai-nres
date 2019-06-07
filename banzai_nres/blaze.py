@@ -36,7 +36,9 @@ class BlazeMaker(Stage):
         master_filename = banzai_settings.CALIBRATION_FILENAME_FUNCTIONS[self.calibration_type](image)
         master_filepath = self._get_filepath(self.runtime_context, image, master_filename)
         logger.info('Making blaze file', image=image)
-        lampflat_spectrum = image.data_tables[nres_settings.BOX_SPECTRUM_EXTNAME]
+        lampflat_spectrum = Table(image.data_tables[nres_settings.BOX_SPECTRUM_EXTNAME]._data_table)
+        # TODO fix the following issue: the .write method only works if ImageBase.data is an AstropyTable,
+        # not a banzai.images.DataTable. Make DataTable in banzai inherit from astropy Table?
         lampflat_spectrum['flux'] = ndimage.median_filter(lampflat_spectrum['flux'].data, (1, 101))
         lampflat_spectrum = self._clip_spectrum(lampflat_spectrum, minval=10 * 100)  # 10 times the read noise.
         lampflat_spectrum = self._normalize_max_value(lampflat_spectrum)
