@@ -1,5 +1,6 @@
 import abc
 from astropy.io import fits
+from astropy.table import Table
 
 from banzai.images import Image
 from banzai_nres.fibers import fiber_states_from_header
@@ -31,7 +32,7 @@ class ImageBase(object):
             header = {}
         self.header = header
         self.filepath = filepath
-        self.data = data
+        self.data = Table(data)
         self.table_name = table_name
 
         # banzai.images.Image attributes necessary for fits_utils.writeto

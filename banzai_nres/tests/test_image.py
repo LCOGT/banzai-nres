@@ -34,7 +34,7 @@ def test_get_num_lit_fibers(mock_instrument):
 class TestImageBase:
     def test_load_and_write(self):
         name = 'trace'
-        image = ImageBase(data=Table({'id': [1], 'centers': [np.arange(3)]}), table_name=name)
+        image = ImageBase(data={'id': [1], 'centers': [np.arange(3)]}, table_name=name)
         runtime_context = FakeContext()
         with tempfile.TemporaryDirectory() as tmp_directory_name:
             runtime_context.fpack = False
