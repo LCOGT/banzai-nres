@@ -336,7 +336,7 @@ class TestTraceMaker:
         trace_fitter = TraceMaker(fake_context)
         trace_fitter.order_of_poly_fit = order_of_poly_fit
         trace_fitter.xmin, trace_fitter.xmax = 50, 60
-        trace_fitter.do_stage(image)
+        trace_fitter.do_stage([image])
         assert True
 
     @mock.patch('banzai_nres.traces.TraceMaker._get_filepath', return_value=None)
@@ -351,7 +351,7 @@ class TestTraceMaker:
         trace_maker.xmin = 5
         trace_maker.xmax = 10
         trace_maker.trace_table_name = trace_table_name
-        loaded_trace = trace_maker.do_stage(image=FakeImage())
+        loaded_trace = trace_maker.do_stage(images=[FakeImage()])[0]
         assert np.allclose(loaded_trace.get_centers(0), expected_trace.get_centers(0))
         assert np.allclose(loaded_trace.get_id(0), expected_trace.get_id(0))
 
@@ -382,7 +382,7 @@ class TestTraceMaker:
         trace_maker.xmax = image.data.shape[1]//2 + 20
         trace_maker.order_of_poly_fit = poly_fit_order
         trace_maker.second_order_coefficient_guess = second_order_coefficient_guess
-        trace = trace_maker.do_stage(image)
+        trace = trace_maker.do_stage([image])[0]
         assert trace.is_master
         assert trace.data['centers'].shape[0] == trace_centers.shape[0]
         difference = trace.data['centers'] - trace_centers
