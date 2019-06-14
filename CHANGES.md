@@ -1,6 +1,6 @@
-0.5.0 (2019-02-25)
+0.4.1 (2019-02-25)
 ------------------
-- Box extraction for ARC and TARGET exposures.
+- Added a base class for the Trace object in preparation of similar table-like calibration objects.
 
 0.4.0 (2019-02-25)
 ------------------

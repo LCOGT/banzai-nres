@@ -15,7 +15,7 @@ from setuptools import setup, find_packages
 setup(name='lco-banzai-nres',
       author=['Curtis McCully', 'G. Mirek Brandt', 'Timothy D. Brandt'],
       author_email=['cmccully@lco.global', 'gmbrandt@ucsb.edu', 'tbrandt@physics.ucsb.edu'],
-      version='0.5.0',
+      version='0.4.1',
       python_requires='>=3.6',
       packages=find_packages(),
       package_dir={'banzai_nres': 'banzai_nres'},
