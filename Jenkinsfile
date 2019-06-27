@@ -74,8 +74,8 @@ pipeline {
 				script {
                     withKubeConfig([credentialsId: "dev-kube-config"]) {
 						sh("kubectl exec ${podName} -c banzai-nres-listener -- " +
-						        "/usr/bin/sudo -s -E -u archive /opt/conda/bin/pytest --durations=0 " +
-						        "--junitxml=/home/archive/pytest-master-bias.xml -m master_bias /lco/banzai-nres/")
+						        "pytest --durations=0 --junitxml=/home/archive/pytest-master-bias.xml " +
+						        "-m master_bias /lco/banzai-nres/")
 					}
 				}
 			}
@@ -103,8 +103,8 @@ pipeline {
 				script {
                     withKubeConfig([credentialsId: "dev-kube-config"]) {
 						sh("kubectl exec ${podName} -c banzai-nres-listener  -- " +
-						        "/usr/bin/sudo -s -E -u archive /opt/conda/bin/pytest --durations=0 " +
-						        "--junitxml=/home/archive/pytest-master-dark.xml -m master_dark /lco/banzai-nres/")
+						        "pytest --durations=0 " --junitxml=/home/archive/pytest-master-dark.xml " +
+						        "-m master_dark /lco/banzai-nres/")
 					}
 				}
 			}
@@ -132,8 +132,8 @@ pipeline {
 				script {
                     withKubeConfig([credentialsId: "dev-kube-config"]) {
 						sh("kubectl exec ${podName} -c banzai-nres -- " +
-						        "/usr/bin/sudo -s -E -u archive /opt/conda/bin/pytest --durations=0 " +
-						        "--junitxml=/home/archive/pytest-master-flat.xml -m master_flat /lco/banzai-nres/")
+						        "pytest --durations=0 --junitxml=/home/archive/pytest-master-flat.xml " +
+						        "-m master_flat /lco/banzai-nres/")
 					}
 				}
 			}
