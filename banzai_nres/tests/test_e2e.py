@@ -30,9 +30,9 @@ def init(configdb):
     dbs.create_db('.', db_address=os.environ['DB_ADDRESS'], configdb_address='http://configdbdev.lco.gtn/sites/')
     with dbs.get_session(db_address=os.environ['DB_ADDRESS']) as db_session:
         elp_nres = dbs.Instrument(name='nres02', camera='fl17', enclosure='igla',
-                                  telescope='', type='NRES', schedulable=True)
+                                  telescope='', type='NRES', schedulable=True, site='elp')
         lsc_nres = dbs.Instrument(name='nres01', camera='fl09', enclosure='igla',
-                                  telescope='', type='NRES', schedulable=True)
+                                  telescope='', type='NRES', schedulable=True, site='lsc')
         db_session.add(elp_nres)
         db_session.add(lsc_nres)
         db_session.commit()
