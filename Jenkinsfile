@@ -73,7 +73,7 @@ pipeline {
 			steps {
 				script {
                     withKubeConfig([credentialsId: "dev-kube-config"]) {
-						sh("kubectl exec -c banzai-nres ${podName} -- " +
+						sh("kubectl exec ${podName} -c banzai-nres-listener -- " +
 						        "/usr/bin/sudo -s -E -u archive /opt/conda/bin/pytest --durations=0 " +
 						        "--junitxml=/home/archive/pytest-master-bias.xml -m master_bias /lco/banzai-nres/")
 					}
@@ -83,8 +83,8 @@ pipeline {
 				always {
 					script {
 					    withKubeConfig([credentialsId: "dev-kube-config"]) {
-						    sh("kubectl cp banzai-nres -c " +
-						            "${podName}:home/archive/pytest-master-bias.xml " +
+						    sh("kubectl cp ${podName} -c " +
+						            "banzai-nres-listener:/home/archive/pytest-master-bias.xml " +
 						            "pytest-master-bias.xml")
 						    junit "pytest-master-bias.xml"
 						}
@@ -102,7 +102,7 @@ pipeline {
 			steps {
 				script {
                     withKubeConfig([credentialsId: "dev-kube-config"]) {
-						sh("kubectl exec -c banzai-nres ${podName} -- " +
+						sh("kubectl exec ${podName} -c banzai-nres-listener  -- " +
 						        "/usr/bin/sudo -s -E -u archive /opt/conda/bin/pytest --durations=0 " +
 						        "--junitxml=/home/archive/pytest-master-dark.xml -m master_dark /lco/banzai-nres/")
 					}
@@ -112,8 +112,8 @@ pipeline {
 				always {
 					script {
 					    withKubeConfig([credentialsId: "dev-kube-config"]) {
-						    sh("kubectl cp banzai-nres -c " +
-						            "${podName}:home/archive/pytest-master-dark.xml " +
+						    sh("kubectl cp ${podName} -c " +
+						            "banzai-nres-listener:/home/archive/pytest-master-dark.xml " +
 						            "pytest-master-dark.xml")
 						    junit "pytest-master-dark.xml"
 						}
@@ -131,7 +131,7 @@ pipeline {
 			steps {
 				script {
                     withKubeConfig([credentialsId: "dev-kube-config"]) {
-						sh("kubectl exec -c banzai-nres ${podName} -- " +
+						sh("kubectl exec ${podName} -c banzai-nres -- " +
 						        "/usr/bin/sudo -s -E -u archive /opt/conda/bin/pytest --durations=0 " +
 						        "--junitxml=/home/archive/pytest-master-flat.xml -m master_flat /lco/banzai-nres/")
 					}
@@ -141,8 +141,8 @@ pipeline {
 				always {
 					script {
 					    withKubeConfig([credentialsId: "dev-kube-config"]) {
-						    sh("kubectl cp banzai-nres -c " +
-						            "${podName}:home/archive/pytest-master-flat.xml " +
+						    sh("kubectl cp ${podName} -c " +
+						            "banzai-nres-listener:/home/archive/pytest-master-flat.xml " +
 						            "pytest-master-flat.xml")
 						    junit "pytest-master-flat.xml"
 						}
