@@ -6,15 +6,13 @@ Authors
 
     G. Mirek Brandt (gmbrandt@ucsb.edu)
 """
-import datetime
-
 import banzai_nres.settings as nres_settings  # import to override banzai settings.
 import banzai.settings as banzai_settings
 from banzai.main import process_directory, parse_directory_args
 from banzai.utils import date_utils
 from banzai import dbs
 from banzai import logs
-from banzai.main import run_master_maker
+from banzai.calibrations import run_master_maker
 
 from banzai_nres.utils.runtime_utils import validate_raw_path, get_frame_types, get_reduction_date_window
 

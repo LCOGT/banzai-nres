@@ -4,6 +4,12 @@
 
 pipeline {
 	agent any
+	parameters {
+		booleanParam(
+			name: 'forceEndToEnd',
+			defaultValue: false,
+			description: 'When true, forces the end-to-end tests to always run.')
+	}
 	environment {
 		dockerImage = null
 		PROJ_NAME = projName()
@@ -29,7 +35,7 @@ pipeline {
 				}
 			}
 		}
-		stage('Test') {
+		stage('Unit Tests') {
 			steps {
 				script {
 					sh 'docker run --rm --user=root --entrypoint=pytest ${DOCKER_IMG} -m "not e2e" /lco/banzai-nres/'
@@ -43,46 +49,110 @@ pipeline {
 					expression { return params.forceEndToEnd }
 				}
 			}
-			environment {
-				RANCHERDEV_CREDS = credentials('rancher-cli-dev')
-			}
-			steps {
-				script {
-					withCredentials([usernamePassword(
-							credentialsId: 'rabbit-mq',
-							usernameVariable: 'RABBITMQ_USER',
-							passwordVariable: 'RABBITMQ_PASSWORD')]) {
-						sh('rancher -c ${RANCHERDEV_CREDS} rm --stop --type stack BANZAINRESPipelineTest || true')
-						sh('rancher -c ${RANCHERDEV_CREDS} up --stack BANZAINRESPipelineTest --force-upgrade --confirm-upgrade -d')
-					}
-				}
-			}
+		    steps {
+	            script {
+                    withKubeConfig([credentialsId: "dev-kube-config"]) {
+                        sh('helm repo update && helm upgrade --install banzai-nres lco/banzai-nres ' +
+                                '--set banzaiNRES.tag="${GIT_DESCRIPTION}" --namespace dev --wait --timeout=3600')
+
+                        podName = sh(script: 'kubectl -n dev get po -l app.kubernetes.io/instance=banzai-nres ' +
+                                        '--sort-by=.status.startTime -o jsonpath="{.items[-1].metadata.name}"',
+                                     returnStdout: true).trim()
+
+                    }
+                 }
+		    }
 		}
-		stage('TestE2E') {
+		stage('Test-Master-Bias-Creation') {
 			when {
 				anyOf {
 					branch 'PR-*'
 					expression { return params.forceEndToEnd }
 				}
 			}
-			environment {
-				RANCHERDEV_CREDS = credentials('rancher-cli-dev')
-				SSH_CREDS = credentials('jenkins-rancher-ssh-userpass')
-				CONTAINER_ID = getContainerId('BANZAINRESPipelineTest-BANZAINRESPipelineTest-1')
-				CONTAINER_HOST = getContainerHostName('BANZAINRESPipelineTest-BANZAINRESPipelineTest-1')
-				ARCHIVE_UID = credentials('archive-userid')
-			}
 			steps {
 				script {
-					sshagent(credentials: ['jenkins-rancher-ssh']) {
-						executeOnRancher('pytest -m e2e /lco/banzai-nres/', CONTAINER_HOST, CONTAINER_ID, ARCHIVE_UID)
+                    withKubeConfig([credentialsId: "dev-kube-config"]) {
+						sh("kubectl exec -c banzai-nres ${podName} -- " +
+						        "/usr/bin/sudo -s -E -u archive /opt/conda/bin/pytest --durations=0 " +
+						        "--junitxml=/home/archive/pytest-master-bias.xml -m master_bias /lco/banzai-nres/")
 					}
 				}
 			}
 			post {
+				always {
+					script {
+					    withKubeConfig([credentialsId: "dev-kube-config"]) {
+						    sh("kubectl cp banzai-nres -c " +
+						            "${podName}:home/archive/pytest-master-bias.xml " +
+						            "pytest-master-bias.xml")
+						    junit "pytest-master-bias.xml"
+						}
+					}
+				}
+			}
+		}
+		stage('Test-Master-Dark-Creation') {
+			when {
+				anyOf {
+					branch 'PR-*'
+					expression { return params.forceEndToEnd }
+				}
+			}
+			steps {
+				script {
+                    withKubeConfig([credentialsId: "dev-kube-config"]) {
+						sh("kubectl exec -c banzai-nres ${podName} -- " +
+						        "/usr/bin/sudo -s -E -u archive /opt/conda/bin/pytest --durations=0 " +
+						        "--junitxml=/home/archive/pytest-master-dark.xml -m master_dark /lco/banzai-nres/")
+					}
+				}
+			}
+			post {
+				always {
+					script {
+					    withKubeConfig([credentialsId: "dev-kube-config"]) {
+						    sh("kubectl cp banzai-nres -c " +
+						            "${podName}:home/archive/pytest-master-dark.xml " +
+						            "pytest-master-dark.xml")
+						    junit "pytest-master-dark.xml"
+						}
+					}
+				}
+			}
+		}
+		stage('Test-Master-Flat-Creation') {
+			when {
+				anyOf {
+					branch 'PR-*'
+					expression { return params.forceEndToEnd }
+				}
+			}
+			steps {
+				script {
+                    withKubeConfig([credentialsId: "dev-kube-config"]) {
+						sh("kubectl exec -c banzai-nres ${podName} -- " +
+						        "/usr/bin/sudo -s -E -u archive /opt/conda/bin/pytest --durations=0 " +
+						        "--junitxml=/home/archive/pytest-master-flat.xml -m master_flat /lco/banzai-nres/")
+					}
+				}
+			}
+			post {
+				always {
+					script {
+					    withKubeConfig([credentialsId: "dev-kube-config"]) {
+						    sh("kubectl cp banzai-nres -c " +
+						            "${podName}:home/archive/pytest-master-flat.xml " +
+						            "pytest-master-flat.xml")
+						    junit "pytest-master-flat.xml"
+						}
+					}
+				}
 				success {
 					script {
-						sh('rancher -c ${RANCHERDEV_CREDS} rm --stop --type stack BANZAINRESPipelineTest ')
+					    withKubeConfig([credentialsId: "dev-kube-config"]) {
+                            sh("helm delete banzai-nres || true")
+					    }
 					}
 				}
 			}
