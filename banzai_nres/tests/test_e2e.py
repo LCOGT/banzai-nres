@@ -1,9 +1,9 @@
 import pytest
-from banzai import dbs
 import banzai_nres.settings as nres_settings
 from banzai.tests.utils import FakeResponse
 import os
 import mock
+from banzai import dbs
 from banzai.tests import test_end_to_end
 from glob import glob
 

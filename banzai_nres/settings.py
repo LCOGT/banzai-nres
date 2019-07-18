@@ -1,10 +1,10 @@
 import operator
+from banzai import settings
 
 from banzai.utils.file_utils import ccdsum_to_filename
 from banzai.settings import make_calibration_filename_function
 from banzai.utils.instrument_utils import InstrumentCriterion
 
-from banzai import settings
 
 from banzai_nres.fibers import fibers_state_to_filename
 from banzai_nres.utils.runtime_utils import get_telescope_filename
