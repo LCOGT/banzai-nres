@@ -1,5 +1,4 @@
-FROM docker.lco.global/banzai:0.26.1
-ENTRYPOINT  ["/bin/bash", "-c", "while true; do sleep 100; done"]
+FROM docker.lco.global/banzai:0.26.3
 USER root
 
 WORKDIR /lco/banzai-nres

@@ -23,13 +23,6 @@ DAYS_OBS = [os.path.join(instrument, os.path.basename(dayobs_path)) for instrume
             for dayobs_path in glob(os.path.join(DATA_ROOT, instrument, '201*'))]
 
 
-def lake_side_effect(*args, **kwargs):
-    site = kwargs['params']['site']
-    start = datetime.strftime(kwargs['params']['start_after'].date(), '%Y%m%d')
-    filename = 'test_lake_response_{site}_{start}.json'.format(site=site, start=start)
-    return FakeResponse('data/{filename}'.format(filename=filename))
-
-
 @pytest.mark.e2e
 @pytest.fixture(scope='module')
 @mock.patch('banzai.dbs.requests.get', return_value=FakeResponse('data/configdb_example.json'))
@@ -52,7 +45,7 @@ def init(configdb):
 @pytest.mark.master_bias
 class TestMasterBiasCreation:
     @pytest.fixture(autouse=True)
-    @mock.patch('banzai.utils.lake_utils.requests.get', side_effect=lake_side_effect)
+    @mock.patch('banzai.utils.lake_utils.requests.get', side_effect=test_end_to_end.lake_side_effect)
     def stack_bias_frames(self, mock_lake, init):
         test_end_to_end.run_reduce_individual_frames('*b00.fits*')
         test_end_to_end.mark_frames_as_good('*b91.fits*')
@@ -67,7 +60,7 @@ class TestMasterBiasCreation:
 @pytest.mark.master_dark
 class TestMasterDarkCreation:
     @pytest.fixture(autouse=True)
-    @mock.patch('banzai.utils.lake_utils.requests.get', side_effect=lake_side_effect)
+    @mock.patch('banzai.utils.lake_utils.requests.get', side_effect=test_end_to_end.lake_side_effect)
     def stack_dark_frames(self, mock_lake):
         test_end_to_end.run_reduce_individual_frames('*d00.fits*')
         test_end_to_end.mark_frames_as_good('*d91.fits*')
@@ -82,7 +75,7 @@ class TestMasterDarkCreation:
 @pytest.mark.master_flat
 class TestMasterFlatCreation:
     @pytest.fixture(autouse=True)
-    @mock.patch('banzai.utils.lake_utils.requests.get', side_effect=lake_side_effect)
+    @mock.patch('banzai.utils.lake_utils.requests.get', side_effect=test_end_to_end.lake_side_effect)
     def stack_flat_frames(self, mock_lake):
         test_end_to_end.run_reduce_individual_frames('*w00.fits*')
         test_end_to_end.mark_frames_as_good('*w91.fits*')
