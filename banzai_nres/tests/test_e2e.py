@@ -49,7 +49,7 @@ class TestMasterBiasCreation:
     def stack_bias_frames(self, mock_lake, init):
         test_end_to_end.run_reduce_individual_frames('*b00.fits*')
         test_end_to_end.mark_frames_as_good('*b91.fits*')
-        test_end_to_end.run_stack_calibrations('bias')
+        test_end_to_end.stack_calibrations('bias')
 
     def test_if_stacked_bias_frame_was_created(self):
         test_end_to_end.run_check_if_stacked_calibrations_were_created('*b00.fits*', 'bias')
@@ -64,7 +64,7 @@ class TestMasterDarkCreation:
     def stack_dark_frames(self, mock_lake):
         test_end_to_end.run_reduce_individual_frames('*d00.fits*')
         test_end_to_end.mark_frames_as_good('*d91.fits*')
-        test_end_to_end.run_stack_calibrations('dark')
+        test_end_to_end.stack_calibrations('dark')
 
     def test_if_stacked_dark_frame_was_created(self):
         test_end_to_end.run_check_if_stacked_calibrations_were_created('*d00.fits*', 'dark')
@@ -79,7 +79,7 @@ class TestMasterFlatCreation:
     def stack_flat_frames(self, mock_lake):
         test_end_to_end.run_reduce_individual_frames('*w00.fits*')
         test_end_to_end.mark_frames_as_good('*w91.fits*')
-        test_end_to_end.run_stack_calibrations('lampflat')
+        test_end_to_end.stack_calibrations('lampflat')
 
     def test_if_stacked_flat_frame_was_created(self):
         test_end_to_end.run_check_if_stacked_calibrations_were_created('*w00.fits*', 'lampflat')
