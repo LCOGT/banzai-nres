@@ -7,11 +7,11 @@ from banzai import dbs
 from banzai.tests import test_end_to_end
 from glob import glob
 
-
 import logging
 
 logger = logging.getLogger(__name__)
 
+test_end_to_end.TEST_PACKAGE = 'banzai_nres.tests'
 
 DATA_ROOT = os.path.join(os.sep, 'archive', 'engineering')
 

@@ -1,9 +1,9 @@
 FROM docker.lco.global/banzai:0.26.3
 USER root
 
-RUN pip install --no-cache-dir  git+https://github.com/lcogt/banzai.git@fix/circular_import
-
 WORKDIR /lco/banzai-nres
+
+RUN pip install --no-cache-dir  git+https://github.com/lcogt/banzai.git@fix/circular_import
 
 COPY . /lco/banzai-nres
 
