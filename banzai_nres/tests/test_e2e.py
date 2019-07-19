@@ -6,6 +6,7 @@ import mock
 from banzai import dbs
 from banzai.tests import test_end_to_end
 from glob import glob
+from astropy.utils.data import get_pkg_data_filename
 
 import logging
 
@@ -25,7 +26,8 @@ DAYS_OBS = [os.path.join(instrument, os.path.basename(dayobs_path)) for instrume
 
 @pytest.mark.e2e
 @pytest.fixture(scope='module')
-@mock.patch('banzai.dbs.requests.get', return_value=FakeResponse('data/configdb_example.json'))
+@mock.patch('banzai.dbs.requests.get', return_value=FakeResponse(get_pkg_data_filename('data/configdb_example.json',
+                                                                                       'banzai_nres'))
 def init(configdb):
     dbs.create_db('.', db_address=os.environ['DB_ADDRESS'], configdb_address='http://configdbdev.lco.gtn/sites/')
     with dbs.get_session(db_address=os.environ['DB_ADDRESS']) as db_session:
