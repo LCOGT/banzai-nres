@@ -4,10 +4,9 @@ USER root
 
 WORKDIR /lco/banzai-nres
 
-RUN pip install --no-cache-dir  git+https://github.com/lcogt/banzai.git@fix/circular_import
-
-
 COPY . /lco/banzai-nres
+
+RUN pip install --no-cache-dir --upgrade git+https://github.com/lcogt/banzai.git@fix/circular_import
 
 RUN python /lco/banzai-nres/setup.py install
 
