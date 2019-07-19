@@ -23,7 +23,7 @@ INSTRUMENTS = [os.path.join(site, os.path.basename(instrument_path)) for site in
 DAYS_OBS = [os.path.join(instrument, os.path.basename(dayobs_path)) for instrument in INSTRUMENTS
             for dayobs_path in glob(os.path.join(DATA_ROOT, instrument, '201*'))]
 
-CONFIGDB_FILENAME = get_pkg_data_filename('data/configdb_example.json', 'banzai_nres')
+CONFIGDB_FILENAME = get_pkg_data_filename('data/configdb_example.json', 'banzai_nres.tests')
 
 
 @pytest.mark.e2e
