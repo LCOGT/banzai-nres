@@ -23,11 +23,12 @@ INSTRUMENTS = [os.path.join(site, os.path.basename(instrument_path)) for site in
 DAYS_OBS = [os.path.join(instrument, os.path.basename(dayobs_path)) for instrument in INSTRUMENTS
             for dayobs_path in glob(os.path.join(DATA_ROOT, instrument, '201*'))]
 
+CONFIGDB_FILENAME = get_pkg_data_filename('data/configdb_example.json', 'banzai_nres')
 
-configdb_filename = get_pkg_data_filename('data/configdb_example.json', 'banzai_nres')
+
 @pytest.mark.e2e
 @pytest.fixture(scope='module')
-@mock.patch('banzai.dbs.requests.get', return_value=FakeResponse(configdb_filename))
+@mock.patch('banzai.dbs.requests.get', return_value=FakeResponse(CONFIGDB_FILENAME))
 def init(configdb):
     dbs.create_db('.', db_address=os.environ['DB_ADDRESS'], configdb_address='http://configdbdev.lco.gtn/sites/')
     with dbs.get_session(db_address=os.environ['DB_ADDRESS']) as db_session:
