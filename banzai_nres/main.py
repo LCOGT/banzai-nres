@@ -8,7 +8,7 @@ Authors
 """
 import banzai_nres.settings as nres_settings  # import to override banzai settings.
 import banzai.settings as banzai_settings
-from banzai.main import process_directory, parse_directory_args
+from banzai.main import process_directory, parse_directory_args, run_realtime_pipeline
 from banzai.utils import date_utils
 from banzai import dbs
 from banzai import logs
@@ -92,3 +92,7 @@ def reduce_night(runtime_context=None, raw_path=None):
         process_master_maker(runtime_context, instrument, frame_type_to_stack.upper(),
                              min_date=min_date, max_date=max_date, master_frame_type=master_frame_type,
                              use_masters=use_masters)
+
+
+def nres_run_realtime_pipeline():
+    run_realtime_pipeline()

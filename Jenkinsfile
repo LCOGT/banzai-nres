@@ -83,8 +83,7 @@ pipeline {
 				always {
 					script {
 					    withKubeConfig([credentialsId: "dev-kube-config"]) {
-						    sh("kubectl cp ${podName} -c " +
-						            "banzai-nres-listener:/home/archive/pytest-master-bias.xml " +
+						    sh("kubectl cp -c banzai-nres-listener ${podName}:/home/archive/pytest-master-bias.xml " +
 						            "pytest-master-bias.xml")
 						    junit "pytest-master-bias.xml"
 						}
@@ -112,8 +111,7 @@ pipeline {
 				always {
 					script {
 					    withKubeConfig([credentialsId: "dev-kube-config"]) {
-						    sh("kubectl cp ${podName} -c " +
-						            "banzai-nres-listener:/home/archive/pytest-master-dark.xml " +
+						    sh("kubectl cp -c banzai-nres-listener ${podName}:/home/archive/pytest-master-dark.xml " +
 						            "pytest-master-dark.xml")
 						    junit "pytest-master-dark.xml"
 						}
@@ -131,7 +129,7 @@ pipeline {
 			steps {
 				script {
                     withKubeConfig([credentialsId: "dev-kube-config"]) {
-						sh("kubectl exec ${podName} -c banzai-nres -- " +
+						sh("kubectl exec ${podName} -c banzai-nres-listener -- " +
 						        "pytest --durations=0 --junitxml=/home/archive/pytest-master-flat.xml " +
 						        "-m master_flat /lco/banzai-nres/")
 					}
@@ -141,8 +139,7 @@ pipeline {
 				always {
 					script {
 					    withKubeConfig([credentialsId: "dev-kube-config"]) {
-						    sh("kubectl cp ${podName} -c " +
-						            "banzai-nres-listener:/home/archive/pytest-master-flat.xml " +
+						    sh("kubectl cp -c banzai-nres-listener ${podName}:/home/archive/pytest-master-flat.xml " +
 						            "pytest-master-flat.xml")
 						    junit "pytest-master-flat.xml"
 						}
