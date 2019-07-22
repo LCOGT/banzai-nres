@@ -33,71 +33,9 @@ CONFIGDB_FILENAME = get_pkg_data_filename('data/configdb_example.json', 'banzai_
 CONFIGDB_RESPONSE = FakeResponse(CONFIGDB_FILENAME)
 
 
-@pytest.mark.e2e
-@pytest.fixture(scope='module')
-@mock.patch('banzai.dbs.requests.get', return_value=CONFIGDB_RESPONSE)
-def init(configdb):
-    logger.info('Initializing the NRES test database.')
-    dbs.create_db('.', db_address=os.environ['DB_ADDRESS'], configdb_address='http://configdbdev.lco.gtn/sites/')
-    with dbs.get_session(db_address=os.environ['DB_ADDRESS']) as db_session:
-        elp_nres = dbs.Instrument(name='nres02', camera='fl17', enclosure='igla',
-                                  telescope='1m0a', type='1m0-NRES-SciCam', schedulable=True, site='elp')
-        lsc_nres = dbs.Instrument(name='nres01', camera='fl09', enclosure='igla',
-                                  telescope='1m0a', type='1m0-NRES-SciCam', schedulable=True, site='lsc')
-        db_session.add(elp_nres)
-        db_session.add(lsc_nres)
-        db_session.commit()
-    for instrument in INSTRUMENTS:
-        dbs.populate_calibration_table_with_bpms(os.path.join(DATA_ROOT, instrument, 'bpm'),
-                                                 db_address=os.environ['DB_ADDRESS'])
-
-
-@pytest.mark.e2e
-@pytest.mark.master_bias
-class TestMasterBiasCreation:
-    @pytest.fixture(autouse=True)
-    @mock.patch('banzai.utils.lake_utils.requests.get', side_effect=lake_side_effect)
-    def stack_bias_frames(self, mock_lake, init):
-        run_reduce_individual_frames('*b00.fits*')
-        mark_frames_as_good('*b91.fits*')
-        stack_calibrations('bias')
-
-    def test_if_stacked_bias_frame_was_created(self):
-        run_check_if_stacked_calibrations_were_created('*b00.fits*', 'bias')
-        run_check_if_stacked_calibrations_are_in_db('*b00.fits*', 'BIAS')
-
-
-@pytest.mark.e2e
-@pytest.mark.master_dark
-class TestMasterDarkCreation:
-    @pytest.fixture(autouse=True)
-    @mock.patch('banzai.utils.lake_utils.requests.get', side_effect=lake_side_effect)
-    def stack_dark_frames(self, mock_lake):
-        run_reduce_individual_frames('*d00.fits*')
-        mark_frames_as_good('*d91.fits*')
-        stack_calibrations('dark')
-
-    def test_if_stacked_dark_frame_was_created(self):
-        run_check_if_stacked_calibrations_were_created('*d00.fits*', 'dark')
-        run_check_if_stacked_calibrations_are_in_db('*d00.fits*', 'DARK')
-
-
-@pytest.mark.e2e
-@pytest.mark.master_flat
-class TestMasterFlatCreation:
-    @pytest.fixture(autouse=True)
-    @mock.patch('banzai.utils.lake_utils.requests.get', side_effect=lake_side_effect)
-    def stack_flat_frames(self, mock_lake):
-        run_reduce_individual_frames('*w00.fits*')
-        mark_frames_as_good('*w91.fits*')
-        stack_calibrations('lampflat')
-
-    def test_if_stacked_flat_frame_was_created(self):
-        run_check_if_stacked_calibrations_were_created('*w00.fits*', 'lampflat')
-        run_check_if_stacked_calibrations_are_in_db('*w00.fits*', 'LAMPFLAT')
-
-
-# TODO add master traces test
+"""
+Realtime Utilities
+"""
 
 
 def run_reduce_individual_frames(raw_filenames):
@@ -193,3 +131,74 @@ def celery_join():
             continue
         if all([len(queue['celery@banzai-celery-worker']) == 0 for queue in queues]):
             break
+
+
+"""
+Tests
+"""
+
+
+@pytest.mark.e2e
+@pytest.fixture(scope='module')
+@mock.patch('banzai.dbs.requests.get', return_value=CONFIGDB_RESPONSE)
+def init(configdb):
+    logger.info('Initializing the NRES test database.')
+    dbs.create_db('.', db_address=os.environ['DB_ADDRESS'], configdb_address='http://configdbdev.lco.gtn/sites/')
+    with dbs.get_session(db_address=os.environ['DB_ADDRESS']) as db_session:
+        elp_nres = dbs.Instrument(name='nres02', camera='fl17', enclosure='igla',
+                                  telescope='1m0a', type='1m0-NRES-SciCam', schedulable=True, site='elp')
+        lsc_nres = dbs.Instrument(name='nres01', camera='fl09', enclosure='igla',
+                                  telescope='1m0a', type='1m0-NRES-SciCam', schedulable=True, site='lsc')
+        db_session.add(elp_nres)
+        db_session.add(lsc_nres)
+        db_session.commit()
+    for instrument in INSTRUMENTS:
+        dbs.populate_calibration_table_with_bpms(os.path.join(DATA_ROOT, instrument, 'bpm'),
+                                                 db_address=os.environ['DB_ADDRESS'])
+
+
+@pytest.mark.e2e
+@pytest.mark.master_bias
+class TestMasterBiasCreation:
+    @pytest.fixture(autouse=True)
+    @mock.patch('banzai.utils.lake_utils.requests.get', side_effect=lake_side_effect)
+    def stack_bias_frames(self, mock_lake, init):
+        run_reduce_individual_frames('*b00.fits*')
+        mark_frames_as_good('*b91.fits*')
+        stack_calibrations('bias')
+
+    def test_if_stacked_bias_frame_was_created(self):
+        run_check_if_stacked_calibrations_were_created('*b00.fits*', 'bias')
+        run_check_if_stacked_calibrations_are_in_db('*b00.fits*', 'BIAS')
+
+
+@pytest.mark.e2e
+@pytest.mark.master_dark
+class TestMasterDarkCreation:
+    @pytest.fixture(autouse=True)
+    @mock.patch('banzai.utils.lake_utils.requests.get', side_effect=lake_side_effect)
+    def stack_dark_frames(self, mock_lake):
+        run_reduce_individual_frames('*d00.fits*')
+        mark_frames_as_good('*d91.fits*')
+        stack_calibrations('dark')
+
+    def test_if_stacked_dark_frame_was_created(self):
+        run_check_if_stacked_calibrations_were_created('*d00.fits*', 'dark')
+        run_check_if_stacked_calibrations_are_in_db('*d00.fits*', 'DARK')
+
+
+@pytest.mark.e2e
+@pytest.mark.master_flat
+class TestMasterFlatCreation:
+    @pytest.fixture(autouse=True)
+    @mock.patch('banzai.utils.lake_utils.requests.get', side_effect=lake_side_effect)
+    def stack_flat_frames(self, mock_lake):
+        run_reduce_individual_frames('*w00.fits*')
+        mark_frames_as_good('*w91.fits*')
+        stack_calibrations('lampflat')
+
+    def test_if_stacked_flat_frame_was_created(self):
+        run_check_if_stacked_calibrations_were_created('*w00.fits*', 'lampflat')
+        run_check_if_stacked_calibrations_are_in_db('*w00.fits*', 'LAMPFLAT')
+
+# TODO add master traces test
