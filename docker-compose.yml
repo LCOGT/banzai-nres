@@ -1,56 +1,112 @@
 version: '2'
 services:
-  BANZAINRESCeleryRabbitmq:
-    image: rabbitmq:3-management
-    ports:
-    - 15675:15672/tcp
-    labels:
-      io.rancher.container.pull_image: always
-    logging:
-      options:
-        max-size: '100m'
-        max-file: '3'
-  BANZAINRESPipelineTestFitsExchange:
-    image: rabbitmq:3-management
-    ports:
-    - 15676:15672/tcp
-    labels:
-      io.rancher.container.pull_image: always
-    logging:
-      options:
-        max-size: '100m'
-        max-file: '3'
-  BANZAINRESPipelineE2EData:
-    image: docker.lco.global/nres-pipeline-e2e-data:1.0.1
+  nres-e2e-data:
+    image: docker.lco.global/nres-pipeline-e2e-data:1.0.3
+    container_name: nres-e2e-data
+    network_mode: "bridge"
     entrypoint:
     - /bin/true
-    volumes:
-    - banzainrese2e:/archive
     labels:
       io.rancher.container.pull_image: always
       io.rancher.container.start_once: 'true'
+    volumes:
+    - banzainrese2e:/archive
     logging:
       options:
         max-size: '100m'
         max-file: '3'
-  BANZAINRESPipelineTest:
-    image: ${DOCKER_IMG}
-    environment:
-      BROKER_PASSWORD: ${RABBITMQ_PASSWORD}
-      BROKER_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@banzainresceleryrabbitmq:5672/
-      BROKER_USERNAME: ${RABBITMQ_USER}
-      DB_URL: sqlite:////archive/engineering/test.db
-      CONFIG_DB_URL: http://configdbdev.lco.gtn/sites/
-      FITS_BROKER: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@banzainrestestfitsexchange:5672/
-      RABBITMQ_HOST: banzainresceleryrabbitmq
-    volumes_from:
-    - BANZAINRESPipelineE2EData
-    links:
-    - BANZAINRESCeleryRabbitmq:banzainresceleryrabbitmq
-    - BANZAINRESPipelineTestFitsExchange:banzainrestestfitsexchange
+  banzai-nres-fits-exchange:
+    image: rabbitmq:3.7.9
+    network_mode: "bridge"
+    container_name: banzai-nres-fits-exchange
+    mem_limit: '1g'
+    logging:
+      options:
+        max-size: '100m'
+        max-file: '3'
+  banzai-nres-redis:
+    image: redis:5.0.3
+    network_mode: "bridge"
+    container_name: banzai-redis
     labels:
       io.rancher.container.pull_image: always
-      io.rancher.sidekicks: BANZAINRESPipelineE2EData
+    mem_limit: '1g'
+  banzai-nres-celery-workers:
+    image: ${NRES_DOCKER_IMG}
+    network_mode: "bridge"
+    container_name: banzai-nres-celery-workers
+    entrypoint: ["celery", "-A", "banzai", "worker",
+                 "--hostname", "banzai-celery-worker",
+                 "-l", "debug"]
+    mem_limit: '8g'
+    depends_on:
+      - banzai-nres-redis
+      - banzai-nres-fits-exchange
+      - nres-e2e-data
+    links:
+      - banzai-nres-redis:redis
+    volumes_from:
+      - nres-e2e-data
+    environment:
+      RETRY_DELAY: "0"
+      REDIS_HOST: "redis://redis:6379/0"
+      LAKE_URL: "http://lake-old.lco.gtn/blocks/"
+    labels:
+      io.rancher.container.pull_image: always
+      io.rancher.sidekicks: nres-e2e-data
+    logging:
+      options:
+        max-size: '100m'
+        max-file: '3'
+  banzai-nres0celery-beat:
+    image: ${NRES_DOCKER_IMG}
+    network_mode: "bridge"
+    container_name: banzai-nres-celery-beat
+    entrypoint: ["banzai_automate_stack_calibrations"]
+    mem_limit: '8g'
+    depends_on:
+      - banzai-nres-redis
+      - banzai-nres-fits-exchange
+      - nres-e2e-data
+    links:
+      - banzai-nres-redis:redis
+    volumes_from:
+      - nres-e2e-data
+    environment:
+      RETRY_DELAY: "0"
+      REDIS_HOST: "redis://redis:6379/0"
+    labels:
+      io.rancher.container.pull_image: always
+      io.rancher.sidekicks: nres-e2e-data
+    logging:
+      options:
+        max-size: '100m'
+        max-file: '3'
+  banzai-listener:
+    image: ${NRES_DOCKER_IMG}
+    network_mode: "bridge"
+    container_name: banzai-nres-listener
+    mem_limit: '1g'
+    depends_on:
+      - banzai-nres-redis
+      - banzai-nres-fits-exchange
+      - nres-e2e-data
+    links:
+      - banzai-nres-fits-exchange:broker
+      - banzai-nres-redis:redis
+    entrypoint: ["banzai_run_realtime_pipeline", "--fpack",
+                 "--db-address=sqlite:////archive/engineering/test.db",
+                 "--broker-url=broker"]
+    environment:
+      DB_ADDRESS: sqlite:////archive/engineering/test.db
+      REDIS_HOST: "redis://redis:6379/0"
+      FITS_BROKER_URL: "broker"
+      LAKE_URL: "http://lake-old.lco.gtn/blocks/"
+    volumes_from:
+    - nres-e2e-data
+    labels:
+      io.rancher.container.pull_image: always
+      io.rancher.sidekicks: nres-e2e-data
     logging:
       options:
         max-size: '100m'
