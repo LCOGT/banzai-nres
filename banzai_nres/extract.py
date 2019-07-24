@@ -27,6 +27,14 @@ class Extract(Stage):
 
     @staticmethod
     def extract_order(twod_spectrum, weights=None):
+        """
+        :param twod_spectrum: 2d float array.
+                              array of flux where the center of the order is the central row.
+        :param weights: 2d array
+                        weights, the same shape as twod_spectrum
+        :return: 1d array.
+                 weighted sum along the columns of twod_spectrum.
+        """
         if weights is None:
             return np.sum(twod_spectrum, axis=0)
         else:
@@ -62,13 +70,14 @@ class BoxExtract(Extract):
 
     def _trim_rectified_2d_spectrum(self, rectified_2d_spectrum):
         """
-        :param rectified_2d_spectrum: A nested dictionary keyed by the trace id's from trace.get_id(),
-               where rectified_2d_spectrum[trace_id]['flux']
-               gives a two dimensional spectrum. If half extraction window was 10, then rectified_2d_spectrum[trace_id]['flux']
-               is 21 rows by 4096 columns (for a 4096 pixel wide image). One would column-sum this 2d
-               spectrum to get a box extracted spectrum.
-        :return rectified_2d_spectrum: Same as input but trimmed so that each order's 2d spectrum only
-                 has 2 * extraction_half_window + 1 rows.
+        :param rectified_2d_spectrum: Dictionary
+               Dictionary where the keys are the trace id's from trace.get_id(),
+               where rectified_2d_spectrum[trace_id]['flux'] is a 2d float array (flux for the trace_id order).
+               If half extraction window was 10, then rectified_2d_spectrum[trace_id]['flux']
+               is 21 rows by 4096 columns (for a 4096 pixel wide image). One would sum this 2d
+               spectrum along-columns to get a box extracted spectrum.
+        :return rectified_2d_spectrum: Dictionary
+                 Same as input but trimmed so that each order's 2d spectrum only has 2 * extraction_half_window + 1 rows.
 
         NOTE: The output spectra per order have the center of the trace at the center of the spectrum. E.g. if
         extraction_half_window is 10, then the 2d spectra have 21 rows and the trace center (peak flux) lies at
