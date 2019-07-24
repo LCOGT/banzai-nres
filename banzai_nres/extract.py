@@ -23,6 +23,15 @@ class Extract(Stage):
 
     @abc.abstractmethod
     def extract(self, rectified_2d_spectrum):
+        """
+         :param rectified_2d_spectrum: Dictionary
+               Dictionary where the keys are the trace id's from trace.get_id(),
+               where rectified_2d_spectrum[trace_id]['flux'] is a 2d float array (flux for the trace_id order).
+               If half extraction window was 10, then rectified_2d_spectrum[trace_id]['flux']
+               is 21 rows by 4096 columns (for a 4096 pixel wide image). One would sum this 2d
+               spectrum along-columns to get a box extracted spectrum.
+        :return:
+        """
         pass
 
     @staticmethod
