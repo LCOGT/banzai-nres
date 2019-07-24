@@ -9,13 +9,12 @@ def rectify_orders(image_data, trace, half_window=10, debug=False):
     :param half_window: half of the size of the extraction window about the center of the traces. E.g. 10 means 21 pixel
                         window will be extracted.
     :param debug: boolean for returning an internal copy of the image which is used in extract.
-    :return rectified_orders: A nested dictionary keyed by flux, coordinates and the trace id's from trace.get_id(),
-                              where rectified_orders[trace_id]['flux'] gives a two dimensional spectrum. And
-                              rectified_orders[trace_id]['y'] gives the pixel y coordinates for each pixel
-                              in the two dimensional spectrum. Likewise for rectified_orders[trace_id]['x']
-                              If half extraction window was 10, then rectified_orders[trace_id]
-                              is 21 rows by 4096 columns (for a 4096 pixel wide image). One would column-sum this 2d
-                              spectrum to get a box extracted spectrum.
+    :return rectified_orders: Dictionary
+    Dictionary where the keys are the trace id's from trace.get_id(),
+    where rectified_2d_spectrum[trace_id]['flux'] is a 2d float array (flux for the trace_id order).
+    If half extraction window was 10, then rectified_2d_spectrum[trace_id]['flux']
+    is 21 rows by 4096 columns (for a 4096 pixel wide image). One would sum this 2d
+    spectrum along-columns to get a box extracted spectrum.
     """
     rectified_orders = {}
     num_orders = trace.num_traces_found()
@@ -39,8 +38,8 @@ def rectify_order(image_data, image_coordinates, single_order_centers, half_wind
     :param image_coordinates: dictionary with x and y coordinates for each pixel.
     :param single_order_centers: the y centers of the center of the rectification window
     :param half_window: the half width of the window about which one is rectifying the trace/order
-    :param nullify_mapped_values: Default true, this sets to zero the values which have been mapped to the
-                                  rectified grid.
+    :param nullify_mapped_values: True if the flux from a pixel can only be used in one order's spectrum.
+                                  False if a pixel's flux can be double (or triple etc..) counted.
     :return: An array of 2*half_window + 1 rows by width(image_data) about the order. The center of the order
              is right at the index of half_window, e.g. rectified_order[half_window] gives the flux down the
              center of the order.
