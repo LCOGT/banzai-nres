@@ -9,9 +9,6 @@ from banzai_nres.utils.trace_utils import Trace, AllTraceFitter
 from banzai.calibrations import CalibrationMaker, ApplyCalibration, create_master_calibration_header
 from banzai.utils import file_utils
 
-import banzai_nres.settings as nres_settings
-import banzai.settings as banzai_settings
-
 import sep
 import os
 import logging
@@ -23,13 +20,13 @@ class TraceMaker(CalibrationMaker):
     def __init__(self, runtime_context):
         super(TraceMaker, self).__init__(runtime_context)
         self.runtime_context = runtime_context
-        self.order_of_poly_fit = nres_settings.TRACE_FIT_POLYNOMIAL_ORDER
-        self.second_order_coefficient_guess = nres_settings.TRACE_FIT_INITIAL_DEGREE_TWO_GUESS
-        self.trace_table_name = nres_settings.TRACE_TABLE_NAME
-        self.xmin = nres_settings.WINDOW_FOR_TRACE_IDENTIFICATION['min']
-        self.xmax = nres_settings.WINDOW_FOR_TRACE_IDENTIFICATION['max']
-        self.min_peak_to_peak_spacing = nres_settings.MIN_FIBER_TO_FIBER_SPACING
-        self.min_snr = nres_settings.MIN_SNR_FOR_TRACE_IDENTIFICATION
+        self.order_of_poly_fit = runtime_context.TRACE_FIT_POLYNOMIAL_ORDER
+        self.second_order_coefficient_guess = runtime_context.TRACE_FIT_INITIAL_DEGREE_TWO_GUESS
+        self.trace_table_name = runtime_context.TRACE_TABLE_NAME
+        self.xmin = runtime_context.WINDOW_FOR_TRACE_IDENTIFICATION['min']
+        self.xmax = runtime_context.WINDOW_FOR_TRACE_IDENTIFICATION['max']
+        self.min_peak_to_peak_spacing = runtime_context.MIN_FIBER_TO_FIBER_SPACING
+        self.min_snr = runtime_context.MIN_SNR_FOR_TRACE_IDENTIFICATION
 
     @property
     def calibration_type(self):
@@ -40,7 +37,7 @@ class TraceMaker(CalibrationMaker):
         for image in images:
             master_header = create_master_calibration_header(old_header=image.header, images=[image])
             master_header['OBSTYPE'] = self.calibration_type
-            master_filename = banzai_settings.CALIBRATION_FILENAME_FUNCTIONS[self.calibration_type](image)
+            master_filename = self.runtime_context.CALIBRATION_FILENAME_FUNCTIONS[self.calibration_type](image)
             master_filepath = self._get_filepath(self.runtime_context, image, master_filename)
             logger.info('fitting traces order by order', image=image)
             bkg_subtracted_image_data = image.data - sep.Background(image.data).back()
