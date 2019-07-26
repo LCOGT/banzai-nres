@@ -345,34 +345,53 @@ class TestSingleTraceFitter:
 
 class TestTraceMaker:
     def test_properties(self):
-        assert TraceMaker(FakeContext()).calibration_type is 'TRACE'
+        context = FakeContext()
+        context.TRACE_FIT_POLYNOMIAL_ORDER = 4
+        context.TRACE_FIT_INITIAL_DEGREE_TWO_GUESS = 90
+        context.TRACE_TABLE_NAME = 'trace_table'
+        context.WINDOW_FOR_TRACE_IDENTIFICATION = {'max': 2100, 'min': 2000}
+        context.MIN_FIBER_TO_FIBER_SPACING = 10
+        context.MIN_SNR_FOR_TRACE_IDENTIFICATION = 6
+        assert TraceMaker(context).calibration_type is 'TRACE'
 
-    @mock.patch('banzai.utils.file_utils.make_output_directory', return_value='/tmp')
-    def test_get_file_path(self, mock_dir):
-        assert TraceMaker._get_filepath(None, None, master_filename='test.tst') == '/tmp/test.tst'
-
-    @mock.patch('banzai_nres.traces.TraceMaker._get_filepath', return_value=None)
-    def test_trace_fit_does_not_crash_on_blank_frame(self, mock_get_path):
+    @mock.patch('banzai.utils.file_utils.make_calibration_filename_function')
+    def test_trace_fit_does_not_crash_on_blank_frame(self, mock_namer):
+        mock_namer.return_value = lambda *x: 'foo.fits'
         order_of_poly_fit = 4
         image = FakeTraceImage(nx=100, ny=100)
         image.header['RDNOISE'] = 11
         noisify_image(image)
         fake_context = FakeContext()
         fake_context.db_address = ''
+        fake_context.TRACE_FIT_POLYNOMIAL_ORDER = 4
+        fake_context.TRACE_FIT_INITIAL_DEGREE_TWO_GUESS = 90
+        fake_context.TRACE_TABLE_NAME = 'trace_table'
+        fake_context.WINDOW_FOR_TRACE_IDENTIFICATION = {'max': 2100, 'min': 2000}
+        fake_context.MIN_FIBER_TO_FIBER_SPACING = 10
+        fake_context.MIN_SNR_FOR_TRACE_IDENTIFICATION = 6
+        fake_context.CALIBRATION_SET_CRITERIA = {}
         trace_fitter = TraceMaker(fake_context)
         trace_fitter.order_of_poly_fit = order_of_poly_fit
         trace_fitter.xmin, trace_fitter.xmax = 50, 60
         trace_fitter.do_stage([image])
         assert True
 
-    @mock.patch('banzai_nres.traces.TraceMaker._get_filepath', return_value=None)
+    @mock.patch('banzai.utils.file_utils.make_calibration_filename_function')
     @mock.patch('banzai_nres.utils.trace_utils.AllTraceFitter.fit_traces')
-    def test_trace_maker(self, fit_traces, mock_get_path):
+    def test_trace_maker(self, fit_traces, mock_namer):
+        mock_namer.return_value = lambda *x: 'foo.fits'
         trace_table_name = 'test'
         data = {'id': [1], 'centers': [np.arange(3)]}
         fit_traces.return_value = Trace(data=data)
         expected_trace = Trace(data=data)
         fake_context = FakeContext()
+        fake_context.TRACE_FIT_POLYNOMIAL_ORDER = 4
+        fake_context.TRACE_FIT_INITIAL_DEGREE_TWO_GUESS = 90
+        fake_context.TRACE_TABLE_NAME = 'trace_table'
+        fake_context.WINDOW_FOR_TRACE_IDENTIFICATION = {'max': 2100, 'min': 2000}
+        fake_context.MIN_FIBER_TO_FIBER_SPACING = 10
+        fake_context.MIN_SNR_FOR_TRACE_IDENTIFICATION = 6
+        fake_context.CALIBRATION_SET_CRITERIA = {}
         trace_maker = TraceMaker(fake_context)
         trace_maker.xmin = 5
         trace_maker.xmax = 10
@@ -382,8 +401,8 @@ class TestTraceMaker:
         assert np.allclose(loaded_trace.get_centers(0), expected_trace.get_centers(0))
         assert np.allclose(loaded_trace.get_id(0), expected_trace.get_id(0))
 
-    @mock.patch('banzai_nres.traces.TraceMaker._get_filepath', return_value=None)
-    def test_accuracy_of_trace_fitting(self, mock_get_path):
+    @mock.patch('banzai.utils.file_utils.make_calibration_filename_function')
+    def test_accuracy_of_trace_fitting(self, mock_namer):
         """
         test type: Mock Integration Test with metrics for how well trace fitting is doing.
         info: This tests trace making via a blind fit.
@@ -391,6 +410,8 @@ class TestTraceMaker:
         the x axis of the image, then the traces bend more drastically. Thus it is recommended you do not change the
         size of the FakeTraceImage.
         """
+        mock_namer.return_value = lambda *x: 'foo.fits'
+
         read_noise = 11.0
         poly_fit_order = 4
 
@@ -403,6 +424,13 @@ class TestTraceMaker:
                                                                                       poly_fit_order=poly_fit_order)
         noisify_image(image)
         fake_context = FakeContext()
+        fake_context.TRACE_FIT_POLYNOMIAL_ORDER = 4
+        fake_context.TRACE_FIT_INITIAL_DEGREE_TWO_GUESS = 90
+        fake_context.TRACE_TABLE_NAME = 'trace_table'
+        fake_context.WINDOW_FOR_TRACE_IDENTIFICATION = {'max': 2100, 'min': 2000}
+        fake_context.MIN_FIBER_TO_FIBER_SPACING = 10
+        fake_context.MIN_SNR_FOR_TRACE_IDENTIFICATION = 6
+        fake_context.CALIBRATION_SET_CRITERIA = {}
         images = [image]
 
         trace_maker = TraceMaker(fake_context)
@@ -447,6 +475,7 @@ class TestLoadTrace:
         expected_trace = Trace(data=data)
         mock_load.return_value = Trace(data=data)
         fake_context = FakeContext()
+        fake_context.TRACE_TABLE_NAME = 'trace_table'
         setattr(fake_context, 'db_address', None)
         trace_loader = LoadTrace(fake_context)
         image = trace_loader.do_stage(image=FakeImage())
