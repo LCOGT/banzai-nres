@@ -1,18 +1,8 @@
-import operator
 from banzai import settings
-
-from banzai.utils.file_utils import ccdsum_to_filename
-from banzai.settings import make_calibration_filename_function
-from banzai.utils.instrument_utils import InstrumentCriterion
-
-
-from banzai_nres.fibers import fibers_state_to_filename
-from banzai_nres.utils.runtime_utils import get_telescope_filename
-
 
 settings.FRAME_CLASS = 'banzai_nres.images.NRESImage'
 
-settings.FRAME_SELECTION_CRITERIA = [InstrumentCriterion('type', operator.contains, 'NRES')]
+settings.FRAME_SELECTION_CRITERIA = [('type', 'contains', 'NRES')]
 
 settings.ORDERED_STAGES = ['banzai.bpm.BPMUpdater',
                            'banzai.qc.SaturationTest',
@@ -28,29 +18,31 @@ settings.CALIBRATION_MIN_FRAMES = {'BIAS': 5,
                                    'LAMPFLAT': 5,
                                    'TRACE': 1}
 
-TRACE_FIT_INITIAL_DEGREE_TWO_GUESS = 90  # DO NOT HAPHAZARDLY CHANGE THIS
-TRACE_FIT_POLYNOMIAL_ORDER = 4  # DO NOT HAPHAZARDLY CHANGE THIS
-TRACE_TABLE_NAME = 'TRACE'
-WINDOW_FOR_TRACE_IDENTIFICATION = {'max': 2100, 'min': 2000}  # pixels
-MIN_FIBER_TO_FIBER_SPACING = 10  # pixels
-MIN_SNR_FOR_TRACE_IDENTIFICATION = 6
+settings.TRACE_FIT_INITIAL_DEGREE_TWO_GUESS = 90  # DO NOT HAPHAZARDLY CHANGE THIS
+settings.TRACE_FIT_POLYNOMIAL_ORDER = 4  # DO NOT HAPHAZARDLY CHANGE THIS
+settings.TRACE_TABLE_NAME = 'TRACE'
+settings.WINDOW_FOR_TRACE_IDENTIFICATION = {'max': 2100, 'min': 2000}  # pixels
+settings.MIN_FIBER_TO_FIBER_SPACING = 10  # pixels
+settings.MIN_SNR_FOR_TRACE_IDENTIFICATION = 6
 
 settings.CALIBRATION_SET_CRITERIA = {'BIAS': ['ccdsum'],
                                      'DARK': ['ccdsum'],
                                      'LAMPFLAT': ['ccdsum', 'fiber0_lit', 'fiber1_lit', 'fiber2_lit'],
                                      'TRACE': ['ccdsum', 'fiber0_lit', 'fiber1_lit', 'fiber2_lit']}
 
-settings.CALIBRATION_FILENAME_FUNCTIONS = {'BIAS': make_calibration_filename_function('BIAS', [ccdsum_to_filename],
-                                                                                      get_telescope_filename),
-                                           'DARK': make_calibration_filename_function('DARK', [ccdsum_to_filename],
-                                                                                      get_telescope_filename),
-                                           'LAMPFLAT': make_calibration_filename_function('LAMPFLAT',
-                                                                                          [ccdsum_to_filename,
-                                                                                           fibers_state_to_filename],
-                                                                                          get_telescope_filename),
-                                           'TRACE': make_calibration_filename_function('TRACE', [ccdsum_to_filename,
-                                                                                       fibers_state_to_filename],
-                                                                                       get_telescope_filename)}
+settings.CALIBRATION_FILENAME_FUNCTIONS = {'BIAS': ('banzai.utils.file_utils.config_to_filename',
+                                                    'banzai.utils.file_utils.ccdsum_to_filename'),
+                                           'DARK': ('banzai.utils.file_utils.config_to_filename',
+                                                    'banzai.utils.file_utils.ccdsum_to_filename'),
+                                           'LAMPFLAT': ('banzai.utils.file_utils.config_to_filename',
+                                                        'banzai.utils.file_utils.ccdsum_to_filename',
+                                                        'banzai_nres.fibers.fibers_state_to_filename'),
+                                           'TRACE': ('banzai.utils.file_utils.config_to_filename',
+                                                     'banzai.utils.file_utils.ccdsum_to_filename',
+                                                     'banzai_nres.fibers.fibers_state_to_filename')}
+
+settings.TELESCOPE_FILENAME_FUNCTION = 'banzai_nres.utils.runtime_utils.get_telescope_filename'
+
 
 settings.CALIBRATION_IMAGE_TYPES = ['BIAS', 'DARK', 'LAMPFLAT', 'TRACE']
 

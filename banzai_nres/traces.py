@@ -47,9 +47,10 @@ class TraceMaker(CalibrationMaker):
             fitter = AllTraceFitter(xmin=self.xmin, xmax=self.xmax,
                                     min_peak_to_peak_spacing=self.min_peak_to_peak_spacing,
                                     min_snr=self.min_snr)
+            calibration_set_criteria = self.runtime_context.CALIBRATION_SET_CRITERIA.get(self.calibration_type, {})
             trace = Trace(data=None, filepath=master_filepath, header=master_header, image=image,
                           num_centers_per_trace=image.data.shape[1], trace_table_name=self.trace_table_name,
-                          obstype=self.calibration_type)
+                          obstype=self.calibration_type, calibration_set_criteria=calibration_set_criteria)
             trace = fitter.fit_traces(trace=trace, image_data=bkg_subtracted_image_data,
                                       poly_fit_order=self.order_of_poly_fit,
                                       second_order_coefficient_guess=self.second_order_coefficient_guess,

@@ -14,8 +14,6 @@ from banzai_nres.traces import TraceMaker, LoadTrace
 from banzai_nres.tests.utils import array_with_peaks, FakeImage, noisify_image
 from banzai_nres.utils.trace_utils import Trace, SingleTraceFitter, AllTraceFitter
 from banzai_nres.tests.utils import fill_image_with_traces
-import banzai_nres.settings as nres_settings
-from banzai import settings
 
 import logging
 
@@ -158,17 +156,6 @@ class TestTrace:
         trace.del_centers([-1, -2])
         assert np.allclose(trace.data['id'], [1])
         assert np.allclose(trace.data['centers'], [centers])
-
-    def test_instantiates_db_context_from_image(self):
-        image = FakeImage()
-        possible_attributes = ['dateobs', 'datecreated', 'instrument', 'is_master', 'is_bad']
-        counter = np.arange(len(possible_attributes))
-        for attribute, i in zip(possible_attributes, counter):
-            setattr(image, attribute, str(i))
-        trace = Trace(data={'id': [1], 'centers': [np.arange(3)]}, image=image)
-        for attribute in possible_attributes:
-            assert getattr(image, attribute) == getattr(trace, attribute)
-        assert trace.attributes == settings.CALIBRATION_SET_CRITERIA.get('TRACE', {})
 
 
 class TestAllTraceFitter:

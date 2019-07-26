@@ -16,9 +16,6 @@ from astropy.io import fits
 from banzai_nres.utils import fits_utils, db_utils
 from banzai import dbs
 
-import banzai_nres.settings as nres_settings  # import to override banzai settings
-from banzai import settings
-
 import logging
 
 logger = logging.getLogger(__name__)
@@ -30,7 +27,7 @@ class Trace(object):
     the jth row are the y centers across the detector for the trace with identification trace_centers['id'][j]
     """
     def __init__(self, data=None, trace_table_name=None, num_centers_per_trace=0, filepath=None,
-                 header=None, image=None, obstype='TRACE'):
+                 header=None, image=None, obstype='TRACE', calibration_set_criteria=None):
         if data is None and num_centers_per_trace <= 0:
             raise ValueError('Trace object instantiated but no trace data given and num_centers_per_trace is not > 0')
         if data is None:
@@ -47,7 +44,9 @@ class Trace(object):
         self.instrument = getattr(image, 'instrument', None)
         self.is_master = getattr(image, 'is_master', False)
         self.is_bad = getattr(image, 'is_bad', False)
-        self.attributes = settings.CALIBRATION_SET_CRITERIA.get(self.obstype, {})
+        if calibration_set_criteria is None:
+            calibration_set_criteria = {}
+        self.attributes = calibration_set_criteria
         for attribute in self.attributes:
             setattr(self, attribute, getattr(image, attribute, None))
 
