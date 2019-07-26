@@ -36,6 +36,7 @@ def lake_side_effect(*args, **kwargs):
     filename = get_pkg_data_filename('data/{filename}'.format(filename=filename), TEST_PACKAGE)
     return FakeResponse(filename)
 
+
 @pytest.mark.e2e
 @pytest.fixture(scope='module')
 @mock.patch('banzai.dbs.requests.get', return_value=FakeResponse(CONFIGDB_FILENAME))
