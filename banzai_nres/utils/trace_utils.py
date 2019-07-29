@@ -13,11 +13,15 @@ import numpy as np
 from scipy import ndimage, optimize, signal
 from astropy.table import Table, Column
 from astropy.io import fits
-from banzai_nres.utils import fits_utils, db_utils
-from banzai import dbs
 
+from banzai_nres.utils import fits_utils, db_utils
 import banzai_nres.settings as nres_settings  # import to override banzai settings
+
 from banzai import settings
+from banzai.utils import file_utils
+from banzai import dbs
+import os
+
 
 import logging
 
@@ -29,8 +33,8 @@ class Trace(object):
     :param data = {'id': ndarray, 'centers': ndarray}. 'centers' gives a 2d array, where
     the jth row are the y centers across the detector for the trace with identification trace_centers['id'][j]
     """
-    def __init__(self, data=None, trace_table_name=None, num_centers_per_trace=0, filepath=None,
-                 header=None, image=None, obstype='TRACE'):
+    def __init__(self, data=None, trace_table_name=None, num_centers_per_trace=0, filename=None,
+                 header=None, image=None, site=None, epoch=None, obstype='TRACE'):
         if data is None and num_centers_per_trace <= 0:
             raise ValueError('Trace object instantiated but no trace data given and num_centers_per_trace is not > 0')
         if data is None:
@@ -47,12 +51,15 @@ class Trace(object):
         self.instrument = getattr(image, 'instrument', None)
         self.is_master = getattr(image, 'is_master', False)
         self.is_bad = getattr(image, 'is_bad', False)
+        self.epoch = getattr(image, 'epoch', None)
+        self.site = getattr(image, 'site', None)
         self.attributes = settings.CALIBRATION_SET_CRITERIA.get(self.obstype, {})
         for attribute in self.attributes:
+            # adopt ccdsum, fiber0_lit, fiber1_lit, fiber2_lit
             setattr(self, attribute, getattr(image, attribute, None))
 
         self.header = header
-        self.filepath = filepath
+        self.filename = filename
         self.data = Table(data)
         self.trace_table_name = trace_table_name
 
@@ -74,19 +81,23 @@ class Trace(object):
     def write(self, runtime_context=None, update_db=True):
         hdu = fits.BinTableHDU(self.data, name=self.trace_table_name, header=fits.Header(self.header))
         hdu_list = fits.HDUList([fits.PrimaryHDU(), hdu])
-        self._update_filepath(runtime_context)
-        fits_utils.writeto(hdu_list=hdu_list, filepath=self.filepath,
+        self._update_filename(runtime_context)
+        filepath = self._get_filepath(runtime_context)
+        fits_utils.writeto(hdu_list=hdu_list, filepath=filepath,
                            fpack=getattr(runtime_context, 'fpack', False),
                            overwrite=True, output_verify='fix+warn')
         if update_db:
-            dbs.save_calibration_info(self.filepath, image=self,
-                                      db_address=runtime_context.db_address)
+            dbs.save_calibration_info(filepath, image=self, db_address=runtime_context.db_address)
             if runtime_context.post_to_archive:
-                db_utils.post_to_archive(self.filepath)
+                db_utils.post_to_archive(filepath)
 
-    def _update_filepath(self, runtime_context):
-        if getattr(runtime_context, 'fpack', False) and not self.filepath.endswith('.fz'):
-            self.filepath += '.fz'
+    def _update_filename(self, runtime_context):
+        if getattr(runtime_context, 'fpack', False) and not self.filename.endswith('.fz'):
+            self.filename += '.fz'
+
+    def _get_filepath(self, runtime_context):
+        output_directory = file_utils.make_output_directory(runtime_context, self)
+        return os.path.join(output_directory, os.path.basename(self.filename))
 
     @staticmethod
     def load(path, trace_table_name):

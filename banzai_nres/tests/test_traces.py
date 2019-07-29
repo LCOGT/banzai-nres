@@ -59,7 +59,7 @@ class TestTrace:
         data['centers'].description = 'test_2'
         trace = Trace(data=data)
         assert trace.trace_table_name is None
-        assert trace.filepath is None
+        assert trace.filename is None
         assert trace.header == {}
         assert trace.obstype is 'TRACE'
         assert trace.dateobs is None
@@ -67,6 +67,8 @@ class TestTrace:
         assert trace.instrument is None
         assert trace.is_master is False
         assert trace.is_bad is False
+        assert trace.site is None
+        assert trace.epoch is None
         for name in ['id', 'centers']:
             assert name in trace.data.colnames
         assert len(trace.data.colnames) == 2
@@ -74,6 +76,14 @@ class TestTrace:
         assert trace.data['centers'].shape == (1, 3)
         assert trace.data['centers'].description == 'test_2'
         assert trace.data['id'].description == 'test'
+
+    def test_instantiates_from_image(self):
+        image = FakeImage()
+        for attribute in ['site', 'epoch', 'is_bad', 'is_master', 'instrument', 'datecreated', 'dateobs']:
+            setattr(image, attribute, attribute)
+        trace = Trace(data={'id': [1], 'centers': [np.arange(3)]}, image=image)
+        for attribute in ['site', 'epoch', 'is_bad', 'is_master', 'instrument', 'datecreated', 'dateobs']:
+            assert attribute == getattr(trace, attribute)
 
     def test_trace_raises_exception(self):
         with pytest.raises(Exception):
@@ -106,16 +116,23 @@ class TestTrace:
         assert np.allclose(trace.data['centers'], [centers, centers])
         assert np.allclose(trace.data['id'], [1, 2])
 
-    def test_load_and_write(self):
+    @mock.patch('banzai.utils.file_utils.make_output_directory', return_value='/tmp')
+    def test_get_file_path(self, mock_dir):
+        trace = Trace(filename='test.tst', num_centers_per_trace=2)
+        assert trace._get_filepath(FakeContext()) == '/tmp/test.tst'
+
+    @mock.patch('banzai.utils.file_utils.make_output_directory')
+    def test_load_and_write(self, output_dir):
         name = 'trace'
         trace = Trace(data={'id': [1], 'centers': [np.arange(3)]}, trace_table_name=name)
         runtime_context = FakeContext()
         with tempfile.TemporaryDirectory() as tmp_directory_name:
+            output_dir.return_value = tmp_directory_name
             runtime_context.fpack = False
-            path = os.path.join(tmp_directory_name, 'test_trace_table.fits')
-            trace.filepath = path
+            trace.filename = 'test_trace_table.fits'
             trace.header = {'bla': 1}
             trace.write(runtime_context, update_db=False)
+            path = os.path.join(tmp_directory_name, trace.filename)
             loaded_trace = Trace.load(path=path, trace_table_name=name)
             assert np.allclose(loaded_trace.get_centers(0), trace.get_centers(0))
             assert np.allclose(loaded_trace.get_id(0), trace.get_id(0))
@@ -129,10 +146,10 @@ class TestTrace:
             for fpack, extension in zip([True, False], ['.fz', 'its']):
                 runtime_context.fpack = fpack
                 path = os.path.join(tmp_directory_name, 'test_trace_table.fits')
-                trace.filepath = path
+                trace.filename = path
                 trace.header = {'bla': 1}
-                trace._update_filepath(runtime_context)
-                assert trace.filepath[-3:] == extension
+                trace._update_filename(runtime_context)
+                assert trace.filename[-3:] == extension
 
     def test_sorting_trace_centers(self):
         centers = np.array([1, 2, 3])
@@ -159,16 +176,12 @@ class TestTrace:
         assert np.allclose(trace.data['id'], [1])
         assert np.allclose(trace.data['centers'], [centers])
 
-    def test_instantiates_db_context_from_image(self):
+    def test_get_unspecified_criteria_from_image(self):
         image = FakeImage()
-        possible_attributes = ['dateobs', 'datecreated', 'instrument', 'is_master', 'is_bad']
-        counter = np.arange(len(possible_attributes))
-        for attribute, i in zip(possible_attributes, counter):
-            setattr(image, attribute, str(i))
+        image.attributes = ['ccdsum']
+        setattr(image, 'ccdsum', 10)
         trace = Trace(data={'id': [1], 'centers': [np.arange(3)]}, image=image)
-        for attribute in possible_attributes:
-            assert getattr(image, attribute) == getattr(trace, attribute)
-        assert trace.attributes == settings.CALIBRATION_SET_CRITERIA.get('TRACE', {})
+        assert getattr(trace, 'ccdsum') == 10
 
 
 class TestAllTraceFitter:
@@ -360,12 +373,7 @@ class TestTraceMaker:
     def test_properties(self):
         assert TraceMaker(FakeContext()).calibration_type is 'TRACE'
 
-    @mock.patch('banzai.utils.file_utils.make_output_directory', return_value='/tmp')
-    def test_get_file_path(self, mock_dir):
-        assert TraceMaker._get_filepath(None, None, master_filename='test.tst') == '/tmp/test.tst'
-
-    @mock.patch('banzai_nres.traces.TraceMaker._get_filepath', return_value=None)
-    def test_trace_fit_does_not_crash_on_blank_frame(self, mock_get_path):
+    def test_trace_fit_does_not_crash_on_blank_frame(self):
         order_of_poly_fit = 4
         image = FakeTraceImage(nx=100, ny=100)
         image.header['RDNOISE'] = 11
@@ -378,9 +386,8 @@ class TestTraceMaker:
         trace_fitter.do_stage([image])
         assert True
 
-    @mock.patch('banzai_nres.traces.TraceMaker._get_filepath', return_value=None)
     @mock.patch('banzai_nres.utils.trace_utils.AllTraceFitter.fit_traces')
-    def test_trace_maker(self, fit_traces, mock_get_path):
+    def test_trace_maker(self, fit_traces):
         trace_table_name = 'test'
         data = {'id': [1], 'centers': [np.arange(3)]}
         fit_traces.return_value = Trace(data=data)
@@ -395,8 +402,7 @@ class TestTraceMaker:
         assert np.allclose(loaded_trace.get_centers(0), expected_trace.get_centers(0))
         assert np.allclose(loaded_trace.get_id(0), expected_trace.get_id(0))
 
-    @mock.patch('banzai_nres.traces.TraceMaker._get_filepath', return_value=None)
-    def test_accuracy_of_trace_fitting(self, mock_get_path):
+    def test_accuracy_of_trace_fitting(self):
         """
         test type: Mock Integration Test with metrics for how well trace fitting is doing.
         info: This tests trace making via a blind fit.

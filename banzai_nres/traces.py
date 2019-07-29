@@ -7,7 +7,6 @@ Authors
 
 from banzai_nres.utils.trace_utils import Trace, AllTraceFitter
 from banzai.calibrations import CalibrationMaker, ApplyCalibration, create_master_calibration_header
-from banzai.utils import file_utils
 
 import banzai_nres.settings as nres_settings
 import banzai.settings as banzai_settings
@@ -40,14 +39,13 @@ class TraceMaker(CalibrationMaker):
         for image in images:
             master_header = create_master_calibration_header(old_header=image.header, images=[image])
             master_header['OBSTYPE'] = self.calibration_type
-            master_filename = banzai_settings.CALIBRATION_FILENAME_FUNCTIONS[self.calibration_type](image)
-            master_filepath = self._get_filepath(self.runtime_context, image, master_filename)
+            filename = banzai_settings.CALIBRATION_FILENAME_FUNCTIONS[self.calibration_type](image)
             logger.info('fitting traces order by order', image=image)
             bkg_subtracted_image_data = image.data - sep.Background(image.data).back()
             fitter = AllTraceFitter(xmin=self.xmin, xmax=self.xmax,
                                     min_peak_to_peak_spacing=self.min_peak_to_peak_spacing,
                                     min_snr=self.min_snr)
-            trace = Trace(data=None, filepath=master_filepath, header=master_header, image=image,
+            trace = Trace(data=None, filename=filename, header=master_header, image=image,
                           num_centers_per_trace=image.data.shape[1], trace_table_name=self.trace_table_name,
                           obstype=self.calibration_type)
             trace = fitter.fit_traces(trace=trace, image_data=bkg_subtracted_image_data,
@@ -56,14 +54,8 @@ class TraceMaker(CalibrationMaker):
                                       image_noise_estimate=image.header['RDNOISE'])
             traces.append(trace)
             logger.info('Created master trace', image=image, extra_tags={'calibration_type': self.calibration_type,
-                                                                         'output_path': master_filepath,
                                                                          'calibration_obstype': master_header['OBSTYPE']})
         return traces
-
-    @staticmethod
-    def _get_filepath(runtime_context, lampflat_image, master_filename):
-        output_directory = file_utils.make_output_directory(runtime_context, lampflat_image)
-        return os.path.join(output_directory, os.path.basename(master_filename))
 
     def do_stage(self, images):
         """
