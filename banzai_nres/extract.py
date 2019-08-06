@@ -113,9 +113,10 @@ class RectifyTwodSpectrum(Stage):
     def do_stage(self, image):
         logger.info('Rectifying the 2d spectrum', image=image)
         if image.trace is None:
-            logger.error('Image has empty trace attribute. Extraction will fail.', image=image)
+            logger.error('Image has empty trace attribute. Aborting extraction.', image=image)
             image.is_bad = True
-            raise ValueError('image.trace is None')
+            image.rectified_2d_spectrum = {}
+            return image
         rectified_2d_spectrum = extract_utils.rectify_orders(image.data, image.trace,
                                                              half_window=self.max_extraction_half_window)
         image.rectified_2d_spectrum = rectified_2d_spectrum
