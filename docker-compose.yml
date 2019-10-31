@@ -27,7 +27,7 @@ services:
   banzai-nres-redis:
     image: redis:5.0.3
     network_mode: "bridge"
-    container_name: banzai-redis
+    container_name: banzai-nres-redis
     labels:
       io.rancher.container.pull_image: always
     mem_limit: '1g'

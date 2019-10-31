@@ -6,7 +6,7 @@ Authors
 """
 
 from banzai_nres.utils.trace_utils import Trace, AllTraceFitter
-from banzai.calibrations import CalibrationMaker, ApplyCalibration, create_master_calibration_header
+from banzai.calibrations import CalibrationMaker, CalibrationUser
 from banzai.utils import file_utils
 
 import sep
@@ -59,7 +59,7 @@ class TraceMaker(CalibrationMaker):
         return trace
 
 
-class LoadTrace(ApplyCalibration):
+class LoadTrace(CalibrationUser):
     """
     Loads trace coefficients from file and appends them onto the image object.
     """
