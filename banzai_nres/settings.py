@@ -1,6 +1,6 @@
 import os
 
-FRAME_CLASS = 'banzai_nres.images.NRESImage'
+FRAME_FACTORY = 'banzai.images.LCOImageFactory'
 
 FRAME_SELECTION_CRITERIA = [('type', 'contains', 'NRES')]
 
@@ -15,9 +15,9 @@ CALIBRATION_MIN_FRAMES = {'BIAS': 5,
                                    'DARK': 3,
                                    'LAMPFLAT': 5}
 
-CALIBRATION_SET_CRITERIA = {'BIAS': ['ccdsum', 'configuration_mode'],
-                                     'DARK': ['ccdsum', 'configuration_mode'],
-                                     'LAMPFLAT': ['ccdsum', 'fiber0_lit', 'fiber1_lit', 'fiber2_lit']}
+CALIBRATION_SET_CRITERIA = {'BIAS': ['binning', 'configuration_mode'],
+                                     'DARK': ['binning', 'configuration_mode'],
+                                     'LAMPFLAT': ['binning', 'fiber0_lit', 'fiber1_lit', 'fiber2_lit']}
 
 CALIBRATION_FILENAME_FUNCTIONS = {'BIAS': ('banzai.utils.file_utils.config_to_filename',
                                                     'banzai.utils.file_utils.ccdsum_to_filename'),
@@ -48,7 +48,8 @@ EXTRA_STAGES = {'BIAS': ['banzai.bias.BiasMasterLevelSubtractor', 'banzai.bias.B
 
 CALIBRATION_STACKER_STAGES = {'BIAS': ['banzai.bias.BiasMaker'],
                               'DARK': ['banzai.dark.DarkMaker'],
-                               'LAMPFLAT': ['banzai_nres.flats.FlatStacker']}
+                               'LAMPFLAT': [
+                                   'banzai_nres.flats.FlatStacker']}
 
 # Stack delays are expressed in seconds--namely, each is five minutes
 CALIBRATION_STACK_DELAYS = {'BIAS': 300,
@@ -67,3 +68,5 @@ OBSERVATION_PORTAL_URL = os.getenv('OBSERVATION_PORTAL_URL', 'http://internal-ob
 CALIBRATE_PROPOSAL_ID = os.getenv('CALIBRATE_PROPOSAL_ID', 'calibrate')
 
 CONFIGDB_URL = os.getenv('CONFIGDB_URL', 'http://configdb.lco.gtn/sites/')
+
+OBSERVATION_REQUEST_TYPES = {'BIAS': 'NRESBIAS', 'DARK': 'NRESDARK'}
