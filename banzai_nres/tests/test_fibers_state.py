@@ -1,7 +1,7 @@
 import mock
 
 from banzai_nres.fibers import fiber_states_from_header, fibers_state_to_filename
-from banzai_nres.images import NRESImage
+from banzai_nres.images import NRESCalibrationFrame
 from banzai.tests.utils import FakeContext
 
 

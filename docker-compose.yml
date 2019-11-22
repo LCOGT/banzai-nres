@@ -94,7 +94,7 @@ services:
     links:
       - banzai-nres-fits-exchange:broker
       - banzai-nres-redis:redis
-    entrypoint: ["banzai_run_realtime_pipeline", "--fpack",
+    entrypoint: ["banzai_nres_run_realtime_pipeline", "--fpack",
                  "--db-address=sqlite:////archive/engineering/test.db",
                  "--broker-url=broker"]
     environment:

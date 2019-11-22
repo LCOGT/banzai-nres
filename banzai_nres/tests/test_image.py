@@ -1,4 +1,4 @@
-from banzai_nres.images import NRESImage
+from banzai_nres.images import NRESCalibrationFrame
 from banzai.tests.utils import FakeContext
 
 import mock

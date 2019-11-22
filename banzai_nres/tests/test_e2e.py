@@ -196,12 +196,12 @@ class TestMasterFlatCreation:
     @pytest.fixture(autouse=True)
     @mock.patch('banzai.utils.observation_utils.requests.get', side_effect=observation_portal_side_effect)
     def stack_flat_frames(self, mock_lake):
-        test_end_to_end.run_reduce_individual_frames('*w00.fits*')
-        test_end_to_end.mark_frames_as_good('*w91.fits*')
-        test_end_to_end.stack_calibrations('lampflat')
+        run_reduce_individual_frames('*w00.fits*')
+        mark_frames_as_good('*w91.fits*')
+        stack_calibrations('lampflat')
 
     def test_if_stacked_flat_frame_was_created(self):
-        test_end_to_end.run_check_if_stacked_calibrations_were_created('*w00.fits*', 'lampflat')
-        test_end_to_end.run_check_if_stacked_calibrations_are_in_db('*w00.fits*', 'LAMPFLAT')
+        run_check_if_stacked_calibrations_were_created('*w00.fits*', 'lampflat')
+        run_check_if_stacked_calibrations_are_in_db('*w00.fits*', 'LAMPFLAT')
 
 # TODO add master traces test
