@@ -65,3 +65,5 @@ OBSERVATION_REQUEST_TYPES = {'BIAS': 'NRESBIAS', 'DARK': 'NRESDARK'}
 
 # For some extension names, we want to just have corresponding BPM or ERR extensions
 EXTENSION_NAMES_TO_CONDENSE = ['SPECTRUM']
+
+CALIBRATION_LOOKBACK = {'BIAS': 4.5, 'DARK': 4.5, 'LAMPFLAT': 0.5}
