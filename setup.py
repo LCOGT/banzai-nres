@@ -23,4 +23,6 @@ setup(name='lco-banzai-nres',
       install_requires=['banzai>=0.26.4', 'numpy>=1.13', 'sphinx', 'coveralls'],
       tests_require=['pytest>=3.5'],
       entry_points={'console_scripts': ['banzai_nres_reduce_night=banzai_nres.main:reduce_night',
-                                        'banzai_nres_run_realtime_pipeline=banzai_nres.main:nres_run_realtime_pipeline']})
+                                        'banzai_nres_run_realtime_pipeline=banzai_nres.main:nres_run_realtime_pipeline'
+                                        'banzai_nres_start_stacking_scheduler=banzai_nres.main:nres_start_stacking_scheduler',
+                                        'banzai_nres_make_master_calibrations=banzai_nres.main:nres_make_master_calibrations']})
