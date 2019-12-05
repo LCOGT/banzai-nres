@@ -1,4 +1,5 @@
 import os
+import banzai_nres
 
 FRAME_FACTORY = 'banzai_nres.images.NRESFrameFactory'
 
@@ -21,11 +22,11 @@ CALIBRATION_SET_CRITERIA = {'BIAS': ['binning', 'configuration_mode'],
                             'DARK': ['binning', 'configuration_mode'],
                             'LAMPFLAT': ['binning', 'fiber0_lit', 'fiber1_lit', 'fiber2_lit']}
 
-CALIBRATION_FILENAME_FUNCTIONS = {'BIAS': ('banzai.utils.file_utils.config_to_filename',
+CALIBRATION_FILENAME_FUNCTIONS = {'BIAS': ('banzai_nres.utils.file_utils.config_to_filename',
                                            'banzai.utils.file_utils.ccdsum_to_filename'),
-                                  'DARK': ('banzai.utils.file_utils.config_to_filename',
+                                  'DARK': ('banzai_nres.utils.file_utils.config_to_filename',
                                            'banzai.utils.file_utils.ccdsum_to_filename'),
-                                  'LAMPFLAT': ('banzai.utils.file_utils.config_to_filename',
+                                  'LAMPFLAT': ('banzai_nres.utils.file_utils.config_to_filename',
                                                'banzai.utils.file_utils.ccdsum_to_filename',
                                                'banzai_nres.fibers.fibers_state_to_filename')}
 
@@ -67,3 +68,11 @@ OBSERVATION_REQUEST_TYPES = {'BIAS': 'NRESBIAS', 'DARK': 'NRESDARK'}
 EXTENSION_NAMES_TO_CONDENSE = ['SPECTRUM']
 
 CALIBRATION_LOOKBACK = {'BIAS': 4.5, 'DARK': 4.5, 'LAMPFLAT': 0.5}
+
+PIPELINE_VERSION = banzai_nres.__version__
+
+# Number of days before proprietary data should become public:
+DATA_RELEASE_DELAY = 365
+
+# Proposal ids for data that should be public instantly. Should all be lowercase
+PUBLIC_PROPOSALS = ['calibrate', 'standard', '*epo*', 'pointing']

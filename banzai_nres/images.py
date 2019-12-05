@@ -1,6 +1,8 @@
 from banzai_nres.fibers import fiber_states_from_header
-from banzai.images import LCOFrameFactory, LCOObservationFrame, LCOMasterCalibrationFrame, LCOCalibrationFrame
+from banzai.images import LCOFrameFactory
+from banzai.images import ObservationFrame, LCOObservationFrame, LCOMasterCalibrationFrame, LCOCalibrationFrame
 import logging
+from typing import Optional
 
 logger = logging.getLogger('banzai')
 
@@ -34,3 +36,14 @@ class NRESMasterCalibrationFrame(LCOMasterCalibrationFrame, NRESFrame):
 class NRESFrameFactory(LCOFrameFactory):
     observation_frame_class = NRESObservationFrame
     calibration_frame_class = NRESCalibrationFrame
+
+    @classmethod
+    def open(cls, path, runtime_context) -> Optional[ObservationFrame]:
+        image = super(cls).open(path, runtime_context)
+        # Currently we can't distinguish between the NRES composite data products and the raw frames off the telescope
+        # As such we have to check an an extra header keyword. We put nres01 etc in TELESCOP in the composite data
+        # products to distinguish.
+        if image is None or 'nres' not in image.meta.get('TELESCOP', '').lower():
+            return None
+        else:
+            return image
