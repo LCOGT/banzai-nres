@@ -39,7 +39,7 @@ class NRESFrameFactory(LCOFrameFactory):
 
     @classmethod
     def open(cls, path, runtime_context) -> Optional[ObservationFrame]:
-        image = super(cls).open(path, runtime_context)
+        image = super().open(path, runtime_context)
         # Currently we can't distinguish between the NRES composite data products and the raw frames off the telescope
         # As such we have to check an an extra header keyword. We put nres01 etc in TELESCOP in the composite data
         # products to distinguish.

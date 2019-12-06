@@ -158,7 +158,7 @@ def init(configdb):
     os.system(f'banzai_add_instrument --site elp --camera fl17 --name nres02 --camera-type 1m0-NRES-SciCam --db-address={os.environ["DB_ADDRESS"]}')
     for instrument in INSTRUMENTS:
         for bpm_filename in glob(os.path.join(DATA_ROOT, instrument, 'bpm/*bpm*')):
-            os.system(f'banzai_add_bpm --filename {bpm_filename} --db-address={os.environ["DB_ADDRESS"]}')
+            os.system(f'banzai_nres_add_bpm --filename {bpm_filename} --db-address={os.environ["DB_ADDRESS"]}')
 
 @pytest.mark.e2e
 @pytest.mark.master_bias

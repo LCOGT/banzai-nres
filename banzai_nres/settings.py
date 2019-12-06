@@ -32,7 +32,7 @@ CALIBRATION_FILENAME_FUNCTIONS = {'BIAS': ('banzai_nres.utils.file_utils.config_
 
 TELESCOPE_FILENAME_FUNCTION = 'banzai_nres.utils.runtime_utils.get_telescope_filename'
 
-CALIBRATION_IMAGE_TYPES = ['BIAS', 'DARK', 'LAMPFLAT']
+CALIBRATION_IMAGE_TYPES = ['BPM', 'BIAS', 'DARK', 'LAMPFLAT', 'ARC']
 
 LAST_STAGE = {'BIAS': 'banzai.trim.Trimmer',
               'DARK': 'banzai.bias.BiasSubtractor',
@@ -76,3 +76,5 @@ DATA_RELEASE_DELAY = 365
 
 # Proposal ids for data that should be public instantly. Should all be lowercase
 PUBLIC_PROPOSALS = ['calibrate', 'standard', '*epo*', 'pointing']
+
+SUPPORTED_FRAME_TYPES = ['BPM', 'BIAS', 'DARK', 'LAMPFLAT', 'SPECTRUM', 'ARC']

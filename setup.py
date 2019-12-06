@@ -26,4 +26,5 @@ setup(name='lco-banzai-nres',
       entry_points={'console_scripts': ['banzai_nres_reduce_night=banzai_nres.main:reduce_night',
                                         'banzai_nres_run_realtime_pipeline=banzai_nres.main:nres_run_realtime_pipeline',
                                         'banzai_nres_start_stacking_scheduler=banzai_nres.main:nres_start_stacking_scheduler',
-                                        'banzai_nres_make_master_calibrations=banzai_nres.main:nres_make_master_calibrations']})
+                                        'banzai_nres_make_master_calibrations=banzai_nres.main:nres_make_master_calibrations',
+                                        'banzai_nres_add_bpm=banzai_nres.main:add_bpm']})
