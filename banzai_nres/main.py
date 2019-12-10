@@ -54,7 +54,7 @@ def nres_make_master_calibrations():
                                 'kwargs': {'dest': 'camera', 'help': 'Camera (e.g. kb95)', 'required': True}},
                                {'args': ['--frame-type'],
                                 'kwargs': {'dest': 'frame_type', 'help': 'Type of frames to process',
-                                           'choices': ['bias', 'dark', 'skyflat'], 'required': True}},
+                                           'choices': ['bias', 'dark', 'lampflat'], 'required': True}},
                                {'args': ['--min-date'],
                                 'kwargs': {'dest': 'min_date', 'required': True, 'type': date_utils.validate_date,
                                            'help': 'Earliest observation time of the individual calibration frames. '
