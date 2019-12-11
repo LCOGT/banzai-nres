@@ -1,5 +1,5 @@
 def fiber_states_from_header(header):
-    parsed_objects = header['OBJECTS'].split('&')
+    parsed_objects = header.get('OBJECTS', '').split('&')
     if len(parsed_objects) < 3:
         return 0, 0, 0
     fiber0_lit = parsed_objects[0].lower() != 'none'
