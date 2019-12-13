@@ -114,14 +114,14 @@ def get_expected_number_of_calibrations(raw_filenames, calibration_type):
     number_of_stacks_that_should_have_been_created = 0
     for day_obs in DAYS_OBS:
         raw_filenames_for_this_dayobs = glob(os.path.join(DATA_ROOT, day_obs, 'raw', raw_filenames))
-        if calibration_type.lower() == 'skyflat':
-            # Group by filter
-            observed_filters = []
+        if calibration_type.lower() == 'lampflat':
+            # Group by fibers lit
+            observed_fibers = []
             for raw_filename in raw_filenames_for_this_dayobs:
-                skyflat_hdu = fits_utils.open_fits_file(raw_filename)
-                observed_filters.append(skyflat_hdu[0].header.get('FILTER'))
-            observed_filters = set(observed_filters)
-            number_of_stacks_that_should_have_been_created += len(observed_filters)
+                lampflat_hdu = fits_utils.open_fits_file(raw_filename)
+                observed_fibers.append(lampflat_hdu[0].header.get('OBJECTS'))
+            observed_fibers = set(observed_fibers)
+            number_of_stacks_that_should_have_been_created += len(observed_fibers)
         else:
             # Just one calibration per night
             if len(raw_filenames_for_this_dayobs) > 0:
