@@ -52,7 +52,7 @@ pipeline {
 		    steps {
 	            script {
                     withKubeConfig([credentialsId: "dev-kube-config"]) {
-                        sh("helm delete -n dev banzai-nres --purge || true")
+                        sh("helm delete banzai-nres --purge || true")
                         sh('helm repo update && helm upgrade --install banzai-nres lco/banzai-nres ' +
                                 '--set banzaiNRES.tag="${GIT_DESCRIPTION}" --namespace dev --wait --timeout=3600')
 
