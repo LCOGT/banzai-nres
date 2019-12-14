@@ -52,6 +52,7 @@ pipeline {
 		    steps {
 	            script {
                     withKubeConfig([credentialsId: "dev-kube-config"]) {
+                        sh("helm delete banzai-nres || true")
                         sh('helm repo update && helm upgrade --install banzai-nres lco/banzai-nres ' +
                                 '--set banzaiNRES.tag="${GIT_DESCRIPTION}" --namespace dev --wait --timeout=3600')
 
@@ -73,7 +74,7 @@ pipeline {
 			steps {
 				script {
                     withKubeConfig([credentialsId: "dev-kube-config"]) {
-						sh("kubectl exec ${podName} -c banzai-nres-listener -- " +
+						sh("kubectl exec ${podName} -c banzai-nres-listener -n dev -- " +
 						        "pytest --durations=0 --junitxml=/home/archive/pytest-master-bias.xml " +
 						        "-m master_bias /lco/banzai-nres/")
 					}
@@ -83,7 +84,7 @@ pipeline {
 				always {
 					script {
 					    withKubeConfig([credentialsId: "dev-kube-config"]) {
-						    sh("kubectl cp -c banzai-nres-listener ${podName}:/home/archive/pytest-master-bias.xml " +
+						    sh("kubectl cp -n dev -c banzai-nres-listener ${podName}:/home/archive/pytest-master-bias.xml " +
 						            "pytest-master-bias.xml")
 						    junit "pytest-master-bias.xml"
 						}
@@ -101,7 +102,7 @@ pipeline {
 			steps {
 				script {
                     withKubeConfig([credentialsId: "dev-kube-config"]) {
-						sh("kubectl exec ${podName} -c banzai-nres-listener  -- " +
+						sh("kubectl exec -n dev ${podName} -c banzai-nres-listener  -- " +
 						        "pytest --durations=0 --junitxml=/home/archive/pytest-master-dark.xml " +
 						        "-m master_dark /lco/banzai-nres/")
 					}
@@ -111,7 +112,7 @@ pipeline {
 				always {
 					script {
 					    withKubeConfig([credentialsId: "dev-kube-config"]) {
-						    sh("kubectl cp -c banzai-nres-listener ${podName}:/home/archive/pytest-master-dark.xml " +
+						    sh("kubectl cp -n dev -c banzai-nres-listener ${podName}:/home/archive/pytest-master-dark.xml " +
 						            "pytest-master-dark.xml")
 						    junit "pytest-master-dark.xml"
 						}
@@ -129,7 +130,7 @@ pipeline {
 			steps {
 				script {
                     withKubeConfig([credentialsId: "dev-kube-config"]) {
-						sh("kubectl exec ${podName} -c banzai-nres-listener -- " +
+						sh("kubectl exec -n dev ${podName} -c banzai-nres-listener -- " +
 						        "pytest --durations=0 --junitxml=/home/archive/pytest-master-flat.xml " +
 						        "-m master_flat /lco/banzai-nres/")
 					}
@@ -139,7 +140,7 @@ pipeline {
 				always {
 					script {
 					    withKubeConfig([credentialsId: "dev-kube-config"]) {
-						    sh("kubectl cp -c banzai-nres-listener ${podName}:/home/archive/pytest-master-flat.xml " +
+						    sh("kubectl cp -n dev -c banzai-nres-listener ${podName}:/home/archive/pytest-master-flat.xml " +
 						            "pytest-master-flat.xml")
 						    junit "pytest-master-flat.xml"
 						}
