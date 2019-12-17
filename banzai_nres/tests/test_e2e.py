@@ -14,7 +14,7 @@ from banzai import dbs
 from types import ModuleType
 from datetime import datetime
 from dateutil.parser import parse
-
+from halo import Halo
 
 import logging
 
@@ -44,6 +44,9 @@ def observation_portal_side_effect(*args, **kwargs):
 
 
 def celery_join():
+    logger.info('Waiting for data to process')
+    spinner = Halo(text='Processing', spinner='dots')
+    spinner.start()
     celery_inspector = app.control.inspect()
     while True:
         queues = [celery_inspector.active(), celery_inspector.scheduled(), celery_inspector.reserved()]
@@ -54,6 +57,7 @@ def celery_join():
             celery_inspector = app.control.inspect()
             continue
         if all([len(queue['celery@banzai-celery-worker']) == 0 for queue in queues]):
+            spinner.stop()
             break
 
 
