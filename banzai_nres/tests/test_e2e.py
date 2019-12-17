@@ -1,136 +1,211 @@
 import pytest
-from banzai.dbs import create_db, populate_calibration_table_with_bpms
-import banzai_nres.settings as nres_settings
-from banzai.tests.utils import FakeResponse
+from banzai.tests.utils import FakeResponse, get_min_and_max_dates
+from banzai_nres import settings
+from banzai.utils import fits_utils
 import os
-import numpy as np
-import shutil
 import mock
-from astropy.io import fits
+from banzai.utils import file_utils
+import time
+from glob import glob
+from astropy.utils.data import get_pkg_data_filename
+from banzai.celery import app, schedule_calibration_stacking
+import argparse
+from banzai import dbs
+from types import ModuleType
+from datetime import datetime
+from dateutil.parser import parse
 
 import logging
 
 logger = logging.getLogger(__name__)
 
+TEST_PACKAGE = 'banzai_nres.tests'
 
-def make_dummy_bpm(bpm_path, output_bpm_name_addition, fits_file_to_copy, date_marker, camera, instrument, site_name):
-    """
-    Creates and saves a dummy bpm in the format of a real fits file.
-    """
-    # clearing the bad pixel mask folder if it exists
-    if os.path.exists(bpm_path):
-        shutil.rmtree(bpm_path)
-    # building bpm folder
-    os.makedirs(bpm_path)
-    # unpacking a fits file via funpack. Astropy's unpack messes with the files.
-    os.system('funpack {}'.format(fits_file_to_copy + '.fz'))
-    # where to save the file
-    output_filename = bpm_path + output_bpm_name_addition + date_marker + '.fits'
-    # creating the bpm
-    with fits.open(fits_file_to_copy) as hdu_list:
-        hdu_list[0].data = np.zeros(hdu_list[0].data.shape, dtype=np.uint8)
-        hdu_list[0].header['OBSTYPE'] = 'BPM'
-        hdu_list[0].header['EXTNAME'] = 'BPM'
-        hdu_list[0].header['INSTRUME'] = camera
-        hdu_list[0].header['SITEID'] = site_name
-        hdu_list[0].header['TELESCOP'] = instrument
-        hdu_list.writeto(output_filename, overwrite=True)
+DATA_ROOT = os.path.join(os.sep, 'archive', 'engineering')
 
-    # fpack the file and delete the funpacked input.
-    os.system('fpack {0}'.format(output_filename))
-    os.system('rm {0}'.format(output_filename))
-    # delete the unpacked file which was initially copied into raw/ via funpack
-    os.system('rm {0}'.format(fits_file_to_copy))
+SITES = [os.path.basename(site_path) for site_path in glob(os.path.join(DATA_ROOT, '???'))]
+INSTRUMENTS = [os.path.join(site, os.path.basename(instrument_path)) for site in SITES
+               for instrument_path in glob(os.path.join(os.path.join(DATA_ROOT, site, '*')))]
+
+DAYS_OBS = [os.path.join(instrument, os.path.basename(dayobs_path)) for instrument in INSTRUMENTS
+            for dayobs_path in glob(os.path.join(DATA_ROOT, instrument, '201*'))]
+
+TEST_PACKAGE = 'banzai_nres.tests'
+CONFIGDB_FILENAME = get_pkg_data_filename('data/configdb_example.json', TEST_PACKAGE)
+
+
+def observation_portal_side_effect(*args, **kwargs):
+    site = kwargs['params']['site']
+    start = datetime.strftime(parse(kwargs['params']['start_after']).replace(tzinfo=None).date(), '%Y%m%d')
+    filename = 'test_obs_portal_response_{site}_{start}.json'.format(site=site, start=start)
+    filename = get_pkg_data_filename('data/{filename}'.format(filename=filename), TEST_PACKAGE)
+    return FakeResponse(filename)
+
+
+def celery_join():
+    logger.info('Waiting for data to process')
+    celery_inspector = app.control.inspect()
+    log_counter = 0
+    while True:
+        queues = [celery_inspector.active(), celery_inspector.scheduled(), celery_inspector.reserved()]
+        time.sleep(1)
+        log_counter += 1
+        if log_counter % 10 == 0:
+            logger.info('Processing: ' + '. ' * (log_counter // 10))
+        if any([queue is None or 'celery@banzai-celery-worker' not in queue for queue in queues]):
+            logger.warning('No valid celery queues were detected, retrying...', extra_tags={'queues': queues})
+            # Reset the celery connection
+            celery_inspector = app.control.inspect()
+            continue
+        if all([len(queue['celery@banzai-celery-worker']) == 0 for queue in queues]):
+            break
+
+
+def run_end_to_end_tests():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--marker', dest='marker', help='PyTest marker to run')
+    parser.add_argument('--junit-file', dest='junit_file', help='Path to junit xml file with results')
+    parser.add_argument('--code-path', dest='code_path', help='Path to directory with setup.py')
+    args = parser.parse_args()
+    os.chdir(args.code_path)
+    command = 'python setup.py test -a "--durations=0 --junitxml={junit_file} -m {marker}"'
+
+    # Bitshift by 8 because Python encodes exit status in the leftmost 8 bits
+    return os.system(command.format(junit_file=args.junit_file, marker=args.marker)) >> 8
+
+
+def run_reduce_individual_frames(raw_filenames):
+    logger.info('Reducing individual frames for filenames: {filenames}'.format(filenames=raw_filenames))
+    for day_obs in DAYS_OBS:
+        raw_path = os.path.join(DATA_ROOT, day_obs, 'raw')
+        for filename in glob(os.path.join(raw_path, raw_filenames)):
+            file_utils.post_to_archive_queue(filename, os.getenv('FITS_BROKER_URL'))
+    celery_join()
+    logger.info('Finished reducing individual frames for filenames: {filenames}'.format(filenames=raw_filenames))
+
+
+def stack_calibrations(frame_type):
+    logger.info('Stacking calibrations for frame type: {frame_type}'.format(frame_type=frame_type))
+    logger.info('Stacking calibrations for frame type: {frame_type}'.format(frame_type=frame_type))
+    for day_obs in DAYS_OBS:
+        site, camera, dayobs = day_obs.split('/')
+        timezone = dbs.get_timezone(site, db_address=os.environ['DB_ADDRESS'])
+        min_date, max_date = get_min_and_max_dates(timezone, dayobs=dayobs)
+        runtime_context = dict(processed_path=DATA_ROOT, log_level='debug', post_to_archive=False,
+                               post_to_elasticsearch=False, fpack=True, reduction_level=91,
+                               db_address=os.environ['DB_ADDRESS'], elasticsearch_qc_index='banzai_qc',
+                               elasticsearch_url='http://elasticsearch.lco.gtn:9200', elasticsearch_doc_type='qc',
+                               no_bpm=False, ignore_schedulability=True, use_only_older_calibrations=False,
+                               preview_mode=False, max_tries=5, broker_url=os.getenv('FITS_BROKER_URL'), )
+        for setting in dir(settings):
+            if '__' != setting[:2] and not isinstance(getattr(settings, setting), ModuleType):
+                runtime_context[setting] = getattr(settings, setting)
+        schedule_calibration_stacking(site, runtime_context, min_date=min_date, max_date=max_date,
+                                      frame_types=[frame_type])
+    celery_join()
+    logger.info('Finished stacking calibrations for frame type: {frame_type}'.format(frame_type=frame_type))
+
+
+def mark_frames_as_good(raw_filenames):
+    logger.info('Marking frames as good for filenames: {filenames}'.format(filenames=raw_filenames))
+    for day_obs in DAYS_OBS:
+        for filename in glob(os.path.join(DATA_ROOT, day_obs, 'processed', raw_filenames)):
+            dbs.mark_frame(os.path.basename(filename), "good", db_address=os.environ['DB_ADDRESS'])
+    logger.info('Finished marking frames as good for filenames: {filenames}'.format(filenames=raw_filenames))
+
+
+def get_expected_number_of_calibrations(raw_filenames, calibration_type):
+    number_of_stacks_that_should_have_been_created = 0
+    for day_obs in DAYS_OBS:
+        raw_filenames_for_this_dayobs = glob(os.path.join(DATA_ROOT, day_obs, 'raw', raw_filenames))
+        if calibration_type.lower() == 'lampflat':
+            # Group by fibers lit
+            observed_fibers = []
+            for raw_filename in raw_filenames_for_this_dayobs:
+                lampflat_hdu = fits_utils.open_fits_file(raw_filename)
+                observed_fibers.append(lampflat_hdu[0].header.get('OBJECTS'))
+            observed_fibers = set(observed_fibers)
+            number_of_stacks_that_should_have_been_created += len(observed_fibers)
+        else:
+            # Just one calibration per night
+            if len(raw_filenames_for_this_dayobs) > 0:
+                number_of_stacks_that_should_have_been_created += 1
+    return number_of_stacks_that_should_have_been_created
+
+
+def run_check_if_stacked_calibrations_were_created(raw_filenames, calibration_type):
+    created_stacked_calibrations = []
+    number_of_stacks_that_should_have_been_created = get_expected_number_of_calibrations(raw_filenames, calibration_type)
+    for day_obs in DAYS_OBS:
+        created_stacked_calibrations += glob(os.path.join(DATA_ROOT, day_obs, 'processed',
+                                                          '*' + calibration_type.lower() + '*.fits*'))
+    assert number_of_stacks_that_should_have_been_created > 0
+    assert len(created_stacked_calibrations) == number_of_stacks_that_should_have_been_created
+
+
+def run_check_if_stacked_calibrations_are_in_db(raw_filenames, calibration_type):
+    number_of_stacks_that_should_have_been_created = get_expected_number_of_calibrations(raw_filenames, calibration_type)
+    with dbs.get_session(os.environ['DB_ADDRESS']) as db_session:
+        calibrations_in_db = db_session.query(dbs.CalibrationImage).filter(dbs.CalibrationImage.type == calibration_type)
+        calibrations_in_db = calibrations_in_db.filter(dbs.CalibrationImage.is_master).all()
+    assert number_of_stacks_that_should_have_been_created > 0
+    assert len(calibrations_in_db) == number_of_stacks_that_should_have_been_created
 
 
 @pytest.mark.e2e
 @pytest.fixture(scope='module')
-@mock.patch('banzai.dbs.requests.get', return_value=FakeResponse())
-def init(fake_configdb):
-    """
-    This function creates the sqlite database and populates it with
-    telescopes and BPM's for the test data sets elp/nres02 and lsc/nres01.
-    """
-    logger.debug('Setting up e2e test database')
+@mock.patch('banzai.dbs.requests.get', return_value=FakeResponse(CONFIGDB_FILENAME))
+def init(configdb):
+    os.system(f'banzai_create_db --db-address={os.environ["DB_ADDRESS"]}')
+    dbs.populate_instrument_tables(db_address=os.environ["DB_ADDRESS"], configdb_address='http://fakeconfigdb')
+    os.system(f'banzai_add_instrument --site lsc --camera fl09 --name nres01 --camera-type 1m0-NRES-SciCam --db-address={os.environ["DB_ADDRESS"]}')
+    os.system(f'banzai_add_instrument --site elp --camera fl17 --name nres02 --camera-type 1m0-NRES-SciCam --db-address={os.environ["DB_ADDRESS"]}')
+    for instrument in INSTRUMENTS:
+        for bpm_filename in glob(os.path.join(DATA_ROOT, instrument, 'bpm/*bpm*')):
+            os.system(f'banzai_nres_add_bpm --filename {bpm_filename} --db-address={os.environ["DB_ADDRESS"]}')
 
-    create_db('./', db_address=os.environ['DB_URL'], configdb_address=os.environ['CONFIG_DB_URL'])
+@pytest.mark.e2e
+@pytest.mark.master_bias
+class TestMasterBiasCreation:
+    @pytest.fixture(autouse=True)
+    @mock.patch('banzai.utils.observation_utils.requests.get', side_effect=observation_portal_side_effect)
+    def stack_bias_frames(self, mock_lake, init):
+        run_reduce_individual_frames('*b00.fits*')
+        mark_frames_as_good('*b91.fits*')
+        stack_calibrations('bias')
 
-    # using an arbitrary fits as a template for the bpm fits. Then making and saving the bpm's
-
-    fits_file_to_copy = '/archive/engineering/lsc/nres01/20180228/raw/lscnrs01-fl09-20180228-0010-e00.fits'
-    date_marker = '20180727'
-
-    make_dummy_bpm('/archive/engineering/lsc/nres01/bpm', '/bpm_lsc_fl09_',
-                   fits_file_to_copy=fits_file_to_copy, date_marker=date_marker,
-                   instrument='nres01', site_name='lsc', camera='fl09')
-    make_dummy_bpm('/archive/engineering/elp/nres02/bpm', '/bpm_elp_fl17_',
-                   fits_file_to_copy=fits_file_to_copy, date_marker=date_marker,
-                   instrument='nres02', site_name='elp', camera='fl17')
-
-    # adding the bpm folder to database and populating the sqlite tables.
-    populate_calibration_table_with_bpms('/archive/engineering/lsc/nres01/bpm', db_address=os.environ['DB_URL'])
-    populate_calibration_table_with_bpms('/archive/engineering/elp/nres02/bpm', db_address=os.environ['DB_URL'])
+    def test_if_stacked_bias_frame_was_created(self):
+        run_check_if_stacked_calibrations_were_created('*b00.fits*', 'bias')
+        run_check_if_stacked_calibrations_are_in_db('*b00.fits*', 'BIAS')
 
 
 @pytest.mark.e2e
-def test_e2e(init):
-    db_address = os.environ['DB_URL']
-    raw_data_path = '/archive/engineering/lsc/nres01/20180311/raw'
-    instrument = 'nres01'
-    site = 'lsc'
-    epoch = '20180311'
+@pytest.mark.master_dark
+class TestMasterDarkCreation:
+    @pytest.fixture(autouse=True)
+    @mock.patch('banzai.utils.observation_utils.requests.get', side_effect=observation_portal_side_effect)
+    def stack_dark_frames(self, mock_lake):
+        run_reduce_individual_frames('*d00.fits*')
+        mark_frames_as_good('*d91.fits*')
+        stack_calibrations('dark')
 
-    expected_bias_filename = 'lscnrs01-fl09-20180311-bias-bin1x1.fits'
-    expected_dark_filename = 'lscnrs01-fl09-20180311-dark-bin1x1.fits'
-    expected_flat_filenames = ['lscnrs01-fl09-20180311-lampflat-bin1x1-110.fits',
-                               'lscnrs01-fl09-20180311-lampflat-bin1x1-011.fits']
-    expected_trace_filenames = ['lscnrs01-fl09-20180311-trace-bin1x1-110.fits',
-                                'lscnrs01-fl09-20180311-trace-bin1x1-011.fits']
-    expected_processed_path = os.path.join('/tmp', site, instrument, epoch, 'processed')
+    def test_if_stacked_dark_frame_was_created(self):
+        run_check_if_stacked_calibrations_were_created('*d00.fits*', 'dark')
+        run_check_if_stacked_calibrations_are_in_db('*d00.fits*', 'DARK')
 
-    logger.debug('Executing master bias making from the command line')
 
-    os.system('banzai_nres_reduce_night --site lsc --camera fl09 --instrument-name nres01 --frame-type BIAS '
-              '--min-date 2018-03-11T00:00:00 --max-date 2018-03-12T23:59:59'
-              ' --db-address {0} --raw-path {1} --ignore-schedulability '
-              '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
+@pytest.mark.e2e
+@pytest.mark.master_flat
+class TestMasterFlatCreation:
+    @pytest.fixture(autouse=True)
+    @mock.patch('banzai.utils.observation_utils.requests.get', side_effect=observation_portal_side_effect)
+    def stack_flat_frames(self, mock_lake):
+        run_reduce_individual_frames('*w00.fits*')
+        mark_frames_as_good('*w91.fits*')
+        stack_calibrations('lampflat')
 
-    with fits.open(os.path.join(expected_processed_path, expected_bias_filename)) as hdu_list:
-        assert hdu_list[0].data.shape is not None
-        assert hdu_list['BPM'].data.shape == hdu_list[1].data.shape
+    def test_if_stacked_flat_frame_was_created(self):
+        run_check_if_stacked_calibrations_were_created('*w00.fits*', 'lampflat')
+        run_check_if_stacked_calibrations_are_in_db('*w00.fits*', 'LAMPFLAT')
 
-    logger.debug('Executing master dark making from the command line')
-
-    os.system('banzai_nres_reduce_night --site lsc --camera fl09 --instrument-name nres01 --frame-type DARK '
-              '--min-date 2018-03-11T00:00:00 --max-date 2018-03-12T23:59:59 '
-              '--db-address {0} --raw-path {1} --ignore-schedulability '
-              '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
-
-    with fits.open(os.path.join(expected_processed_path, expected_dark_filename)) as hdu_list:
-        assert hdu_list[0].data.shape is not None
-        assert hdu_list['BPM'].data.shape == hdu_list[1].data.shape
-
-    logger.debug('Executing master flat making from the command line')
-
-    os.system('banzai_nres_reduce_night --site lsc --camera fl09 --instrument-name nres01 --frame-type LAMPFLAT '
-              '--min-date 2018-03-11T00:00:00 --max-date 2018-03-12T23:59:59 '
-              '--db-address {0} --raw-path {1} --ignore-schedulability '
-              '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
-
-    for expected_flat_filename in expected_flat_filenames:
-        with fits.open(os.path.join(expected_processed_path, expected_flat_filename)) as hdu_list:
-            assert hdu_list[0].data.shape is not None
-            assert hdu_list['BPM'].data.shape == hdu_list[1].data.shape
-
-    logger.debug('Fitting traces from the command line')
-
-    os.system('banzai_nres_reduce_night --site lsc --camera fl09 --instrument-name nres01 --frame-type TRACE '
-              '--min-date 2018-03-11T00:00:00 --max-date 2018-03-12T23:59:59 '
-              '--db-address {0} --raw-path {1} --ignore-schedulability '
-              '--processed-path /tmp --log-level debug'.format(db_address, raw_data_path))
-
-    trace_table_name = nres_settings.TRACE_TABLE_NAME
-    for filename in expected_trace_filenames:
-        with fits.open(os.path.join(expected_processed_path, filename)) as hdu_list:
-            assert hdu_list[trace_table_name] is not None
-            assert hdu_list[trace_table_name].data['centers'].shape[0] > 100
+# TODO add master traces test

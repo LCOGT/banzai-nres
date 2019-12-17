@@ -1,15 +1,11 @@
-FROM docker.lco.global/banzai:0.21.0-16-g7902cb9
-ENTRYPOINT  ["/bin/bash", "-c", "while true; do sleep 100; done"]
+FROM docker.lco.global/banzai:0.27.5-90-g3fdc726
+
 USER root
 
-WORKDIR /lco/banzai-nres
+RUN conda install -y coveralls sphinx
 
-COPY . /lco/banzai-nres
+COPY --chown=10087:10000 . /lco/banzai-nres
 
-RUN python /lco/banzai-nres/setup.py install
+RUN pip install --global-option=build_ext /lco/banzai-nres/ --no-cache-dir
 
 USER archive
-
-ENV HOME /home/archive
-
-WORKDIR /home/archive

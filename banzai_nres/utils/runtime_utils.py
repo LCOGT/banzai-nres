@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_telescope_filename(image):
-    return image.header.get('TELESCOP', '').replace('nres', 'nrs')
+    return image.meta.get('TELESCOP', '').replace('nres', 'nrs')
 
 
 def validate_raw_path(runtime_context, raw_path):

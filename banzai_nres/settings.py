@@ -1,70 +1,80 @@
-import operator
+import os
+import banzai_nres
 
-from banzai.utils.file_utils import ccdsum_to_filename
-from banzai.settings import make_calibration_filename_function
-from banzai.utils.instrument_utils import InstrumentCriterion
+FRAME_FACTORY = 'banzai_nres.images.NRESFrameFactory'
 
-from banzai import settings
+MASTER_CALIBRATION_FRAME_CLASS = 'banzai_nres.images.NRESMasterCalibrationFrame'
 
-from banzai_nres.fibers import fibers_state_to_filename
-from banzai_nres.utils.runtime_utils import get_telescope_filename
+FRAME_SELECTION_CRITERIA = [('type', 'contains', 'NRES')]
 
+ORDERED_STAGES = ['banzai.bpm.BadPixelMaskLoader',
+                  'banzai.bias.OverscanSubtractor',
+                  'banzai.gain.GainNormalizer',
+                  'banzai.trim.Trimmer',
+                  'banzai.bias.BiasSubtractor',
+                  'banzai.dark.DarkSubtractor']
 
-settings.FRAME_CLASS = 'banzai_nres.images.NRESImage'
+CALIBRATION_MIN_FRAMES = {'BIAS': 5,
+                          'DARK': 3,
+                          'LAMPFLAT': 5}
 
-settings.FRAME_SELECTION_CRITERIA = [InstrumentCriterion('type', operator.contains, 'NRES')]
+CALIBRATION_SET_CRITERIA = {'BIAS': ['binning', 'configuration_mode'],
+                            'DARK': ['binning', 'configuration_mode'],
+                            'LAMPFLAT': ['binning', 'fiber0_lit', 'fiber1_lit', 'fiber2_lit']}
 
-settings.ORDERED_STAGES = ['banzai.bpm.BPMUpdater',
-                           'banzai.qc.SaturationTest',
-                           'banzai.bias.OverscanSubtractor',
-                           'banzai.gain.GainNormalizer',
-                           'banzai.trim.Trimmer',
-                           'banzai.bias.BiasSubtractor',
-                           'banzai.dark.DarkSubtractor',
-                           'banzai_nres.traces.LoadTrace']
+CALIBRATION_FILENAME_FUNCTIONS = {'BIAS': ('banzai_nres.utils.file_utils.config_to_filename',
+                                           'banzai.utils.file_utils.ccdsum_to_filename'),
+                                  'DARK': ('banzai_nres.utils.file_utils.config_to_filename',
+                                           'banzai.utils.file_utils.ccdsum_to_filename'),
+                                  'LAMPFLAT': ('banzai_nres.utils.file_utils.config_to_filename',
+                                               'banzai.utils.file_utils.ccdsum_to_filename',
+                                               'banzai_nres.fibers.fibers_state_to_filename')}
 
-settings.CALIBRATION_MIN_FRAMES = {'BIAS': 5,
-                                   'DARK': 3,
-                                   'LAMPFLAT': 5,
-                                   'TRACE': 1}
+TELESCOPE_FILENAME_FUNCTION = 'banzai_nres.utils.runtime_utils.get_telescope_filename'
 
-TRACE_FIT_INITIAL_DEGREE_TWO_GUESS = 90  # DO NOT HAPHAZARDLY CHANGE THIS
-TRACE_FIT_POLYNOMIAL_ORDER = 4  # DO NOT HAPHAZARDLY CHANGE THIS
-TRACE_TABLE_NAME = 'TRACE'
-WINDOW_FOR_TRACE_IDENTIFICATION = {'max': 2100, 'min': 2000}  # pixels
-MIN_FIBER_TO_FIBER_SPACING = 10  # pixels
-MIN_SNR_FOR_TRACE_IDENTIFICATION = 6
+CALIBRATION_IMAGE_TYPES = ['BPM', 'BIAS', 'DARK', 'LAMPFLAT', 'ARC']
 
-settings.CALIBRATION_SET_CRITERIA = {'BIAS': ['ccdsum'],
-                                     'DARK': ['ccdsum'],
-                                     'LAMPFLAT': ['ccdsum', 'fiber0_lit', 'fiber1_lit', 'fiber2_lit'],
-                                     'TRACE': ['ccdsum', 'fiber0_lit', 'fiber1_lit', 'fiber2_lit']}
+LAST_STAGE = {'BIAS': 'banzai.trim.Trimmer',
+              'DARK': 'banzai.bias.BiasSubtractor',
+              'LAMPFLAT': 'banzai.dark.DarkSubtractor'}
 
-settings.CALIBRATION_FILENAME_FUNCTIONS = {'BIAS': make_calibration_filename_function('BIAS', [ccdsum_to_filename],
-                                                                                      get_telescope_filename),
-                                           'DARK': make_calibration_filename_function('DARK', [ccdsum_to_filename],
-                                                                                      get_telescope_filename),
-                                           'LAMPFLAT': make_calibration_filename_function('LAMPFLAT',
-                                                                                          [ccdsum_to_filename,
-                                                                                           fibers_state_to_filename],
-                                                                                          get_telescope_filename),
-                                           'TRACE': make_calibration_filename_function('TRACE', [ccdsum_to_filename,
-                                                                                       fibers_state_to_filename],
-                                                                                       get_telescope_filename)}
+EXTRA_STAGES = {'BIAS': ['banzai.bias.BiasMasterLevelSubtractor', 'banzai.bias.BiasComparer'],
+                'DARK': ['banzai.dark.DarkNormalizer', 'banzai.dark.DarkComparer'],
+                'LAMPFLAT': []}
 
-settings.CALIBRATION_IMAGE_TYPES = ['BIAS', 'DARK', 'LAMPFLAT', 'TRACE']
+CALIBRATION_STACKER_STAGES = {'BIAS': ['banzai.bias.BiasMaker'],
+                              'DARK': ['banzai.dark.DarkMaker'],
+                              'LAMPFLAT': ['banzai_nres.flats.FlatStacker']}
 
-settings.LAST_STAGE = {'BIAS': 'banzai.trim.Trimmer',
-                       'DARK': 'banzai.bias.BiasSubtractor',
-                       'LAMPFLAT': 'banzai.dark.DarkSubtractor',
-                       'TRACE': 'banzai.dark.DarkSubtractor'}
+# Stack delays are expressed in seconds--namely, each is five minutes
+CALIBRATION_STACK_DELAYS = {'BIAS': 300,
+                            'DARK': 300,
+                            'LAMPFLAT': 300}
 
-settings.EXTRA_STAGES = {'BIAS': ['banzai.bias.BiasMasterLevelSubtractor', 'banzai.bias.BiasComparer'],
-                         'DARK': ['banzai.dark.DarkNormalizer', 'banzai.dark.DarkComparer'],
-                         'LAMPFLAT': [],
-                         'TRACE': []}
+SCHEDULE_STACKING_CRON_ENTRIES = {'cpt': {'minute': 0, 'hour': 15},
+                                  'tlv': {'minute': 45, 'hour': 8},
+                                  'lsc': {'minute': 0, 'hour': 21},
+                                  'elp': {'minute': 0, 'hour': 23}}
 
-settings.CALIBRATION_STACKER_STAGE = {'BIAS': 'banzai.bias.BiasMaker',
-                                      'DARK': 'banzai.dark.DarkMaker',
-                                      'LAMPFLAT': 'banzai_nres.flats.FlatStacker',
-                                      'TRACE': 'banzai_nres.traces.TraceMaker'}
+OBSERVATION_PORTAL_URL = os.getenv('OBSERVATION_PORTAL_URL',
+                                   'http://internal-observation-portal.lco.gtn/api/observations/')
+CALIBRATE_PROPOSAL_ID = os.getenv('CALIBRATE_PROPOSAL_ID', 'calibrate')
+
+CONFIGDB_URL = os.getenv('CONFIGDB_URL', 'http://configdb.lco.gtn/sites/')
+
+OBSERVATION_REQUEST_TYPES = {'BIAS': 'NRESBIAS', 'DARK': 'NRESDARK'}
+
+# For some extension names, we want to just have corresponding BPM or ERR extensions
+EXTENSION_NAMES_TO_CONDENSE = ['SPECTRUM']
+
+CALIBRATION_LOOKBACK = {'BIAS': 4.5, 'DARK': 4.5, 'LAMPFLAT': 0.5}
+
+PIPELINE_VERSION = banzai_nres.__version__
+
+# Number of days before proprietary data should become public:
+DATA_RELEASE_DELAY = 365
+
+# Proposal ids for data that should be public instantly. Should all be lowercase
+PUBLIC_PROPOSALS = ['calibrate', 'standard', '*epo*', 'pointing']
+
+SUPPORTED_FRAME_TYPES = ['BPM', 'BIAS', 'DARK', 'LAMPFLAT', 'SPECTRUM', 'ARC']

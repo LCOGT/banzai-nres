@@ -6,91 +6,82 @@ Authors
 
     G. Mirek Brandt (gmbrandt@ucsb.edu)
 """
-import datetime
-
-import banzai_nres.settings as nres_settings  # import to override banzai settings.
-import banzai.settings as banzai_settings
-from banzai.main import process_directory, parse_directory_args
-from banzai.utils import date_utils
-from banzai import dbs
-from banzai import logs
-from banzai.main import run_master_maker
-
-from banzai_nres.utils.runtime_utils import validate_raw_path, get_frame_types, get_reduction_date_window
+import banzai_nres.settings
+from banzai.main import start_listener, parse_args, add_settings_to_context
+from celery.schedules import crontab
+from banzai.celery import app, schedule_calibration_stacking
+import celery
+import celery.bin.beat
+from banzai.utils import date_utils, import_utils
+from banzai import calibrations, dbs, logs
 
 
 import logging
+import argparse
 
 logger = logging.getLogger(__name__)
 
 
-def process_master_maker(runtime_context, instrument, frame_type_to_stack, min_date, max_date,
-                         master_frame_type=None, use_masters=False):
-    if master_frame_type is None:
-        master_frame_type = frame_type_to_stack
-    extra_tags = {'instrument': instrument.camera, 'master_frame_type': master_frame_type,
-                  'min_date': min_date.strftime(date_utils.TIMESTAMP_FORMAT),
-                  'max_date': max_date.strftime(date_utils.TIMESTAMP_FORMAT)}
-    logger.info("Making master frames", extra_tags=extra_tags)
-    image_path_list = dbs.get_individual_calibration_images(instrument, frame_type_to_stack, min_date, max_date,
-                                                            use_masters=use_masters,
-                                                            db_address=runtime_context.db_address)
-    if len(image_path_list) == 0:
-        logger.info("No calibration frames found to stack", extra_tags=extra_tags)
+def nres_run_realtime_pipeline():
+    extra_console_arguments = [{'args': ['--n-processes'],
+                                'kwargs': {'dest': 'n_processes', 'default': 12,
+                                           'help': 'Number of listener processes to spawn.', 'type': int}},
+                               {'args': ['--queue-name'],
+                                'kwargs': {'dest': 'queue_name', 'default': 'banzai_nres_pipeline',
+                                           'help': 'Name of the queue to listen to from the fits exchange.'}}]
 
-    try:
-        run_master_maker(image_path_list, runtime_context, master_frame_type)
-    except Exception:
-        logger.error(logs.format_exception())
+    runtime_context = parse_args(banzai_nres.settings, extra_console_arguments=extra_console_arguments)
+
+    start_listener(runtime_context)
 
 
-def reduce_night(runtime_context=None, raw_path=None):
-    all_frame_types = list(banzai_settings.LAST_STAGE.keys())
+def nres_start_stacking_scheduler():
+    logger.info('Entered entrypoint to celery beat scheduling')
+    runtime_context = parse_args(banzai_nres.settings)
+    for site, entry in runtime_context.SCHEDULE_STACKING_CRON_ENTRIES.items():
+        app.add_periodic_task(crontab(minute=entry['minute'], hour=entry['hour']),
+                              schedule_calibration_stacking.s(site=site, runtime_context=vars(runtime_context)))
+
+    beat = celery.bin.beat.beat(app=app)
+    logger.info('Starting celery beat')
+    beat.run()
+
+
+def nres_make_master_calibrations():
     extra_console_arguments = [{'args': ['--site'],
                                 'kwargs': {'dest': 'site', 'help': 'Site code (e.g. ogg)', 'required': True}},
                                {'args': ['--camera'],
                                 'kwargs': {'dest': 'camera', 'help': 'Camera (e.g. kb95)', 'required': True}},
-                               {'args': ['--instrument-name'],
-                                'kwargs': {'dest': 'instrument_name', 'help': 'Instrument (e.g. nres04)', 'required': True}},
-                               {'args': ['--enclosure'],
-                                'kwargs': {'dest': 'enclosure', 'help': 'Enclosure code (e.g. clma)',
-                                           'required': False}},
-                               {'args': ['--telescope'],
-                                'kwargs': {'dest': 'telescope', 'help': 'Telescope code (e.g. 0m4a)',
-                                           'required': False}},
                                {'args': ['--frame-type'],
                                 'kwargs': {'dest': 'frame_type', 'help': 'Type of frames to process',
-                                           'choices': all_frame_types, 'required': False}},
+                                           'choices': ['bias', 'dark', 'lampflat'], 'required': True}},
                                {'args': ['--min-date'],
-                                'kwargs': {'dest': 'min_date', 'required': False, 'type': date_utils.valid_date,
+                                'kwargs': {'dest': 'min_date', 'required': True, 'type': date_utils.validate_date,
                                            'help': 'Earliest observation time of the individual calibration frames. '
                                                    'Must be in the format "YYYY-MM-DDThh:mm:ss".'}},
                                {'args': ['--max-date'],
-                                'kwargs': {'dest': 'max_date', 'required': False, 'type': date_utils.valid_date,
+                                'kwargs': {'dest': 'max_date', 'required': True, 'type': date_utils.validate_date,
                                            'help': 'Latest observation time of the individual calibration frames. '
                                                    'Must be in the format "YYYY-MM-DDThh:mm:ss".'}}]
 
-    runtime_context, raw_path = parse_directory_args(runtime_context, raw_path=raw_path,
-                                                     extra_console_arguments=extra_console_arguments)
-    instrument = dbs.query_for_instrument(runtime_context.db_address, runtime_context.site,
-                                          camera=runtime_context.camera, name=runtime_context.instrument_name,
-                                          enclosure=None, telescope=None)
-    frame_types = get_frame_types(runtime_context, default_frames_to_reduce=all_frame_types)
-    min_date, max_date = get_reduction_date_window(runtime_context)
-    raw_path = validate_raw_path(runtime_context, raw_path)
+    runtime_context = parse_args(banzai_nres.settings, extra_console_arguments=extra_console_arguments)
+    instrument = dbs.query_for_instrument(runtime_context.db_address, runtime_context.site, runtime_context.camera)
+    calibrations.make_master_calibrations(instrument,  runtime_context.frame_type.upper(),
+                                          runtime_context.min_date, runtime_context.max_date, runtime_context)
 
-    for frame_type in frame_types:
-        if frame_type == 'TRACE':
-            frame_type_to_stack = 'LAMPFLAT'
-            use_masters = True
-            master_frame_type = 'TRACE'
-        else:
-            frame_type_to_stack = frame_type
-            use_masters = False
-            master_frame_type = None
-            # must reduce frames before making the master calibration, unless we are making a master trace.
-            process_directory(runtime_context, raw_path, [frame_type_to_stack])
 
-        process_master_maker(runtime_context, instrument, frame_type_to_stack.upper(),
-                             min_date=min_date, max_date=max_date, master_frame_type=master_frame_type,
-                             use_masters=use_masters)
+def add_bpm():
+    parser = argparse.ArgumentParser(description="Add a bad pixel mask to the db.")
+    parser.add_argument('--filename', help='Full path to Bad Pixel Mask file')
+    parser.add_argument("--log-level", default='debug', choices=['debug', 'info', 'warning',
+                                                                 'critical', 'fatal', 'error'])
+    parser.add_argument('--db-address', dest='db_address',
+                        default='mysql://cmccully:password@localhost/test',
+                        help='Database address: Should be in SQLAlchemy form')
+    args = parser.parse_args()
+    add_settings_to_context(args, banzai_nres.settings)
+    logs.set_log_level(args.log_level)
+    frame_factory = import_utils.import_attribute(banzai_nres.settings.FRAME_FACTORY)
+    bpm_image = frame_factory.open(args.filename, args)
+    bpm_image.is_master = True
+    dbs.save_calibration_info(args.filename, bpm_image, args.db_address)
