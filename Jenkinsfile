@@ -130,8 +130,8 @@ pipeline {
 			steps {
 				script {
                     withKubeConfig([credentialsId: "dev-kube-config"]) {
-						sh("kubectl exec -n -s dev ${podName} -c banzai-nres-listener -- " +
-						        "pytest --durations=0 --junitxml=/home/archive/pytest-master-flat.xml " +
+						sh("kubectl exec -n dev ${podName} -c banzai-nres-listener -- " +
+						        "pytest -s --durations=0 --junitxml=/home/archive/pytest-master-flat.xml " +
 						        "-m master_flat /lco/banzai-nres/")
 					}
 				}
