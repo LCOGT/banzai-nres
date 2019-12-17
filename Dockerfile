@@ -6,6 +6,6 @@ RUN conda install -y coveralls sphinx
 
 COPY --chown=10087:10000 . /lco/banzai-nres
 
-RUN pip install --global-option=build_ext /lco/banzai-nres/  halo --no-cache-dir
+RUN pip install --global-option=build_ext /lco/banzai-nres/ --no-cache-dir
 
 USER archive
