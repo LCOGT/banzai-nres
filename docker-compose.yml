@@ -62,7 +62,9 @@ services:
     image: ${NRES_DOCKER_IMG}
     network_mode: "bridge"
     container_name: banzai-nres-celery-beat
-    entrypoint: ["banzai_automate_stack_calibrations"]
+    entrypoint: ["banzai_nres_start_stacking_scheduler", "--fpack",
+                 "--db-address=sqlite:////archive/engineering/test.db",
+                 "--broker-url=broker"]
     mem_limit: '8g'
     depends_on:
       - banzai-nres-redis

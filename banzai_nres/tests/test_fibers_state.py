@@ -1,8 +1,8 @@
 import mock
 
 from banzai_nres.fibers import fiber_states_from_header, fibers_state_to_filename
-from banzai_nres.images import NRESCalibrationFrame
-from banzai.tests.utils import FakeContext
+from banzai_nres.images import NRESObservationFrame
+from banzai.images import HeaderOnly
 
 
 def test_creation_from_header():
@@ -16,9 +16,6 @@ def test_creation_from_header():
     assert (0, 1, 0) == fiber_states_from_header(header)
 
 
-@mock.patch('banzai.images.Image._init_instrument_info')
-def test_fiber_state_to_filename(mock_instrument):
-    mock_instrument.return_value = None, None, None
-    image = NRESImage(runtime_context=FakeContext(),
-                      header={'OBJECTS': 'tung&tung&none'})
+def test_fiber_state_to_filename():
+    image = NRESObservationFrame([HeaderOnly(meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
     assert fibers_state_to_filename(image) == '110'
