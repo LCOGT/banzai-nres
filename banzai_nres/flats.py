@@ -1,5 +1,4 @@
 from banzai.calibrations import CalibrationStacker, CalibrationUser
-from banzai.images import MasterCalibrationFrame
 
 
 class FlatStacker(CalibrationStacker):
@@ -16,7 +15,7 @@ class FlatLoader(CalibrationUser):
         return 'LAMPFLAT'
 
     def apply_master_calibration(self, image, master_calibration_image):
-        if not isinstance(image, MasterCalibrationFrame):
+        if not image.is_master():
             master_calibration_image.primary_hdu.name = 'LAMPFLAT'
             image.append(master_calibration_image.primary_hdu)
         image.trace = master_calibration_image.trace
