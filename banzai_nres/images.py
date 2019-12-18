@@ -19,6 +19,7 @@ class NRESObservationFrame(LCOObservationFrame, NRESFrame):
     def __init__(self, hdu_list: list, file_path: str):
         LCOObservationFrame.__init__(self, hdu_list, file_path)
         NRESFrame.__init__(self, self.meta)
+        self.trace = None
 
 
 class NRESCalibrationFrame(LCOCalibrationFrame, NRESFrame):
