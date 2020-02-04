@@ -10,6 +10,7 @@ from banzai.images import ArrayData
 import logging
 from scipy import ndimage
 import numpy as np
+from banzai_nres.fitting import fit_smooth_spline
 
 logger = logging.getLogger('banzai')
 
@@ -17,17 +18,25 @@ logger = logging.getLogger('banzai')
 def find_y_center(y, indices, weights=None):
     if weights is None:
         weights = np.ones(y.shape, dtype=y.dtype)
-    return (y * indices * weights).sum(axis=0) / (indices * weights).sum(axis=0)
+    centers = (y * indices * weights).sum(axis=0) / (indices * weights).sum(axis=0)
+    # Errors are sqrt sum of the weights
+    errors = np.sqrt((indices * weights).sum(axis=0))
+    return centers, errors
 
 
 def refine_traces(runtime_context, traces, weights=None):
     traces = np.zeros(traces.shape, dtype=np.uint8)
-    X, Y = np.meshgrid(np.arange(traces.shape[1]), np.arange(traces.shape[0]))
+    x2d, y2d = np.meshgrid(np.arange(traces.shape[1]), np.arange(traces.shape[0]))
     # For each label
     for i in range(1, np.max(traces) + 1):
-        y_center = find_y_center(Y, traces.data == i, weights=weights)
-        pixels_to_label = np.logical_and(X[traces == i],
-                                         np.abs(Y - y_center) <= runtime_context.trace_half_width)
+        y_center, y_center_errors = find_y_center(y2d, traces.data == i, weights=weights)
+        # Refit the centroids to reject cosmic rays etc, but only evaluate where the S/N is good
+        x_center = np.arange(min(x2d[traces == i]), max(x2d[traces == i]), dtype=np.float)
+        best_fit = fit_smooth_spline(y_center, y_center_errors, x=x_center)
+        y_center = best_fit(x_center)
+
+        pixels_to_label = np.logical_and(x2d[traces == i],
+                                         np.abs(y2d - y_center) <= runtime_context.trace_half_width)
         traces[pixels_to_label] = i
     return traces
 

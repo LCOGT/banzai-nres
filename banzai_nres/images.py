@@ -37,7 +37,9 @@ class NRESMasterCalibrationFrame(LCOMasterCalibrationFrame, NRESFrame):
 class NRESFrameFactory(LCOFrameFactory):
     observation_frame_class = NRESObservationFrame
     calibration_frame_class = NRESCalibrationFrame
-
+    data_class = EchelleSpectrumCCDData
+    associated_extensions = LCOFrameFactory.associated_extensions + [{'FITS_NAME': 'TRACES', 'NAME': 'traces'},
+                                                                     {'FITS_NAME': 'BKG', 'NAME': 'background'}]
     @classmethod
     def open(cls, path, runtime_context) -> Optional[ObservationFrame]:
         image = super().open(path, runtime_context)
