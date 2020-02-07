@@ -25,33 +25,34 @@ def find_y_center(y, indices, weights=None):
 
 
 def refine_traces(runtime_context, traces, weights=None):
-    traces = np.zeros(traces.shape, dtype=np.uint8)
     x2d, y2d = np.meshgrid(np.arange(traces.shape[1]), np.arange(traces.shape[0]))
     # For each label
     for i in range(1, np.max(traces) + 1):
-        y_center, y_center_errors = find_y_center(y2d, traces.data == i, weights=weights)
+        y_center, y_center_errors = find_y_center(y2d, traces == i, weights=weights)
         # Refit the centroids to reject cosmic rays etc, but only evaluate where the S/N is good
-        x_center = np.arange(min(x2d[traces == i]), max(x2d[traces == i]), dtype=np.float)
+        x_center = np.arange(min(x2d[traces == i]), max(x2d[traces == i]) + 1, dtype=np.float)
         best_fit = fit_smooth_spline(y_center, y_center_errors, x=x_center)
         y_center = best_fit(x_center)
 
-        pixels_to_label = np.logical_and(x2d[traces == i],
+        pixels_to_label = np.logical_and(np.logical_and(x2d >= min(x_center), x2d <= max(x_center)),
                                          np.abs(y2d - y_center) <= runtime_context.trace_half_width)
+        # Reset the previously marked traces to 0. Then mark the newly measured traces.
+        traces[traces == i] = 0
         traces[pixels_to_label] = i
     return traces
 
 
 class TraceInitializer(Stage):
     def do_stage(self, image):
-        if image.trace is None:
-            image.trace = self.blind_solve(image)
+        if image.traces is None:
+            image.traces = self.blind_solve(image)
         return image
 
     def blind_solve(self, image):
         # Find the peaks of each of the traces using a max filter
         peaks = ndimage.maximum_filter1d(image.data.data,
                                          size=self.runtime_context.trace_separation, axis=0)
-        signal_to_noise = image.data.data / image.data.uncertainty > self.runtime_context.signal_to_noise_tracing_cutoff
+        signal_to_noise = image.data.data / image.uncertainty > self.runtime_context.signal_to_noise_tracing_cutoff
         binary_map = np.logical_and(peaks == image.data.data, signal_to_noise)
 
         # Dilate the label map to make sure all traces are connected
@@ -66,8 +67,9 @@ class TraceInitializer(Stage):
         true_labels = []
         for i in labeled_indices:
             # Pick out only features that are wide like traces and span the center
-            if x_maxes[i] > (image.shape[1] // 2 + self.runtime_context.min_trace_half_width)\
-                    and x_mins[i] < (image.shape[1] // 2 - self.runtime_context.min_trace_half_width):
+            # Note labeled_indices is one indexed
+            if x_maxes[i - 1] > (image.shape[1] // 2 + self.runtime_context.min_trace_half_width)\
+                    and x_mins[i - 1] < (image.shape[1] // 2 - self.runtime_context.min_trace_half_width):
                 true_labels.append(i)
 
         for i in labeled_indices:
@@ -77,11 +79,10 @@ class TraceInitializer(Stage):
         for i, label_index in enumerate(true_labels):
             labeled_image[labeled_image == label_index] = i + 1
 
-        traces = refine_traces(self.runtime_context, labeled_image, weights=labeled_image > 0)
-        return ArrayData(data=traces, meta={}, name='trace')
+        return refine_traces(self.runtime_context, labeled_image, weights=labeled_image > 0)
 
 
 class TraceRefiner(Stage):
     def do_stage(self, image):
-        image.trace = refine_traces(self.runtime_context, image.trace, weights=image.data)
+        image.traces = refine_traces(self.runtime_context, image.traces, weights=image.data)
         return image

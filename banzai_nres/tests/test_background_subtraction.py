@@ -4,9 +4,15 @@ import numpy as np
 from banzai_nres.background import BackgroundSubtractor
 from banzai import context
 from scipy.stats import anderson
+import pytest
 
 
-def test_background_subtraction_on_noisy_data():
+@pytest.fixture
+def seed():
+    np.random.seed(11248)
+
+
+def test_background_subtraction_on_noisy_data(seed):
     nx, ny = 105, 103
     x = np.arange(nx)
     y = np.arange(ny)
@@ -17,18 +23,18 @@ def test_background_subtraction_on_noisy_data():
     test_image = NRESObservationFrame([CCDData(data=test_data, uncertainty=np.ones((ny, nx)) * noise_sigma,
                                       meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
     test_image.traces = np.zeros((ny, nx))
-    input_context = context.Context({'background_smoothing_scale': 30, 'background_spline_order': 1})
+    input_context = context.Context({})
     stage = BackgroundSubtractor(input_context)
     output_image = stage.do_stage(test_image)
     # Make sure our background estimation is good. This is roughly 1.5 sigma which is not bad
-    np.testing.assert_allclose(output_image.background.data, input_background, atol=1.5)
+    np.testing.assert_allclose(output_image.background, input_background, atol=2.0)
     # Check that the remaining image basically looks like noise
-    difference = output_image.data - output_image.background
+    difference = test_data - output_image.background
     anderson_test = anderson(difference.ravel(), 'norm')
     assert np.all(anderson_test.statistic < anderson_test.critical_values)
 
 
-def test_background_subtraction_with_traces():
+def test_background_subtraction_with_traces(seed):
     nx, ny = 105, 103
     x = np.arange(nx)
     y = np.arange(ny)
@@ -40,12 +46,12 @@ def test_background_subtraction_with_traces():
                                       meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
     test_image.traces = np.zeros((ny, nx))
     test_image.traces[20:30] = 1
-    input_context = context.Context({'background_smoothing_scale': 15, 'background_spline_order': 2})
+    input_context = context.Context({})
     stage = BackgroundSubtractor(input_context)
     output_image = stage.do_stage(test_image)
     # Make sure our background estimation is good. This is roughly 1.5 sigma which is not bad
-    np.testing.assert_allclose(output_image.background, input_background, atol=1.5)
+    np.testing.assert_allclose(output_image.background, input_background, atol=2.0)
     # Check that the remaining image basically looks like noise
-    difference = output_image.data - output_image.background.data
+    difference = test_data - output_image.background
     anderson_test = anderson(difference.ravel(), 'norm')
     assert np.all(anderson_test.statistic < anderson_test.critical_values)
