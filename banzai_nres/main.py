@@ -81,7 +81,7 @@ def add_bpm():
     args = parser.parse_args()
     add_settings_to_context(args, banzai_nres.settings)
     logs.set_log_level(args.log_level)
-    frame_factory = import_utils.import_attribute(banzai_nres.settings.FRAME_FACTORY)
-    bpm_image = frame_factory.open(args.filename, args)
+    frame_factory = import_utils.import_attribute(banzai_nres.settings.FRAME_FACTORY)()
+    bpm_image = frame_factory.open({'path': args.filename}, args)
     bpm_image.is_master = True
     dbs.save_calibration_info(args.filename, bpm_image, args.db_address)

@@ -1,5 +1,5 @@
-from banzai_nres.images import NRESObservationFrame
-from banzai.images import CCDData
+from banzai_nres.frames import NRESObservationFrame
+from banzai.data import CCDData
 import numpy as np
 from banzai_nres.background import BackgroundSubtractor
 from banzai import context

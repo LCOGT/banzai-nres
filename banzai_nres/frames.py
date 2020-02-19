@@ -1,7 +1,8 @@
 from banzai_nres.fibers import fiber_states_from_header
 from banzai.utils.fits_utils import to_fits_image_extension
-from banzai.images import LCOFrameFactory
-from banzai.images import ObservationFrame, LCOObservationFrame, LCOMasterCalibrationFrame, LCOCalibrationFrame, CCDData
+from banzai.lco import LCOFrameFactory, LCOObservationFrame, LCOMasterCalibrationFrame, LCOCalibrationFrame
+from banzai.frames import ObservationFrame
+from banzai.data import CCDData
 import logging
 from typing import Optional
 import numpy as np
@@ -64,7 +65,10 @@ class EchelleSpectralCCDData(CCDData):
             self._traces = None
         else:
             self.traces = traces
-        self.background = background
+        if background is None:
+            self._background = None
+        else:
+            self.background = background
 
     @property
     def traces(self):
@@ -84,10 +88,12 @@ class EchelleSpectralCCDData(CCDData):
 
     def to_fits(self, context):
         hdu_list = super().to_fits(context)
-        hdu_list.append(to_fits_image_extension(self.traces, self.extension_name, 'TRACES', context,
-                                                extension_version=self.meta.get('EXTVER')))
-        hdu_list.append(to_fits_image_extension(self.background, self.extension_name, 'BACKGROUND', context,
-                                                extension_version=self.meta.get('EXTVER')))
+        if self.traces is not None:
+            hdu_list.append(to_fits_image_extension(self.traces, self.extension_name, 'TRACES', context,
+                                                    extension_version=self.meta.get('EXTVER')))
+        if self.background is not None:
+            hdu_list.append(to_fits_image_extension(self.background, self.extension_name, 'BACKGROUND', context,
+                                                    extension_version=self.meta.get('EXTVER')))
         return hdu_list
 
 
@@ -98,8 +104,7 @@ class NRESFrameFactory(LCOFrameFactory):
     associated_extensions = LCOFrameFactory().associated_extensions + [{'FITS_NAME': 'TRACES', 'NAME': 'traces'},
                                                                        {'FITS_NAME': 'BACKGROUND', 'NAME': 'background'}]
 
-    @classmethod
-    def open(cls, path, runtime_context) -> Optional[ObservationFrame]:
+    def open(self, path, runtime_context) -> Optional[ObservationFrame]:
         image = super().open(path, runtime_context)
         # Currently we can't distinguish between the NRES composite data products and the raw frames off the telescope
         # As such we have to check an an extra header keyword. We put nres01 etc in TELESCOP in the composite data

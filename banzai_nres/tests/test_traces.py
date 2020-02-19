@@ -1,7 +1,7 @@
 import numpy as np
 from banzai_nres.traces import find_y_center, TraceInitializer, TraceRefiner
-from banzai_nres.images import NRESObservationFrame
-from banzai_nres.images import EchelleSpectralCCDData
+from banzai_nres.frames import NRESObservationFrame
+from banzai_nres.frames import EchelleSpectralCCDData
 from banzai import context
 
 

@@ -1,5 +1,5 @@
-from banzai_nres.images import NRESObservationFrame
-from banzai.images import HeaderOnly
+from banzai_nres.frames import NRESObservationFrame
+from banzai.data import HeaderOnly
 
 
 def test_get_num_lit_fibers():

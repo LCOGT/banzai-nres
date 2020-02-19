@@ -1,6 +1,6 @@
 from banzai_nres.fibers import fiber_states_from_header, fibers_state_to_filename
-from banzai_nres.images import NRESObservationFrame
-from banzai.images import HeaderOnly
+from banzai_nres.frames import NRESObservationFrame
+from banzai.data import HeaderOnly
 
 
 def test_creation_from_header():

@@ -6,7 +6,6 @@ Authors
     G. Mirek Brandt (gmbrandt@ucsb.edu)
 """
 from banzai.stages import Stage
-from banzai.images import ArrayData
 import logging
 from scipy import ndimage
 import numpy as np

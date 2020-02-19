@@ -1,8 +1,8 @@
-FROM docker.lco.global/banzai:0.27.5-97-a4393619
+FROM docker.lco.global/banzai:0.28.5-148-g6570912
 
 USER root
 
-RUN conda install -y coveralls sphinx
+RUN conda install -y coveralls sphinx statsmodels docutils=0.15
 
 COPY --chown=10087:10000 . /lco/banzai-nres
 

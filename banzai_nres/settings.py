@@ -1,9 +1,9 @@
 import os
 import banzai_nres
 
-FRAME_FACTORY = 'banzai_nres.images.NRESFrameFactory'
+FRAME_FACTORY = 'banzai_nres.frames.NRESFrameFactory'
 
-MASTER_CALIBRATION_FRAME_CLASS = 'banzai_nres.images.NRESMasterCalibrationFrame'
+MASTER_CALIBRATION_FRAME_CLASS = 'banzai_nres.frames.NRESMasterCalibrationFrame'
 
 FRAME_SELECTION_CRITERIA = [('type', 'contains', 'NRES')]
 
@@ -83,3 +83,8 @@ DATA_RELEASE_DELAY = 365
 PUBLIC_PROPOSALS = ['calibrate', 'standard', '*epo*', 'pointing']
 
 SUPPORTED_FRAME_TYPES = ['BPM', 'BIAS', 'DARK', 'LAMPFLAT', 'SPECTRUM', 'ARC']
+
+ARCHIVE_API_ROOT = os.getenv('API_ROOT')
+ARCHIVE_FRAME_URL = f'{ARCHIVE_API_ROOT}frames'
+ARCHIVE_AUTH_TOKEN = {'Authorization': f'Token {os.getenv("AUTH_TOKEN")}'}
+FITS_EXCHANGE = os.getenv('FITS_EXCHANGE', 'archived_fits')

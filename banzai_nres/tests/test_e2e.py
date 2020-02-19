@@ -43,15 +43,14 @@ def observation_portal_side_effect(*args, **kwargs):
 
 
 def celery_join():
-    logger.info('Waiting for data to process')
     celery_inspector = app.control.inspect()
     log_counter = 0
     while True:
         queues = [celery_inspector.active(), celery_inspector.scheduled(), celery_inspector.reserved()]
         time.sleep(1)
         log_counter += 1
-        if log_counter % 10 == 0:
-            logger.info('Processing: ' + '. ' * (log_counter // 10))
+        if log_counter % 30 == 0:
+            logger.info('Processing: ' + '. ' * (log_counter // 30))
         if any([queue is None or 'celery@banzai-celery-worker' not in queue for queue in queues]):
             logger.warning('No valid celery queues were detected, retrying...', extra_tags={'queues': queues})
             # Reset the celery connection
@@ -79,7 +78,8 @@ def run_reduce_individual_frames(raw_filenames):
     for day_obs in DAYS_OBS:
         raw_path = os.path.join(DATA_ROOT, day_obs, 'raw')
         for filename in glob(os.path.join(raw_path, raw_filenames)):
-            file_utils.post_to_archive_queue(filename, os.getenv('FITS_BROKER_URL'))
+            file_utils.post_to_archive_queue(filename, os.getenv('FITS_BROKER'),
+                                             exchange_name=os.getenv('FITS_EXCHANGE'))
     celery_join()
     logger.info('Finished reducing individual frames for filenames: {filenames}'.format(filenames=raw_filenames))
 
@@ -96,7 +96,8 @@ def stack_calibrations(frame_type):
                                db_address=os.environ['DB_ADDRESS'], elasticsearch_qc_index='banzai_qc',
                                elasticsearch_url='http://elasticsearch.lco.gtn:9200', elasticsearch_doc_type='qc',
                                no_bpm=False, ignore_schedulability=True, use_only_older_calibrations=False,
-                               preview_mode=False, max_tries=5, broker_url=os.getenv('FITS_BROKER_URL'), )
+                               preview_mode=False, max_tries=5, broker_url=os.getenv('FITS_BROKER'),
+                               no_file_cache=False)
         for setting in dir(settings):
             if '__' != setting[:2] and not isinstance(getattr(settings, setting), ModuleType):
                 runtime_context[setting] = getattr(settings, setting)
@@ -163,6 +164,7 @@ def init(configdb):
     for instrument in INSTRUMENTS:
         for bpm_filename in glob(os.path.join(DATA_ROOT, instrument, 'bpm/*bpm*')):
             os.system(f'banzai_nres_add_bpm --filename {bpm_filename} --db-address={os.environ["DB_ADDRESS"]}')
+
 
 @pytest.mark.e2e
 @pytest.mark.master_bias

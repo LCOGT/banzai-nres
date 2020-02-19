@@ -51,6 +51,7 @@ services:
       RETRY_DELAY: "0"
       REDIS_HOST: "redis://redis:6379/0"
       LAKE_URL: "http://lake-old.lco.gtn/blocks/"
+      OPENTSDB_PYTHON_METRICS_TEST_MODE: "1"
     labels:
       io.rancher.container.pull_image: always
       io.rancher.sidekicks: nres-e2e-data
@@ -58,7 +59,7 @@ services:
       options:
         max-size: '100m'
         max-file: '3'
-  banzai-nres0celery-beat:
+  banzai-nres-celery-beat:
     image: ${NRES_DOCKER_IMG}
     network_mode: "bridge"
     container_name: banzai-nres-celery-beat
@@ -77,6 +78,7 @@ services:
     environment:
       RETRY_DELAY: "0"
       REDIS_HOST: "redis://redis:6379/0"
+      OPENTSDB_PYTHON_METRICS_TEST_MODE: "1"
     labels:
       io.rancher.container.pull_image: always
       io.rancher.sidekicks: nres-e2e-data
@@ -84,7 +86,7 @@ services:
       options:
         max-size: '100m'
         max-file: '3'
-  banzai-listener:
+  banzai-nres-listener:
     image: ${NRES_DOCKER_IMG}
     network_mode: "bridge"
     container_name: banzai-nres-listener
@@ -102,7 +104,9 @@ services:
     environment:
       DB_ADDRESS: sqlite:////archive/engineering/test.db
       REDIS_HOST: "redis://redis:6379/0"
-      FITS_BROKER_URL: "broker"
+      FITS_EXCHANGE: fits_files
+      FITS_BROKER: broker
+      OPENTSDB_PYTHON_METRICS_TEST_MODE: "1"
       LAKE_URL: "http://lake-old.lco.gtn/blocks/"
     volumes_from:
     - nres-e2e-data

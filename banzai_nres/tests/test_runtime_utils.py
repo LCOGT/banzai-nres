@@ -1,6 +1,6 @@
 from banzai_nres.utils import runtime_utils
-from banzai_nres.images import NRESObservationFrame
-from banzai.images import HeaderOnly
+from banzai_nres.frames import NRESObservationFrame
+from banzai.data import HeaderOnly
 
 
 def test_get_telescope_filename():
