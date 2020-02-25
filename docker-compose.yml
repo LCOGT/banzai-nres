@@ -37,7 +37,7 @@ services:
     container_name: banzai-nres-celery-workers
     entrypoint: ["celery", "-A", "banzai", "worker",
                  "--hostname", "banzai-celery-worker",
-                 "-l", "debug"]
+                 "-l", "debug", "-c", "4"]
     mem_limit: '8g'
     depends_on:
       - banzai-nres-redis
@@ -51,6 +51,7 @@ services:
       RETRY_DELAY: "0"
       REDIS_HOST: "redis://redis:6379/0"
       LAKE_URL: "http://lake-old.lco.gtn/blocks/"
+      NUM_OMP_THREADS: "1"
       OPENTSDB_PYTHON_METRICS_TEST_MODE: "1"
     labels:
       io.rancher.container.pull_image: always

@@ -42,8 +42,8 @@ LAST_STAGE = {'BIAS': 'banzai.trim.Trimmer',
 
 EXTRA_STAGES = {'BIAS': ['banzai.bias.BiasMasterLevelSubtractor', 'banzai.bias.BiasComparer'],
                 'DARK': ['banzai.dark.DarkNormalizer', 'banzai.dark.DarkComparer'],
-                'LAMPFLAT': ['banzai_nres.traces.InitTrace',
-                             'banzai_nres.background.BacgroundSubtractor',
+                'LAMPFLAT': ['banzai_nres.traces.TraceInitializer',
+                             'banzai_nres.background.BackgroundSubtractor',
                              'banzai_nres.traces.TraceRefiner']}
 
 CALIBRATION_STACKER_STAGES = {'BIAS': ['banzai.bias.BiasMaker'],
@@ -88,3 +88,5 @@ ARCHIVE_API_ROOT = os.getenv('API_ROOT')
 ARCHIVE_FRAME_URL = f'{ARCHIVE_API_ROOT}frames'
 ARCHIVE_AUTH_TOKEN = {'Authorization': f'Token {os.getenv("AUTH_TOKEN")}'}
 FITS_EXCHANGE = os.getenv('FITS_EXCHANGE', 'archived_fits')
+
+LOSSLESS_EXTENSIONS = ['PROFILE']

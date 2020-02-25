@@ -12,7 +12,6 @@ def fit_smooth_spline(y, error, mask=None, n_iter=5, x=None, sigma=5):
     # work well
     weights = 1.0 / error_to_fit
     huber_t = HuberT(t=sigma)
-
     if len(y.shape) == 2 and x is None:
         spline = SmoothBivariateSpline
         x1d, y1d = np.arange(y.shape[0], dtype=np.float), np.arange(y.shape[1], dtype=np.float)

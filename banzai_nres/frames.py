@@ -13,19 +13,13 @@ from astropy.io import fits
 logger = logging.getLogger('banzai')
 
 
-class NRESFrame:
-    def __init__(self, header):
-        self.fiber0_lit, self.fiber1_lit, self.fiber2_lit = fiber_states_from_header(header)
+class NRESObservationFrame(LCOObservationFrame):
+    def __init__(self, hdu_list: list, file_path: str):
+        LCOObservationFrame.__init__(self, hdu_list, file_path)
+        self.fiber0_lit, self.fiber1_lit, self.fiber2_lit = fiber_states_from_header(self.meta)
 
     def num_lit_fibers(self):
         return 1 * self.fiber0_lit + 1 * self.fiber1_lit + 1 * self.fiber2_lit
-
-
-class NRESObservationFrame(LCOObservationFrame, NRESFrame):
-    def __init__(self, hdu_list: list, file_path: str):
-        LCOObservationFrame.__init__(self, hdu_list, file_path)
-        NRESFrame.__init__(self, self.meta)
-        self.trace = None
 
     @property
     def traces(self):
@@ -44,16 +38,16 @@ class NRESObservationFrame(LCOObservationFrame, NRESFrame):
         self.primary_hdu.background = value
 
 
-class NRESCalibrationFrame(LCOCalibrationFrame, NRESFrame):
+class NRESCalibrationFrame(LCOCalibrationFrame, NRESObservationFrame):
     def __init__(self, hdu_list: list, file_path: str, grouping_criteria: list = None):
         LCOCalibrationFrame.__init__(self, hdu_list, file_path, grouping_criteria)
-        NRESFrame.__init__(self, self.meta)
+        NRESObservationFrame.__init__(self, hdu_list, file_path)
 
 
-class NRESMasterCalibrationFrame(LCOMasterCalibrationFrame, NRESFrame):
+class NRESMasterCalibrationFrame(LCOMasterCalibrationFrame, NRESCalibrationFrame):
     def __init__(self, images: list, file_path: str, grouping_criteria: list = None):
+        NRESCalibrationFrame.__init__(self, images, file_path, grouping_criteria)
         LCOMasterCalibrationFrame.__init__(self, images, file_path, grouping_criteria)
-        NRESFrame.__init__(self, self.meta)
 
 
 class EchelleSpectralCCDData(CCDData):
@@ -84,6 +78,7 @@ class EchelleSpectralCCDData(CCDData):
 
     @background.setter
     def background(self, value):
+        self.data -= value
         self._background = self._init_array(value)
 
     def to_fits(self, context):

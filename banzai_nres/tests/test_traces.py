@@ -44,8 +44,7 @@ def test_blind_solve():
 
     test_image = NRESObservationFrame([EchelleSpectralCCDData(data=test_data, uncertainty=1e-5*np.ones((ny, nx)),
                                        meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
-    input_context = context.Context({'trace_separation': 10, 'signal_to_noise_tracing_cutoff': 10,
-                                     'min_trace_half_width': 50, 'trace_half_width': 6})
+    input_context = context.Context({})
     stage = TraceInitializer(input_context)
     output_image = stage.do_stage(test_image)
 
@@ -71,8 +70,7 @@ def test_refining_on_noisy_data():
     uncertainty = np.sqrt(test_data + read_noise ** 2.0)
     test_image = NRESObservationFrame([EchelleSpectralCCDData(data=test_data, uncertainty=uncertainty,
                                                               meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
-    input_context = context.Context({'trace_separation': 10, 'signal_to_noise_tracing_cutoff': 10,
-                                     'min_trace_half_width': 50, 'trace_half_width': 6})
+    input_context = context.Context({})
     stage = TraceInitializer(input_context)
     output_image = stage.do_stage(test_image)
 
@@ -101,8 +99,7 @@ def test_blind_solve_realistic_data():
     uncertainty = np.sqrt(test_data + read_noise ** 2.0)
     test_image = NRESObservationFrame([EchelleSpectralCCDData(data=test_data, uncertainty=uncertainty,
                                                               meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
-    input_context = context.Context({'trace_separation': 10, 'signal_to_noise_tracing_cutoff': 10,
-                                     'min_trace_half_width': 50, 'trace_half_width': 6})
+    input_context = context.Context({})
     stage = TraceInitializer(input_context)
     output_image = stage.do_stage(test_image)
 
@@ -135,8 +132,7 @@ def test_refine_traces_with_previous_trace():
     test_image = NRESObservationFrame([EchelleSpectralCCDData(data=test_data, uncertainty=uncertainty,
                                                               meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
     test_image.traces = input_traces
-    input_context = context.Context({'trace_separation': 10, 'signal_to_noise_tracing_cutoff': 10,
-                                     'min_trace_half_width': 50, 'trace_half_width': trace_half_width})
+    input_context = context.Context({})
 
     stage = TraceRefiner(input_context)
     output_image = stage.do_stage(test_image)
@@ -170,8 +166,7 @@ def test_refine_traces_offset_centroid():
     test_image = NRESObservationFrame([EchelleSpectralCCDData(data=test_data, uncertainty=uncertainty,
                                                               meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
     test_image.traces = input_traces
-    input_context = context.Context({'trace_separation': 10, 'signal_to_noise_tracing_cutoff': 10,
-                                     'min_trace_half_width': 50, 'trace_half_width': trace_half_width})
+    input_context = context.Context({})
 
     stage = TraceRefiner(input_context)
     output_image = stage.do_stage(test_image)
