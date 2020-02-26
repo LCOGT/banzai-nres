@@ -26,3 +26,7 @@ class FlatLoader(CalibrationUser):
             master_calibration_image.primary_hdu.name = 'LAMPFLAT'
             image.append(master_calibration_image.primary_hdu)
         image.traces = master_calibration_image.traces
+
+
+class FlatDivider(Stage):
+    pass
