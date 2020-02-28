@@ -1,5 +1,6 @@
 from banzai.calibrations import CalibrationStacker, CalibrationUser
 from banzai.stages import Stage
+import numpy as np
 
 
 class FlatStacker(CalibrationStacker):
@@ -27,6 +28,8 @@ class FlatLoader(CalibrationUser):
             master_calibration_image.primary_hdu.name = 'LAMPFLAT'
             image.append(master_calibration_image.primary_hdu)
         image.traces = master_calibration_image.traces
+        # TODO the below is a place holder until we load the profile from the flat.
+        image.profile = np.ones_like(image.data)
 
 
 class FlatDivider(Stage):

@@ -30,12 +30,24 @@ class NRESObservationFrame(LCOObservationFrame):
         self.primary_hdu.traces = value
 
     @property
+    def num_traces(self):
+        return self.primary_hdu.num_traces
+
+    @property
     def background(self):
         return self.primary_hdu.background
 
     @background.setter
     def background(self, value):
         self.primary_hdu.background = value
+
+    @property
+    def profile(self):
+        return self.primary_hdu.profile
+
+    @profile.setter
+    def profile(self, value):
+        self.primary_hdu.profile = value
 
 
 class NRESCalibrationFrame(LCOCalibrationFrame, NRESObservationFrame):
@@ -53,7 +65,8 @@ class NRESMasterCalibrationFrame(LCOMasterCalibrationFrame, NRESCalibrationFrame
 class EchelleSpectralCCDData(CCDData):
     def __init__(self, data: Union[np.array, Table], meta: fits.Header,
                  mask: np.array = None, name: str = '', uncertainty: np.array = None,
-                 background: np.array = None,  traces: np.array = None, memmap=True):
+                 background: np.array = None,  traces: np.array = None,
+                 profile: np.array = None, memmap=True):
         super().__init__(data=data, meta=meta, mask=mask, name=name, memmap=memmap, uncertainty=uncertainty)
         if traces is None:
             self._traces = None
@@ -63,6 +76,10 @@ class EchelleSpectralCCDData(CCDData):
             self._background = None
         else:
             self.background = background
+        if profile is None:
+            self._profile = None
+        else:
+            self.profile = profile
 
     @property
     def traces(self):
@@ -71,6 +88,23 @@ class EchelleSpectralCCDData(CCDData):
     @traces.setter
     def traces(self, value):
         self._traces = self._init_array(value)
+
+    @property
+    def num_traces(self):
+        """
+        Counts the number of illuminated orders on the detector by taking
+        the largest label present in the trace image.
+        :return: int
+        """
+        return np.max(self.traces)
+
+    @property
+    def profile(self):
+        return self._profile
+
+    @profile.setter
+    def profile(self, value):
+        self._profile = self._init_array(value)
 
     @property
     def background(self):

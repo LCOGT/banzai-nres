@@ -110,6 +110,7 @@ def test_blind_solve_realistic_data():
 
 def test_refine_traces_with_previous_trace():
     nx, ny = 401, 403
+    num_traces = 3
     read_noise = 10.0
     test_data = np.zeros((ny, nx))
     x2d, y2d = np.meshgrid(np.arange(nx), np.arange(ny))
@@ -119,7 +120,7 @@ def test_refine_traces_with_previous_trace():
     y_0s = [100, 200, 300]
     blaze_function = 1 - 1e-5 * (x2d - nx / 2.) ** 2
     input_traces = np.zeros((ny, nx), dtype=np.int)
-    for i in range(3):
+    for i in range(num_traces):
         trace_centers.append(5e-4 * (np.arange(nx) - nx / 2.) ** 2 + y_0s[i])
         test_data += gaussian(y2d, trace_centers[i], 2, a=10000.0) * blaze_function
         input_traces[np.abs(y2d - trace_centers[i]) <= trace_half_width] = i + 1
@@ -140,6 +141,7 @@ def test_refine_traces_with_previous_trace():
     for trace_center in trace_centers:
         # Make sure that the center +- 4 pixels is in the trace image
         assert all(output_image.traces[np.abs(y2d - trace_center) <= 4])
+    assert np.isclose(num_traces, output_image.num_traces)
 
 
 def test_refine_traces_offset_centroid():
