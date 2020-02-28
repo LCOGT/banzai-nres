@@ -26,6 +26,7 @@ def index_traces(traces):
     # TODO the below is a lazy and very slow version of turning the traces array into a set
     #  of arrays A_i such that image.data[A_i] gives a properly flattened spectrum for the trace.
     #  I or someone else will make something much faster later.
+    #  Also it does not work right now.
     idx = []
     trace_idxs = []
     for i in range(1, int(np.max(traces)) + 1):

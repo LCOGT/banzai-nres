@@ -29,7 +29,7 @@ class SpectrumExtractor(Stage):
     def weights(self, itrace, image):
         """
         :param itrace: ndarray. ndarray of indices such that image.data[itrace] returns
-        an ndarray of flux of shape N,M where M is something like 4096 pixels (num of x pixels in the image data)
+        an ndarray of flux of shape N,M where M is e.g. 4096 (num of x pixels in the image data)
         and N is the width of that trace, e.g. 20.
         :param image:
         :return: ndarray. Has same shape as itrace.
@@ -44,7 +44,7 @@ class SpectrumExtractor(Stage):
         The associated variance is by definition var * weights**2 , which agrees with Horne (1986)
         equation 9.
         :param itrace: ndarray. ndarray of indices such that image.data[itrace] returns
-        an ndarray of flux of shape N,M where M is something like 4096 pixels (num of x pixels in the image data)
+        an ndarray of flux of shape N,M where M is e.g. 4096 (num of x pixels in the image data)
         and N is the width of that trace, e.g. 20.
         :param profile_im: ndarray. 2d image of the profile.
         :param var_im: ndarray. 2d image of the variance per pixel
@@ -58,7 +58,6 @@ class SpectrumExtractor(Stage):
                                                                                   profile_im[itrace] ** 2 / var_im[itrace])
 
 
-
 class BoxExtractor(SpectrumExtractor):
-    def weights(self, trace, image):
-        return np.ones_like(trace)
+    def weights(self, itrace, image):
+        return np.ones_like(itrace)
