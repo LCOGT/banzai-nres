@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def index_traces(traces):
+def get_trace_xy_positions(traces):
     """
     :param traces: ndarray.
            A 2d image where every pixel within a single trace is identified by one index, e.g. 1,
@@ -24,16 +24,19 @@ def index_traces(traces):
         return [], []
     trace_ids = np.arange(1, int(np.max(traces)) + 1)
     trace_xypos = []
-    # TODO make this faster.
+    # TODO make this faster. This is a placeholder for now.
+    ny, nx = traces.shape
+    x2d, y2d = np.meshgrid(np.arange(nx), np.arange(ny))
     for trace_id in trace_ids:
         y, x = np.where(np.isclose(traces, trace_id))
-        sorted_indices = np.lexsort((y, x), axis=0)
-        trace_width = int(max(x) - min(x)) + 1
-        xpos = x[sorted_indices].reshape(-1, trace_width)
-        ypos = y[sorted_indices].reshape(-1, trace_width)
+        minx = np.min(x)
+        trace_width = int(np.max(x) - minx) + 1
+        trace_height = int(x.size / trace_width)
+        xpos = (np.arange(np.min(x), np.max(x) + 1) * np.ones((trace_height, trace_width))).astype(int)
+        ypos = np.zeros_like(xpos)
+        for j in np.arange(trace_width):
+            ypos[:, j] = y2d[:, minx + j][np.isclose(traces[:, minx + j], trace_id)]
 
-        #xpos, ypos = x.reshape(-1, trace_width), y.reshape(-1, trace_width)
-
-        trace_xypos.append([xpos, ypos])
+        trace_xypos.append([ypos, xpos])
 
     return trace_ids, trace_xypos
