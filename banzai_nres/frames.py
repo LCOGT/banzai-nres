@@ -96,7 +96,7 @@ class EchelleSpectralCCDData(CCDData):
         the largest label present in the trace image.
         :return: int
         """
-        return np.max(self.traces)
+        return int(np.max(self.traces))
 
     @property
     def profile(self):
