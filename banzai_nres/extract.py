@@ -26,11 +26,13 @@ class WeightedExtract(Stage):
     @staticmethod
     def extract_order(values, weights=1):
         """
-        :param values: ndarray. values to extract by summing along the rows.
-        :param weights: float, or ndarray with same shape as values.
+        Performs a weighted sum of values vertically (i.e. along the rows (along axis 0)), weighted by weights.
+        :param values: ndarray, shape N, M. The values to extract by summing along the rows.
+        :param weights: float, or ndarray with the same shape as values: N, M.
         weights are the extraction weights to be applied to each value in values.
         If weights is float, every value in values will have that weight.
-        :return:
+        :return: out, ndarray.
+                 out has shape M. Meaning values has been summed vertically (across the rows).
         """
         return np.sum(values * weights, axis=0)
 
@@ -53,6 +55,18 @@ class GetOptimalExtractionWeights(WeightedExtract):
         The optimally extracted spectrum is then the sum of data * weights
         The associated variance is by definition var * weights**2 , which agrees with Horne (1986)
         equation 9.
+
+        Note: Our conventions differ slightly with that of Horne 1986.
+        The weights by which the spectrum is extracted in Equation 8 of Horne are:
+        .. math:: W_{x, \lambda} = \frac{M_{x, \lambda}  P_{x, \lambda} / V_{x, \lambda}, \sum_x M_{x, \lambda} P^2_{x, \lambda} / V_{x, \lambda} }
+        These quantities are labelled here as:
+        .. math:: profile_im = P_{x, \lambda}
+        .. math:: var_im = V_{x, \lambda}
+        .. math:: mask = M_{x, \lambda}
+
+        Note that in Horne, x is the cross-dispersed direction, which for us is the
+        vertical (y) pixels.
+
         :param profile_im: ndarray. 2d image of the profile.
         :param var_im: ndarray. 2d image of the variance per pixel
         :param mask: ndarray. 2d image where 0 is a good pixel and 1 is a masked, bad pixel.
