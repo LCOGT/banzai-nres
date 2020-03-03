@@ -49,6 +49,14 @@ class NRESObservationFrame(LCOObservationFrame):
     def profile(self, value):
         self.primary_hdu.profile = value
 
+    @property
+    def weights(self):
+        return self.primary_hdu.weights
+
+    @weights.setter
+    def weights(self, value):
+        self.primary_hdu.weights = value
+
 
 class NRESCalibrationFrame(LCOCalibrationFrame, NRESObservationFrame):
     def __init__(self, hdu_list: list, file_path: str, grouping_criteria: list = None):
@@ -66,7 +74,7 @@ class EchelleSpectralCCDData(CCDData):
     def __init__(self, data: Union[np.array, Table], meta: fits.Header,
                  mask: np.array = None, name: str = '', uncertainty: np.array = None,
                  background: np.array = None,  traces: np.array = None,
-                 profile: np.array = None, memmap=True):
+                 profile: np.array = None, weights: np.array = None, memmap=True):
         super().__init__(data=data, meta=meta, mask=mask, name=name, memmap=memmap, uncertainty=uncertainty)
         if traces is None:
             self._traces = None
@@ -80,6 +88,10 @@ class EchelleSpectralCCDData(CCDData):
             self._profile = None
         else:
             self.profile = profile
+        if weights is None:
+            self._weights = None
+        else:
+            self.weights = weights
 
     @property
     def traces(self):
@@ -105,6 +117,14 @@ class EchelleSpectralCCDData(CCDData):
     @profile.setter
     def profile(self, value):
         self._profile = self._init_array(value)
+
+    @property
+    def weights(self):
+        return self._weights
+
+    @weights.setter
+    def weights(self, value):
+        self._weights = self._init_array(value)
 
     @property
     def background(self):
