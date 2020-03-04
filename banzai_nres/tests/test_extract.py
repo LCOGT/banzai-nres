@@ -53,7 +53,7 @@ class TestGetWeights:
         output_image = stage.do_stage(image)
         assert np.allclose(output_image.weights, 0)
 
-    def test_optimal_weights_on_box_profile(self):
+    def test_optimal_weights_on_one_profile(self):
         image = two_order_image()
         image.profile = np.ones_like(image.traces, dtype=float)
         input_context = context.Context({})
@@ -61,6 +61,21 @@ class TestGetWeights:
         stage = GetOptimalExtractionWeights(input_context)
         output_image = stage.do_stage(image)
         assert np.allclose(output_image.weights[~np.isclose(image.traces, 0)], 1/3)
+
+    def test_optimal_weights_on_box_profile(self):
+        profile = np.zeros((5,5))
+        variance = np.ones_like(profile, dtype=float)
+        mask = np.zeros_like(profile, dtype=float)
+        profile[1:4,:], variance[1:4,:] = 1., 1.
+        input_context = context.Context({})
+
+        stage = GetOptimalExtractionWeights(input_context)
+        weights = stage.weights(profile,variance,mask)
+        #check that the weights in the order are 1/width of the order:
+        assert np.allclose(weights[np.isclose(profile,1)],1./3.)
+        #check that the weights of the area with zero profile are zero:
+        assert np.allclose(weights[np.isclose(profile,0)],0)
+        
 
 
 def two_order_image():
