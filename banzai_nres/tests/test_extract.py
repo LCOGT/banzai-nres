@@ -50,6 +50,7 @@ class TestExtract:
         image2 = NRESObservationFrame([EchelleSpectralCCDData(data=image.data, uncertainty=image.uncertainty,
                                                          meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
         image2.traces = image.traces
+        image.profile, image2.profile = np.ones_like(image.data), np.ones_like(image.data)
         input_context = context.Context({})
 
         stage = GetOptimalExtractionWeights(input_context)
@@ -68,6 +69,7 @@ class TestExtract:
         image2 = NRESObservationFrame([EchelleSpectralCCDData(data=image.data, uncertainty=image.uncertainty,
                                                          meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
         image2.traces = image.traces
+        image.profile, image2.profile = np.ones_like(image.data), np.ones_like(image.data)
         input_context = context.Context({})
 
         stage = GetOptimalExtractionWeights(input_context)
