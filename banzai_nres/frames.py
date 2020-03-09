@@ -57,6 +57,14 @@ class NRESObservationFrame(LCOObservationFrame):
     def weights(self, value):
         self.primary_hdu.weights = value
 
+    @property
+    def spectrum(self):
+        return self.primary_hdu.spectrum
+
+    @spectrum.setter
+    def spectrum(self, value):
+        self.primary_hdu.spectrum = value
+
 
 class NRESCalibrationFrame(LCOCalibrationFrame, NRESObservationFrame):
     def __init__(self, hdu_list: list, file_path: str, grouping_criteria: list = None):
@@ -74,7 +82,8 @@ class EchelleSpectralCCDData(CCDData):
     def __init__(self, data: Union[np.array, Table], meta: fits.Header,
                  mask: np.array = None, name: str = '', uncertainty: np.array = None,
                  background: np.array = None,  traces: np.array = None,
-                 profile: np.array = None, weights: np.array = None, memmap=True):
+                 profile: np.array = None, weights: np.array = None,
+                 spectrum: Table = None, memmap=True):
         super().__init__(data=data, meta=meta, mask=mask, name=name, memmap=memmap, uncertainty=uncertainty)
         if traces is None:
             self._traces = None
@@ -92,6 +101,10 @@ class EchelleSpectralCCDData(CCDData):
             self._weights = None
         else:
             self.weights = weights
+        if spectrum is None:
+            self._spectrum = None
+        else:
+            self.spectrum = spectrum
 
     @property
     def traces(self):
@@ -119,6 +132,14 @@ class EchelleSpectralCCDData(CCDData):
         self._profile = self._init_array(value)
 
     @property
+    def spectrum(self):
+        return self._spectrum
+
+    @spectrum.setter
+    def spectrum(self, value):
+        self._spectrum = value
+
+    @property
     def weights(self):
         return self._weights
 
@@ -143,6 +164,12 @@ class EchelleSpectralCCDData(CCDData):
         if self.background is not None:
             hdu_list.append(to_fits_image_extension(self.background, self.extension_name, 'BACKGROUND', context,
                                                     extension_version=self.meta.get('EXTVER')))
+        if self.weights is not None:
+            hdu_list.append(to_fits_image_extension(self.weights, self.extension_name, 'BACKGROUND', context,
+                                                    extension_version=self.meta.get('EXTVER')))
+        if self.spectrum is not None:
+            hdu_list.append(fits.BinTableHDU(self.spectrum, name=self.extension_name,
+                                             header=fits.Header({'EXTNAME': self.extension_name + '1DSPEC'})))
         return hdu_list
 
 
