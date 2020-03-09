@@ -141,9 +141,12 @@ def two_order_image():
 
 def five_hundred_square_image(maxflux,number_traces,trace_width):
     traces = np.zeros((500,500))
-    for i in range (0,number_traces): traces[50*i:50*i+trace_width,:]=i
     data = np.ones_like(traces, dtype=float)
-    data[~np.isclose(traces, 0)] = maxflux
+    ix = np.arange(0,trace_width)
+    for i in range (0,number_traces): 
+        traces[50*i:50*i+trace_width,:]=i
+        for j in range (0,trace_width): data[50*i+j,:]=maxflux*np.exp((-1.)*(ix[j]-trace_width/2.)**2/(trace_width/2.)**2)
+    #data[~np.isclose(traces, 0)] = maxflux
     data+=np.random.randn(500,500)+10.
     data+=np.random.poisson(data)
     uncertainty = 10. + np.sqrt(data)
