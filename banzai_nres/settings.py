@@ -16,7 +16,9 @@ ORDERED_STAGES = ['banzai.bpm.BadPixelMaskLoader',
                   'banzai_nres.flats.FlatLoader',
                   'banzai_nres.background.BackgroundSubtractor'
                   'banzai_nres.flats.FlatDivider',
-                  'banzai_nres.extract.SpectrumExtractor']
+                  'banzai_nres.extract.GetOptimalExtractionWeights',
+                  'banzai_nres.extract.WeightedExtract'
+                  ]
 
 CALIBRATION_MIN_FRAMES = {'BIAS': 5,
                           'DARK': 3,
