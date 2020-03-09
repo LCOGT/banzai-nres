@@ -4,20 +4,25 @@ from astropy.table import Table
 from banzai.stages import Stage
 from banzai_nres.frames import EchelleSpectralCCDData
 from banzai_nres.utils.extract_utils import get_region
+import logging
+
+logger = logging.getLogger('banzai')
 
 
 class WeightedExtract(Stage):
     def do_stage(self, image: EchelleSpectralCCDData):
+        if image.weights is None:
+            logger.error('Extraction weights missing. Rejecting image.', image=image)
+            return None
         flux = np.zeros((image.num_traces, image.traces.shape[1]), dtype=float)
         variance = np.zeros_like(flux)
-        weights = np.ones_like(image.traces) if image.weights is None else image.weights
 
         trace_ids = np.arange(1, image.num_traces + 1)
         for i, trace_id in enumerate(trace_ids):
             yx = get_region(np.isclose(image.traces, trace_id))
             x_extent = slice(np.min(yx[1]), np.max(yx[1]) + 1)  # get the horizontal (x) extent of the trace.
-            flux[i, x_extent] = self.extract_order(image.data[yx], weights[yx])
-            variance[i, x_extent] = self.extract_order(image.uncertainty[yx] ** 2, weights[yx] ** 2)
+            flux[i, x_extent] = self.extract_order(image.data[yx], image.weights[yx])
+            variance[i, x_extent] = self.extract_order(image.uncertainty[yx] ** 2, image.weights[yx] ** 2)
 
         image.spectrum = Table({'id': trace_ids, 'flux': flux, 'uncertainty': np.sqrt(variance),
                                 'pixel': np.arange(flux.shape[1]) * np.ones_like(flux)})
@@ -39,13 +44,14 @@ class WeightedExtract(Stage):
 
 class GetOptimalExtractionWeights(WeightedExtract):
     def do_stage(self, image: EchelleSpectralCCDData):
+        if image.profile is None:
+            logger.error('Profile missing. Rejecting image.', image=image)
+            return None
         image.weights = np.zeros_like(image.traces)
-        profile = np.ones_like(image.traces) if image.profile is None else image.profile
-
         trace_ids = np.arange(1, image.num_traces + 1)
         for i, trace_id in enumerate(trace_ids):
             yx = get_region(np.isclose(image.traces, trace_id))
-            image.weights[yx] = self.weights(profile[yx], image.uncertainty[yx]**2, image.mask[yx])
+            image.weights[yx] = self.weights(image.profile[yx], image.uncertainty[yx]**2, image.mask[yx])
         return image
 
     def weights(self, profile_im, var_im, mask):

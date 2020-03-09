@@ -15,9 +15,14 @@ def test_get_region():
 
 
 class TestExtract:
+    def test_rejects_on_no_weights(self):
+        con = context.Context({})
+        assert GetOptimalExtractionWeights(con).do_stage(two_order_image()) is None
+
     @pytest.mark.integration
     def test_unit_weights_extraction(self):
         image = two_order_image()
+        image.weights = np.ones_like(image.data)
         expected_extracted_flux = np.max(image.data) * 3
         expected_extracted_uncertainty = np.sqrt(3) * np.max(image.data)
         input_context = context.Context({})
@@ -80,6 +85,10 @@ class TestExtract:
 
 
 class TestGetWeights:
+    def test_rejects_on_no_profile(self):
+        con = context.Context({})
+        assert GetOptimalExtractionWeights(con).do_stage(two_order_image()) is None
+
     def test_optimal_weights_zero_on_zero_profile(self):
         image = two_order_image()
         image.profile = np.zeros_like(image.traces, dtype=float)
@@ -112,7 +121,6 @@ class TestGetWeights:
         #check that the weights of the area with zero profile are zero:
         assert np.allclose(weights[np.isclose(profile,0)],0)
         
-
 
 def two_order_image():
     # generate 2 flat traces.
