@@ -164,13 +164,15 @@ class EchelleSpectralCCDData(CCDData):
         if self.background is not None:
             hdu_list.append(to_fits_image_extension(self.background, self.extension_name, 'BACKGROUND', context,
                                                     extension_version=self.meta.get('EXTVER')))
+        if self.profile is not None:
+            hdu_list.append(to_fits_image_extension(self.profile, self.extension_name, 'PROFILE', context,
+                                                    extension_version=self.meta.get('EXTVER')))
         if self.weights is not None:
             hdu_list.append(to_fits_image_extension(self.weights, self.extension_name, 'WEIGHTS', context,
                                                     extension_version=self.meta.get('EXTVER')))
         if self.spectrum is not None:
             extname = self.extension_name + '1DSPEC'
-            hdu_list.append(fits.BinTableHDU(self.spectrum, name=extname,
-                                             header=fits.Header({'EXTNAME': extname})))
+            hdu_list.append(fits.BinTableHDU(self.spectrum, name=extname, header=fits.Header({'EXTNAME': extname})))
         return hdu_list
 
 
