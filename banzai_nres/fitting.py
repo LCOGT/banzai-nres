@@ -18,7 +18,7 @@ def fit_smooth_spline(y, error, mask=None, n_iter=5, x=None, sigma=5):
         x2d, y2d = np.meshgrid(x1d, y1d)
         x_to_fit = x2d.T[~mask], y2d.T[~mask]
         x_eval = x1d, y1d
-    elif len(y.shape) == 2:
+    elif len(y.shape) == 2 or len(x) == 2:
         spline = SmoothBivariateSpline
         x_to_fit = (x[0][~mask], x[1][~mask])
         x_eval = x
