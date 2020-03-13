@@ -49,7 +49,7 @@ class GetOptimalExtractionWeights(WeightedExtract):
             return None
         image.weights = np.zeros_like(image.traces)
         trace_ids = np.arange(1, image.num_traces + 1)
-        for i, trace_id in enumerate(trace_ids):
+        for trace_id in trace_ids:
             yx = get_region(np.isclose(image.traces, trace_id))
             image.weights[yx] = self.weights(image.profile[yx], image.uncertainty[yx]**2, image.mask[yx])
         return image
