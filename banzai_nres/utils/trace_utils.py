@@ -11,12 +11,12 @@ def get_trace_region(trace_mask: np.array):
     :note: Using this return value e.g. image.data[get_trace_region(traces ==35)] will return a 2d array that can be
            written out directly to a fits file
     """
-    pixel_indicies = np.where(trace_mask)
+    pixel_indices = np.where(trace_mask)
 
     # This ravels the data in the wrong direction, so we need to resort the indexes
-    sorted_indices = np.lexsort((pixel_indicies[0], pixel_indicies[1]))
+    sorted_indices = np.lexsort((pixel_indices[0], pixel_indices[1]))
 
     # Assume that the traces are even bands (always the same number of pixels tall)
-    nx = np.max(pixel_indicies[1]) - np.min(pixel_indicies[1]) + 1
+    nx = np.max(pixel_indices[1]) - np.min(pixel_indices[1]) + 1
     ny = len(sorted_indices) // nx
-    return pixel_indicies[0][sorted_indices].reshape(nx, ny).T, pixel_indicies[1].reshape(nx, ny).T
+    return pixel_indices[0][sorted_indices].reshape(nx, ny).T, pixel_indices[1].reshape(nx, ny).T
