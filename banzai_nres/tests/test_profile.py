@@ -20,7 +20,7 @@ class TestProfileFitter:
         test_data += np.random.normal(0.0, read_noise, size=test_data.shape)
         uncertainty = np.sqrt(test_data + read_noise ** 2.0)
         image = NRESObservationFrame([EchelleSpectralCCDData(data=test_data, uncertainty=uncertainty,
-                                                                  meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
+                                                             meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
         image.traces = input_traces
         input_context = context.Context({})
 
@@ -28,6 +28,6 @@ class TestProfileFitter:
         image = stage.do_stage(image)
 
         import matplotlib.pyplot as plt
-        plt.imshow(image.profile)
+        plt.imshow(image.profile, vmin=-0.05, vmax=1.0)
         plt.show()
         import pdb; pdb.set_trace()
