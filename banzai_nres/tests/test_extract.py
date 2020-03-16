@@ -46,30 +46,28 @@ class TestExtract:
     @pytest.mark.integration
     def test_weights_in_poisson_regime(self):
         trace_width, number_traces = 20, 10
-        image = five_hundred_square_image(1000,number_traces,trace_width)
+        image = five_hundred_square_image(50000,number_traces,trace_width)
         image2 = NRESObservationFrame([EchelleSpectralCCDData(data=image.data, uncertainty=image.uncertainty,
                                                          meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
         image2.traces = image.traces
-        image.profile, image2.profile = np.ones_like(image.data), np.ones_like(image.data)
+        image2.profile = np.ones_like(image.data)
         invmask = np.invert(image2.mask.astype(bool))
         input_context = context.Context({})
 
         stage = GetOptimalExtractionWeights(input_context)
         image = stage.do_stage(image)
+        image2.weights = np.ones_like(image2.data)
         stage2 = WeightedExtract(input_context)
-        image2.weights = invmask * image2.profile #correct for normalization ~np.isclose(traces, 0)
-        #for i in range (0,number_traces): image2[~np.isclose(image2.traces, i)]/= stage2.extract_order(invmask[~np.isclose(image2.traces, i)]*image2.profile[~np.isclose(image2.traces, i)]**2/image2.uncertainty[~np.isclose(image2.traces, i)]**2)
-        #image2.weights/=normalization
         optimal_image = stage2.do_stage(image)
         box_image = stage2.do_stage(image2)
-        import pdb; pdb.set_trace()
-        assert np.allclose(optimal_image.spectrum['flux'], box_image.spectrum['uncertainty'],0.1)
+        assert np.allclose(optimal_image.spectrum['flux'], box_image.spectrum['flux'],0.05)
+        assert np.allclose(optimal_image.spectrum['uncertainty'], box_image.spectrum['uncertainty'],0.05)
 
     #note the following test does not yet work as intended
     @pytest.mark.integration
     def test_weights_in_readnoise_regime(self):
-        trace_width=20
-        image = five_hundred_square_image(1000,10,trace_width)
+        trace_width, number_traces = 20, 10
+        image = five_hundred_square_image(20,number_traces,trace_width)
         image2 = NRESObservationFrame([EchelleSpectralCCDData(data=image.data, uncertainty=image.uncertainty,
                                                          meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
         image2.traces = image.traces
@@ -81,10 +79,9 @@ class TestExtract:
         image = stage.do_stage(image)
         image2.weights = np.ones_like(image2.data)#/trace_width #correct for normalization
         stage2 = WeightedExtract(input_context)
-        #normalization = stage2.extract_order(invmask*image2.profile**2/image2.uncertainty**2)
-        #image2.weights/=normalization
         optimal_image = stage2.do_stage(image)
         box_image = stage2.do_stage(image2)
+        assert np.allclose(optimal_image.spectrum['flux'], box_image.spectrum['flux'],0.01)
         assert np.allclose(optimal_image.spectrum['uncertainty']**2, box_image.spectrum['uncertainty']**2,0.1)
 
     # TODO write a test which tests that: the optimal extraction weights are correct, and tests that test whether:
@@ -148,14 +145,12 @@ def two_order_image():
 def five_hundred_square_image(maxflux,number_traces,trace_width):
     traces = np.zeros((500,500))
     data = np.ones_like(traces, dtype=float)
-    profile = np.ones_like(traces, dtype=float)
+    profile = np.zeros_like(traces, dtype=float)
     ix = np.arange(0,trace_width)
     for i in range (0,number_traces): 
         traces[50*i:50*i+trace_width,:]=i
-        for j in range (0,trace_width): 
-            data[50*i+j,:]=maxflux*np.exp((-1.)*(ix[j]-trace_width/2.)**2/(trace_width/6.)**2)
-            profile[50*i+j,:]=data[50*i+j,:]/np.sum(data[50*i+j,:])
-    #data[~np.isclose(traces, 0)] = maxflux
+        for j in range (0,trace_width): data[50*i+j,:]=maxflux*np.exp((-1.)*(ix[j]-trace_width/2.)**2/(trace_width/6.)**2)
+        for j in range (0,trace_width):profile[50*i+j,:]=data[50*i+j,:]/np.sum(data[50*i:50*i+trace_width,0])
     data+=np.random.randn(500,500)+10.
     data+=np.random.poisson(data)
     uncertainty = 10. + np.sqrt(data)
