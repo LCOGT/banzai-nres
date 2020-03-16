@@ -3,7 +3,7 @@ from astropy.table import Table
 
 from banzai.stages import Stage
 from banzai_nres.frames import EchelleSpectralCCDData
-from banzai_nres.utils.extract_utils import get_region
+from banzai_nres.utils.trace_utils import get_trace_region
 import logging
 
 logger = logging.getLogger('banzai')
@@ -19,13 +19,12 @@ class WeightedExtract(Stage):
 
         trace_ids = np.arange(1, image.num_traces + 1)
         for i, trace_id in enumerate(trace_ids):
-            yx = get_region(np.isclose(image.traces, trace_id))
+            yx = get_trace_region(np.isclose(image.traces, trace_id))
             x_extent = slice(np.min(yx[1]), np.max(yx[1]) + 1)  # get the horizontal (x) extent of the trace.
             flux[i, x_extent] = self.extract_order(image.data[yx], image.weights[yx])
             variance[i, x_extent] = self.extract_order(image.uncertainty[yx] ** 2, image.weights[yx] ** 2)
 
-        image.spectrum = Table({'id': trace_ids, 'flux': flux, 'uncertainty': np.sqrt(variance),
-                                'pixel': np.arange(flux.shape[1]) * np.ones_like(flux)})
+        image.spectrum = Table({'id': trace_ids, 'flux': flux, 'uncertainty': np.sqrt(variance)})
         return image
 
     @staticmethod
@@ -50,7 +49,7 @@ class GetOptimalExtractionWeights(WeightedExtract):
         image.weights = np.zeros_like(image.traces)
         trace_ids = np.arange(1, image.num_traces + 1)
         for trace_id in trace_ids:
-            yx = get_region(np.isclose(image.traces, trace_id))
+            yx = get_trace_region(np.isclose(image.traces, trace_id))
             image.weights[yx] = self.weights(image.profile[yx], image.uncertainty[yx]**2, image.mask[yx])
         return image
 

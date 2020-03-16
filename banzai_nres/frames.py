@@ -65,6 +65,14 @@ class NRESObservationFrame(LCOObservationFrame):
     def spectrum(self, value):
         self.primary_hdu.spectrum = value
 
+    @property
+    def blaze(self):
+        return self.primary_hdu.blaze
+
+    @blaze.setter
+    def blaze(self, value):
+        self.primary_hdu.blaze = value
+
 
 class NRESCalibrationFrame(LCOCalibrationFrame, NRESObservationFrame):
     def __init__(self, hdu_list: list, file_path: str, grouping_criteria: list = None):
@@ -83,7 +91,7 @@ class EchelleSpectralCCDData(CCDData):
                  mask: np.array = None, name: str = '', uncertainty: np.array = None,
                  background: np.array = None,  traces: np.array = None,
                  profile: np.array = None, weights: np.array = None,
-                 spectrum: Table = None, memmap=True):
+                 spectrum: Table = None, blaze: Table = None, memmap=True):
         super().__init__(data=data, meta=meta, mask=mask, name=name, memmap=memmap, uncertainty=uncertainty)
         if traces is None:
             self._traces = None
@@ -101,10 +109,18 @@ class EchelleSpectralCCDData(CCDData):
             self._weights = None
         else:
             self.weights = weights
-        if spectrum is None:
-            self._spectrum = None
-        else:
-            self.spectrum = spectrum
+
+        self.spectrum = spectrum
+        self.blaze = blaze
+
+
+    @property
+    def traces(self):
+        return self._traces
+
+    @traces.setter
+    def traces(self, value):
+        self._traces = self._init_array(value)
 
     @property
     def traces(self):
@@ -130,14 +146,6 @@ class EchelleSpectralCCDData(CCDData):
     @profile.setter
     def profile(self, value):
         self._profile = self._init_array(value)
-
-    @property
-    def spectrum(self):
-        return self._spectrum
-
-    @spectrum.setter
-    def spectrum(self, value):
-        self._spectrum = value
 
     @property
     def weights(self):
@@ -173,6 +181,10 @@ class EchelleSpectralCCDData(CCDData):
         if self.spectrum is not None:
             extname = self.extension_name + '1DSPEC'
             hdu_list.append(fits.BinTableHDU(self.spectrum, name=extname, header=fits.Header({'EXTNAME': extname})))
+        if self.blaze is not None:
+            extname = self.extension_name + 'BLAZE'
+            hdu_list.append(fits.BinTableHDU(self.blaze, name=extname, header=fits.Header({'EXTNAME': extname})))
+
         return hdu_list
 
 
@@ -181,7 +193,9 @@ class NRESFrameFactory(LCOFrameFactory):
     calibration_frame_class = NRESCalibrationFrame
     data_class = EchelleSpectralCCDData
     associated_extensions = LCOFrameFactory().associated_extensions + [{'FITS_NAME': 'TRACES', 'NAME': 'traces'},
-                                                                       {'FITS_NAME': 'BACKGROUND', 'NAME': 'background'}]
+                                                                       {'FITS_NAME': 'BACKGROUND', 'NAME': 'background'},
+                                                                       {'FITS_NAME': 'PROFILE', 'NAME': 'profile'},
+                                                                       {'FITS_NAME': 'BLAZE', 'NAME': 'blaze'}]
 
     def open(self, path, runtime_context) -> Optional[ObservationFrame]:
         image = super().open(path, runtime_context)

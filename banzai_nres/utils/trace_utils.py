@@ -19,4 +19,5 @@ def get_trace_region(trace_mask: np.array):
     # Assume that the traces are even bands (always the same number of pixels tall)
     nx = np.max(pixel_indices[1]) - np.min(pixel_indices[1]) + 1
     ny = len(sorted_indices) // nx
+
     return pixel_indices[0][sorted_indices].reshape(nx, ny).T, pixel_indices[1][sorted_indices].reshape(nx, ny).T

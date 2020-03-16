@@ -15,7 +15,6 @@ ORDERED_STAGES = ['banzai.bpm.BadPixelMaskLoader',
                   'banzai.dark.DarkSubtractor',
                   'banzai_nres.flats.FlatLoader',
                   'banzai_nres.background.BackgroundSubtractor'
-                  'banzai_nres.flats.FlatDivider',
                   'banzai_nres.extract.GetOptimalExtractionWeights',
                   'banzai_nres.extract.WeightedExtract'
                   ]

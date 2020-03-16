@@ -21,7 +21,7 @@ def test_profile_fit_without_noise_without_blaze():
     stage = ProfileFitter(input_context)
     image = stage.do_stage(image)
     scale_factor = np.max(input_profile) / np.max(image.profile)
-    assert np.allclose(input_profile[input_traces != 0], image.profile[input_traces != 0] * scale_factor, rtol=1e-3)
+    assert np.allclose(input_profile[input_traces != 0], image.profile[input_traces != 0] * scale_factor, rtol=5e-3, atol=1.0)
 
 
 def test_profile_fit_with_noise_with_blaze():
@@ -41,5 +41,5 @@ def test_profile_fit_with_noise_with_blaze():
 
     stage = ProfileFitter(input_context)
     image = stage.do_stage(image)
-    scale_factor = np.max(image.profile)
-    assert np.allclose(input_profile[input_traces != 0], image.profile[input_traces != 0] * scale_factor, rtol=1e-3)
+    scale_factor = np.max(input_profile) / np.max(image.profile)
+    assert np.allclose(input_profile[input_traces != 0], image.profile[input_traces != 0] * scale_factor, rtol=5e-3, atol=1.0)

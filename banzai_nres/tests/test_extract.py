@@ -1,6 +1,6 @@
 import numpy as np
 
-from banzai_nres.utils.extract_utils import get_region
+from banzai_nres.utils.trace_utils import get_trace_region
 from banzai_nres.frames import NRESObservationFrame, EchelleSpectralCCDData
 from banzai_nres.extract import WeightedExtract, GetOptimalExtractionWeights
 from banzai import context
@@ -10,7 +10,7 @@ import pytest
 def test_get_region():
     traces = np.zeros((4, 4))
     traces[[2, 3], :] = 1
-    trace_yx_pos = get_region(traces == 1)
+    trace_yx_pos = get_trace_region(traces == 1)
     assert np.allclose(traces[trace_yx_pos], 1)
 
 
@@ -41,7 +41,6 @@ class TestExtract:
         assert np.allclose(spectrum['uncertainty'][1][[0, -1]], 0)
         assert np.allclose(spectrum['id'][1], 2)
 
-        assert np.allclose(spectrum['pixel'], np.arange(image.data.shape[1]))
 
     @pytest.mark.integration
     def test_weights_in_poisson_regime(self):
