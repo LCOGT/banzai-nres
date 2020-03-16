@@ -168,13 +168,13 @@ def test_refine_traces_offset_centroid():
         assert all(output_image.traces[np.abs(y2d - trace_center + 1) <= 4])
 
 
-def make_simple_traces(nx=401, ny=403, trace_half_width=6):
+def make_simple_traces(nx=401, ny=403, trace_half_width=6, blaze=True):
     test_data = np.zeros((ny, nx))
     x2d, y2d = np.meshgrid(np.arange(nx), np.arange(ny))
 
     trace_centers = []
     y_0s = [int(2*ny/5), int(3*ny/5), int(4*ny/5)]
-    blaze_function = 1 - 1e-5 * (x2d - nx / 2.) ** 2
+    blaze_function = 1 - blaze * 1e-5 * (x2d - nx / 2.) ** 2
     input_traces = np.zeros((ny, nx), dtype=np.int)
     for i in range(3):
         trace_centers.append(5e-4 * (np.arange(nx) - nx / 2.) ** 2 + y_0s[i])
