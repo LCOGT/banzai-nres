@@ -85,7 +85,6 @@ class TestExtract:
         #image2.weights/=normalization
         optimal_image = stage2.do_stage(image)
         box_image = stage2.do_stage(image2)
-        import pdb; pdb.set_trace()
         assert np.allclose(optimal_image.spectrum['uncertainty']**2, box_image.spectrum['uncertainty']**2,0.1)
 
     # TODO write a test which tests that: the optimal extraction weights are correct, and tests that test whether:
