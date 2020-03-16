@@ -147,9 +147,9 @@ def five_hundred_square_image(maxflux,number_traces,trace_width, read_noise=10):
         for j in range (0,trace_width):
             profile[50*i+j,:]=data[50*i+j,:]/np.sum(data[50*i:50*i+trace_width,0])
 
-    uncertainty = np.sqrt(data + read_noise ** 2)
     data += np.random.poisson(data)
     data += np.random.normal(0.0, read_noise, size=data.shape)
+    uncertainty = np.sqrt(data + read_noise ** 2)
 
     image = NRESObservationFrame([EchelleSpectralCCDData(data=data, uncertainty=uncertainty,
                                                          meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
