@@ -189,13 +189,25 @@ class EchelleSpectralCCDData(CCDData):
 
 
 class NRESFrameFactory(LCOFrameFactory):
-    observation_frame_class = NRESObservationFrame
-    calibration_frame_class = NRESCalibrationFrame
-    data_class = EchelleSpectralCCDData
-    associated_extensions = LCOFrameFactory().associated_extensions + [{'FITS_NAME': 'TRACES', 'NAME': 'traces'},
-                                                                       {'FITS_NAME': 'BACKGROUND', 'NAME': 'background'},
-                                                                       {'FITS_NAME': 'PROFILE', 'NAME': 'profile'},
-                                                                       {'FITS_NAME': 'BLAZE', 'NAME': 'blaze'}]
+
+    @property
+    def observation_frame_class(self):
+        return NRESObservationFrame
+
+    @property
+    def calibration_frame_class(self):
+        return NRESCalibrationFrame
+
+    @property
+    def data_class(self):
+        return EchelleSpectralCCDData
+
+    @property
+    def associated_extensions(self):
+        return LCOFrameFactory().associated_extensions + [{'FITS_NAME': 'TRACES', 'NAME': 'traces'},
+                                                          {'FITS_NAME': 'BACKGROUND', 'NAME': 'background'},
+                                                          {'FITS_NAME': 'PROFILE', 'NAME': 'profile'},
+                                                          {'FITS_NAME': 'BLAZE', 'NAME': 'blaze'}]
 
     def open(self, path, runtime_context) -> Optional[ObservationFrame]:
         image = super().open(path, runtime_context)
