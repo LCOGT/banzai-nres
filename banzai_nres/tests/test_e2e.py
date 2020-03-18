@@ -14,6 +14,7 @@ from banzai import dbs
 from types import ModuleType
 from datetime import datetime
 from dateutil.parser import parse
+from astropy.io import fits
 
 import logging
 
@@ -123,8 +124,9 @@ def get_expected_number_of_calibrations(raw_filenames, calibration_type):
             # Group by fibers lit
             observed_fibers = []
             for raw_filename in raw_filenames_for_this_dayobs:
-                lampflat_hdu = fits_utils.open_fits_file(raw_filename)
+                lampflat_hdu = fits.open(raw_filename) #fits_utils.open_fits_file(raw_filename)
                 observed_fibers.append(lampflat_hdu[0].header.get('OBJECTS'))
+                lampflat_hdu.close()
             observed_fibers = set(observed_fibers)
             number_of_stacks_that_should_have_been_created += len(observed_fibers)
         else:
@@ -152,6 +154,21 @@ def run_check_if_stacked_calibrations_are_in_db(raw_filenames, calibration_type)
     assert number_of_stacks_that_should_have_been_created > 0
     assert len(calibrations_in_db) == number_of_stacks_that_should_have_been_created
 
+def get_expected_number_of_frames(raw_filenames, calibration_type):
+    expected_number_of_frames = 0
+    for day_obs in DAYS_OBS:
+        raw_filenames_for_this_dayobs = glob(os.path.join(DATA_ROOT, day_obs, 'raw', raw_filenames))
+        expected_number_of_frames+=len(raw_filenames_for_this_dayobs)
+    return expected_number_of_frames
+
+def run_check_if_extracted_frames_were_created(letter, calibration_type):
+    created_science_frames = []
+    number_of_spectra_that_should_have_been_processed = get_expected_number_of_frames('*'+letter+'00.fits*', calibration_type)
+    number_of_spectra_that_were_processed = get_expected_number_of_frames('*'+letter+'91.fits*', calibration_type)
+    assert number_of_spectra_that_should_have_been_processed == number_of_spectra_that_were_processed
+
+                                        
+
 
 @pytest.mark.e2e
 @pytest.fixture(scope='module')
@@ -164,6 +181,7 @@ def init(configdb):
     for instrument in INSTRUMENTS:
         for bpm_filename in glob(os.path.join(DATA_ROOT, instrument, 'bpm/*bpm*')):
             os.system(f'banzai_nres_add_bpm --filename {bpm_filename} --db-address={os.environ["DB_ADDRESS"]}')
+
 
 
 @pytest.mark.e2e
@@ -211,3 +229,11 @@ class TestMasterFlatCreation:
         run_check_if_stacked_calibrations_are_in_db('*w00.fits*', 'LAMPFLAT')
 
 # TODO add master traces test
+
+@pytest.mark.e2e
+@pytest.mark.science_frames
+class TestScienceFrames:
+    @pytest.fixture(autouse=True)
+    @mock.patch('banzai.utils.observation_utils.requests.get', side_effect=observation_portal_side_effect)
+    def test_if_science_frames_were_created(self):
+        run_check_if_extracted_frames_were_created('e','target')
