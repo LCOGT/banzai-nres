@@ -14,8 +14,8 @@ class WeightedExtract(Stage):
         if image.weights is None:
             logger.error('Extraction weights missing. Rejecting image.', image=image)
             return None
-        flux = np.zeros((image.num_traces, image.traces.shape[1]), dtype=float)
-        variance = np.zeros_like(flux)
+        flux = np.zeros((image.num_traces, image.data.shape[1]), dtype=float)
+        variance = np.zeros_like(flux, dtype=float)
 
         trace_ids = np.arange(1, image.num_traces + 1)
         for i, trace_id in enumerate(trace_ids):
@@ -46,7 +46,7 @@ class GetOptimalExtractionWeights(WeightedExtract):
         if image.profile is None:
             logger.error('Profile missing. Rejecting image.', image=image)
             return None
-        image.weights = np.zeros_like(image.traces)
+        image.weights = np.zeros_like(image.data, dtype=float)
         trace_ids = np.arange(1, image.num_traces + 1)
         for trace_id in trace_ids:
             yx = get_trace_region(np.isclose(image.traces, trace_id))
