@@ -3,7 +3,7 @@ from scipy.interpolate import SmoothBivariateSpline, UnivariateSpline
 from statsmodels.robust.norms import HuberT
 
 
-def fit_smooth_spline(y, error, mask=None, n_iter=5, x=None, sigma=5):
+def fit_smooth_spline(y, error, mask=None, n_iter=1, x=None, sigma=5):
     if mask is None:
         mask = np.zeros(y.shape, dtype=bool)
     y_to_fit = y[np.logical_not(mask)]

@@ -14,9 +14,9 @@ ORDERED_STAGES = ['banzai.bpm.BadPixelMaskLoader',
                   'banzai.bias.BiasSubtractor',
                   'banzai.dark.DarkSubtractor',
                   'banzai_nres.flats.FlatLoader',
-                  'banzai_nres.background.BackgroundSubtractor'
+                  'banzai_nres.background.BackgroundSubtractor',
                   'banzai_nres.extract.GetOptimalExtractionWeights',
-                  'banzai_nres.extract.WeightedExtract'
+                  'banzai_nres.extract.WeightedExtract',
                   ]
 
 CALIBRATION_MIN_FRAMES = {'BIAS': 5,
@@ -41,11 +41,11 @@ CALIBRATION_IMAGE_TYPES = ['BPM', 'BIAS', 'DARK', 'LAMPFLAT', 'ARC']
 
 LAST_STAGE = {'BIAS': 'banzai.trim.Trimmer',
               'DARK': 'banzai.bias.BiasSubtractor',
-              'LAMPFLAT': 'banzai.dark.DarkSubtractor'}
+              'LAMPFLAT': 'banzai.dark.DarkSubtractor', 'TARGET': None, 'DOUBLE': None}
 
 EXTRA_STAGES = {'BIAS': ['banzai.bias.BiasMasterLevelSubtractor', 'banzai.bias.BiasComparer'],
                 'DARK': ['banzai.dark.DarkNormalizer', 'banzai.dark.DarkComparer'],
-                'LAMPFLAT': []}
+                'LAMPFLAT': [], 'TARGET': None, 'DOUBLE': None}
 
 CALIBRATION_STACKER_STAGES = {'BIAS': ['banzai.bias.BiasMaker'],
                               'DARK': ['banzai.dark.DarkMaker'],
@@ -54,7 +54,8 @@ CALIBRATION_STACKER_STAGES = {'BIAS': ['banzai.bias.BiasMaker'],
                                            'banzai_nres.traces.TraceInitializer',
                                            'banzai_nres.background.BackgroundSubtractor',
                                            'banzai_nres.traces.TraceRefiner',
-                                           'banzai_nres.profile.ProfileFitter']}
+                                           'banzai_nres.profile.ProfileFitter'
+                                           ]}
 
 # Stack delays are expressed in seconds--namely, each is five minutes
 CALIBRATION_STACK_DELAYS = {'BIAS': 300,
@@ -72,7 +73,7 @@ CALIBRATE_PROPOSAL_ID = os.getenv('CALIBRATE_PROPOSAL_ID', 'calibrate')
 
 CONFIGDB_URL = os.getenv('CONFIGDB_URL', 'http://configdb.lco.gtn/sites/')
 
-OBSERVATION_REQUEST_TYPES = {'BIAS': 'NRESBIAS', 'DARK': 'NRESDARK'}
+OBSERVATION_REQUEST_TYPES = {'BIAS': 'NRESBIAS', 'DARK': 'NRESDARK', 'LAMPFLAT': 'LAMP_FLAT'}
 
 # For some extension names, we want to just have corresponding BPM or ERR extensions
 EXTENSION_NAMES_TO_CONDENSE = ['SPECTRUM']
@@ -87,7 +88,7 @@ DATA_RELEASE_DELAY = 365
 # Proposal ids for data that should be public instantly. Should all be lowercase
 PUBLIC_PROPOSALS = ['calibrate', 'standard', '*epo*', 'pointing']
 
-SUPPORTED_FRAME_TYPES = ['BPM', 'BIAS', 'DARK', 'LAMPFLAT', 'SPECTRUM', 'ARC']
+SUPPORTED_FRAME_TYPES = ['BPM', 'BIAS', 'DARK', 'LAMPFLAT', 'TARGET', 'DOUBLE']
 
 ARCHIVE_API_ROOT = os.getenv('API_ROOT')
 ARCHIVE_FRAME_URL = f'{ARCHIVE_API_ROOT}frames'
