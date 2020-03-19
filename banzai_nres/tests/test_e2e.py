@@ -49,8 +49,8 @@ def celery_join():
         queues = [celery_inspector.active(), celery_inspector.scheduled(), celery_inspector.reserved()]
         time.sleep(1)
         log_counter += 1
-        if log_counter % 30 == 0:
-            logger.info('Processing: ' + '. ' * (log_counter // 30))
+        if log_counter % 5 == 0:
+            logger.info('Processing: ' + '. ' * (log_counter // 5))
         if any([queue is None or 'celery@banzai-celery-worker' not in queue for queue in queues]):
             logger.warning('No valid celery queues were detected, retrying...', extra_tags={'queues': queues})
             # Reset the celery connection
@@ -96,8 +96,8 @@ def stack_calibrations(frame_type):
                                db_address=os.environ['DB_ADDRESS'], elasticsearch_qc_index='banzai_qc',
                                elasticsearch_url='http://elasticsearch.lco.gtn:9200', elasticsearch_doc_type='qc',
                                no_bpm=False, ignore_schedulability=True, use_only_older_calibrations=False,
-                               preview_mode=False, max_tries=5, broker_url=os.getenv('FITS_BROKER'),
-                               no_file_cache=False)
+                               preview_mode=False, max_tries=5, broker_url=os.getenv('FITS_BROKER'), no_file_cache=False,
+                               OBSERVATION_REQUEST_TYPES={'BIAS': 'NRESBIAS', 'DARK': 'NRESDARK', 'LAMPFLAT': 'LAMP_FLAT'})
         for setting in dir(settings):
             if '__' != setting[:2] and not isinstance(getattr(settings, setting), ModuleType):
                 runtime_context[setting] = getattr(settings, setting)
