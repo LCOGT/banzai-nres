@@ -3,6 +3,7 @@ import numpy as np
 from banzai_nres.tests.test_traces import make_simple_traces
 from banzai_nres.frames import NRESObservationFrame
 from banzai_nres.frames import EchelleSpectralCCDData
+from banzai_nres.utils.trace_utils import get_trace_region
 from banzai_nres.profile import ProfileFitter
 from banzai import context
 
@@ -41,5 +42,10 @@ def test_profile_fit_with_noise_with_blaze():
 
     stage = ProfileFitter(input_context)
     image = stage.do_stage(image)
-    scale_factor = np.max(input_profile) / np.max(image.profile)
-    assert np.allclose(input_profile[input_traces != 0], image.profile[input_traces != 0] * scale_factor, rtol=5e-3, atol=1.0)
+
+    for i in range(1, np.max(image.traces) + 1):
+        this_trace = get_trace_region(image.traces == i)
+        scale_factor = np.max(input_profile[this_trace]) / np.max(image.profile[this_trace] * image.blaze[i - 1]['blaze'])
+        np.testing.assert_allclose(input_profile[this_trace],
+                                   image.profile[this_trace] * image.blaze[i - 1]['blaze'] * scale_factor,
+                                   rtol=1.5e-2, atol=1.0)
