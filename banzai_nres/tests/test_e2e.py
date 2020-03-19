@@ -134,6 +134,13 @@ def get_expected_number_of_calibrations(raw_filenames, calibration_type):
     return number_of_stacks_that_should_have_been_created
 
 
+def check_if_individual_frames_exist(filenames):
+    for day_obs in DAYS_OBS:
+        raw_files = glob(os.path.join(DATA_ROOT, day_obs, 'raw', filenames))
+        processed_files = glob(os.path.join(DATA_ROOT, day_obs, 'processed', filenames.replace('00', '91')))
+        assert len(raw_files) == len(processed_files)
+
+
 def run_check_if_stacked_calibrations_were_created(raw_filenames, calibration_type):
     created_stacked_calibrations = []
     number_of_stacks_that_should_have_been_created = get_expected_number_of_calibrations(raw_filenames, calibration_type)
@@ -177,6 +184,7 @@ class TestMasterBiasCreation:
         stack_calibrations('bias')
 
     def test_if_stacked_bias_frame_was_created(self):
+        check_if_individual_frames_exist('*b00*')
         run_check_if_stacked_calibrations_were_created('*b00.fits*', 'bias')
         run_check_if_stacked_calibrations_are_in_db('*b00.fits*', 'BIAS')
 
@@ -192,6 +200,7 @@ class TestMasterDarkCreation:
         stack_calibrations('dark')
 
     def test_if_stacked_dark_frame_was_created(self):
+        check_if_individual_frames_exist('*d00*')
         run_check_if_stacked_calibrations_were_created('*d00.fits*', 'dark')
         run_check_if_stacked_calibrations_are_in_db('*d00.fits*', 'DARK')
 
@@ -206,8 +215,16 @@ class TestMasterFlatCreation:
         mark_frames_as_good('*w91.fits*')
         stack_calibrations('lampflat')
 
+    @pytest.fixture(autouse=True)
     def test_if_stacked_flat_frame_was_created(self):
+        check_if_individual_frames_exist('*w00*')
         run_check_if_stacked_calibrations_were_created('*w00.fits*', 'lampflat')
         run_check_if_stacked_calibrations_are_in_db('*w00.fits*', 'LAMPFLAT')
 
-# TODO add master traces test
+
+@pytest.mark.e2e
+@pytest.mark.science_frames
+class TestScienceFrameProcessing:
+    def process_frames(self):
+        run_reduce_individual_frames('*e00*')
+        check_if_individual_frames_exist('*e00*')
