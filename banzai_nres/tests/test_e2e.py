@@ -1,7 +1,6 @@
 import pytest
 from banzai.tests.utils import FakeResponse, get_min_and_max_dates
 from banzai_nres import settings
-from astropy.io import fits
 import os
 import mock
 from banzai.utils import file_utils
@@ -14,6 +13,7 @@ from banzai import dbs
 from types import ModuleType
 from datetime import datetime
 from dateutil.parser import parse
+from astropy.io import fits
 
 import logging
 
@@ -125,6 +125,7 @@ def get_expected_number_of_calibrations(raw_filenames, calibration_type):
             for raw_filename in raw_filenames_for_this_dayobs:
                 lampflat_hdu = fits.open(raw_filename)
                 observed_fibers.append(lampflat_hdu[1].header.get('OBJECTS'))
+                lampflat_hdu.close()
             observed_fibers = set(observed_fibers)
             number_of_stacks_that_should_have_been_created += len(observed_fibers)
         else:
@@ -147,6 +148,7 @@ def run_check_if_stacked_calibrations_were_created(raw_filenames, calibration_ty
     for day_obs in DAYS_OBS:
         created_stacked_calibrations += glob(os.path.join(DATA_ROOT, day_obs, 'processed',
                                                           '*' + calibration_type.lower() + '*.fits*'))
+    import pdb; pdb.set_trace()
     assert number_of_stacks_that_should_have_been_created > 0
     assert len(created_stacked_calibrations) == number_of_stacks_that_should_have_been_created
 
@@ -171,6 +173,7 @@ def init(configdb):
     for instrument in INSTRUMENTS:
         for bpm_filename in glob(os.path.join(DATA_ROOT, instrument, 'bpm/*bpm*')):
             os.system(f'banzai_nres_add_bpm --filename {bpm_filename} --db-address={os.environ["DB_ADDRESS"]}')
+
 
 
 @pytest.mark.e2e
