@@ -73,7 +73,7 @@ CALIBRATE_PROPOSAL_ID = os.getenv('CALIBRATE_PROPOSAL_ID', 'calibrate')
 
 CONFIGDB_URL = os.getenv('CONFIGDB_URL', 'http://configdb.lco.gtn/sites/')
 
-OBSERVATION_REQUEST_TYPES = {'BIAS': 'NRESBIAS', 'DARK': 'NRESDARK', 'LAMPFLAT': 'LAMP_FLAT'}
+OBSERVATION_REQUEST_TYPES = {'BIAS': 'NRESBIAS', 'DARK': 'NRESDARK'}
 
 # For some extension names, we want to just have corresponding BPM or ERR extensions
 EXTENSION_NAMES_TO_CONDENSE = ['SPECTRUM']

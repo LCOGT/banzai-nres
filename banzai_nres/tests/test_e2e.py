@@ -96,8 +96,8 @@ def stack_calibrations(frame_type):
                                db_address=os.environ['DB_ADDRESS'], elasticsearch_qc_index='banzai_qc',
                                elasticsearch_url='http://elasticsearch.lco.gtn:9200', elasticsearch_doc_type='qc',
                                no_bpm=False, ignore_schedulability=True, use_only_older_calibrations=False,
-                               preview_mode=False, max_tries=5, broker_url=os.getenv('FITS_BROKER'), no_file_cache=False,
-                               OBSERVATION_REQUEST_TYPES={'BIAS': 'NRESBIAS', 'DARK': 'NRESDARK', 'LAMPFLAT': 'LAMP_FLAT'})
+                               preview_mode=False, max_tries=5, broker_url=os.getenv('FITS_BROKER'),
+                               no_file_cache=False)
         for setting in dir(settings):
             if '__' != setting[:2] and not isinstance(getattr(settings, setting), ModuleType):
                 runtime_context[setting] = getattr(settings, setting)
