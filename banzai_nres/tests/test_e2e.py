@@ -1,7 +1,7 @@
 import pytest
 from banzai.tests.utils import FakeResponse, get_min_and_max_dates
 from banzai_nres import settings
-from banzai.utils import fits_utils
+from astropy.io import fits
 import os
 import mock
 from banzai.utils import file_utils
@@ -123,8 +123,8 @@ def get_expected_number_of_calibrations(raw_filenames, calibration_type):
             # Group by fibers lit
             observed_fibers = []
             for raw_filename in raw_filenames_for_this_dayobs:
-                lampflat_hdu = fits_utils.open_fits_file(raw_filename)
-                observed_fibers.append(lampflat_hdu[0].header.get('OBJECTS'))
+                lampflat_hdu = fits.open(raw_filename)
+                observed_fibers.append(lampflat_hdu[1].header.get('OBJECTS'))
             observed_fibers = set(observed_fibers)
             number_of_stacks_that_should_have_been_created += len(observed_fibers)
         else:
