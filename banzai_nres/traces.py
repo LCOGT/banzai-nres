@@ -91,7 +91,6 @@ class TraceInitializer(Stage):
         # Reindex the labels to start at 1
         for i, label in enumerate(true_labels):
             labeled_image[labeled_image == label] = i + 1
-        import pdb; pdb.set_trace()
         return refine_traces(labeled_image, image, weights=labeled_image > 0)
 
 

@@ -234,7 +234,6 @@ class TestMasterFlatCreation:
         mark_frames_as_good('*w91.fits*')
         stack_calibrations('lampflat')
 
-    @pytest.fixture(autouse=True)
     def test_if_stacked_flat_frame_was_created(self):
         check_if_individual_frames_exist('*w00*')
         run_check_if_stacked_calibrations_were_created('*w00.fits*', 'lampflat')
@@ -257,5 +256,7 @@ class TestScienceFrames:
 class TestScienceFrameProcessing:
     def process_frames(self):
         run_reduce_individual_frames('*e00*')
+
+    def test_if_science_frames_were_created(self):
         check_if_individual_frames_exist('*e00*')
 >>>>>>> 313b6f7164af7ed9920793ace58955c2d0875c9b
