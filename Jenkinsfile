@@ -146,6 +146,32 @@ pipeline {
 						}
 					}
 				}
+		stage('Test-Science-Frame-Creation') {
+			when {
+				anyOf {
+					branch 'PR-*'
+					expression { return params.forceEndToEnd }
+				}
+			}
+			steps {
+				script {
+                    withKubeConfig([credentialsId: "dev-kube-config"]) {
+						sh("kubectl exec -n dev ${podName} -c banzai-nres-listener -- " +
+						        "pytest -s --durations=0 --junitxml=/home/archive/pytest-science-frames.xml " +
+						        "-m science_frames /lco/banzai-nres/")
+					}
+				}
+			}
+			post {
+				always {
+					script {
+					    withKubeConfig([credentialsId: "dev-kube-config"]) {
+						    sh("kubectl cp -n dev -c banzai-nres-listener ${podName}:/home/archive/pytest-science-flat.xml " +
+						            "pytest-science-frames.xml")
+						    junit "pytest-science-frames.xml"
+						}
+					}
+				}
 				success {
 					script {
 					    withKubeConfig([credentialsId: "dev-kube-config"]) {
