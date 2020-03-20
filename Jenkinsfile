@@ -146,6 +146,8 @@ pipeline {
 						}
 					}
 				}
+			}
+		}
 		stage('Test-Science-Frame-Creation') {
 			when {
 				anyOf {
