@@ -226,8 +226,9 @@ class TestMasterFlatCreation:
 @pytest.mark.e2e
 @pytest.mark.science_frames
 class TestScienceFrameProcessing:
+    @pytest.fixture(autouse=True)
     def process_frames(self):
-        run_reduce_individual_frames('*e00*')
+        run_reduce_individual_frames('*e00.fits*')
 
     def test_if_science_frames_were_created(self):
-        check_if_individual_frames_exist('*e00*')
+        check_if_individual_frames_exist('*e00.fits*')

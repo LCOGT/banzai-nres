@@ -168,7 +168,7 @@ pipeline {
 				always {
 					script {
 					    withKubeConfig([credentialsId: "dev-kube-config"]) {
-						    sh("kubectl cp -n dev -c banzai-nres-listener ${podName}:/home/archive/pytest-science-flat.xml " +
+						    sh("kubectl cp -n dev -c banzai-nres-listener ${podName}:/home/archive/pytest-science-frames.xml " +
 						            "pytest-science-frames.xml")
 						    junit "pytest-science-frames.xml"
 						}
