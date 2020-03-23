@@ -1,476 +1,183 @@
-import pytest
-import tempfile
 import numpy as np
-import os
-
-from astropy.table import Table
-from astropy.io import fits
-from scipy.optimize import OptimizeResult
-from unittest import mock
-
-from banzai.tests.utils import FakeContext
-
-from banzai_nres.traces import TraceMaker, LoadTrace
-from banzai_nres.tests.utils import array_with_peaks, FakeImage, noisify_image
-from banzai_nres.utils.trace_utils import Trace, SingleTraceFitter, AllTraceFitter
-from banzai_nres.tests.utils import fill_image_with_traces
-
-import logging
+from banzai_nres.traces import find_y_center, TraceInitializer, TraceRefiner
+from banzai_nres.frames import NRESObservationFrame
+from banzai_nres.frames import EchelleSpectralCCDData
+from banzai import context
 
 
-logger = logging.getLogger(__name__)
+def gaussian(y, mu, sigma, a=1.0):
+    return a * np.exp(-(y - mu)**2 / 2.0 / sigma**2)
 
 
-class FakeTraceImage(FakeImage):
-    """
-    Image of 500x500 is recommended. Drastic changes to that dimension may break trace testing.
-    """
-    def __init__(self, nx=500, ny=502, *args, **kwargs):
-        super(FakeTraceImage, self).__init__(*args, **kwargs)
-        self.caltype = 'TRACE'
-        self.header = fits.Header()
-        self.header['OBSTYPE'] = 'LAMPFLAT'
-        self.header['OBJECTS'] = 'tung&tung&none'
-        self.nx = nx
-        self.ny = ny
-        self.bpm = np.zeros((self.ny, self.nx), dtype=np.uint8)
-        self.data = np.zeros((self.ny, self.nx))
-        self.fiber0_lit, self.fiber1_lit, self.fiber2_lit = False, True, True
+def test_centroid_int_weights():
+    nx, ny = 103, 107
+    fake_data = np.zeros((ny, nx))
+    fake_data[49] = 1
+    fake_data[50] = 1
+    fake_data[51] = 1
+    X, Y = np.meshgrid(np.arange(nx), np.arange(ny))
+    center_region = np.logical_and(Y > 10, Y < (ny - 10))
+    center, center_errors = find_y_center(Y, center_region, fake_data)
+    np.testing.assert_allclose(center, 50.0, atol=0.1)
 
 
-class TestTrace:
-    """
-    Unit tests for the Trace class.
-    """
-    def test_trace_instantiates_from_num_centers(self):
-        trace = Trace(num_centers_per_trace=5)
-        assert trace.trace_table_name is None
-        assert trace.data.colnames == ['id', 'centers']
-        assert len(trace.data['id']) == 0
-        assert trace.data['centers'].shape == (0, 5)
-        assert trace.data['centers'].description is not None
-        assert trace.data['id'].description is not None
-
-    def test_trace_instantiates_from_data(self):
-        data = Table({'id': [1], 'centers': [[1, 2, 3]]})
-        data['id'].description = 'test'
-        data['centers'].description = 'test_2'
-        trace = Trace(data=data)
-        assert trace.trace_table_name is None
-        assert trace.filepath is None
-        assert trace.header == {}
-        assert trace.obstype is 'TRACE'
-        assert trace.dateobs is None
-        assert trace.datecreated is None
-        assert trace.instrument is None
-        assert trace.is_master is False
-        assert trace.is_bad is False
-        for name in ['id', 'centers']:
-            assert name in trace.data.colnames
-        assert len(trace.data.colnames) == 2
-        assert len(trace.data['id']) == 1
-        assert trace.data['centers'].shape == (1, 3)
-        assert trace.data['centers'].description == 'test_2'
-        assert trace.data['id'].description == 'test'
-
-    def test_trace_raises_exception(self):
-        with pytest.raises(Exception):
-            Trace(data=None, num_centers_per_trace=0)
-
-    def test_getting_trace_centers(self):
-        trace = Trace(data={'id': [0, 1], 'centers': [[0, 1], [1, 2]]})
-        assert np.allclose(trace.get_centers(0), [0, 1])
-
-    def test_getting_trace_id(self):
-        trace = Trace(data={'id': [0, 1], 'centers': [[0, 1], [1, 2]]})
-        assert trace.get_id(-1) == 1
-        assert trace.get_id(0) == 0
-
-    def test_getting_num_found_traces(self):
-        trace = Trace(data={'id': [0, 1], 'centers': [[0, 1], [1, 2]]})
-        assert trace.num_traces_found() == 2
-
-    def test_add_centers_to_empty(self):
-        centers = np.arange(3)
-        trace = Trace(data=None, num_centers_per_trace=len(centers))
-        trace.add_centers(trace_centers=centers, trace_id=1)
-        assert np.allclose(trace.data['centers'], [centers])
-        assert np.allclose(trace.data['id'], [1])
-
-    def test_add_centers_to_existing(self):
-        centers = np.arange(3)
-        trace = Trace(data={'id': [1], 'centers': [centers]})
-        trace.add_centers(trace_centers=centers, trace_id=2)
-        assert np.allclose(trace.data['centers'], [centers, centers])
-        assert np.allclose(trace.data['id'], [1, 2])
-
-    def test_load_and_write(self):
-        name = 'trace'
-        trace = Trace(data={'id': [1], 'centers': [np.arange(3)]}, trace_table_name=name)
-        runtime_context = FakeContext()
-        with tempfile.TemporaryDirectory() as tmp_directory_name:
-            runtime_context.fpack = False
-            path = os.path.join(tmp_directory_name, 'test_trace_table.fits')
-            trace.filepath = path
-            trace.header = {'bla': 1}
-            trace.write(runtime_context, update_db=False)
-            loaded_trace = Trace.load(path=path, trace_table_name=name)
-            assert np.allclose(loaded_trace.get_centers(0), trace.get_centers(0))
-            assert np.allclose(loaded_trace.get_id(0), trace.get_id(0))
-            assert np.isclose(loaded_trace.header['bla'], 1)
-
-    def test_write_gets_correct_filename(self):
-        name = 'trace'
-        trace = Trace(data={'id': [1], 'centers': [np.arange(3)]}, trace_table_name=name)
-        runtime_context = FakeContext()
-        with tempfile.TemporaryDirectory() as tmp_directory_name:
-            for fpack, extension in zip([True, False], ['.fz', 'its']):
-                runtime_context.fpack = fpack
-                path = os.path.join(tmp_directory_name, 'test_trace_table.fits')
-                trace.filepath = path
-                trace.header = {'bla': 1}
-                trace._update_filepath(runtime_context)
-                assert trace.filepath[-3:] == extension
-
-    def test_sorting_trace_centers(self):
-        centers = np.array([1, 2, 3])
-        data = {'id': [1, 2, 3, 4],
-                'centers': [centers, centers+5, centers-10, centers+2]}
-        trace = Trace(data=data)
-        trace.sort()
-        assert np.allclose(trace.data['id'], np.arange(4))
-        assert np.allclose(trace.data['centers'],
-                           np.array([centers-10, centers, centers+2, centers+5]))
-
-    def test_delete_centers(self):
-        centers = np.array([1, 2, 3, 4])
-        data = {'id': [1, 2, 3, 4],
-                'centers': [centers, centers+5, centers+10, centers+11]}
-        trace = Trace(data=data)
-        trace.del_centers([])
-        assert np.allclose(trace.data['id'], data['id'])
-        assert np.allclose(trace.data['centers'], data['centers'])
-        trace.del_centers(-1)
-        assert np.allclose(trace.data['id'], [1, 2, 3])
-        assert np.allclose(trace.data['centers'], [centers, centers+5, centers+10])
-        trace.del_centers([-1, -2])
-        assert np.allclose(trace.data['id'], [1])
-        assert np.allclose(trace.data['centers'], [centers])
+def test_centroid_flux_weights():
+    nx, ny = 103, 107
+    fake_data = np.zeros((ny, nx))
+    X, Y = np.meshgrid(np.arange(nx), np.arange(ny))
+    center_region = np.logical_and(Y > 10, Y < (ny - 10))
+    fake_data[center_region] += gaussian(Y[center_region], 45., 3.0, a=10.0)
+    center, center_errors = find_y_center(Y, center_region, fake_data)
+    np.testing.assert_allclose(center, 45.0, atol=0.1)
 
 
-class TestAllTraceFitter:
-    @mock.patch('banzai_nres.utils.trace_utils.SingleTraceFitter.update_initial_guess_to_run_through_pt')
-    @mock.patch('banzai_nres.utils.trace_utils.SingleTraceFitter.fit_trace')
-    @mock.patch('banzai_nres.utils.trace_utils.SingleTraceFitter.use_fit_as_initial_guess')
-    def test_step_through_detector(self, use_last, fit, update):
-        fit.return_value = np.arange(10)
-        num_traces = 3
-        fitter = SingleTraceFitter(extraargs={'initialize_fit_objects': False})
-        trace = Trace(num_centers_per_trace=10)
-        peak_xy_coordinates = list(zip(np.arange(num_traces), np.arange(num_traces)))
-        trace = AllTraceFitter()._step_through_detector(trace, fitter, peak_xy_coordinates)
-        for i in range(num_traces):
-            assert np.allclose(trace.get_centers(i), np.arange(10))
+def test_blind_solve():
+    nx, ny = 401, 403
+    test_data = np.zeros((ny, nx))
+    x2d, y2d = np.meshgrid(np.arange(nx), np.arange(ny))
 
-    @mock.patch('banzai_nres.utils.trace_utils.AllTraceFitter._step_through_detector')
-    @mock.patch('banzai_nres.utils.trace_utils.AllTraceFitter._identify_traces')
-    @mock.patch('banzai_nres.utils.trace_utils.SingleTraceFitter.__init__', return_value=None)
-    def test_fit_traces(self, fitter, identify, step):
-        step.return_value = Trace(data={'id': [0, 2, 1], 'centers': np.array([np.arange(3),
-                                                                            np.arange(2,5),
-                                                                            np.arange(1,4)])})
-        trace = AllTraceFitter().fit_traces(None, None, None, None, None)
-        for i in range(trace.num_traces_found()):
-            assert np.allclose(trace.get_centers(i), np.arange(3)+i)
-            assert np.isclose(trace.get_id(i), i)
+    trace_centers = []
+    y_0s = [100, 200, 300]
+    for i in range(3):
+        trace_centers.append(5e-4 * (np.arange(nx) - nx / 2.) ** 2 + y_0s[i])
+        test_data += gaussian(y2d, trace_centers[i], 3)
 
-    def test_getting_flux_down_detector(self):
-        fake_trace_image = np.ones((5, 5))
-        fake_trace_image[1] = 10
-        fake_trace_image[3] = 10
-        image_noise_estimate = np.sqrt(2)
-        flux_signal = AllTraceFitter(xmin=3, xmax=5)._filtered_flux_down_detector(fake_trace_image,
-                                                                                  image_noise_estimate)
-        expected_slice = np.array([1, 10, 1, 10, 1])/np.sqrt(image_noise_estimate**2 + np.array([1, 10, 1, 10, 1]))
-        assert np.allclose(flux_signal, expected_slice)
+    test_image = NRESObservationFrame([EchelleSpectralCCDData(data=test_data, uncertainty=1e-5*np.ones((ny, nx)),
+                                       meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
+    input_context = context.Context({})
+    stage = TraceInitializer(input_context)
+    output_image = stage.do_stage(test_image)
 
-    @mock.patch('banzai_nres.utils.trace_utils.AllTraceFitter._filtered_flux_down_detector')
-    def test_identify_traces(self, flux):
-        min_snr = 2
-        peak_centers = np.array([15, 40, 60, 80])
-        flux.return_value = array_with_peaks(x=np.arange(100).astype(float), centroids=peak_centers,
-                                             amplitudes=[10, 6, min_snr+0.1, min_snr-0.1], stds=[3, 3, 3, 3])
-        fitter = AllTraceFitter(min_snr=min_snr, min_peak_to_peak_spacing=5, xmin=0, xmax=2)
-        peak_xy_coordinates = fitter._identify_traces(None, None)
-        expected_peak_xy_coordinates = list(zip(np.ones_like(peak_centers[:-1]), peak_centers[:-1]))
-        assert np.allclose(peak_xy_coordinates, expected_peak_xy_coordinates, atol=3)
+    for trace_center in trace_centers:
+        # Make sure that the center +- 4 pixels is in the trace image
+        assert all(output_image.traces[np.abs(y2d - trace_center) <= 4])
 
 
-class TestSingleTraceFitter:
-    def test_class_attributes(self):
-        fitter = SingleTraceFitter(extraargs={'initialize_fit_objects': False})
-        assert fitter.second_order_coefficient_guess is None
-        assert fitter.image_data is None
-        assert fitter.filtered_image_data is None
-        assert fitter.initial_guess_next_fit is None
-        assert fitter.x is None
-        assert fitter.x_norm is None
-        assert fitter.design_matrix is None
+def test_refining_on_noisy_data():
+    nx, ny = 401, 403
+    read_noise = 10.0
+    test_data = np.zeros((ny, nx))
+    x2d, y2d = np.meshgrid(np.arange(nx), np.arange(ny))
 
-    def test_default_class_attributes(self):
-        fitter = SingleTraceFitter(extraargs={'initialize_fit_objects': False})
-        assert fitter.poly_fit_order == 2
-        assert fitter.coefficients == []
+    trace_centers = []
+    y_0s = [100, 200, 300]
+    for i in range(3):
+        trace_centers.append(5e-4 * (np.arange(nx) - nx / 2.) ** 2 + y_0s[i])
+        test_data += gaussian(y2d, trace_centers[i], 3, a=10000.0)
 
-    def test_fit_initilization(self):
-        """
-        tests that SingleTraceFitter calls _initialize_fit_objects correctly upon
-        instantiation of the class.
-        """
-        poly_fit_order = 2
-        fitter = SingleTraceFitter(image_data=np.zeros((2, 2)),
-                                   poly_fit_order=poly_fit_order,
-                                   second_order_coefficient_guess=90)
-        assert np.allclose(fitter.x_norm, np.array([-1, 1]))
-        assert np.allclose(fitter.x, np.arange(2))
-        assert fitter.filtered_image_data is not None
-        assert fitter.design_matrix.shape == (poly_fit_order+1, 2)
+    test_data += np.random.poisson(test_data)
+    test_data += np.random.normal(0.0, read_noise, size=test_data.shape)
+    uncertainty = np.sqrt(test_data + read_noise ** 2.0)
+    test_image = NRESObservationFrame([EchelleSpectralCCDData(data=test_data, uncertainty=uncertainty,
+                                                              meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
+    input_context = context.Context({})
+    stage = TraceInitializer(input_context)
+    output_image = stage.do_stage(test_image)
 
-    def test_generating_initial_guess(self):
-        fitter = SingleTraceFitter(image_data=np.zeros((2, 2)),
-                                   poly_fit_order=2,
-                                   second_order_coefficient_guess=90)
-        assert np.allclose(fitter.initial_guess_next_fit, np.array([0, 0, 90]))
-
-    def test_generating_initial_guess_raises_error(self):
-        with pytest.raises(Exception):
-            SingleTraceFitter(image_data=np.zeros((2, 2)),
-                              poly_fit_order=2,
-                              second_order_coefficient_guess=None)
-
-    def test_changing_initial_guesses(self):
-        coefficients = [np.array([0, 0])]
-        fitter = SingleTraceFitter(extraargs={'initialize_fit_objects': False,
-                                              'coefficients': coefficients})
-        fitter.use_fit_as_initial_guess(-1)
-        assert np.allclose(fitter.initial_guess_next_fit, coefficients[-1])
-        fitter.initial_guess_next_fit += 1
-        assert not np.allclose(fitter.initial_guess_next_fit, coefficients[-1])
-
-    @staticmethod
-    def _generate_fitter():
-        design_matrix = np.ones((2, 5))
-        design_matrix[1] = np.linspace(-1, 1, 5)
-        offset, linear_coefficient = 1, 0.5
-        x = np.arange(design_matrix.shape[1])
-        fitter = SingleTraceFitter(extraargs={'initialize_fit_objects': False,
-                                              'design_matrix': design_matrix,
-                                              'x': x})
-        single_trace_coefficients = np.array([offset, linear_coefficient])
-        fitter.initial_guess_next_fit = single_trace_coefficients
-        a_line = np.linspace(offset - linear_coefficient, offset + linear_coefficient, 5)
-
-        return fitter, a_line
-
-    def test_centers_from_coefficients(self):
-        fitter, a_line = self._generate_fitter()
-        assert np.allclose(fitter._centers_from_coefficients(fitter.initial_guess_next_fit), a_line)
-
-    def test_update_initial_guess_to_run_through_pt(self):
-        fitter, a_line = self._generate_fitter()
-        fitter.update_initial_guess_to_run_through_pt(xy=(1, 400))
-        shifted_line = a_line - a_line[1] + 400
-        assert np.allclose(fitter._centers_from_coefficients(fitter.initial_guess_next_fit), shifted_line)
-
-    def test_flux_across_trace(self):
-        x = np.arange(5)
-        fake_data = np.zeros((9, len(x)))
-        fake_data[3] += 1
-        trace_centers = np.ones(len(x))*3
-        filtered_fake_data = SingleTraceFitter._prefilter_image_data(fake_data)
-        fitter = SingleTraceFitter(extraargs={'initialize_fit_objects': False,
-                                              'x': x,
-                                              'filtered_image_data': filtered_fake_data})
-        expected_flux = len(x)
-        flux = fitter._flux_across_trace(trace_centers)
-        assert np.isclose(flux, expected_flux)
-
-    def test_trace_merit_function_returns_negative_flux(self):
-        x = np.arange(5)
-        fake_data = np.zeros((9, len(x)))
-        fake_data[3] += 1
-        coefficients_for_line = np.array([3, 0])
-        design_matrix = np.array([np.ones(len(x)),
-                                  np.linspace(-1, 1, len(x))])
-        filtered_fake_data = SingleTraceFitter._prefilter_image_data(fake_data)
-        fitter = SingleTraceFitter(extraargs={'initialize_fit_objects': False,
-                                              'x': x,
-                                              'design_matrix': design_matrix,
-                                              'filtered_image_data': filtered_fake_data})
-        negative_flux = (-1)*len(x)
-        merit = fitter._trace_merit_function(single_trace_coefficients=coefficients_for_line,
-                                             cls=fitter)
-        assert np.isclose(merit, negative_flux)
-
-    def test_normalizing_coordinates(self):
-        x = np.arange(5)
-        x_norm = np.linspace(-1, 1, len(x))
-        fake_data = np.zeros((9, len(x)))
-        fitter = SingleTraceFitter(image_data=fake_data, extraargs={'initialize_fit_objects': False})
-        fitter._normalize_domain_coordinates()
-        assert np.allclose(fitter.x, x)
-        assert np.allclose(fitter.x_norm, x_norm)
-
-    def test_generating_legendre_design_matrix(self):
-        x = np.arange(5)
-        xnorm = np.linspace(-1, 1, len(x))
-        design_matrix = np.array([np.ones(len(x)),
-                                  xnorm])
-        assert np.allclose(design_matrix,
-                           SingleTraceFitter._generate_design_matrix(xnorm, poly_fit_order=1))
-
-    @mock.patch('banzai_nres.utils.trace_utils.SingleTraceFitter._centers_from_coefficients')
-    @mock.patch('banzai_nres.utils.trace_utils.optimize.minimize')
-    def test_fit_trace(self, minimize, centers):
-        coefficients = np.arange(4)
-        centers.return_value = None
-        minimize.return_value = OptimizeResult(x=coefficients)
-        fitter = SingleTraceFitter(extraargs={'initialize_fit_objects': False,
-                                              'coefficients': [],
-                                              'initial_guess_next_fit': coefficients})
-
-        assert fitter.fit_trace() is None
-        assert fitter.coefficients == [coefficients]
+    for trace_center in trace_centers:
+        # Make sure that the center +- 4 pixels is in the trace image
+        assert all(output_image.traces[np.abs(y2d - trace_center) <= 4])
 
 
-class TestTraceMaker:
-    def test_properties(self):
-        context = FakeContext()
-        context.TRACE_FIT_POLYNOMIAL_ORDER = 4
-        context.TRACE_FIT_INITIAL_DEGREE_TWO_GUESS = 90
-        context.TRACE_TABLE_NAME = 'trace_table'
-        context.WINDOW_FOR_TRACE_IDENTIFICATION = {'max': 2100, 'min': 2000}
-        context.MIN_FIBER_TO_FIBER_SPACING = 10
-        context.MIN_SNR_FOR_TRACE_IDENTIFICATION = 6
-        assert TraceMaker(context).calibration_type is 'TRACE'
+def test_blind_solve_realistic_data():
+    nx, ny = 401, 403
+    read_noise = 10.0
+    test_data = np.zeros((ny, nx))
+    x2d, y2d = np.meshgrid(np.arange(nx), np.arange(ny))
 
-    @mock.patch('banzai.utils.file_utils.make_calibration_filename_function')
-    def test_trace_fit_does_not_crash_on_blank_frame(self, mock_namer):
-        mock_namer.return_value = lambda *x: 'foo.fits'
-        order_of_poly_fit = 4
-        image = FakeTraceImage(nx=100, ny=100)
-        image.header['RDNOISE'] = 11
-        noisify_image(image)
-        fake_context = FakeContext()
-        fake_context.db_address = ''
-        fake_context.TRACE_FIT_POLYNOMIAL_ORDER = 4
-        fake_context.TRACE_FIT_INITIAL_DEGREE_TWO_GUESS = 90
-        fake_context.TRACE_TABLE_NAME = 'trace_table'
-        fake_context.WINDOW_FOR_TRACE_IDENTIFICATION = {'max': 2100, 'min': 2000}
-        fake_context.MIN_FIBER_TO_FIBER_SPACING = 10
-        fake_context.MIN_SNR_FOR_TRACE_IDENTIFICATION = 6
-        fake_context.CALIBRATION_SET_CRITERIA = {}
-        trace_fitter = TraceMaker(fake_context)
-        trace_fitter.order_of_poly_fit = order_of_poly_fit
-        trace_fitter.xmin, trace_fitter.xmax = 50, 60
-        trace_fitter.do_stage([image])
-        assert True
+    trace_centers = []
+    y_0s = [100, 200, 300]
+    blaze_function = 1 - 1e-5 * (x2d - nx / 2.) ** 2
+    for i in range(3):
+        trace_centers.append(5e-4 * (np.arange(nx) - nx / 2.) ** 2 + y_0s[i])
+        test_data += gaussian(y2d, trace_centers[i], 3, a=10000.0) * blaze_function
 
-    # @mock.patch('banzai.utils.file_utils.make_calibration_filename_function')
-    # @mock.patch('banzai_nres.utils.trace_utils.AllTraceFitter.fit_traces')
-    # def test_trace_maker(self, fit_traces, mock_namer):
-    #     mock_namer.return_value = lambda *x: 'foo.fits'
-    #     trace_table_name = 'test'
-    #     data = {'id': [1], 'centers': [np.arange(3)]}
-    #     fit_traces.return_value = Trace(data=data)
-    #     expected_trace = Trace(data=data)
-    #     fake_context = FakeContext()
-    #     fake_context.TRACE_FIT_POLYNOMIAL_ORDER = 4
-    #     fake_context.TRACE_FIT_INITIAL_DEGREE_TWO_GUESS = 90
-    #     fake_context.TRACE_TABLE_NAME = 'trace_table'
-    #     fake_context.WINDOW_FOR_TRACE_IDENTIFICATION = {'max': 2100, 'min': 2000}
-    #     fake_context.MIN_FIBER_TO_FIBER_SPACING = 10
-    #     fake_context.MIN_SNR_FOR_TRACE_IDENTIFICATION = 6
-    #     fake_context.CALIBRATION_SET_CRITERIA = {}
-    #     trace_maker = TraceMaker(fake_context)
-    #     trace_maker.xmin = 5
-    #     trace_maker.xmax = 10
-    #     trace_maker.trace_table_name = trace_table_name
-    #     traces = trace_maker.do_stage(images=[FakeImage()])
-    #     loaded_trace = traces[0]
-    #     assert np.allclose(loaded_trace.get_centers(0), expected_trace.get_centers(0))
-    #     assert np.allclose(loaded_trace.get_id(0), expected_trace.get_id(0))
-    #
-    # @mock.patch('banzai.utils.file_utils.make_calibration_filename_function')
-    # def test_accuracy_of_trace_fitting(self, mock_namer):
-    #     """
-    #     test type: Mock Integration Test with metrics for how well trace fitting is doing.
-    #     info: This tests trace making via a blind fit.
-    #     WARNING: Because trace fitting is defined with polynomials which are normalized from -1 to 1, if one squeezes
-    #     the x axis of the image, then the traces bend more drastically. Thus it is recommended you do not change the
-    #     size of the FakeTraceImage.
-    #     """
-    #     mock_namer.return_value = lambda *x: 'foo.fits'
-    #
-    #     read_noise = 11.0
-    #     poly_fit_order = 4
-    #
-    #     image = FakeTraceImage()
-    #     image.fiber0_lit, image.fiber1_lit, image.fiber2_lit = False, True, True
-    #     image.header['RDNOISE'] = read_noise
-    #     image.is_master = True
-    #
-    #     image, trace_centers, second_order_coefficient_guess = fill_image_with_traces(image,
-    #                                                                                   poly_fit_order=poly_fit_order)
-    #     noisify_image(image)
-    #     fake_context = FakeContext()
-    #     fake_context.TRACE_FIT_POLYNOMIAL_ORDER = 4
-    #     fake_context.TRACE_FIT_INITIAL_DEGREE_TWO_GUESS = 90
-    #     fake_context.TRACE_TABLE_NAME = 'trace_table'
-    #     fake_context.WINDOW_FOR_TRACE_IDENTIFICATION = {'max': 2100, 'min': 2000}
-    #     fake_context.MIN_FIBER_TO_FIBER_SPACING = 10
-    #     fake_context.MIN_SNR_FOR_TRACE_IDENTIFICATION = 6
-    #     fake_context.CALIBRATION_SET_CRITERIA = {}
-    #     images = [image]
-    #
-    #     trace_maker = TraceMaker(fake_context)
-    #     trace_maker.xmin = image.data.shape[1]//2 - 20
-    #     trace_maker.xmax = image.data.shape[1]//2 + 20
-    #     trace_maker.order_of_poly_fit = poly_fit_order
-    #     trace_maker.second_order_coefficient_guess = second_order_coefficient_guess
-    #     traces = trace_maker.do_stage(images)
-    #     assert traces[0].is_master
-    #     assert traces[0].data['centers'].shape[0] == trace_centers.shape[0]
-    #     difference = traces[0].data['centers'] - trace_centers
-    #     logger.debug('median absolute deviation in unit-test trace fitting is {0} pixels'
-    #                  .format(np.median(np.abs(difference - np.median(difference)))))
-    #     logger.debug('standard deviation in unit-test trace fitting is {0} pixels'
-    #                  .format(np.std(difference)))
-    #     logger.debug('worst error (max of true minus found) in unit-test trace fitting is {0} pixels'
-    #                  .format(np.max(np.abs(difference))))
-    #     logger.debug('median error (median of true minus found) in unit-test trace fitting is {0} pixels'
-    #                  .format(np.abs(np.median(difference))))
-    #     assert np.median(np.abs(difference - np.median(difference))) < 1/100
-    #     assert np.abs(np.median(difference)) < 1/100
+    # Filter out the numerical noise
+    test_data[test_data < 1e-15] = 0.0
+    test_data += np.random.poisson(test_data)
+    test_data += np.random.normal(0.0, read_noise, size=test_data.shape)
+    uncertainty = np.sqrt(test_data + read_noise ** 2.0)
+    test_image = NRESObservationFrame([EchelleSpectralCCDData(data=test_data, uncertainty=uncertainty,
+                                                              meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
+    input_context = context.Context({})
+    stage = TraceInitializer(input_context)
+    output_image = stage.do_stage(test_image)
+
+    for trace_center in trace_centers:
+        # Make sure that the center +- 4 pixels is in the trace image
+        assert all(output_image.traces[np.abs(y2d - trace_center) <= 4])
 
 
-class TestLoadTrace:
-    def test_properties(self):
-        assert LoadTrace(FakeContext()).calibration_type is 'TRACE'
+def test_refine_traces_with_previous_trace():
+    nx, ny = 401, 403
+    num_traces = 3
+    read_noise = 10.0
+    test_data = np.zeros((ny, nx))
+    x2d, y2d = np.meshgrid(np.arange(nx), np.arange(ny))
 
-    @mock.patch('banzai_nres.traces.LoadTrace.get_calibration_filename', return_value='/path/to/master_trace.fits')
-    @mock.patch('os.path.exists', return_value=True)
-    @mock.patch('astropy.io.fits.open', return_value=None)
-    @mock.patch('banzai_nres.utils.trace_utils.Trace.load')
-    def test_load_trace(self, mock_load, mock_open, mock_os, mock_get_cal):
-        data = {'id': [1], 'centers': [np.arange(3)]}
-        expected_trace = Trace(data=data)
-        mock_load.return_value = Trace(data=data)
-        fake_context = FakeContext()
-        fake_context.TRACE_TABLE_NAME = 'trace_table'
-        setattr(fake_context, 'db_address', None)
-        trace_loader = LoadTrace(fake_context)
-        image = trace_loader.do_stage(image=FakeImage())
-        assert image.header['L1IDTRAC'] == 'master_trace.fits'
-        assert np.allclose(image.trace.get_centers(0), expected_trace.get_centers(0))
-        assert np.allclose(image.trace.get_id(0), expected_trace.get_id(0))
+    trace_half_width = 6
+    trace_centers = []
+    y_0s = [100, 200, 300]
+    blaze_function = 1 - 1e-5 * (x2d - nx / 2.) ** 2
+    input_traces = np.zeros((ny, nx), dtype=np.int)
+    for i in range(num_traces):
+        trace_centers.append(5e-4 * (np.arange(nx) - nx / 2.) ** 2 + y_0s[i])
+        test_data += gaussian(y2d, trace_centers[i], 2, a=10000.0) * blaze_function
+        input_traces[np.abs(y2d - trace_centers[i]) <= trace_half_width] = i + 1
+
+    # Filter out the numerical noise
+    test_data[test_data < 1e-15] = 0.0
+    test_data += np.random.poisson(test_data)
+    test_data += np.random.normal(0.0, read_noise, size=test_data.shape)
+    uncertainty = np.sqrt(test_data + read_noise ** 2.0)
+    test_image = NRESObservationFrame([EchelleSpectralCCDData(data=test_data, uncertainty=uncertainty,
+                                                              meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
+    test_image.traces = input_traces
+    input_context = context.Context({})
+
+    stage = TraceRefiner(input_context)
+    output_image = stage.do_stage(test_image)
+
+    for trace_center in trace_centers:
+        # Make sure that the center +- 4 pixels is in the trace image
+        assert all(output_image.traces[np.abs(y2d - trace_center) <= 4])
+    assert np.isclose(num_traces, output_image.num_traces)
+
+
+def test_refine_traces_offset_centroid():
+    nx, ny = 401, 403
+    x2d, y2d = np.meshgrid(np.arange(nx), np.arange(ny))
+    test_data, trace_centers, input_traces = make_simple_traces(nx, ny)
+    read_noise = 10.0
+
+    # Filter out the numerical noise
+    test_data[test_data < 1e-15] = 0.0
+    test_data += np.random.poisson(test_data)
+    test_data += np.random.normal(0.0, read_noise, size=test_data.shape)
+    uncertainty = np.sqrt(test_data + read_noise ** 2.0)
+    test_image = NRESObservationFrame([EchelleSpectralCCDData(data=test_data, uncertainty=uncertainty,
+                                                              meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
+    test_image.traces = input_traces
+    input_context = context.Context({})
+
+    stage = TraceRefiner(input_context)
+    output_image = stage.do_stage(test_image)
+
+    for trace_center in trace_centers:
+        # Make sure that the center +- 4 pixels is in the trace image
+        assert all(output_image.traces[np.abs(y2d - trace_center + 1) <= 4])
+
+
+def make_simple_traces(nx=401, ny=403, trace_half_width=6, blaze=True):
+    test_data = np.zeros((ny, nx))
+    x2d, y2d = np.meshgrid(np.arange(nx), np.arange(ny))
+
+    trace_centers = []
+    y_0s = [int(2*ny/5), int(3*ny/5), int(4*ny/5)]
+    blaze_function = 1 - blaze * 1e-5 * (x2d - nx / 2.) ** 2
+    input_traces = np.zeros((ny, nx), dtype=np.int)
+    for i in range(3):
+        trace_centers.append(5e-4 * (np.arange(nx) - nx / 2.) ** 2 + y_0s[i])
+        test_data += gaussian(y2d, trace_centers[i], 3, a=10000.0) * blaze_function
+        input_traces[np.abs(y2d - trace_centers[i]) <= trace_half_width] = i + 1
+    return test_data, trace_centers, input_traces

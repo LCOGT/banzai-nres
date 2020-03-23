@@ -1,7 +1,6 @@
 import pytest
 from banzai.tests.utils import FakeResponse, get_min_and_max_dates
 from banzai_nres import settings
-from banzai.utils import fits_utils
 import os
 import mock
 from banzai.utils import file_utils
@@ -14,6 +13,7 @@ from banzai import dbs
 from types import ModuleType
 from datetime import datetime
 from dateutil.parser import parse
+from astropy.io import fits
 
 import logging
 
@@ -43,15 +43,14 @@ def observation_portal_side_effect(*args, **kwargs):
 
 
 def celery_join():
-    logger.info('Waiting for data to process')
     celery_inspector = app.control.inspect()
     log_counter = 0
     while True:
         queues = [celery_inspector.active(), celery_inspector.scheduled(), celery_inspector.reserved()]
         time.sleep(1)
         log_counter += 1
-        if log_counter % 10 == 0:
-            logger.info('Processing: ' + '. ' * (log_counter // 10))
+        if log_counter % 5 == 0:
+            logger.info('Processing: ' + '. ' * (log_counter // 5))
         if any([queue is None or 'celery@banzai-celery-worker' not in queue for queue in queues]):
             logger.warning('No valid celery queues were detected, retrying...', extra_tags={'queues': queues})
             # Reset the celery connection
@@ -79,7 +78,8 @@ def run_reduce_individual_frames(raw_filenames):
     for day_obs in DAYS_OBS:
         raw_path = os.path.join(DATA_ROOT, day_obs, 'raw')
         for filename in glob(os.path.join(raw_path, raw_filenames)):
-            file_utils.post_to_archive_queue(filename, os.getenv('FITS_BROKER_URL'))
+            file_utils.post_to_archive_queue(filename, os.getenv('FITS_BROKER'),
+                                             exchange_name=os.getenv('FITS_EXCHANGE'))
     celery_join()
     logger.info('Finished reducing individual frames for filenames: {filenames}'.format(filenames=raw_filenames))
 
@@ -96,7 +96,8 @@ def stack_calibrations(frame_type):
                                db_address=os.environ['DB_ADDRESS'], elasticsearch_qc_index='banzai_qc',
                                elasticsearch_url='http://elasticsearch.lco.gtn:9200', elasticsearch_doc_type='qc',
                                no_bpm=False, ignore_schedulability=True, use_only_older_calibrations=False,
-                               preview_mode=False, max_tries=5, broker_url=os.getenv('FITS_BROKER_URL'), )
+                               preview_mode=False, max_tries=5, broker_url=os.getenv('FITS_BROKER'),
+                               no_file_cache=False)
         for setting in dir(settings):
             if '__' != setting[:2] and not isinstance(getattr(settings, setting), ModuleType):
                 runtime_context[setting] = getattr(settings, setting)
@@ -122,8 +123,9 @@ def get_expected_number_of_calibrations(raw_filenames, calibration_type):
             # Group by fibers lit
             observed_fibers = []
             for raw_filename in raw_filenames_for_this_dayobs:
-                lampflat_hdu = fits_utils.open_fits_file(raw_filename)
-                observed_fibers.append(lampflat_hdu[0].header.get('OBJECTS'))
+                lampflat_hdu = fits.open(raw_filename)
+                observed_fibers.append(lampflat_hdu[1].header.get('OBJECTS'))
+                lampflat_hdu.close()
             observed_fibers = set(observed_fibers)
             number_of_stacks_that_should_have_been_created += len(observed_fibers)
         else:
@@ -131,6 +133,13 @@ def get_expected_number_of_calibrations(raw_filenames, calibration_type):
             if len(raw_filenames_for_this_dayobs) > 0:
                 number_of_stacks_that_should_have_been_created += 1
     return number_of_stacks_that_should_have_been_created
+
+
+def check_if_individual_frames_exist(filenames):
+    for day_obs in DAYS_OBS:
+        raw_files = glob(os.path.join(DATA_ROOT, day_obs, 'raw', filenames))
+        processed_files = glob(os.path.join(DATA_ROOT, day_obs, 'processed', filenames.replace('00', '91')))
+        assert len(raw_files) == len(processed_files)
 
 
 def run_check_if_stacked_calibrations_were_created(raw_filenames, calibration_type):
@@ -164,6 +173,8 @@ def init(configdb):
         for bpm_filename in glob(os.path.join(DATA_ROOT, instrument, 'bpm/*bpm*')):
             os.system(f'banzai_nres_add_bpm --filename {bpm_filename} --db-address={os.environ["DB_ADDRESS"]}')
 
+
+
 @pytest.mark.e2e
 @pytest.mark.master_bias
 class TestMasterBiasCreation:
@@ -175,6 +186,7 @@ class TestMasterBiasCreation:
         stack_calibrations('bias')
 
     def test_if_stacked_bias_frame_was_created(self):
+        check_if_individual_frames_exist('*b00*')
         run_check_if_stacked_calibrations_were_created('*b00.fits*', 'bias')
         run_check_if_stacked_calibrations_are_in_db('*b00.fits*', 'BIAS')
 
@@ -190,6 +202,7 @@ class TestMasterDarkCreation:
         stack_calibrations('dark')
 
     def test_if_stacked_dark_frame_was_created(self):
+        check_if_individual_frames_exist('*d00*')
         run_check_if_stacked_calibrations_were_created('*d00.fits*', 'dark')
         run_check_if_stacked_calibrations_are_in_db('*d00.fits*', 'DARK')
 
@@ -205,7 +218,17 @@ class TestMasterFlatCreation:
         stack_calibrations('lampflat')
 
     def test_if_stacked_flat_frame_was_created(self):
+        check_if_individual_frames_exist('*w00*')
         run_check_if_stacked_calibrations_were_created('*w00.fits*', 'lampflat')
         run_check_if_stacked_calibrations_are_in_db('*w00.fits*', 'LAMPFLAT')
 
-# TODO add master traces test
+
+@pytest.mark.e2e
+@pytest.mark.science_frames
+class TestScienceFrameProcessing:
+    @pytest.fixture(autouse=True)
+    def process_frames(self):
+        run_reduce_individual_frames('*e00.fits*')
+
+    def test_if_science_frames_were_created(self):
+        check_if_individual_frames_exist('*e00.fits*')

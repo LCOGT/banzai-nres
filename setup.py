@@ -13,15 +13,15 @@ from setuptools import setup, find_packages
 
 
 setup(name='lco-banzai-nres',
-      author=['Curtis McCully', 'G. Mirek Brandt', 'Timothy D. Brandt'],
-      author_email=['cmccully@lco.global', 'gmbrandt@ucsb.edu', 'tbrandt@physics.ucsb.edu'],
+      author=['Curtis McCully', 'G. Mirek Brandt', 'Marshall Johnson', 'Timothy D. Brandt'],
+      author_email=['cmccully@lco.global', 'gmbrandt@ucsb.edu', '@lco.global', 'tbrandt@physics.ucsb.edu'],
       version='0.5.0',
       python_requires='>=3.6',
       packages=find_packages(),
       use_scm_version=True,
       package_dir={'banzai_nres': 'banzai_nres'},
       setup_requires=['pytest-runner', 'setuptools_scm'],
-      install_requires=['banzai>=0.28.0', 'numpy>=1.13', 'sphinx', 'coveralls'],
+      install_requires=['banzai>=0.28.0', 'numpy>=1.13', 'sphinx', 'coveralls', 'statsmodels', 'astropy'],
       tests_require=['pytest>=3.5'],
       entry_points={'console_scripts': ['banzai_nres_reduce_night=banzai_nres.main:reduce_night',
                                         'banzai_nres_run_realtime_pipeline=banzai_nres.main:nres_run_realtime_pipeline',
