@@ -17,7 +17,7 @@ logger = logging.getLogger('banzai')
 MIN_TRACE_SEPARATION = 10
 
 # Cutoff in signal-to-noise to stop following a trace
-SIGNAL_TO_NOISE_TRACING_CUTOFF = 5
+SIGNAL_TO_NOISE_TRACING_CUTOFF = 50
 
 # Minimum half width of a feature to be considered a trace
 MIN_TRACE_HALF_WIDTH = 50
@@ -39,11 +39,13 @@ def refine_traces(traces, image, weights=None):
     x2d, y2d = np.meshgrid(np.arange(traces.shape[1]), np.arange(traces.shape[0]))
     # For each label
     for i in range(1, np.max(traces) + 1):
+        # TODO: Debug divide by zero in weights
         y_center, y_center_errors = find_y_center(y2d, traces == i, weights=weights)
         # Refit the centroids to reject cosmic rays etc, but only evaluate where the S/N is good
         x_center = np.arange(min(x2d[traces == i]), max(x2d[traces == i]) + 1, dtype=np.float)
         logger.info(f'Fitting smooth spline to order {i}', image=image)
         best_fit = fit_smooth_spline(y_center[x_center.astype(int)], y_center_errors[x_center.astype(int)], x=x_center)
+        # TODO: extrapolate fit and go out to pixels that have a cumulative S/N = 10
         y_center = best_fit(x_center)
 
         # Pad y_center with zeros so that it has the same dimension as y2d

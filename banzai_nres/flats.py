@@ -1,4 +1,6 @@
 from banzai.calibrations import CalibrationStacker, CalibrationUser
+from banzai.stages import Stage
+import numpy as np
 
 
 class FlatStacker(CalibrationStacker):
@@ -22,7 +24,7 @@ class FlatLoader(CalibrationUser):
             super().on_missing_master_calibration(image)
 
     def apply_master_calibration(self, image, master_calibration_image):
-        if not image.is_master():
-            master_calibration_image.primary_hdu.name = 'LAMPFLAT'
-            image.append(master_calibration_image.primary_hdu)
         image.traces = master_calibration_image.traces
+        image.profile = master_calibration_image.profile
+        image.blaze = master_calibration_image.blaze
+        return image

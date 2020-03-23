@@ -30,12 +30,48 @@ class NRESObservationFrame(LCOObservationFrame):
         self.primary_hdu.traces = value
 
     @property
+    def num_traces(self):
+        return self.primary_hdu.num_traces
+
+    @property
     def background(self):
         return self.primary_hdu.background
 
     @background.setter
     def background(self, value):
         self.primary_hdu.background = value
+
+    @property
+    def profile(self):
+        return self.primary_hdu.profile
+
+    @profile.setter
+    def profile(self, value):
+        self.primary_hdu.profile = value
+
+    @property
+    def weights(self):
+        return self.primary_hdu.weights
+
+    @weights.setter
+    def weights(self, value):
+        self.primary_hdu.weights = value
+
+    @property
+    def spectrum(self):
+        return self.primary_hdu.spectrum
+
+    @spectrum.setter
+    def spectrum(self, value):
+        self.primary_hdu.spectrum = value
+
+    @property
+    def blaze(self):
+        return self.primary_hdu.blaze
+
+    @blaze.setter
+    def blaze(self, value):
+        self.primary_hdu.blaze = value
 
 
 class NRESCalibrationFrame(LCOCalibrationFrame, NRESObservationFrame):
@@ -53,7 +89,9 @@ class NRESMasterCalibrationFrame(LCOMasterCalibrationFrame, NRESCalibrationFrame
 class EchelleSpectralCCDData(CCDData):
     def __init__(self, data: Union[np.array, Table], meta: fits.Header,
                  mask: np.array = None, name: str = '', uncertainty: np.array = None,
-                 background: np.array = None,  traces: np.array = None, memmap=True):
+                 background: np.array = None,  traces: np.array = None,
+                 profile: np.array = None, weights: np.array = None,
+                 spectrum: Table = None, blaze: Table = None, memmap=True):
         super().__init__(data=data, meta=meta, mask=mask, name=name, memmap=memmap, uncertainty=uncertainty)
         if traces is None:
             self._traces = None
@@ -63,6 +101,18 @@ class EchelleSpectralCCDData(CCDData):
             self._background = None
         else:
             self.background = background
+        if profile is None:
+            self._profile = None
+        else:
+            self.profile = profile
+        if weights is None:
+            self._weights = None
+        else:
+            self.weights = weights
+
+        self.spectrum = spectrum
+        self.blaze = blaze
+
 
     @property
     def traces(self):
@@ -71,6 +121,39 @@ class EchelleSpectralCCDData(CCDData):
     @traces.setter
     def traces(self, value):
         self._traces = self._init_array(value)
+
+    @property
+    def traces(self):
+        return self._traces
+
+    @traces.setter
+    def traces(self, value):
+        self._traces = self._init_array(value)
+
+    @property
+    def num_traces(self):
+        """
+        Counts the number of illuminated orders on the detector by taking
+        the largest label present in the trace image.
+        :return: int
+        """
+        return int(np.max(self.traces))
+
+    @property
+    def profile(self):
+        return self._profile
+
+    @profile.setter
+    def profile(self, value):
+        self._profile = self._init_array(value)
+
+    @property
+    def weights(self):
+        return self._weights
+
+    @weights.setter
+    def weights(self, value):
+        self._weights = self._init_array(value)
 
     @property
     def background(self):
@@ -89,15 +172,42 @@ class EchelleSpectralCCDData(CCDData):
         if self.background is not None:
             hdu_list.append(to_fits_image_extension(self.background, self.extension_name, 'BACKGROUND', context,
                                                     extension_version=self.meta.get('EXTVER')))
+        if self.profile is not None:
+            hdu_list.append(to_fits_image_extension(self.profile, self.extension_name, 'PROFILE', context,
+                                                    extension_version=self.meta.get('EXTVER')))
+        if self.weights is not None:
+            hdu_list.append(to_fits_image_extension(self.weights, self.extension_name, 'WEIGHTS', context,
+                                                    extension_version=self.meta.get('EXTVER')))
+        if self.spectrum is not None:
+            extname = self.extension_name + '1DSPEC'
+            hdu_list.append(fits.BinTableHDU(self.spectrum, name=extname, header=fits.Header({'EXTNAME': extname})))
+        if self.blaze is not None:
+            extname = self.extension_name + 'BLAZE'
+            hdu_list.append(fits.BinTableHDU(self.blaze, name=extname, header=fits.Header({'EXTNAME': extname})))
+
         return hdu_list
 
 
 class NRESFrameFactory(LCOFrameFactory):
-    observation_frame_class = NRESObservationFrame
-    calibration_frame_class = NRESCalibrationFrame
-    data_class = EchelleSpectralCCDData
-    associated_extensions = LCOFrameFactory().associated_extensions + [{'FITS_NAME': 'TRACES', 'NAME': 'traces'},
-                                                                       {'FITS_NAME': 'BACKGROUND', 'NAME': 'background'}]
+
+    @property
+    def observation_frame_class(self):
+        return NRESObservationFrame
+
+    @property
+    def calibration_frame_class(self):
+        return NRESCalibrationFrame
+
+    @property
+    def data_class(self):
+        return EchelleSpectralCCDData
+
+    @property
+    def associated_extensions(self):
+        return LCOFrameFactory().associated_extensions + [{'FITS_NAME': 'TRACES', 'NAME': 'traces'},
+                                                          {'FITS_NAME': 'BACKGROUND', 'NAME': 'background'},
+                                                          {'FITS_NAME': 'PROFILE', 'NAME': 'profile'},
+                                                          {'FITS_NAME': 'BLAZE', 'NAME': 'blaze'}]
 
     def open(self, path, runtime_context) -> Optional[ObservationFrame]:
         image = super().open(path, runtime_context)

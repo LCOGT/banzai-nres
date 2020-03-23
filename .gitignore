@@ -1,3 +1,4 @@
+.DS_Store
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -108,3 +109,4 @@ venv.bak/
 
 .vscode
 
+test_data/

@@ -110,6 +110,7 @@ def test_blind_solve_realistic_data():
 
 def test_refine_traces_with_previous_trace():
     nx, ny = 401, 403
+    num_traces = 3
     read_noise = 10.0
     test_data = np.zeros((ny, nx))
     x2d, y2d = np.meshgrid(np.arange(nx), np.arange(ny))
@@ -119,7 +120,7 @@ def test_refine_traces_with_previous_trace():
     y_0s = [100, 200, 300]
     blaze_function = 1 - 1e-5 * (x2d - nx / 2.) ** 2
     input_traces = np.zeros((ny, nx), dtype=np.int)
-    for i in range(3):
+    for i in range(num_traces):
         trace_centers.append(5e-4 * (np.arange(nx) - nx / 2.) ** 2 + y_0s[i])
         test_data += gaussian(y2d, trace_centers[i], 2, a=10000.0) * blaze_function
         input_traces[np.abs(y2d - trace_centers[i]) <= trace_half_width] = i + 1
@@ -140,23 +141,14 @@ def test_refine_traces_with_previous_trace():
     for trace_center in trace_centers:
         # Make sure that the center +- 4 pixels is in the trace image
         assert all(output_image.traces[np.abs(y2d - trace_center) <= 4])
+    assert np.isclose(num_traces, output_image.num_traces)
 
 
 def test_refine_traces_offset_centroid():
     nx, ny = 401, 403
-    read_noise = 10.0
-    test_data = np.zeros((ny, nx))
     x2d, y2d = np.meshgrid(np.arange(nx), np.arange(ny))
-
-    trace_half_width = 6
-    trace_centers = []
-    y_0s = [100, 200, 300]
-    blaze_function = 1 - 1e-5 * (x2d - nx / 2.) ** 2
-    input_traces = np.zeros((ny, nx), dtype=np.int)
-    for i in range(3):
-        trace_centers.append(5e-4 * (np.arange(nx) - nx / 2.) ** 2 + y_0s[i])
-        test_data += gaussian(y2d, trace_centers[i], 2, a=10000.0) * blaze_function
-        input_traces[np.abs(y2d - trace_centers[i]) <= trace_half_width] = i + 1
+    test_data, trace_centers, input_traces = make_simple_traces(nx, ny)
+    read_noise = 10.0
 
     # Filter out the numerical noise
     test_data[test_data < 1e-15] = 0.0
@@ -174,3 +166,18 @@ def test_refine_traces_offset_centroid():
     for trace_center in trace_centers:
         # Make sure that the center +- 4 pixels is in the trace image
         assert all(output_image.traces[np.abs(y2d - trace_center + 1) <= 4])
+
+
+def make_simple_traces(nx=401, ny=403, trace_half_width=6, blaze=True):
+    test_data = np.zeros((ny, nx))
+    x2d, y2d = np.meshgrid(np.arange(nx), np.arange(ny))
+
+    trace_centers = []
+    y_0s = [int(2*ny/5), int(3*ny/5), int(4*ny/5)]
+    blaze_function = 1 - blaze * 1e-5 * (x2d - nx / 2.) ** 2
+    input_traces = np.zeros((ny, nx), dtype=np.int)
+    for i in range(3):
+        trace_centers.append(5e-4 * (np.arange(nx) - nx / 2.) ** 2 + y_0s[i])
+        test_data += gaussian(y2d, trace_centers[i], 3, a=10000.0) * blaze_function
+        input_traces[np.abs(y2d - trace_centers[i]) <= trace_half_width] = i + 1
+    return test_data, trace_centers, input_traces
