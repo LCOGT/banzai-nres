@@ -73,4 +73,4 @@ class WavelengthCalibrate(Stage):
                                                  m0=NRES_PRINCIPLE_ORDER_NUMBER)
         wavelengths_to_fit = find_nearest(measured_lines['wavelength'], np.sort(line_list))
         wavelength_solution.model_coefficients = wavelength_solution.solve(measured_lines, wavelengths_to_fit)
-        return wavelength_solution.wavelength(pixel, order)
+        return wavelength_solution(pixel, order)
