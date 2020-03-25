@@ -31,30 +31,3 @@ def group_features_by_trace(features, traces):
     """
     features['id'] = traces[np.array(features['ycentroid'], dtype=int), np.array(features['xcentroid'], dtype=int)]
     return features
-
-
-def aperture_extract(x, y, data, aperture_width, mask=None):
-    """
-    Extract all flux within the aperture of (width, height) = (aperture_width, aperture_width)
-    around each point given by x and y.
-    :param x: ndarray, column indices of each extraction point in data.
-    :param y: ndarray, row indices of each extraction point in data.
-    :param data: 2d ndarray. data where (x[i], y[i]) is the coordinate of the ith source of interest.
-    :param mask: 2d ndarray. Same shape as data. Masked values take a value of 1.
-    :param aperture_width: int. The width (and height) of the box around each point (x[i], y[i]) where flux will be summed.
-    :return: flux. ndarray. Same shape as x and y. Summed flux around each point x and y, in order of the points.
-    """
-    if mask is None:
-        mask = np.zeros_like(data)
-    # ignore masked points in the sum
-    masked_data = np.zeros_like(data, dtype=float)
-    masked_data[np.isclose(mask, 0)] = data[np.isclose(mask, 0)]
-    # get the set of coordinates to extract
-    hw = max(int(aperture_width/2), 1)
-    xoffsets, yoffsets = np.meshgrid(np.arange(-hw, hw+1), np.arange(-hw, hw+1))
-    #
-    fluxes = np.zeros_like(x, dtype=float)
-    x_int, y_int = np.array(x, dtype=int), np.array(y, dtype=int)
-    for deltax, deltay in zip(xoffsets.ravel(), yoffsets.ravel()):
-        fluxes += data[y_int + deltay, x_int + deltax]
-    return fluxes

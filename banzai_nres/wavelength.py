@@ -2,9 +2,10 @@ import numpy as np
 
 from banzai.stages import Stage
 from banzai_nres.frames import EchelleSpectralCCDData
-from banzai_nres.utils.wavelength_utils import identify_features, group_features_by_trace, aperture_extract
+from banzai_nres.utils.wavelength_utils import identify_features, group_features_by_trace
 from xwavecal.wavelength import wavelength_calibrate, WavelengthSolution
 from xwavecal.utils.wavelength_utils import find_nearest
+import sep
 import logging
 
 logger = logging.getLogger('banzai')
@@ -94,15 +95,22 @@ class IdentifyFeatures(Stage):
     """
     Stage to identify all sharp emission-like features on an Arc lamp frame.
     """
+    nsigma = 5.0
+    fwhm = EMISSION_FEATURE_SIZE
+
     def do_stage(self, image: EchelleSpectralCCDData):
         # identify emission feature (pixel, order) positions.
-        features = identify_features(image.data, image.uncertainty, image.mask, nsigma=5.0, fwhm=EMISSION_FEATURE_SIZE)
+        features = identify_features(image.data, image.uncertainty, image.mask, nsigma=self.nsigma, fwhm=self.fwhm)
         features = group_features_by_trace(features, image.traces)
         features = features[features['id'] != 0]  # throw out features that are outside of any trace.
-        # get total flux in each emission feature
-        features['flux'] = aperture_extract(features['xcentroid'], features['ycentroid'], image.data,
-                                            aperture_width=EMISSION_FEATURE_SIZE, mask=image.mask)
+        # mask data
+        masked_data, masked_err = np.copy(image.data), np.copy(image.uncertainty)
+        masked_data[image.mask], masked_err[image.mask] = 0, 0
+        # get total flux in each emission feature. For now just sum_circle, although we should use sum_ellipse.
+        features['flux'], features['fluxerr'], _ = sep.sum_circle(masked_data, features['xcentroid'], features['ycentroid'],
+                                                                  self.fwhm, gain=1.0, err=masked_err)
         # blaze correct the emission features fluxes. This speeds up and improves overlap fitting in xwavecal.
         features['corrected_flux'] = features['flux'] / image.blaze['blaze'][features['id'],
                                                                              np.array(features['xcentroid'], dtype=int)]
         image.features = features
+        return image
