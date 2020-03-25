@@ -1,6 +1,4 @@
 from banzai.calibrations import CalibrationStacker, CalibrationUser
-from banzai.stages import Stage
-import numpy as np
 
 
 class FlatStacker(CalibrationStacker):

@@ -1,12 +1,15 @@
 import numpy as np
 
 from banzai.stages import Stage
+from banzai.calibrations import CalibrationStacker, CalibrationUser
+
 from banzai_nres.frames import EchelleSpectralCCDData
 from banzai_nres.utils.wavelength_utils import identify_features, group_features_by_trace
 from xwavecal.wavelength import wavelength_calibrate, WavelengthSolution
 from xwavecal.utils.wavelength_utils import find_nearest
 import sep
 import logging
+import os
 
 logger = logging.getLogger('banzai')
 
@@ -18,51 +21,101 @@ MODELS = {'initial_wavelength_model': {1: [0, 1, 2], 2: [0, 1, 2]},
                                      2: [0, 1, 2, 3, 4, 5],
                                      3: [0, 1, 2, 3, 4, 5],
                                      4: [0]}}
-EMISSION_FEATURE_SIZE = 6.0 # pixels
 
 
-class WavelengthLoader(Stage):
+class ArcStacker(CalibrationStacker):
+    def __init__(self, runtime_context):
+        super(ArcStacker, self).__init__(runtime_context)
+
+    @property
+    def calibration_type(self):
+        return 'DOUBLE'
+
+
+class ArcLoader(CalibrationUser):
     """
     Loads the wavelengths and reference_ids onto from the nearest Arc-emission lamp (wavelength calibration) in the db.
     If the traces have shifted (e.g. the instrument was serviced), then we do not load wavelengths nor reference ids
     (new wavelengths will be created from scratch in WavelengthCalibrate).
     """
-    def do_stage(self, image: EchelleSpectralCCDData):
-        if not image.traces.blind_solve:
-            pass
-            # load in ref_id column.
-            # load in wavelengths
+    @property
+    def calibration_type(self):
+        return 'DOUBLE'
+
+    def on_missing_master_calibration(self, image):
+        if image.obstype.upper() == 'DOUBLE':
+            return image
+        else:
+            super().on_missing_master_calibration(image)
+
+    def apply_master_calibration(self, image, master_calibration_image):
+        if image.traces.blind_solve:
+            return image
+        # check that the id column of arc lamp == list(set(image.traces))
+        # load in ref_id, and fibers from the arc lamp.
+        # load in wavelengths
+        return image
 
 
-class WavelengthCalibrate(Stage):
+class LineListLoader(CalibrationUser):
+    """
+    Loads the reference line list for wavelength calibration
+    """
+    @property
+    def calibration_type(self):
+        return 'LINELIST'
+
+    def do_stage(self, image):
+        master_calibration_file_info = self.get_calibration_file_info(image)
+        if master_calibration_file_info is None:
+            return self.on_missing_master_calibration(image)
+        line_list = np.genfromtxt(master_calibration_file_info['path'])
+        logger.info('Applying master calibration', image=image,
+                    extra_tags={'master_calibration':  os.path.basename(master_calibration_file_info['path'])})
+        return self.apply_master_calibration(image, line_list)
+
+    def apply_master_calibration(self, image, line_list):
+        image.line_list = line_list
+        return image
+
+
+class WavelengthCalibrate(CalibrationUser):
     """
     Stage to recalibrate wavelength-calibration (e.g. arc lamp) frames.
     We re-wavelength calibrate from scratch if the Arc does not have reference id's assigned to each trace.
     We lightly recalibrate the wavelength calibration if the arc has reference id's assigned to each trace.
     """
-    def do_stage(self, image: EchelleSpectralCCDData):
-        # load ref_id, id, fibers from Arc lamp
+    @property
+    def calibration_type(self):
+        return 'REFID'
+
+    def apply_master_calibration(self, image, master_calibration_image):
         ref_id = None
         id = None
         fibers = None
+        features = image.features
+        if ref_id is None or fibers is None:
+            # assign the reference id and fibers using a cross correlation with the template, master_calibration_image
+            pass
+        # assign each feature the correct reference id (order) and fiber:
+        features['order'], features['fiber'] = ref_id[features['id'] - 1], fibers[features['id'] - 1]
         for fiber in list(set(fibers)):
             pixel, order = np.arange(image.data.shape[1]), np.sort(ref_id[fibers == fiber])
-            if ref_id is None:
+            if image.wavelengths is None:
                 # reidentify reference ids.
                 # blind solve for the wavelengths of the emission lines
-                measured_lines['wavelength'] = wavelength_calibrate(measured_lines, line_list, pixel, order,
-                                                                    principle_order_number=NRES_PRINCIPLE_ORDER_NUMBER)
+                features['wavelength'] = wavelength_calibrate(features, image.line_list, pixel, order,
+                                                              principle_order_number=NRES_PRINCIPLE_ORDER_NUMBER)
             else:
-                # assign each feature the correct reference id (order) and fiber:
-                image.features['order'], image.features['fiber'] = ref_id[image.features['id'] - 1], fibers[
-                    image.features['id'] - 1]
+
                 # adopt wavelengths for the emission lines from the existing solution, good to 1 pixel.
                 # Note: we could improve this considerably with ndimage.map_coordinates(..., order=1, prefilter=False).
-                measured_lines['wavelength'] = image.wavelengths[measured_lines['order'].astype(int),
-                                                                 measured_lines['pixel'].astype(int)]
-            wavelength_solution = self.recalibrate(measured_lines, line_list, pixel, order)
-        # evaluate wavelenlgth_solution at every point in the trace
+                features['wavelength'] = image.wavelengths[features['order'].astype(int),
+                                                           features['pixel'].astype(int)]
+            wavelength_solution = self.recalibrate(features, image.line_list, pixel, order)
+        # evaluate wavelength_solution at every point in every trace
         # do some qc checks. Throw warnings when necessary.
+        image.features = features
         return image
 
     def recalibrate(self, measured_lines, line_list, pixel, order):
@@ -95,8 +148,8 @@ class IdentifyFeatures(Stage):
     """
     Stage to identify all sharp emission-like features on an Arc lamp frame.
     """
-    nsigma = 5.0
-    fwhm = EMISSION_FEATURE_SIZE
+    nsigma = 5.0  # minimum signal to noise @ peak flux for a feature to be counted.
+    fwhm = 6.0  # minimum feature size for the feature to be counted.
 
     def do_stage(self, image: EchelleSpectralCCDData):
         # identify emission feature (pixel, order) positions.
@@ -105,7 +158,7 @@ class IdentifyFeatures(Stage):
         features = features[features['id'] != 0]  # throw out features that are outside of any trace.
         # mask data
         masked_data, masked_err = np.copy(image.data), np.copy(image.uncertainty)
-        masked_data[image.mask], masked_err[image.mask] = 0, 0
+        masked_data[np.isclose(image.mask, 1)], masked_err[np.isclose(image.mask, 1)] = 0, 0
         # get total flux in each emission feature. For now just sum_circle, although we should use sum_ellipse.
         features['flux'], features['fluxerr'], _ = sep.sum_circle(masked_data, features['xcentroid'], features['ycentroid'],
                                                                   self.fwhm, gain=1.0, err=masked_err)

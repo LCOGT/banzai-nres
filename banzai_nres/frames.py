@@ -112,6 +112,7 @@ class EchelleSpectralCCDData(CCDData):
 
         self.spectrum = spectrum
         self.blaze = blaze
+        # TODO : Add image.features (or store these in CATALOG like photometry) and add image.line_list
 
 
     @property

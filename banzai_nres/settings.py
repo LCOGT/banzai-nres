@@ -15,6 +15,7 @@ ORDERED_STAGES = ['banzai.bpm.BadPixelMaskLoader',
                   'banzai.dark.DarkSubtractor',
                   'banzai_nres.flats.FlatLoader',
                   'banzai_nres.background.BackgroundSubtractor',
+                  'banzai_nres.wavelength.ArcLoader',
                   'banzai_nres.extract.GetOptimalExtractionWeights',
                   'banzai_nres.extract.WeightedExtract',
                   ]
@@ -41,11 +42,17 @@ CALIBRATION_IMAGE_TYPES = ['BPM', 'BIAS', 'DARK', 'LAMPFLAT', 'ARC']
 
 LAST_STAGE = {'BIAS': 'banzai.trim.Trimmer',
               'DARK': 'banzai.bias.BiasSubtractor',
-              'LAMPFLAT': 'banzai.dark.DarkSubtractor', 'TARGET': None, 'DOUBLE': None}
+              'LAMPFLAT': 'banzai.dark.DarkSubtractor',
+              'DOUBLE': 'banzai.dark.DarkSubtractor',
+              'TARGET': None,
+              }
 
 EXTRA_STAGES = {'BIAS': ['banzai.bias.BiasMasterLevelSubtractor', 'banzai.bias.BiasComparer'],
                 'DARK': ['banzai.dark.DarkNormalizer', 'banzai.dark.DarkComparer'],
-                'LAMPFLAT': [], 'TARGET': None, 'DOUBLE': None}
+                'LAMPFLAT': [],
+                'DOUBLE': [],
+                'TARGET': None,
+                }
 
 CALIBRATION_STACKER_STAGES = {'BIAS': ['banzai.bias.BiasMaker'],
                               'DARK': ['banzai.dark.DarkMaker'],
@@ -55,7 +62,16 @@ CALIBRATION_STACKER_STAGES = {'BIAS': ['banzai.bias.BiasMaker'],
                                            'banzai_nres.background.BackgroundSubtractor',
                                            'banzai_nres.traces.TraceRefiner',
                                            'banzai_nres.profile.ProfileFitter'
-                                           ]}
+                                           ],
+                              'DOUBLE': ['banzai_nres.wavelength.ArcStacker',  # stack
+                                         'banzai_nres.flats.FlatLoader',  # load traces
+                                         'banzai_nres.wavelength.ArcLoader',  # load wavelengths, ref_ids, etc...
+                                         'banzai_nres.wavelength.LineListLoader',  # load reference laboratory wavelengths
+                                         'banzai_nres.background.BackgroundSubtractor',
+                                         'banzai_nres.wavelength.IdentifyFeatures',
+                                         'banzai_nres.wavelength.WavelengthCalibrate',
+                                         ]
+                              }
 
 # Stack delays are expressed in seconds--namely, each is five minutes
 CALIBRATION_STACK_DELAYS = {'BIAS': 300,
