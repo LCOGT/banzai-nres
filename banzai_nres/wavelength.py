@@ -2,7 +2,7 @@ import numpy as np
 
 from banzai.stages import Stage
 from banzai_nres.frames import EchelleSpectralCCDData
-from banzai_nres.utils.wavelength_utils import identify_features, group_features_by_trace
+from banzai_nres.utils.wavelength_utils import identify_features, group_features_by_trace, aperture_extract
 from xwavecal.wavelength import wavelength_calibrate, WavelengthSolution
 from xwavecal.utils.wavelength_utils import find_nearest
 import logging
@@ -44,6 +44,7 @@ class WavelengthCalibrate(Stage):
         features = identify_features(image.data, image.uncertainty, image.mask, nsigma=5.0, fwhm=6.0)
         features = group_features_by_trace(features, image.traces)
         features = features[features['id'] != 0]  # throw out features that are outside of any trace.
+        features['flux'] = aperture_extract(features['xcentroid'], features['ycentroid'], image.data, image.mask, aperture_width=6.0)
         # helps to have flat fielded emission line fluxes.
         fiber, ref_id, measured_lines, line_list = None, None, None, None
         pixel, order = np.arange(image.data.shape[1]), np.arange(len(image.spectrum[image.spectrum['fiber'] == fiber]))

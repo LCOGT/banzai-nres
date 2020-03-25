@@ -1,5 +1,5 @@
 import numpy as np
-from banzai_nres.utils.wavelength_utils import identify_features, group_features_by_trace
+from banzai_nres.utils.wavelength_utils import identify_features, group_features_by_trace, aperture_extract
 from scipy.ndimage import gaussian_filter
 import pytest
 
@@ -23,6 +23,11 @@ class TestIdentifyFeatures:
     def test_ignores_features(self):
         features = identify_features(self.data, self.err, nsigma=1.5, fwhm=self.sigma)
         assert len(features) == 0
+
+    def test_aperture_extract(self):
+        fluxes = aperture_extract(self.coords, self.coords, self.data, aperture_width=self.sigma * 10)
+        # assert the summed flux is the expected flux for a 2d (unnormalized) gaussian.
+        assert np.allclose(fluxes, 2 * np.pi * self.sigma**2, rtol=1E-4)
 
 
 def test_group_features_by_trace():
