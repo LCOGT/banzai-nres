@@ -14,15 +14,17 @@ class WeightedExtract(Stage):
         if image.weights is None:
             logger.error('Extraction weights missing. Rejecting image.', image=image)
             return None
+        # consider adding a method to image, i.e. image.extracted_spectrum_shape.
         flux = np.zeros((image.num_traces, image.data.shape[1]), dtype=float)
         variance = np.zeros_like(flux, dtype=float)
 
         trace_ids = np.arange(1, image.num_traces + 1)
         for i, trace_id in enumerate(trace_ids):
-            yx = get_trace_region(np.isclose(image.traces, trace_id))
-            x_extent = slice(np.min(yx[1]), np.max(yx[1]) + 1)  # get the horizontal (x) extent of the trace.
-            flux[i, x_extent] = self.extract_order(image.data[yx], image.weights[yx])
-            variance[i, x_extent] = self.extract_order(image.uncertainty[yx] ** 2, image.weights[yx] ** 2)
+            this_trace = get_trace_region(np.isclose(image.traces, trace_id))
+            # get the horizontal (x) extent of the trace. Consider making this a get_extent function.
+            x_extent = slice(np.min(this_trace[1]), np.max(this_trace[1]) + 1)
+            flux[i, x_extent] = self.extract_order(image.data[this_trace], image.weights[this_trace])
+            variance[i, x_extent] = self.extract_order(image.uncertainty[this_trace] ** 2, image.weights[this_trace] ** 2)
 
         image.spectrum = Table({'id': trace_ids, 'flux': flux, 'uncertainty': np.sqrt(variance)})
         return image

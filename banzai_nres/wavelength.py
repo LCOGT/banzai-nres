@@ -2,9 +2,9 @@ import numpy as np
 
 from banzai.stages import Stage
 from banzai_nres.frames import EchelleSpectralCCDData
+from banzai_nres.utils.wavelength_utils import identify_features, group_features_by_trace
 from xwavecal.wavelength import wavelength_calibrate, WavelengthSolution
 from xwavecal.utils.wavelength_utils import find_nearest
-from scipy.ndimage import map_coordinates
 import logging
 
 logger = logging.getLogger('banzai')
@@ -26,7 +26,7 @@ class WavelengthLoader(Stage):
     (new wavelengths will be created from scratch in WavelengthCalibrate).
     """
     def do_stage(self, image: EchelleSpectralCCDData):
-        if not traces.blind_solve:
+        if not image.traces.blind_solve:
             # load in ref_id column.
             # load in wavelengths
 
@@ -40,19 +40,21 @@ class WavelengthCalibrate(Stage):
     def do_stage(self, image: EchelleSpectralCCDData):
         # image.spectrum = Table({'id': trace_ids, 'flux': flux, 'uncertainty': np.sqrt(variance)})
         # identify emission lines and get (pixel, order) positions.
+        features = identify_features(image.data, image.uncertainty, image.mask, nsigma=5.0, fwhm=6.0)
         # helps to have flat fielded emission line fluxes.
-        pixel, order = np.arange(image.data.shape[1]), np.arange(num_orders)
+        fiber, ref_id, measured_lines, line_list = None, None, None, None
+        pixel, order = np.arange(image.data.shape[1]), np.arange(len(image.spectrum[image.spectrum['fiber'] == fiber]))
         if ref_id is None:
             # reidentify reference ids.
             # blind solve for the wavelengths of the emission lines
             measured_lines['wavelength'] = wavelength_calibrate(measured_lines, line_list, pixel, order,
                                                                 principle_order_number=NRES_PRINCIPLE_ORDER_NUMBER)
         else:
-            # adopt wavelengths for the emission lines from the existing solution
-            measured_lines['wavelength'] = map_coordinates(image.wavelengths,
-                                                           [measured_lines['order'], measured_lines['pixel']],
-                                                           order=1, prefilter=False)
-        image.spectrum['wavelength'] = self.recalibrate(measured_lines, line_list, pixel, order)
+            # adopt wavelengths for the emission lines from the existing solution, good to 1 pixel.
+            # Note: we could improve this considerably with ndimage.map_coordinates(..., order=1, prefilter=False).
+            measured_lines['wavelength'] = image.wavelengths[measured_lines['order'].astype(int),
+                                                             measured_lines['pixel'].astype(int)]
+        wavelength_solution = self.recalibrate(measured_lines, line_list, pixel, order)
         # do some qc checks. Throw warnings necessary.
         return image
 
@@ -63,8 +65,11 @@ class WavelengthCalibrate(Stage):
         :param line_list:
         :param pixel:
         :param order:
-        :return: ndarray, wavelengths. Where wavelengths.shape = (len(order), len(pixel)).
-        array of wavelengths for the extracted spectrum.
+        :return: wavelength_solution. xwavecal.wavelength.WavelengthSolution.
+        wavelength_solution(x, order) will give the wavelength of the len(x) points with pixel and order coordinates
+        x and order, respectively.
+        where x and order are ndarray's of the same shape.
+
         """
         wavelength_solution = WavelengthSolution(model=MODELS.get('final_wavelength_model'),
                                                  min_order=np.min(order), max_order=np.max(order),
@@ -72,5 +77,8 @@ class WavelengthCalibrate(Stage):
                                                  measured_lines=measured_lines, reference_lines=line_list,
                                                  m0=NRES_PRINCIPLE_ORDER_NUMBER)
         wavelengths_to_fit = find_nearest(measured_lines['wavelength'], np.sort(line_list))
-        wavelength_solution.model_coefficients = wavelength_solution.solve(measured_lines, wavelengths_to_fit)
-        return wavelength_solution(pixel, order)
+        weights = np.zeros_like(wavelengths_to_fit, dtype=float)
+        # fit lines who have less than 0.1 angstrom error
+        weights[np.isclose(wavelengths_to_fit, measured_lines['wavelength'], atol=0.1)] = 1
+        wavelength_solution.model_coefficients = wavelength_solution.solve(measured_lines, wavelengths_to_fit, weights=weights)
+        return wavelength_solution
