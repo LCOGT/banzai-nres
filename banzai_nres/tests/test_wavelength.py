@@ -1,5 +1,4 @@
 import numpy as np
-from scipy.ndimage.morphology import binary_dilation
 from banzai_nres.utils.wavelength_utils import identify_features, group_features_by_trace
 from scipy.ndimage import gaussian_filter
 import pytest
@@ -27,4 +26,7 @@ class TestIdentifyFeatures:
 
 
 def test_group_features_by_trace():
-    assert True
+    traces = np.array([[0, 0, 1, 1], [2, 2, 0, 0]])
+    features = {'xcentroid': [0, 2, 0, 2], 'ycentroid': [0, 0, 1, 1]}
+    features = group_features_by_trace(features, traces)
+    assert np.allclose(features['id'], [0, 1, 2, 0])

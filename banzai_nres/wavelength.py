@@ -27,6 +27,7 @@ class WavelengthLoader(Stage):
     """
     def do_stage(self, image: EchelleSpectralCCDData):
         if not image.traces.blind_solve:
+            pass
             # load in ref_id column.
             # load in wavelengths
 
@@ -41,6 +42,8 @@ class WavelengthCalibrate(Stage):
         # image.spectrum = Table({'id': trace_ids, 'flux': flux, 'uncertainty': np.sqrt(variance)})
         # identify emission lines and get (pixel, order) positions.
         features = identify_features(image.data, image.uncertainty, image.mask, nsigma=5.0, fwhm=6.0)
+        features = group_features_by_trace(features, image.traces)
+        features = features[features['id'] != 0]  # throw out features that are outside of any trace.
         # helps to have flat fielded emission line fluxes.
         fiber, ref_id, measured_lines, line_list = None, None, None, None
         pixel, order = np.arange(image.data.shape[1]), np.arange(len(image.spectrum[image.spectrum['fiber'] == fiber]))
@@ -55,7 +58,7 @@ class WavelengthCalibrate(Stage):
             measured_lines['wavelength'] = image.wavelengths[measured_lines['order'].astype(int),
                                                              measured_lines['pixel'].astype(int)]
         wavelength_solution = self.recalibrate(measured_lines, line_list, pixel, order)
-        # do some qc checks. Throw warnings necessary.
+        # do some qc checks. Throw warnings when necessary.
         return image
 
     def recalibrate(self, measured_lines, line_list, pixel, order):

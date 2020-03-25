@@ -23,7 +23,7 @@ def identify_features(data, err, mask=None, nsigma=2., fwhm=6.0, **kwargs):
     features['pixel'] = features['xcentroid']  # because xwavecal uses 'pixel' as the coordinate key.
 
     # TODO DAOStarFind uses flux = peak/threshold. We want the total flux in the line. So features['flux'] is not
-    #  yet appropriate. Expect the overlap fitting to fail.
+    #  yet appropriate. Expect the overlap fitting to fail. We really should 2d extract the flux in each source.
     #features['flux'] = sum_flux(features['xcentroid'], ['ycentroid'], data, mask, fwhm=fwhm)
     return features
 
@@ -33,6 +33,6 @@ def group_features_by_trace(features, traces):
     :return: features.
              where features['id'][j] gives the id number of the trace that the feature falls in.
     """
-    features['id'] = traces[features['ycentroid'].astype(int), features['xcentroid'].astype(int)]
+    features['id'] = traces[np.array(features['ycentroid'], dtype=int), np.array(features['xcentroid'], dtype=int)]
     return features
 
