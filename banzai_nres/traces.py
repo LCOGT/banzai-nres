@@ -9,7 +9,7 @@ from banzai.stages import Stage
 import logging
 from scipy import ndimage
 import numpy as np
-from banzai_nres.fitting import fit_smooth_spline
+from numpy.polynomial.polynomial import Polynomial, polyfit
 
 logger = logging.getLogger('banzai')
 
@@ -17,10 +17,10 @@ logger = logging.getLogger('banzai')
 MIN_TRACE_SEPARATION = 10
 
 # Cutoff in signal-to-noise to stop following a trace
-SIGNAL_TO_NOISE_TRACING_CUTOFF = 50
+SIGNAL_TO_NOISE_TRACING_CUTOFF = 10
 
-# Minimum half width of a feature to be considered a trace
-MIN_TRACE_HALF_WIDTH = 50
+# Maximum degree of polynomial which describes the y position of the trace as a function of pixel
+POLY_DEGREE = 5
 
 # The final trace will be +- this from the center in the y-direction
 TRACE_HALF_HEIGHT = 6
@@ -28,10 +28,10 @@ TRACE_HALF_HEIGHT = 6
 
 def find_y_center(y, indices, weights=None):
     if weights is None:
-        weights = np.ones(y.shape, dtype=y.dtype)
+        weights = 1
     centers = (y * indices * weights).sum(axis=0) / (indices * weights).sum(axis=0)
-    # Errors are sqrt sum of the weights
-    errors = np.sqrt((indices * weights).sum(axis=0))
+    # Errors are sqrt sum of the weights squared
+    errors = np.sqrt((indices * weights ** 2).sum(axis=0))
     return centers, errors
 
 
@@ -39,13 +39,12 @@ def refine_traces(traces, image, weights=None):
     x2d, y2d = np.meshgrid(np.arange(traces.shape[1]), np.arange(traces.shape[0]))
     # For each label
     for i in range(1, np.max(traces) + 1):
-        # TODO: Debug divide by zero in weights
         y_center, y_center_errors = find_y_center(y2d, traces == i, weights=weights)
         # Refit the centroids to reject cosmic rays etc, but only evaluate where the S/N is good
         x_center = np.arange(min(x2d[traces == i]), max(x2d[traces == i]) + 1, dtype=np.float)
-        logger.info(f'Fitting smooth spline to order {i}', image=image)
-        best_fit = fit_smooth_spline(y_center[x_center.astype(int)], y_center_errors[x_center.astype(int)], x=x_center)
-        # TODO: extrapolate fit and go out to pixels that have a cumulative S/N = 10
+        logger.info(f'Fitting a polynomial to trace {i}', image=image)
+        best_fit = Polynomial(polyfit(x_center, y_center[x_center.astype(int)], deg=POLY_DEGREE,
+                                      w=1/y_center_errors[x_center.astype(int)]**2))
         y_center = best_fit(x_center)
 
         # Pad y_center with zeros so that it has the same dimension as y2d
@@ -60,6 +59,9 @@ def refine_traces(traces, image, weights=None):
 
 
 class TraceInitializer(Stage):
+    # Minimum half width of a feature to be considered a trace
+    min_trace_half_width = 500
+
     def do_stage(self, image):
         if image.traces is None:
             image.traces = self.blind_solve(image)
@@ -83,8 +85,8 @@ class TraceInitializer(Stage):
         x_mins = ndimage.labeled_comprehension(X, labeled_image, labeled_indices, np.min, float, None)
         # Pick out only features that are wide like traces and span the center
         # Note labeled_indices is one indexed
-        true_labels = labeled_indices[np.logical_and(x_maxes > (image.shape[1] // 2 + MIN_TRACE_HALF_WIDTH),
-                                                     x_mins < (image.shape[1] // 2 - MIN_TRACE_HALF_WIDTH))]
+        true_labels = labeled_indices[np.logical_and(x_maxes > (image.shape[1] // 2 + self.min_trace_half_width),
+                                                     x_mins < (image.shape[1] // 2 - self.min_trace_half_width))]
         # Reset the values that are not actually in traces
         labeled_image[np.logical_not(np.isin(labeled_image, true_labels))] = 0
 

@@ -46,6 +46,7 @@ def test_blind_solve():
                                        meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
     input_context = context.Context({})
     stage = TraceInitializer(input_context)
+    stage.min_trace_half_width = 50
     output_image = stage.do_stage(test_image)
 
     for trace_center in trace_centers:
@@ -53,7 +54,7 @@ def test_blind_solve():
         assert all(output_image.traces[np.abs(y2d - trace_center) <= 4])
 
 
-def test_refining_on_noisy_data():
+def test_blind_solve_on_noisy_data():
     nx, ny = 401, 403
     read_noise = 10.0
     test_data = np.zeros((ny, nx))
@@ -72,6 +73,7 @@ def test_refining_on_noisy_data():
                                                               meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
     input_context = context.Context({})
     stage = TraceInitializer(input_context)
+    stage.min_trace_half_width = 50
     output_image = stage.do_stage(test_image)
 
     for trace_center in trace_centers:
@@ -101,6 +103,7 @@ def test_blind_solve_realistic_data():
                                                               meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
     input_context = context.Context({})
     stage = TraceInitializer(input_context)
+    stage.min_trace_half_width = 50
     output_image = stage.do_stage(test_image)
 
     for trace_center in trace_centers:
