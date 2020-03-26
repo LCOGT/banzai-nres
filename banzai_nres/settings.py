@@ -8,6 +8,8 @@ MASTER_CALIBRATION_FRAME_CLASS = 'banzai_nres.frames.NRESMasterCalibrationFrame'
 FRAME_SELECTION_CRITERIA = [('type', 'contains', 'NRES')]
 
 ORDERED_STAGES = ['banzai.bpm.BadPixelMaskLoader',
+                  'banzai.qc.header_checker.HeaderChecker',
+                  'banzai.qc.saturation.SaturationTest',                 
                   'banzai.bias.OverscanSubtractor',
                   'banzai.gain.GainNormalizer',
                   'banzai.trim.Trimmer',
