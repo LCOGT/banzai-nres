@@ -54,7 +54,7 @@ pipeline {
                     withKubeConfig([credentialsId: "build-kube-config"]) {
                         sh("helm delete banzai-nres-e2e --purge || true")
                         sh('helm repo update && helm upgrade --install banzai-nres-e2e helm-chart/banzai-nres-e2e ' +
-                                '--set banzaiNRES.tag="${GIT_DESCRIPTION}" --namespace dev --wait --timeout=3600')
+                                '--set banzaiNRES.tag="${GIT_DESCRIPTION}" --wait --timeout=3600')
 
                         podName = sh(script: 'kubectl get po -l app.kubernetes.io/instance=banzai-nres-e2e ' +
                                         '--sort-by=.status.startTime -o jsonpath="{.items[-1].metadata.name}"',
