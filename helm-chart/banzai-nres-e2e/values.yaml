@@ -4,7 +4,7 @@
 replicaCount: 1
 
 banzaiNRES:
-  repository: docker.lco.global/banzai-nres-e2e
+  repository: docker.lco.global/banzai-nres
   tag: latest
   pullPolicy: IfNotPresent
 
