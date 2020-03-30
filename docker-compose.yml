@@ -18,7 +18,7 @@ services:
   banzai-nres-fits-exchange:
     image: rabbitmq:3.7.9
     network_mode: "bridge"
-    container_name: banzai-nres-fits-exchange
+    container_name: banzai-nres-e2e-fits-exchange
     mem_limit: '1g'
     logging:
       options:
@@ -27,14 +27,14 @@ services:
   banzai-nres-redis:
     image: redis:5.0.3
     network_mode: "bridge"
-    container_name: banzai-nres-redis
+    container_name: banzai-nres-e2e-redis
     labels:
       io.rancher.container.pull_image: always
     mem_limit: '1g'
   banzai-nres-celery-workers:
     image: ${NRES_DOCKER_IMG}
     network_mode: "bridge"
-    container_name: banzai-nres-celery-workers
+    container_name: banzai-nres-e2e-celery-workers
     entrypoint: ["celery", "-A", "banzai", "worker",
                  "--hostname", "banzai-celery-worker",
                  "-l", "debug", "-c", "4"]
@@ -44,7 +44,7 @@ services:
       - banzai-nres-fits-exchange
       - nres-e2e-data
     links:
-      - banzai-nres-redis:redis
+      - banzai-nres-e2e-redis:redis
     volumes_from:
       - nres-e2e-data
     environment:
@@ -63,15 +63,15 @@ services:
   banzai-nres-listener:
     image: ${NRES_DOCKER_IMG}
     network_mode: "bridge"
-    container_name: banzai-nres-listener
+    container_name: banzai-nres-e2e-listener
     mem_limit: '1g'
     depends_on:
       - banzai-nres-redis
       - banzai-nres-fits-exchange
       - nres-e2e-data
     links:
-      - banzai-nres-fits-exchange:broker
-      - banzai-nres-redis:redis
+      - banzai-nres-e2e-fits-exchange:broker
+      - banzai-nres-e2e-redis:redis
     entrypoint: ["banzai_nres_run_realtime_pipeline", "--fpack",
                  "--db-address=sqlite:////archive/engineering/test.db",
                  "--broker-url=broker"]

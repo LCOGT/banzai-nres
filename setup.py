@@ -12,7 +12,7 @@ July 2018
 from setuptools import setup, find_packages
 
 
-setup(name='lco-banzai-nres',
+setup(name='lco-banzai-nres-e2e',
       author=['Curtis McCully', 'G. Mirek Brandt', 'Marshall Johnson', 'Timothy D. Brandt'],
       author_email=['cmccully@lco.global', 'gmbrandt@ucsb.edu', '@lco.global', 'tbrandt@physics.ucsb.edu'],
       version='0.5.0',

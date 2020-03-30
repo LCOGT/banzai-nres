@@ -1,0 +1,17 @@
+# Default values for banzai-nres-e2e.
+# This is a YAML-formatted file.
+
+replicaCount: 1
+
+banzaiNRES:
+  repository: docker.lco.global/banzai-nres-e2e
+  tag: latest
+  pullPolicy: IfNotPresent
+
+dataImage:
+  repository: docker.lco.global/nres-pipeline-e2e-data
+  tag: 1.0.3
+  pullPolicy: IfNotPresent
+
+storage:
+  size: 50Gi
