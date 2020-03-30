@@ -51,7 +51,7 @@ pipeline {
 			}
 		    steps {
 	            script {
-                    withKubeConfig([credentialsId: "build-dev-config"]) {
+                    withKubeConfig([credentialsId: "build-kube-config"]) {
                         sh("helm delete banzai-nres-e2e --purge || true")
                         sh('helm repo update && helm upgrade --install banzai-nres-e2e helm-chart/banzai-nres-e2e ' +
                                 '--set banzaiNRES.tag="${GIT_DESCRIPTION}" --namespace dev --wait --timeout=3600')
@@ -73,7 +73,7 @@ pipeline {
 			}
 			steps {
 				script {
-                    withKubeConfig([credentialsId: "build-dev-config"]) {
+                    withKubeConfig([credentialsId: "build-kube-config"]) {
 						sh("kubectl exec ${podName} -c banzai-nres-listener -- " +
 						        "pytest -s --durations=0 --junitxml=/home/archive/pytest-master-bias.xml " +
 						        "-m master_bias /lco/banzai-nres/")
@@ -83,7 +83,7 @@ pipeline {
 			post {
 				always {
 					script {
-					    withKubeConfig([credentialsId: "build-dev-config"]) {
+					    withKubeConfig([credentialsId: "build-kube-config"]) {
 						    sh("kubectl cp -c banzai-nres-listener ${podName}:/home/archive/pytest-master-bias.xml " +
 						            "pytest-master-bias.xml")
 						    junit "pytest-master-bias.xml"
@@ -101,7 +101,7 @@ pipeline {
 			}
 			steps {
 				script {
-                    withKubeConfig([credentialsId: "build-dev-config"]) {
+                    withKubeConfig([credentialsId: "build-kube-config"]) {
 						sh("kubectl exec ${podName} -c banzai-nres-listener -- " +
 						        "pytest -s --durations=0 --junitxml=/home/archive/pytest-master-dark.xml " +
 						        "-m master_dark /lco/banzai-nres/")
@@ -111,7 +111,7 @@ pipeline {
 			post {
 				always {
 					script {
-					    withKubeConfig([credentialsId: "build-dev-config"]) {
+					    withKubeConfig([credentialsId: "build-kube-config"]) {
 						    sh("kubectl cp -c banzai-nres-listener ${podName}:/home/archive/pytest-master-dark.xml " +
 						            "pytest-master-dark.xml")
 						    junit "pytest-master-dark.xml"
@@ -129,7 +129,7 @@ pipeline {
 			}
 			steps {
 				script {
-                    withKubeConfig([credentialsId: "build-dev-config"]) {
+                    withKubeConfig([credentialsId: "build-kube-config"]) {
 						sh("kubectl exec ${podName} -c banzai-nres-listener -- " +
 						        "pytest -s --durations=0 --junitxml=/home/archive/pytest-master-flat.xml " +
 						        "-m master_flat /lco/banzai-nres/")
@@ -139,7 +139,7 @@ pipeline {
 			post {
 				always {
 					script {
-					    withKubeConfig([credentialsId: "build-dev-config"]) {
+					    withKubeConfig([credentialsId: "build-kube-config"]) {
 						    sh("kubectl cp -c banzai-nres-listener ${podName}:/home/archive/pytest-master-flat.xml " +
 						            "pytest-master-flat.xml")
 						    junit "pytest-master-flat.xml"
@@ -157,7 +157,7 @@ pipeline {
 			}
 			steps {
 				script {
-                    withKubeConfig([credentialsId: "build-dev-config"]) {
+                    withKubeConfig([credentialsId: "build-kube-config"]) {
 						sh("kubectl exec ${podName} -c banzai-nres-listener -- " +
 						        "pytest -s --durations=0 --junitxml=/home/archive/pytest-science-frames.xml " +
 						        "-m science_frames /lco/banzai-nres/")
@@ -167,7 +167,7 @@ pipeline {
 			post {
 				always {
 					script {
-					    withKubeConfig([credentialsId: "build-dev-config"]) {
+					    withKubeConfig([credentialsId: "build-kube-config"]) {
 						    sh("kubectl cp -c banzai-nres-listener ${podName}:/home/archive/pytest-science-frames.xml " +
 						            "pytest-science-frames.xml")
 						    junit "pytest-science-frames.xml"
@@ -176,7 +176,7 @@ pipeline {
 				}
 				success {
 					script {
-					    withKubeConfig([credentialsId: "build-dev-config"]) {
+					    withKubeConfig([credentialsId: "build-kube-config"]) {
                             sh("helm delete banzai-nres --purge || true")
 					    }
 					}
