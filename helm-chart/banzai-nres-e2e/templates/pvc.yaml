@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ include "banzai-nres-e2e-e2e.fullname" . }}
+  name: {{ include "banzai-nres-e2e.fullname" . }}
   labels:
-{{ include "banzai-nres-e2e-e2e.labels" . | indent 4 }}
+{{ include "banzai-nres-e2e.labels" . | indent 4 }}
 spec:
   accessModes:
   - ReadWriteOnce
