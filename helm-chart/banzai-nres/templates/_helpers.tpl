@@ -82,9 +82,9 @@ Define shared environment variables
       name: banzaiNresDBSecrets
       key: postgresPassword
 - name: DB_USER
-  value: {{ .Values.postgresql.postgresUsername }}
+  value: {{ .Values.postgresql.postgresUsername | quote }}
 - name: DB_NAME
-  value: {{ .Values.postgresql.postgresqlDatabase }}
+  value: {{ .Values.postgresql.postgresqlDatabase | quote }}
 - name: DB_ADDRESS
   value: psql://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST)/$(DB_NAME)
 - name: RABBITMQ_PASSWORD
@@ -93,25 +93,25 @@ Define shared environment variables
       name: banzaiNresSecrets
       key: rabbitmq-password
 - name: TASK_HOST
-  value: rabbitmq://{{ .Values.rabbitmq.username }}@$(RABBITMQ_PASSWORD)$(RABBITMQ_HOST)/{{ .Values.rabbitmq.vhost }}
+  value: rabbitmq://{{ .Values.rabbitmq.username | quote }}@$(RABBITMQ_PASSWORD)$(RABBITMQ_HOST)/{{ .Values.rabbitmq.vhost | quote  }}
     secretKeyRef:
       name: banzaiNresSecrets
       key: TASK_HOST
 - name: RETRY_DELAY
   value: 600000
 - name: CALIBRATE_PROPOSAL_ID
-  value: {{ .Values.CALIBRATE_PROPOSAL_ID }}
+  value: {{ .Values.CALIBRATE_PROPOSAL_ID | quote }}
 - name: OBSERVATION_PORTAL_URL
-  value: {{ .Values.OBSERVATION_PORTAL_URL }}
+  value: {{ .Values.OBSERVATION_PORTAL_URL | quote }}
 - name: API_ROOT
-  value:  {{ .Values.API_ROOT }}
+  value:  {{ .Values.API_ROOT | quote }}
 - name: AUTH_TOKEN
   valueFrom:
     secretKeyRef:
       name: banzaiNresSecrets
       key: AUTH_TOKEN
 - name: BUCKET
-  value: {{ .Values.BUCKET }}
+  value: {{ .Values.BUCKET | quote }}
 - name: AWS_ACCESS_KEY_ID
   valueFrom:
     secretKeyRef:
@@ -123,25 +123,25 @@ Define shared environment variables
       name: banzaiNresSecrets
       key: AWS_SECRET_ACCESS_KEY
 - name:
-  value: {{ .Values.OPENTSDB_HOSTNAME }}
+  value: {{ .Values.OPENTSDB_HOSTNAME | quote }}
 - name: BOSUN_HOSTNAME
-  value: {{ .Values.BOSUN_HOSTNAME }}
+  value: {{ .Values.BOSUN_HOSTNAME | quote }}
 - name: FITS_BROKER
-  value: {{ .Values.FITS_BROKER }}
+  value: {{ .Values.FITS_BROKER | quote }}
 - name: FITS_EXCHANGE
-  value: {{ .Values.FITS_EXCHANGE }}
+  value: {{ .Values.FITS_EXCHANGE | quote }}
 - name: INGESTER_PROCESS_NAME
-  value: {{ .Values.INGESTER_PROCESS_NAME }}
+  value: {{ .Values.INGESTER_PROCESS_NAME | quote }}
 - name: POSTPROCESS_FILES
   value: "False"
 - name: RAW_DATA_FRAME_URL
-  value: {{ .Values.RAW_DATA_FRAME_URL }}
+  value: {{ .Values.RAW_DATA_FRAME_URL | quote }}
 - name: RAW_DATA_AUTH_TOKEN
   valueFrom:
     secretKeyRef:
       name: banzaiNresSecrets
       key: RAW_DATA_AUTH_TOKEN
-{{ if eq .Values.DO_METRICS 0 }}
+{{ if eq .Values.DO_METRICS | quote 0  }}
 - name: OPENTSDB_PYTHON_METRICS_TEST_MODE
   value: 1
 {{- end -}}
