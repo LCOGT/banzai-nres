@@ -59,22 +59,7 @@ spec:
             - "--db-address=${DB_ADDRESS}"
             - "--log-level=info"
           env:
-            - name: TASK_HOST
-              valueFrom:
-                secretKeyRef:
-                  name: banzaiNresSecrets
-                  key: TASK_HOST
-            - name: DB_ADDRESS
-              valueFrom:
-                secretKeyRef:
-                  name: banzaiNresDBAddress
-                  key: DB_ADDRESS
-            - name: RETRY_DELAY
-              value: "600"
-            - name: CALIBRATE_PROPOSAL_ID
-              value: {{ .Values.CALIBRATE_PROPOSAL_ID }}
-            - name: OBSERVATION_PORTAL_URL
-              value: {{ .Values.OBSERVATION_PORTAL_URL }}
+            {{- include "banzai-nres.Env" . | nindent 12 }}
           resources:
             requests:
               cpu: "0.1"
