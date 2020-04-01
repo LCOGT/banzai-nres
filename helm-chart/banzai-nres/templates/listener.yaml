@@ -51,7 +51,7 @@ spec:
             runAsUser: 10087
             runAsGroup: 10000
           command:
-            - banzai_nres_automate_stack_calibrations
+            - "banzai_nres_automate_stack_calibrations"
             - "--post-to-archive"
             - "--post-to-elasticsearch"
             - "--fpack"
