@@ -82,9 +82,9 @@ Define shared environment variables
       name: banzaiNresDBSecrets
       key: postgresPassword
 - name: DB_USER
-  value: {{ .Values.postgesql.postgresUsername }}
+  value: {{ .Values.postgresql.postgresUsername }}
 - name: DB_NAME
-  value: {{ .Values.postgesql.postgresqlDatabase }}
+  value: {{ .Values.postgresql.postgresqlDatabase }}
 - name: DB_ADDRESS
   value: psql://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST)/$(DB_NAME)
 - name: RABBITMQ_PASSWORD
