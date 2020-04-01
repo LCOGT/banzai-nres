@@ -94,9 +94,6 @@ Define shared environment variables
       key: rabbitmq-password
 - name: TASK_HOST
   value: rabbitmq://{{ .Values.rabbitmq.username | quote }}@$(RABBITMQ_PASSWORD)$(RABBITMQ_HOST)/{{ .Values.rabbitmq.vhost | quote  }}
-    secretKeyRef:
-      name: banzaiNresSecrets
-      key: TASK_HOST
 - name: RETRY_DELAY
   value: "600000"
 - name: CALIBRATE_PROPOSAL_ID
@@ -141,9 +138,9 @@ Define shared environment variables
     secretKeyRef:
       name: banzaiNresSecrets
       key: RAW_DATA_AUTH_TOKEN
-{{- if .Values.NO_METRICS  }}
+{{ if .Values.NO_METRICS  }}
 - name: OPENTSDB_PYTHON_METRICS_TEST_MODE
-  value: 1
+  value: "1"
 {{- end -}}
 
 {{- end -}}

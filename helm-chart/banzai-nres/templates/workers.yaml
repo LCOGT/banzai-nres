@@ -22,8 +22,7 @@ spec:
     {{- end }}
     {{ if .Values.postgresql.useDockerizedDatabase }}
       initContainers:
-        # When the Pod is initialized, copy all files within the container at path
-        # /archive/engineering into the empty data volume mounted at /data
+        # Create the db if it doesn't exist
         - name: banzai-nres-db-init
           image:  "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.dataImage.pullPolicy}}
@@ -33,7 +32,7 @@ spec:
           command:
             - "banzai_create_db"
             - "--db-address=${DB_ADDRESS}"
-          #create the db if it doesn't exist and populate the bpms in the db.
+          # Populate the instruments table
           env:
             {{- include "banzai-nres.Env" . | nindent 12 }}
           resources:
@@ -43,6 +42,7 @@ spec:
             limits:
               cpu: "1"
               memory: "1Gi"
+        # Populate the bpms that are in the archive
         - name: banzai-nres-instrument-init
           image:  "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.dataImage.pullPolicy}}
