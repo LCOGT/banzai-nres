@@ -70,7 +70,7 @@ spec:
                   name: banzaiNresDBAddress
                   key: DB_ADDRESS
             - name: RETRY_DELAY
-              value: 600
+              value: "600"
             - name: CALIBRATE_PROPOSAL_ID
               value: {{ .Values.CALIBRATE_PROPOSAL_ID }}
             - name: OBSERVATION_PORTAL_URL
