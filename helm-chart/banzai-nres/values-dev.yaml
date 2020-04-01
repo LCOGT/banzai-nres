@@ -45,6 +45,8 @@ postgresql:
   postgresqlDatabase: "banzainres"
   existingSecret: "banzaiNresSecrets"
 
+useDockerizedRabbitMQ: true
+
 rabbitmq:
   username: "user"
   vhost: ""
