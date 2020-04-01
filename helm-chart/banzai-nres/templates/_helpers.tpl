@@ -79,7 +79,7 @@ Define shared environment variables
 - name: DB_PASSWORD
   valueFrom:
     secretKeyRef:
-      name: banzaiNresDBSecrets
+      name: banzai-nres-secrets
       key: postgresPassword
 - name: DB_USER
   value: {{ .Values.postgresql.postgresUsername | quote }}
@@ -90,7 +90,7 @@ Define shared environment variables
 - name: RABBITMQ_PASSWORD
   valueFrom:
     secretKeyRef:
-      name: banzaiNresSecrets
+      name: banzai-nres-secrets
       key: rabbitmq-password
 - name: TASK_HOST
   value: rabbitmq://{{ .Values.rabbitmq.username | quote }}@$(RABBITMQ_PASSWORD)$(RABBITMQ_HOST)/{{ .Values.rabbitmq.vhost | quote  }}
@@ -105,19 +105,19 @@ Define shared environment variables
 - name: AUTH_TOKEN
   valueFrom:
     secretKeyRef:
-      name: banzaiNresSecrets
+      name: banzai-nres-secrets
       key: AUTH_TOKEN
 - name: BUCKET
   value: {{ .Values.BUCKET | quote }}
 - name: AWS_ACCESS_KEY_ID
   valueFrom:
     secretKeyRef:
-      name: banzaiNresSecrets
+      name: banzai-nres-secrets
       key: AWS_ACCESS_KEY_ID
 - name: AWS_SECRET_ACCESS_KEY
   valueFrom:
     secretKeyRef:
-      name: banzaiNresSecrets
+      name: banzai-nres-secrets
       key: AWS_SECRET_ACCESS_KEY
 - name:
   value: {{ .Values.OPENTSDB_HOSTNAME | quote }}
@@ -136,7 +136,7 @@ Define shared environment variables
 - name: RAW_DATA_AUTH_TOKEN
   valueFrom:
     secretKeyRef:
-      name: banzaiNresSecrets
+      name: banzai-nres-secrets
       key: RAW_DATA_AUTH_TOKEN
 {{ if .Values.NO_METRICS  }}
 - name: OPENTSDB_PYTHON_METRICS_TEST_MODE

@@ -43,13 +43,13 @@ postgresql:
   hostname: "db.example.com"
   postgresqlUsername: "banzainres"
   postgresqlDatabase: "banzainres"
-  existingSecret: "banzaiNresSecrets"
+  existingSecret: "banzai-nres-secrets"
 
 useDockerizedRabbitMQ: true
 
 rabbitmq:
   username: "user"
   vhost: ""
-  existingPasswordSecret: "banzaiNresSecrets"
+  existingPasswordSecret: "banzai-nres-secrets"
 
 configdb_url: "http://configdb.lco.gtn/sites/"

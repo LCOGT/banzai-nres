@@ -28,7 +28,7 @@ spec:
             runAsUser: 10087
             runAsGroup: 10000
           command:
-            - banzai_nres_run_realtime_pipeline
+            - "banzai_nres_run_realtime_pipeline"
             - "--post-to-archive"
             - "--post-to-elasticsearch"
             - "--fpack"
