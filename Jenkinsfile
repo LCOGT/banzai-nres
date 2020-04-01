@@ -42,6 +42,23 @@ pipeline {
 				}
 			}
 		}
+		stage('DeployDevStack') {
+		//	when {
+		//		anyOf {
+		//		branch 'dev'
+		//		}
+		//	}
+		    steps {
+	            script {
+                    withKubeConfig([credentialsId: "dev-kube-config"]) {
+                        sh('helm repo update && helm dependency update helm-chart/banzai-nres/requirements.yaml '+
+                                '&& helm upgrade --install banzai-nres-dev helm-chart/banzai-nres ' +
+                                '--set image.tag="${GIT_DESCRIPTION}" --values=helm-chart/banzai-nres/values-dev.yaml '
+                                '--force --wait --timeout=3600')
+                    }
+                 }
+		    }
+		}
 		stage('DeployTestStack') {
 			when {
 				anyOf {
@@ -176,7 +193,7 @@ pipeline {
 				success {
 					script {
 					    withKubeConfig([credentialsId: "build-kube-config"]) {
-                            sh("helm delete banzai-nres --purge || true")
+                            sh("helm delete banzai-nres-e2e --purge || true")
 					    }
 					}
 				}

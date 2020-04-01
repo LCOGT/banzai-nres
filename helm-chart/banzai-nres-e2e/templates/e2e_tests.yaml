@@ -17,6 +17,8 @@ spec:
       labels:
         app.kubernetes.io/name: {{ include "banzai-nres-e2e.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
+      annotations:
+        cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
     spec:
 
       securityContext:

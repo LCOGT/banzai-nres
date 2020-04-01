@@ -1,0 +1,53 @@
+# Default values for banzai-nres.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+workerCount: 4
+
+image:
+  repository: docker.lco.global/banzai-nres
+  tag: latest
+  pullPolicy: IfNotPresent
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+CALIBRATE_PROPOSAL_ID: calibrate
+
+OBSERVATION_PORTAL_URL: http://internal-observation-portal.lco.gtn/api/observations/
+
+API_ROOT: http://banzai-nres-archive-api.lco.gtn/
+
+BUCKET: banzai-nres-lco-global
+
+RAW_DATA_FRAME_URL: "http://archiveapi-internal/"
+
+INGESTER_PROCESS_NAME: "banzai-nres-dev"
+
+DO_METRICS: 0
+
+OPENTSDB_HOSTNAME: opentsdb.lco.gtn
+
+BOSUN_HOSTNAME: alerts.lco.gtn
+
+FITS_BROKER: rabbitmq.lco.gtn
+
+FITS_EXCHANGE: archived_fits
+
+useDockerizedDatabase: true
+
+postgresql:
+  hostname: "db.example.com"
+  postgresqlUsername: "banzainres"
+  postgresqlDatabase: "banzainres"
+  existingSecret: "banzaiNresSecrets"
+
+rabbitmq:
+  username: "user"
+  vhost: ""
+  existingPasswordSecret: "banzaiNresSecrets"
+
+configdb_url: "http://configdb.lco.gtn/sites/"
