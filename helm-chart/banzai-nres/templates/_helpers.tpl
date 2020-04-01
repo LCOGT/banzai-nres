@@ -98,7 +98,7 @@ Define shared environment variables
       name: banzaiNresSecrets
       key: TASK_HOST
 - name: RETRY_DELAY
-  value: 600000
+  value: "600000"
 - name: CALIBRATE_PROPOSAL_ID
   value: {{ .Values.CALIBRATE_PROPOSAL_ID | quote }}
 - name: OBSERVATION_PORTAL_URL
