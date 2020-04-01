@@ -141,7 +141,7 @@ Define shared environment variables
     secretKeyRef:
       name: banzaiNresSecrets
       key: RAW_DATA_AUTH_TOKEN
-{{ if eq .Values.DO_METRICS | quote 0  }}
+{{- if .Values.NO_METRICS  }}
 - name: OPENTSDB_PYTHON_METRICS_TEST_MODE
   value: 1
 {{- end -}}
