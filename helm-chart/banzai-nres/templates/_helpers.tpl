@@ -80,20 +80,20 @@ Define shared environment variables
   valueFrom:
     secretKeyRef:
       name: banzai-nres-secrets
-      key: postgresPassword
+      key: postgresqlPassword
 - name: DB_USER
-  value: {{ .Values.postgresql.postgresUsername | quote }}
+  value: {{ .Values.postgresql.postgresqlUsername | quote }}
 - name: DB_NAME
   value: {{ .Values.postgresql.postgresqlDatabase | quote }}
 - name: DB_ADDRESS
-  value: psql://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST)/$(DB_NAME)
+  value: postgres://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST)/$(DB_NAME)
 - name: RABBITMQ_PASSWORD
   valueFrom:
     secretKeyRef:
       name: banzai-nres-secrets
       key: rabbitmq-password
 - name: TASK_HOST
-  value: rabbitmq://{{ .Values.rabbitmq.username | quote }}@$(RABBITMQ_PASSWORD)$(RABBITMQ_HOST)/{{ .Values.rabbitmq.vhost | quote  }}
+  value: amqp://{{ .Values.rabbitmq.username | quote }}@$(RABBITMQ_PASSWORD)$(RABBITMQ_HOST)/{{ .Values.rabbitmq.vhost | quote  }}
 - name: RETRY_DELAY
   value: "600000"
 - name: CALIBRATE_PROPOSAL_ID

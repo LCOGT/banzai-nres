@@ -110,3 +110,5 @@ venv.bak/
 .vscode
 
 test_data/
+
+requirements.lock

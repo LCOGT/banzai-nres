@@ -44,6 +44,15 @@ postgresql:
   postgresqlUsername: "banzainres"
   postgresqlDatabase: "banzainres"
   existingSecret: "banzai-nres-secrets"
+  service:
+    port: "5432"
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 1
+      memory: 512Mi
 
 useDockerizedRabbitMQ: true
 
@@ -51,5 +60,13 @@ rabbitmq:
   username: "user"
   vhost: ""
   existingPasswordSecret: "banzai-nres-secrets"
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 1
+      memory: 512Mi
+
 
 configdb_url: "http://configdb.lco.gtn/sites/"

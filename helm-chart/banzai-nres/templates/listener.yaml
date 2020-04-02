@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "banzai-nres.fullname" . }}
+  name: {{ include "banzai-nres.fullname" . -}} -listener
   labels:
 {{ include "banzai-nres.labels" . | indent 4 }}
 spec:
@@ -32,9 +32,9 @@ spec:
             - "--post-to-archive"
             - "--post-to-elasticsearch"
             - "--fpack"
-            - "--rlevel 91"
-            - "--db-address=${DB_ADDRESS}"
-            - "--broker-url ${FITS_BROKER}"
+            - "--rlevel=91"
+            - "--db-address=$(DB_ADDRESS)"
+            - "--broker-url=$(FITS_BROKER)"
           env:
             {{- include "banzai-nres.Env" . | nindent 12 }}
           resources:
@@ -51,12 +51,12 @@ spec:
             runAsUser: 10087
             runAsGroup: 10000
           command:
-            - "banzai_nres_automate_stack_calibrations"
+            - "banzai_nres_start_stacking_scheduler"
             - "--post-to-archive"
             - "--post-to-elasticsearch"
             - "--fpack"
             - "--rlevel=91"
-            - "--db-address=${DB_ADDRESS}"
+            - "--db-address=$(DB_ADDRESS)"
             - "--log-level=info"
           env:
             {{- include "banzai-nres.Env" . | nindent 12 }}
