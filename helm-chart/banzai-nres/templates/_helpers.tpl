@@ -119,7 +119,7 @@ Define shared environment variables
     secretKeyRef:
       name: banzai-nres-secrets
       key: AWS_SECRET_ACCESS_KEY
-- name:
+- name: OPENTSDB_HOSTNAME
   value: {{ .Values.OPENTSDB_HOSTNAME | quote }}
 - name: BOSUN_HOSTNAME
   value: {{ .Values.BOSUN_HOSTNAME | quote }}
