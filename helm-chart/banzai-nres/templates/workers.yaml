@@ -5,7 +5,6 @@ metadata:
   labels:
 {{ include "banzai-nres.labels" . | indent 4 }}
 spec:
-  replicas: {{ .Values.workerCount }}
   selector:
     matchLabels:
       app.kubernetes.io/name: {{ include "banzai-nres.name" . }}
