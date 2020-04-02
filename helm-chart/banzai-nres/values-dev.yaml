@@ -63,9 +63,10 @@ postgresql:
 useDockerizedRabbitMQ: true
 
 rabbitmq:
-  username: "user"
+  rabbitmq:
+    username: "user"
+    existingPasswordSecret: "banzai-nres-secrets"
   vhost: ""
-  existingPasswordSecret: "banzai-nres-secrets"
   resources:
     requests:
       cpu: 200m
