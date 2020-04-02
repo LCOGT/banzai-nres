@@ -93,7 +93,7 @@ Define shared environment variables
       name: banzai-nres-secrets
       key: rabbitmq-password
 - name: TASK_HOST
-  value: amqp://{{ .Values.rabbitmq.username | quote }}@$(RABBITMQ_PASSWORD)$(RABBITMQ_HOST)/{{ .Values.rabbitmq.vhost | quote  }}
+  value: amqp://{{ .Values.rabbitmq.username }}@$(RABBITMQ_PASSWORD)$(RABBITMQ_HOST)/{{ .Values.rabbitmq.vhost }}
 - name: RETRY_DELAY
   value: "600000"
 - name: CALIBRATE_PROPOSAL_ID
