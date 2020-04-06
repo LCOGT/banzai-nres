@@ -38,7 +38,7 @@ class ArcStacker(CalibrationStacker):
 
 class ArcLoader(CalibrationUser):
     """
-    Loads the wavelengths, ref_id and fiber id's from the nearest Arc-emission lamp (wavelength calibration) in the db.
+    Loads the wavelengths from the nearest Arc-emission lamp (wavelength calibration) in the db.
     If the traces have shifted (e.g. the instrument was serviced), then we do not load any of this information
     (new wavelengths will be created from scratch in WavelengthCalibrate).
     """
@@ -53,8 +53,6 @@ class ArcLoader(CalibrationUser):
             super().on_missing_master_calibration(image)
 
     def apply_master_calibration(self, image: NRESObservationFrame, master_calibration_image):
-        # spectrum ought to contain a ref_id column and fiber column.
-        image.spectrum = master_calibration_image.spectrum
         image.wavelength = master_calibration_image.wavelength
         return image
 
@@ -88,10 +86,8 @@ class WavelengthCalibrate(Stage):
     We lightly recalibrate the wavelength calibration if the arc has reference id's assigned to each trace.
     """
     def do_stage(self, image):
-        if image.spectrum is None:
-            # if the spectrum is none (i.e. no master calibration was found), then populate the reference ids and fibers
-            image.spectrum = make_ref_id_and_fiber_id(image.traces, lit_fibers(image))
-        ref_id, fibers = image.spectrum['ref_id'], image.spectrum['fiber']
+        ref_id, fibers = get_ref_ids_and_fibers(image.num_traces)
+
         features = image.features
         features['order'], features['fiber'] = ref_id[features['id'] - 1], fibers[features['id'] - 1]
         x2d, y2d = np.meshgrid(np.arange(image.shape[1]), np.arange(image.shape[0]))
@@ -102,15 +98,14 @@ class WavelengthCalibrate(Stage):
                 # blind solve for the wavelengths of the emission lines.
                 features['wavelength'][this_fiber], m0 = wavelength_calibrate(features[this_fiber], image.line_list,
                                                                               pixel, order, m0_range=(40, 60))
-                image.spectrum.meta['m0'] = m0
-                # TODO need to make m0 fiber by fiber, or something.
             else:
                 # adopt wavelengths for the emission lines from the existing solution, good to 1 pixel.
                 # Note: we could improve this considerably with ndimage.map_coordinates(..., order=1, prefilter=False).
-                features['wavelength'] = image.wavelengths[features['order'].astype(int),
-                                                           features['pixel'].astype(int)]
+                features['wavelength'][this_fiber] = image.wavelengths[features['order'][this_fiber].astype(int),
+                                                                       features['pixel'][this_fiber].astype(int)]
+                m0 = None  # TODO get m0 from wavelengths of lines?
             # update the wavelength solution
-            wavelength_solution = self.recalibrate(features[this_fiber], image.line_list, pixel, order, image.spectrum.meta['m0'])
+            wavelength_solution = self.recalibrate(features[this_fiber], image.line_list, pixel, order, m0)
 
             # overwrite old wavelengths with the new wavelengths
             for trace_id, ref_id in zip([image.spectrum['id'], ref_id]):
@@ -172,12 +167,11 @@ class IdentifyFeatures(Stage):
         return image
 
 
-def make_ref_id_and_fiber_id(traces, fiber_state, matched_traces=None, match_ref_id=0):
-    """
-    make reference id column and fiber id column by labelling traces 1 and 2 (by default) with ref_id 0 and fiber_state.
-    """
-    matched_traces = [1, 2] if matched_traces is None else matched_traces
-    trace_ids = list(set(traces))
-    fiber = IdentifyFibers.build_fiber_column(matched_traces, fiber_state, fiber_state, len(trace_ids), low_fiber_first=False)
-    ref_id = IdentifyFibers.build_ref_id_column(matched_traces, fiber, match_ref_id, low_fiber_first=True)
-    return Table({'id': trace_ids, 'ref_id': ref_id, 'fiber': fiber, 'true_order_id': ref_id})
+def get_ref_ids_and_fibers(num_traces):
+    fibers, ref_id = np.zeros(num_traces), np.zeros(num_traces)
+    fibers[1::2] = 1  # group alternating traces as part of the same fiber
+    for fiber in [0, 1]:
+        ref_id[fibers == fiber] = np.arange(np.count_nonzero(fibers == fiber))
+    # note that the fiber designation does not matter, all that matters is that we separate the two AGU's wavelength
+    # solutions.
+    return ref_id, fibers
