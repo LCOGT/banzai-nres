@@ -25,7 +25,7 @@ CALIBRATE_PROPOSAL_ID: calibrate
 
 OBSERVATION_PORTAL_URL: http://internal-observation-portal.lco.gtn/api/observations/
 
-API_ROOT: http://banzai-nres-archive-api.lco.gtn/
+API_ROOT: http://archiveapi-dev/
 
 BUCKET: banzai-nres-lco-global
 
