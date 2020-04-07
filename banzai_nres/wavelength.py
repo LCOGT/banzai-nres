@@ -92,18 +92,23 @@ class WavelengthCalibrate(Stage):
         features['order'], features['fiber'] = ref_id[features['id'] - 1], fibers[features['id'] - 1]
         x2d, y2d = np.meshgrid(np.arange(image.shape[1]), np.arange(image.shape[0]))
         for fiber in list(set(fibers)):
+            logger.info('Wavelength calibrating the {0} fiber'.format({0: 'first', 1: 'second'}[fiber]), image=image)
             pixel, order = np.arange(image.data.shape[1]), np.sort(ref_id[fibers == fiber])
-            this_fiber = features['fiber'] == fiber
+            this_fiber = np.equal(features['fiber'], fiber)
             if image.wavelengths is None:
-                # blind solve for the wavelengths of the emission lines.
+                logger.info('Blind solving for the wavelengths of this fiber.')
                 features['wavelength'][this_fiber], m0 = wavelength_calibrate(features[this_fiber], image.line_list,
                                                                               pixel, order, m0_range=(40, 60))
             else:
                 # adopt wavelengths for the emission lines from the existing solution, good to 1 pixel.
                 # Note: we could improve this considerably with ndimage.map_coordinates(..., order=1, prefilter=False).
-                features['wavelength'][this_fiber] = image.wavelengths[features['order'][this_fiber].astype(int),
-                                                                       features['pixel'][this_fiber].astype(int)]
-                m0 = None  # TODO get m0 from wavelengths of lines?
+                features['wavelength'][this_fiber] = image.wavelengths[features['ycentroid'][this_fiber].astype(int),
+                                                                       features['xcentroid'][this_fiber].astype(int)]
+                trace_ids = np.arange(1, image.num_traces + 1)
+                center_wavelengths = image.wavelengths[:, image.wavelengths.shape[1] // 2]
+                center_wavelengths = center_wavelengths
+                m0 = self.get_principle_order_number(np.arange(40, 60), center_wavelengths, ref_id[fibers == fiber])
+
             # update the wavelength solution
             wavelength_solution = self.recalibrate(features[this_fiber], image.line_list, pixel, order, m0)
 
@@ -140,6 +145,33 @@ class WavelengthCalibrate(Stage):
         weights[np.isclose(wavelengths_to_fit, measured_lines['wavelength'], atol=0.1)] = 1
         wavelength_solution.model_coefficients = wavelength_solution.solve(measured_lines, wavelengths_to_fit, weights=weights)
         return wavelength_solution
+
+    @staticmethod
+    def get_principle_order_number(m0_values, center_wavelengths, ref_ids):
+        """
+        Finds the principle order number m0. Selects the m0 such that the function y(i) = (m0 + i) * central_wavelengths
+        has the smallest slope. I.e. this selects the m0 that allows constant/(m0+i) to best fit central_wavelengths.
+        This is exactly what CERES does. See equation 3 of Brahm et al. 2016.
+
+        :param m0_values: ndarray of integers. 1d.
+        :param center_wavelengths: ndarray of wavelengths. The wavelengths of the center pixels down the detector, for
+        one fiber
+        :param ref_ids: ndarray of integers. The reference id's of the traces from which central_wavelengths came.
+        Same shape as central_wavelengths. i.e. central_wavelengths[0] is the center wavelength of the trace with reference
+        id ref_ids[0]
+        :return: m0: int.
+        The principle order number for the fiber from which central_wavelengths were taken.
+        This is the true order index of the the trace that corresponds to ref_id[0].
+        """
+        slopes = []
+        for m0 in m0_values:
+            # note: replacing np.ptp with some outlier resistant measure of the scatter would be more robust.
+            slopes.append(np.ptp(center_wavelengths * (m0 + ref_ids)))
+
+        if np.count_nonzero(np.isclose(slopes, np.min(slopes), rtol=0.01)) > 1:
+            logger.warning('Two or more viable principle order numbers for this fiber! The m0 recovered from the '
+                           'wavelength solution could be wrong!')
+        return m0_values[np.argmin(slopes)]
 
 
 class IdentifyFeatures(Stage):
