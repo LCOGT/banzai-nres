@@ -73,6 +73,30 @@ class NRESObservationFrame(LCOObservationFrame):
     def blaze(self, value):
         self.primary_hdu.blaze = value
 
+    @property
+    def features(self):
+        return self.primary_hdu.features
+
+    @features.setter
+    def features(self, value):
+        self.primary_hdu.features = value
+
+    @property
+    def line_list(self):
+        return self.primary_hdu.line_list
+
+    @line_list.setter
+    def line_list(self, value):
+        self.primary_hdu.line_list = value
+
+    @property
+    def wavelengths(self):
+        return self.primary_hdu.wavelengths
+
+    @wavelengths.setter
+    def wavelengths(self, value):
+        self.primary_hdu.wavelengths = value
+
 
 class NRESCalibrationFrame(LCOCalibrationFrame, NRESObservationFrame):
     def __init__(self, hdu_list: list, file_path: str, grouping_criteria: list = None):
@@ -89,14 +113,18 @@ class NRESMasterCalibrationFrame(LCOMasterCalibrationFrame, NRESCalibrationFrame
 class EchelleSpectralCCDData(CCDData):
     def __init__(self, data: Union[np.array, Table], meta: fits.Header,
                  mask: np.array = None, name: str = '', uncertainty: np.array = None,
-                 background: np.array = None,  traces: np.array = None,
-                 profile: np.array = None, weights: np.array = None,
-                 spectrum: Table = None, blaze: Table = None, memmap=True):
+                 background: np.array = None,  traces: np.array = None, wavelengths: np.array = None,
+                 profile: np.array = None, weights: np.array = None, line_list=None,
+                 spectrum: Table = None, blaze: Table = None, memmap=True, features: Table = None):
         super().__init__(data=data, meta=meta, mask=mask, name=name, memmap=memmap, uncertainty=uncertainty)
         if traces is None:
             self._traces = None
         else:
             self.traces = traces
+        if wavelengths is None:
+            self._wavelengths = None
+        else:
+            self.wavelengths = wavelengths
         if background is None:
             self._background = None
         else:
@@ -112,7 +140,8 @@ class EchelleSpectralCCDData(CCDData):
 
         self.spectrum = spectrum
         self.blaze = blaze
-        # TODO : Add image.features (or store these in CATALOG like photometry) and add image.line_list
+        self.features = features
+        self.line_list = line_list
 
 
     @property
@@ -130,6 +159,14 @@ class EchelleSpectralCCDData(CCDData):
     @traces.setter
     def traces(self, value):
         self._traces = self._init_array(value)
+
+    @property
+    def wavelengths(self):
+        return self._wavelengths
+
+    @wavelengths.setter
+    def wavelengths(self, value):
+        self._wavelengths = self._init_array(value)
 
     @property
     def num_traces(self):
