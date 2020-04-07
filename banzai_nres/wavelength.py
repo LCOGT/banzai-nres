@@ -193,7 +193,7 @@ class IdentifyFeatures(Stage):
     """
     Stage to identify all sharp emission-like features on an Arc lamp frame.
     """
-    nsigma = 5.0  # minimum signal to noise @ peak flux for a feature to be counted.
+    nsigma = 3.0  # minimum signal to noise @ peak flux for a feature to be counted.
     fwhm = 6.0  # minimum feature size in pixels for the feature to be counted.
 
     def do_stage(self, image):
@@ -201,6 +201,8 @@ class IdentifyFeatures(Stage):
         features = identify_features(image.data, image.uncertainty, image.mask, nsigma=self.nsigma, fwhm=self.fwhm)
         features = group_features_by_trace(features, image.traces)
         features = features[features['id'] != 0]  # throw out features that are outside of any trace.
+        if len(features) == 0:
+            logger.error('No emission features found on this image!', image=image)
         # mask data
         masked_data, masked_err = np.copy(image.data), np.copy(image.uncertainty)
         masked_data[np.isclose(image.mask, 1)], masked_err[np.isclose(image.mask, 1)] = 0, 0
@@ -208,7 +210,7 @@ class IdentifyFeatures(Stage):
         features['flux'], features['fluxerr'], _ = sep.sum_circle(masked_data, features['xcentroid'], features['ycentroid'],
                                                                   self.fwhm, gain=1.0, err=masked_err)
         # blaze correct the emission features fluxes. This speeds up and improves overlap fitting in xwavecal.
-        features['corrected_flux'] = features['flux'] / image.blaze['blaze'][features['id'],
+        features['corrected_flux'] = features['flux'] / image.blaze['blaze'][features['id'] - 1,
                                                                              np.array(features['xcentroid'], dtype=int)]
         image.features = features
         return image

@@ -13,16 +13,17 @@ class TestIdentifyFeatures:
     sigma = 1.0
     data = np.zeros((100, 100))
     err = np.ones_like(data)
-    coords = [10, 30, 50, 70]  # 4 features
-    data[coords, coords] = 1
+    xcoords = [10, 30, 50, 70]  # 4 features
+    ycoords = np.array(xcoords) + 5  # 4 features
+    data[ycoords, xcoords] = 1
     data = gaussian_filter(data, sigma=sigma)
     data /= np.max(data) # make features have peak fluxes of 1
 
     def test_finds_features(self):
         features = identify_features(self.data, self.err, nsigma=0.5, fwhm=self.sigma)
         assert np.allclose(features['peak'], 1, atol=0.001)
-        assert np.allclose(features['pixel'], self.coords, atol=0.001)
-        assert np.allclose(features['ycentroid'], self.coords, atol=0.001)
+        assert np.allclose(features['pixel'], self.xcoords, atol=0.001)
+        assert np.allclose(features['ycentroid'], self.ycoords, atol=0.001)
         assert len(features) == 4
 
     def test_ignores_features(self):
@@ -31,7 +32,7 @@ class TestIdentifyFeatures:
 
     def test_extract(self):
         # small test to make sure sep.sum_circle is behaving.
-        fluxes, _, _ = sep.sum_circle(self.data, self.coords, self.coords, 10 * self.sigma, gain=1.0, err=self.err)
+        fluxes, _, _ = sep.sum_circle(self.data, self.xcoords, self.ycoords, 10 * self.sigma, gain=1.0, err=self.err)
         # assert the summed flux is the expected flux for a 2d (unnormalized) gaussian.
         assert np.allclose(fluxes, 2 * np.pi * self.sigma**2, rtol=1E-4)
 
@@ -42,13 +43,13 @@ class TestIdentifyFeatures:
         image = NRESObservationFrame([EchelleSpectralCCDData(data=self.data, uncertainty=self.err,
                                                              meta={'OBJECTS': 'tung&tung&none'},
                                        traces=np.ones_like(self.data, dtype=int),
-                                       blaze={'blaze': blaze_factor * np.ones_like(self.data, dtype=int)})], 'foo.fits')
+                                       blaze={'blaze': blaze_factor * np.ones((1, self.data.shape[1]), dtype=int)})], 'foo.fits')
         stage = IdentifyFeatures(input_context)
         stage.fwhm, stage.nsigma = self.sigma, 0.5
         image = stage.do_stage(image)
         assert np.allclose(image.features['corrected_flux'], image.features['flux'] / blaze_factor, rtol=1E-4)
-        assert np.allclose(image.features['pixel'], self.coords, atol=0.001)
-        assert np.allclose(image.features['ycentroid'], self.coords, atol=0.001)
+        assert np.allclose(image.features['pixel'], self.xcoords, atol=0.001)
+        assert np.allclose(image.features['ycentroid'], self.ycoords, atol=0.001)
         assert np.allclose(image.features['id'], 1)
 
     @pytest.mark.integration
