@@ -68,15 +68,15 @@ class TestIdentifyFeatures:
 class TestWavelengthCalibrate:
     def generate_image(self):
         traces = np.array([[0, 0, 0], [1, 1, 1], [1, 1, 1], [0, 0, 0], [0, 0, 0], [2, 2, 2], [3, 3, 3]])
-        wavelengths = traces*3
         line_list = np.array([10, 11, 12])
         features = {'pixel': np.array([1, 2, 1, 2]), 'id': np.array([1, 1, 2, 3])}
         image = NRESObservationFrame([EchelleSpectralCCDData(data=np.zeros((2, 2)), uncertainty=np.zeros((2, 2)),
                                       meta={'OBJECTS': 'tung&tung&none'}, features=features,
-                                      traces=traces, wavelengths=wavelengths, line_list=line_list)], 'foo.fits')
+                                      traces=traces, line_list=line_list)], 'foo.fits')
         return image
 
-    @mock.patch('banzai_nres.wavelength.WavelengthCalibrate.calibrate_fiber', side_effect=lambda x, y, z, image: image)
+    @mock.patch('banzai_nres.wavelength.WavelengthCalibrate.calibrate_fiber',
+                side_effect=lambda x, y, z, image, t: image)
     def test_do_stage(self, mock_calibrate_fiber):
         input_context = context.Context({})
         image = WavelengthCalibrate(input_context).do_stage(self.generate_image())
