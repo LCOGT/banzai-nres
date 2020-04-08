@@ -118,6 +118,21 @@ class TestGetWeights:
         assert np.allclose(weights[np.isclose(profile,1)],1./3.)
         #check that the weights of the area with zero profile are zero:
         assert np.allclose(weights[np.isclose(profile,0)],0)
+
+class TestQCChecks:
+    def test_flux_ratio(self):
+        from banzai_nres.qc.traces_checker import CheckIfFluxInTraces
+        input_context = context.Context({})
+        trace_width, number_traces, maxflux = 20, 10, 50000
+        image = five_hundred_square_image(maxflux, number_traces, trace_width)
+        thistest = CheckIfFluxInTraces(input_context)
+        flux_ratio = thistest.check_flux_in_and_out_of_traces(image)
+        assert flux_ratio > 1.0
+        flux_by_traces = thistest.check_flux_by_trace(image)
+        assert np.all(flux_by_traces > 0.0)
+
+
+
         
 
 def two_order_image():
