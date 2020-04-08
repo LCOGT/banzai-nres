@@ -93,7 +93,7 @@ def test_recalibrate(mock_solve):
     measured_lines = {'wavelength': [10, 11, 50], 'pixel': [1, 2, 3], 'order': [0, 0, 0]}
     line_list = np.array([10.05, 11.05, 60, 11.5])
     pixel, order, principle_order_number = np.arange(10), np.arange(10), 30
-    wavelength_solution = WavelengthCalibrate.recalibrate(measured_lines, line_list, pixel, order, principle_order_number)
+    wavelength_solution = WavelengthCalibrate.fit_wavelength_function(measured_lines, line_list, pixel, order, principle_order_number)
     # the mock patch populated wavelength_solution.model_coefficients with the arguments fed to WavelengthSolution.solve
     # could use mock_solve.assert_called_with here, but it is not as straightforward because measured_lines changes.
     measured_lines, wavelengths_to_fit, weights = wavelength_solution.model_coefficients
