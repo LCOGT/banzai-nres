@@ -120,7 +120,7 @@ class TestGetWeights:
         assert np.allclose(weights[np.isclose(profile,0)],0)
 
 class TestQCChecks:
-    def test_flux_ratio(self):
+    def test_flux_checks(self):
         from banzai_nres.qc.traces_checker import CheckIfFluxInTraces
         input_context = context.Context({})
         trace_width, number_traces, maxflux = 20, 10, 50000
