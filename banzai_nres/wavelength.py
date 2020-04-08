@@ -107,31 +107,31 @@ class WavelengthCalibrate(Stage):
         if blind_solve:
             logger.info('Blind solving for the wavelengths of this fiber.')
             feature_wavelengths, m0 = wavelength_calibrate(dict(features[this_fiber]), image.line_list,
-                                                                          pixel, order, m0_range=self.M0_RANGE)
-            if feature_wavelengths is None:
-                logger.error('The xwavecal wavelength solution has failed on this fiber.')
-                return image
-            features['wavelength'][this_fiber] = feature_wavelengths
-            image.wavelengths = np.zeros_like(image.data, dtype=float)
+                                                           pixel, order, m0_range=self.M0_RANGE)
         else:
             # adopt wavelengths for the emission lines from the existing solution, good to 1 pixel.
             # Note: we could improve this considerably with ndimage.map_coordinates(..., order=1, prefilter=False).
-            features['wavelength'][this_fiber] = image.wavelengths[features['ycentroid'][this_fiber].astype(int),
-                                                                   features['xcentroid'][this_fiber].astype(int)]
+            feature_wavelengths = image.wavelengths[features['ycentroid'][this_fiber].astype(int),
+                                                    features['xcentroid'][this_fiber].astype(int)]
             # Get m0. This m0 value needs to be exactly the correct integer value.
             center_wavelengths = self.get_center_wavelengths(image.wavelengths, image.traces, trace_ids[fibers == fiber])
             m0 = self.get_principle_order_number(np.arange(*self.M0_RANGE), center_wavelengths, ref_ids[fibers == fiber])
+        if feature_wavelengths is not None:
+            features['wavelength'][this_fiber] = feature_wavelengths
+            image.wavelengths = np.zeros_like(image.data, dtype=float)
 
-        # update the wavelength solution
-        wavelength_solution = self.recalibrate(features[this_fiber], image.line_list, pixel, order, m0)
-        # overwrite old wavelengths with the new wavelengths
-        for trace_id, ref_id in zip(trace_ids[fibers == fiber], ref_ids[fibers == fiber]):
-            this_trace = np.isclose(image.traces, trace_id)
-            image.wavelengths[this_trace] = wavelength_solution(x2d[this_trace],
-                                                                ref_id * np.ones_like(x2d[this_trace]))
-        features['wavelength'][this_fiber] = wavelength_solution(features['pixel'][this_fiber],
-                                                                 features['order'][this_fiber])
-        image.features = features
+            # update the wavelength solution
+            wavelength_solution = self.recalibrate(features[this_fiber], image.line_list, pixel, order, m0)
+            # overwrite old wavelengths with the new wavelengths
+            for trace_id, ref_id in zip(trace_ids[fibers == fiber], ref_ids[fibers == fiber]):
+                this_trace = np.isclose(image.traces, trace_id)
+                image.wavelengths[this_trace] = wavelength_solution(x2d[this_trace],
+                                                                    ref_id * np.ones_like(x2d[this_trace]))
+            features['wavelength'][this_fiber] = wavelength_solution(features['pixel'][this_fiber],
+                                                                     features['order'][this_fiber])
+            image.features = features
+        else:
+            logger.error('The xwavecal wavelength solution has failed on this fiber. Check xwavecal logging.')
         return image
 
     @staticmethod
