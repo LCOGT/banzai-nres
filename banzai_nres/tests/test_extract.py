@@ -129,7 +129,7 @@ class TestQCChecks:
         flux_ratio = thistest.check_flux_in_and_out_of_traces(image)
         assert flux_ratio > 1.0
         flux_by_traces = thistest.check_flux_by_trace(image)
-        assert np.all(flux_by_traces > 0.0)
+        assert np.all(flux_by_traces > maxflux*500)
 
 
 
