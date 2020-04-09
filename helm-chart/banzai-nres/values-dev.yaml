@@ -25,11 +25,11 @@ CALIBRATE_PROPOSAL_ID: calibrate
 
 OBSERVATION_PORTAL_URL: http://internal-observation-portal.lco.gtn/api/observations/
 
-API_ROOT: http://archiveapi-dev/
+API_ROOT: http://banzai-nres-archive-api-archiveapi.dev/
 
 BUCKET: archivetest.lco.global
 
-RAW_DATA_FRAME_URL: "http://archiveapi-internal/"
+RAW_DATA_FRAME_URL: "http://archiveapi-internal.prod/frames"
 
 INGESTER_PROCESS_NAME: "banzai-nres-dev"
 
