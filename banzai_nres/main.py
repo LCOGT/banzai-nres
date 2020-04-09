@@ -93,14 +93,15 @@ def add_bpms_from_archive():
                         default='mysql://cmccully:password@localhost/test',
                         help='Database address: Should be in SQLAlchemy form')
     args = parser.parse_args()
+    add_settings_to_context(args, banzai_nres.settings)
     # Query the archive for all bpm files
     url = f'{banzai_nres.settings.ARCHIVE_FRAME_URL}/?OBSTYPE=BPM'
     archive_auth_token = banzai_nres.settings.ARCHIVE_AUTH_TOKEN
     response = requests.get(url, headers=archive_auth_token)
     response.raise_for_status()
     results = response.json()['results']
-    # Load each one, saving the calibration info for each
 
+    # Load each one, saving the calibration info for each
     frame_factory = import_utils.import_attribute(banzai_nres.settings.FRAME_FACTORY)()
     for frame in results:
         frame['frameid'] = frame['id']
