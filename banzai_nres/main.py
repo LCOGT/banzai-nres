@@ -103,6 +103,7 @@ def add_bpms_from_archive():
 
     frame_factory = import_utils.import_attribute(banzai_nres.settings.FRAME_FACTORY)()
     for frame in results:
+        frame['frameid'] = frame['id']
         bpm_image = frame_factory.open(frame, args)
         bpm_image.is_master = True
         dbs.save_calibration_info(frame['filename'], bpm_image, args.db_address)
