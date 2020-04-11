@@ -27,7 +27,7 @@ OBSERVATION_PORTAL_URL: http://internal-observation-portal.lco.gtn/api/observati
 
 API_ROOT: http://banzai-nres-archive-api-archiveapi.dev/
 
-BUCKET: archivetest.lco.global
+BUCKET: banzai-nres-lco-global
 
 RAW_DATA_FRAME_URL: "http://archiveapi-internal.prod/frames"
 
