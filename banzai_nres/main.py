@@ -106,5 +106,6 @@ def add_bpms_from_archive():
     for frame in results:
         frame['frameid'] = frame['id']
         bpm_image = frame_factory.open(frame, args)
-        bpm_image.is_master = True
-        dbs.save_calibration_info(frame['filename'], bpm_image, args.db_address)
+        if bpm_image is not None:
+            bpm_image.is_master = True
+            dbs.save_calibration_info(frame['filename'], bpm_image, args.db_address)
