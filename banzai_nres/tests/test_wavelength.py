@@ -9,6 +9,8 @@ import pytest
 import mock
 
 
+
+
 class TestIdentifyFeatures:
     sigma = 1.0
     data = np.zeros((100, 100))
@@ -138,3 +140,9 @@ def test_get_ref_ids_and_fibers():
     ref_id, fibers = get_ref_ids_and_fibers(6)
     assert np.allclose(ref_id, [0, 0, 1, 1, 2, 2])
     assert np.allclose(fibers, [0, 1, 0, 1, 0, 1])
+
+class TestQCChecks:
+    from banzai_nres.qc import AssessWavelengthSolution
+    test_image = TestWavelengthCalibrate.generate_image()
+    AssessWavelengthSolution.calculate_dispersion(test_image,test_image.line_list,dispersion_metrics)
+    AssessWavelengthSolution.calculate_photon_limited_dispersion(test_image,feature_centroid_uncertainty)
