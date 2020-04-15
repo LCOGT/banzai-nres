@@ -5,7 +5,7 @@ from banzai.calibrations import CalibrationStacker, CalibrationUser
 
 from banzai_nres.frames import NRESObservationFrame
 from banzai_nres.utils.wavelength_utils import identify_features, group_features_by_trace
-from xwavecal.wavelength import wavelength_calibrate, WavelengthSolution
+from xwavecal.wavelength import find_feature_wavelengths, WavelengthSolution
 from xwavecal.utils.wavelength_utils import find_nearest
 
 import sep
@@ -90,10 +90,10 @@ class WavelengthCalibrate(Stage):
         if image.wavelengths is None:
             # get feature wavelengths without a prior:
             logger.info('Blind solving for the wavelengths.')
-            # TODO think of some new name instead of wavelength_calibrate, find_feature_wavelengths.
-            # TODO dont feed this pixel, order. Also, dont return m0.
             # TODO have this function calibrate all the fibers in features.
-            image.features['wavelength'] = wavelength_calibrate(dict(image.features), image.line_list, m0_range=self.M0_RANGE)
+            image.features['wavelength'] = find_feature_wavelengths(dict(image.features), image.line_list,
+                                                                    max_pixel=image.data.shape[1] - 1, min_pixel=0,
+                                                                    m0_range=self.M0_RANGE)
         else:
             logger.info('Getting feature wavelengths from past solution.')
             # Note: we could improve this considerably with ndimage.map_coordinates(..., order=1, prefilter=False).
@@ -143,6 +143,7 @@ class WavelengthCalibrate(Stage):
         where x and order are ndarray's of the same shape.
         """
         m0 = self.get_principle_order_number(np.arange(*self.M0_RANGE), center_wavelengths, ref_ids)
+        logger.info('Principle order number is {0}'.format(m0))
         # see if you can avoid providing WavelengthSolution the domain over it which it will be evaluated.
         wcs = WavelengthSolution(model=MODELS.get('final_wavelength_model'), measured_lines=dict(features),
                                  reference_lines=line_list, m0=m0)
