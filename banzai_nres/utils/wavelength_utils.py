@@ -31,3 +31,10 @@ def group_features_by_trace(features, traces):
     """
     features['id'] = traces[np.array(features['ycentroid'], dtype=int), np.array(features['xcentroid'], dtype=int)]
     return features
+
+
+def get_center_wavelengths(wavelengths, traces, trace_ids):
+    # get the center wavelength from each trace in trace_ids.
+    cc = wavelengths.shape[1] // 2
+    center_wavelengths = [wavelengths[:, cc][traces[:, cc] == i].flatten()[0] for i in trace_ids]
+    return center_wavelengths
