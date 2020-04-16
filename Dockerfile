@@ -1,4 +1,4 @@
-FROM docker.lco.global/banzai:0.28.9-197-g7a8a6f5
+FROM docker.lco.global/banzai:0.28.9-198-g69700c5
 
 USER root
 
