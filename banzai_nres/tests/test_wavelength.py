@@ -1,6 +1,6 @@
 import numpy as np
 from banzai_nres.utils.wavelength_utils import identify_features, group_features_by_trace, \
-    get_center_wavelengths, get_principle_order_number
+    get_principle_order_number, get_center_wavelengths
 from banzai_nres.wavelength import IdentifyFeatures, WavelengthCalibrate, get_ref_ids_and_fibers
 from scipy.ndimage import gaussian_filter
 from banzai_nres.frames import EchelleSpectralCCDData, NRESObservationFrame
@@ -118,7 +118,7 @@ def test_get_principle_order_number(mock_wavelengths):
     m0_values, ref_ids = np.arange(10, 100), np.arange(20)
     true_m0 = 30
     mock_wavelengths.return_value = np.random.normal(5000, 10, len(ref_ids))/(true_m0 + ref_ids)
-    assert true_m0 == get_principle_order_number(m0_values, None, None, None, ref_ids)
+    assert true_m0 == get_principle_order_number(m0_values, {'order': ref_ids})
 
 
 @mock.patch('banzai_nres.utils.wavelength_utils.get_center_wavelengths')
@@ -126,16 +126,16 @@ def test_get_principle_order_number_warns_on_degenerate_m0(mock_wavelengths):
     m0_values, ref_ids = 30*np.ones(40), np.arange(20)
     true_m0 = 30
     mock_wavelengths.return_value = np.random.normal(5000, 50, len(ref_ids))/(true_m0 + ref_ids)
-    get_principle_order_number(m0_values, None, None, None, ref_ids)
+    get_principle_order_number(m0_values, {'order': ref_ids})
     # right now this just tests whether the warning if statement does not cause a crash.
     assert True
 
 
 def test_get_center_wavelengths():
-    trace_ids = np.array([1, 2])
-    traces = np.array([[0, 0, 0], [1, 1, 1], [1, 1, 1], [0, 0, 0], [0, 0, 0], [2, 2, 2]])
-    center_wavelengths = get_center_wavelengths(traces * 3, traces, trace_ids)
-    assert np.allclose(center_wavelengths, [3, 6])
+    features = {'pixel': np.array([2, 4, 1, 5, 3]), 'order': np.array([1, 1, 2, 2, 3]),
+                'wavelength': np.array([20, 40, 10, 50, 30])}
+    center_wavelengths = get_center_wavelengths(features)
+    assert np.allclose(center_wavelengths, [30, 30, 30])
 
 
 def test_get_ref_ids_and_fibers():

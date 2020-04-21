@@ -1,6 +1,7 @@
 import numpy as np
 from photutils import DAOStarFinder
 from astropy.table import Table
+
 import logging
 
 logger = logging.getLogger('banzai')
@@ -36,31 +37,35 @@ def group_features_by_trace(features, traces):
     return features
 
 
-def get_center_wavelengths(wavelengths, traces, trace_ids):
-    # get the center wavelength from each trace in trace_ids.
-    cc = wavelengths.shape[1] // 2
-    center_wavelengths = [wavelengths[:, cc][traces[:, cc] == i].flatten()[0] for i in trace_ids]
-    return center_wavelengths
+def get_center_wavelengths(features):
+    ref_ids = np.sort(np.array(list(set(features['order']))))
+    wavelengths = [np.average(features['wavelength'][features['order'] == o]) for o in ref_ids]
+    return wavelengths
 
 
-def get_principle_order_number(m0_values, wavelengths, traces, trace_ids, ref_ids):
+def get_principle_order_number(m0_values, features):
     """
     Finds the principle order number m0. Selects the m0 such that the function y(i) = (m0 + i) * central_wavelengths
     has the smallest slope. I.e. this selects the m0 that allows constant/(m0+i) to best fit central_wavelengths.
     This is exactly what CERES does. See equation 3 of Brahm et al. 2016.
 
     :param m0_values: ndarray of integers. 1d.
-    :param wavelengths: ndarray of wavelengths. The wavelengths at every pixel in the image.
-    :param traces:
-    :param trace_ids:
-    :param ref_ids: ndarray of integers. The reference id's of the traces from which central_wavelengths came.
-    Same shape as central_wavelengths. i.e. central_wavelengths[0] is the center wavelength of the trace with reference
-    id ref_ids[0]
+    :param features: dict.
+           dictionary of ndarrays of pixel and order positions of measured spectral features (e.g. emission lines)
+           and their wavelengths.
+           Example:
+               measured_lines = {'pixel': np.array([1, 2.5, 6.1]), 'order': np.array([1, 1, 2]),
+                                 'wavelength': np.array([4000, 5001, 5005)}
+               If the principle order number is 52, then these measured_lines represents 3 spectral features,
+               with (pixel, diffraction order) coordinates of (1, 53), (2.5, 53), (6.1, 54), and wavelengths
+               4000, 5001, and 5005 Angstroms, respectively.
+               respectively. The wavelength solution will calibrate each fiber separately.
     :return: m0: int.
     The principle order number for the fiber from which central_wavelengths were taken.
     This is the true order index of the the trace that corresponds to ref_id[0].
     """
-    center_wavelengths = get_center_wavelengths(wavelengths, traces, trace_ids)
+    center_wavelengths = get_center_wavelengths(features)
+    ref_ids = np.sort(np.array(list(set(features['order']))))
     slopes = []
     for m0 in m0_values:
         # note: replacing np.ptp with some outlier resistant measure of the scatter would be more robust.
