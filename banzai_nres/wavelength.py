@@ -4,7 +4,7 @@ from banzai.stages import Stage
 from banzai.calibrations import CalibrationStacker, CalibrationUser
 
 from banzai_nres.frames import NRESObservationFrame
-from banzai_nres.utils.wavelength_utils import identify_features, group_features_by_trace, get_center_wavelengths
+from banzai_nres.utils.wavelength_utils import identify_features, group_features_by_trace, get_principle_order_number
 from xwavecal.wavelength import find_feature_wavelengths, WavelengthSolution
 from xwavecal.utils.wavelength_utils import find_nearest
 
@@ -14,7 +14,6 @@ import os
 
 logger = logging.getLogger('banzai')
 
-NRES_PRINCIPLE_ORDER_NUMBER = 52
 MODELS = {'initial_wavelength_model': {1: [0, 1, 2], 2: [0, 1, 2]},
           'intermediate_wavelength_model': {0: [0, 1, 2], 1: [0, 1, 2], 2: [0, 1, 2]},
           'final_wavelength_model': {0: [0, 1, 2, 3, 4, 5],
@@ -86,7 +85,7 @@ class WavelengthCalibrate(Stage):
     M0_RANGE = (40, 60)  # range of possible values for the integer principle order number.
 
     def do_stage(self, image):
-        image.features = self._init_feature_labels(image.num_traces, image.features)
+        image.features = self.init_feature_labels(image.num_traces, image.features)
         if image.wavelengths is None:
             # get feature wavelengths without a prior:
             logger.info('Blind solving for the wavelengths.')
@@ -98,54 +97,55 @@ class WavelengthCalibrate(Stage):
             # Note: we could improve this considerably with ndimage.map_coordinates(..., order=1, prefilter=False).
             image.features['wavelength'] = image.wavelengths[image.features['ycentroid'].astype(int),
                                                              image.features['xcentroid'].astype(int)]
-        self.fit_wavelength_solution(image)
+        self.refine_wavelengths(image)
         return image
 
-    def fit_wavelength_solution(self, image):
-        fibers = list(set(image.features['fiber']))
-        for fiber in fibers:
+    def refine_wavelengths(self, image):
+        ref_ids, fiber_ids, trace_ids = get_ref_ids_and_fibers(image.num_traces)
+
+        for fiber in list(set(fiber_ids)):
             this_fiber = image.features['fiber'] == fiber
             if np.all(image.features['wavelength'][this_fiber]) is None:
                 logger.error('The xwavecal wavelength solution has failed on this fiber. Check xwavecal logging.')
                 continue
 
-            wavelength_solution = self.fit_wavelength_function(image.wavelengths, image.traces, image.num_traces,
-                                                               image.features[this_fiber], image.line_list)
-            image.features['wavelength'][fibers == fiber] = wavelength_solution(image.features['pixel'][this_fiber],
+            m0 = get_principle_order_number(np.arange(*self.M0_RANGE), image.wavelengths, image.traces,
+                                            trace_ids[fiber_ids == fiber], ref_ids[fiber_ids == fiber])
+            logger.info('Principle order number is {0}'.format(m0))
+            wavelength_model = self.fit_wavelength_model(image.features[this_fiber], image.line_list, m0)
+
+            # save the wavelengths of each spectral feature
+            image.features['wavelength'][fiber_ids == fiber] = wavelength_model(image.features['pixel'][this_fiber],
                                                                                 image.features['order'][this_fiber])
             # populate a wavelengths image using the 2d polynomial function wavelength_solution
-            # the x2d, y2d, really should be x2d order2d and that should be fed to populate each trace.
-            ref_ids, fiber_ids, trace_ids = get_ref_ids_and_fibers(image.num_traces)
             x2d, y2d = np.meshgrid(np.arange(image.shape[1]), np.arange(image.shape[0]))
             for trace_id, ref_id in zip(trace_ids[fiber_ids == fiber], ref_ids[fiber_ids == fiber]):
                 this_trace = np.isclose(image.traces, trace_id)
-                image.wavelengths[this_trace] = wavelength_solution(x2d[this_trace], ref_id * np.ones_like(x2d[this_trace]))
+                image.wavelengths[this_trace] = wavelength_model(x2d[this_trace], ref_id * np.ones_like(x2d[this_trace]))
 
     @staticmethod
-    def _init_feature_labels(num_traces, features):
+    def init_feature_labels(num_traces, features):
         ref_ids, fiber_ids, trace_ids = get_ref_ids_and_fibers(num_traces)
         features['order'] = ref_ids[features['id'] - 1]
         features['fiber'] = fiber_ids[features['id'] - 1]
         return features
 
-    def fit_wavelength_function(self, wavelengths, traces, num_traces, features, line_list):
+    def fit_wavelength_model(self, features, line_list, m0):
         """
-        Recalibrate an existing wavelength solution using new measured spectral features.
-        :param wavelengths:
-        :param traces:
+        Fit a polynomial model to the feature wavelengths with light outlier rejection. This recalibrates
+        the wavelength solution.
         :param features:
         :param line_list:
-        Real diffraction order number of the i=0 diffraction order. Also known as m0.
+        :param m0: Real diffraction order number of the i=0 diffraction order. Also known as m0.
         :return: wavelength_solution. xwavecal.wavelength.WavelengthSolution.
         wavelength_solution(x, order) will give the wavelength of the len(x) points with pixel and order coordinates
         x and order, respectively.
         where x and order are ndarray's of the same shape.
         """
-        ref_ids, fiber_ids, trace_ids = get_ref_ids_and_fibers(num_traces)
-        m0 = self.get_principle_order_number(np.arange(*self.M0_RANGE), wavelengths, traces, trace_ids, ref_ids)
-        logger.info('Principle order number is {0}'.format(m0))
-        # see if you can avoid providing WavelengthSolution the domain over it which it will be evaluated.
+        # TODO update xwavecal so that WavelengthSolution does not need min_order, max_order, min_pixel, max_pixel.
         wcs = WavelengthSolution(model=MODELS.get('final_wavelength_model'), measured_lines=dict(features),
+                                 min_order=0, max_order=np.max(features['order']),
+                                 min_pixel=0, max_pixel=np.max(features['pixel']),
                                  reference_lines=line_list, m0=m0)
         wavelengths_to_fit = find_nearest(features['wavelength'], np.sort(line_list))
         weights = np.ones_like(wavelengths_to_fit, dtype=float)
@@ -154,35 +154,6 @@ class WavelengthCalibrate(Stage):
         weights[~np.isclose(wavelengths_to_fit, wcs.measured_lines['wavelength'], atol=0.1)] = 0
         wcs.model_coefficients = wcs.solve(wcs.measured_lines, wavelengths_to_fit, weights)
         return wcs
-
-    @staticmethod
-    def get_principle_order_number(m0_values, wavelengths, traces, trace_ids, ref_ids):
-        """
-        Finds the principle order number m0. Selects the m0 such that the function y(i) = (m0 + i) * central_wavelengths
-        has the smallest slope. I.e. this selects the m0 that allows constant/(m0+i) to best fit central_wavelengths.
-        This is exactly what CERES does. See equation 3 of Brahm et al. 2016.
-
-        :param m0_values: ndarray of integers. 1d.
-        :param wavelengths: ndarray of wavelengths. The wavelengths at every pixel in the image.
-        :param traces:
-        :param trace_ids:
-        :param ref_ids: ndarray of integers. The reference id's of the traces from which central_wavelengths came.
-        Same shape as central_wavelengths. i.e. central_wavelengths[0] is the center wavelength of the trace with reference
-        id ref_ids[0]
-        :return: m0: int.
-        The principle order number for the fiber from which central_wavelengths were taken.
-        This is the true order index of the the trace that corresponds to ref_id[0].
-        """
-        center_wavelengths = get_center_wavelengths(wavelengths, traces, trace_ids)
-        slopes = []
-        for m0 in m0_values:
-            # note: replacing np.ptp with some outlier resistant measure of the scatter would be more robust.
-            slopes.append(np.ptp(center_wavelengths * (m0 + ref_ids)))
-
-        if np.count_nonzero(np.isclose(slopes, np.min(slopes), rtol=0.01)) > 1:
-            logger.warning('Two or more viable principle order numbers for this fiber! The m0 recovered from the '
-                           'wavelength solution could be wrong!')
-        return m0_values[np.argmin(slopes)]
 
 
 class IdentifyFeatures(Stage):
