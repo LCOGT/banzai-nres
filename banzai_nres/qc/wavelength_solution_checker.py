@@ -1,11 +1,11 @@
 import numpy as np
 
-import logging
-
 from banzai.stages import Stage
 from banzai.calibrations import CalibrationStacker, CalibrationUser
-
 from banzai_nres.wavelength import LineListLoader
+from xwavecal.utils.wavelength_utils import find_nearest
+
+import logging
 
 class AssessWavelengthSolution(Stage):
     """
@@ -13,10 +13,10 @@ class AssessWavelengthSolution(Stage):
     @author:mjohnson
     """
 
-    def __init__(self,runtime_context):
+    def __init__(self, runtime_context):
         super(AssessWavelengthSolution, self).__init__(runtime_context)
     
-    def do_stage(self,image):
+    def do_stage(self, image):
         lab_lines = find_nearest(features['wavelength'], np.sort(line_list))
         self.calculate_dispersion(image,lab_lines,raw_dispersion,good_dispersion,raw_chi_squared,good_chi_squared,difference)
         qc_results = {'raw_dispersion':raw_dispersion, 'good_dispersion':good_dispersion, 'raw_chi_squared':raw_chi_squared, 'good_chi_squared':good_chi_squared, 'difference':difference}

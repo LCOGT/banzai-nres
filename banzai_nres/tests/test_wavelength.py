@@ -4,6 +4,7 @@ from banzai_nres.utils.wavelength_utils import identify_features, group_features
 from banzai_nres.wavelength import IdentifyFeatures, WavelengthCalibrate, get_ref_ids_and_fibers
 from scipy.ndimage import gaussian_filter
 from banzai_nres.frames import EchelleSpectralCCDData, NRESObservationFrame
+from banzai_nres.qc.wavelength_solution_checker import AssessWavelengthSolution
 from banzai import context
 import sep
 import pytest
@@ -72,11 +73,22 @@ class TestWavelengthCalibrate:
     def generate_image(self):
         traces = np.array([[0, 0, 0], [1, 1, 1], [1, 1, 1], [0, 0, 0], [0, 0, 0], [2, 2, 2], [3, 3, 3]])
         line_list = np.array([10, 11, 12])
-        features = {'pixel': np.array([1, 2, 1, 2]), 'id': np.array([1, 1, 2, 3]), 'wavelength': line_list, 'centroid_err': np.ones_like(line_list)}
+        pixel_positions = np.array([1, 2, 1, 2])
+        features = {'pixel': pixel_positions, 'id': np.array([1, 1, 2, 3]), 'wavelength': pixel_positions, 'centroid_err': np.ones_like(pixel_positions)}
         image = NRESObservationFrame([EchelleSpectralCCDData(data=np.zeros((2, 2)), uncertainty=np.zeros((2, 2)),
                                       meta={'OBJECTS': 'tung&tung&none'}, features=features,
                                       traces=traces, line_list=line_list)], 'foo.fits')
         return image
+
+    @mock.patch('banzai_nres.wavelength.WavelengthCalibrate.refine_wavelengths')
+    def test_do_stage_with_existing_wavelengths(self, mock_refine_wavelengths):
+        # test that feature wavelengths are populated from the old solutions.
+        image = self.generate_image()
+        image.wavelengths = np.random.random(size=image.traces.shape)
+        image.features['xcentroid'], image.features['ycentroid'] = np.array([0, 1, 2]), np.array([2, 0, 1])
+        expected_wavelengths = image.wavelengths[image.features['ycentroid'], image.features['xcentroid']]
+        image = WavelengthCalibrate(context.Context({})).do_stage(image)
+        assert np.allclose(image.features['wavelength'], expected_wavelengths)
 
     def test_do_stage(self):
         # TODO
@@ -114,6 +126,7 @@ def test_group_features_by_trace():
     features = {'xcentroid': [0, 2, 0, 2], 'ycentroid': [0, 0, 1, 1]}
     features = group_features_by_trace(features, traces)
     assert np.allclose(features['id'], [0, 1, 2, 0])
+
 
 @mock.patch('banzai_nres.utils.wavelength_utils.get_center_wavelengths')
 def test_get_principle_order_number(mock_wavelengths):
@@ -153,7 +166,6 @@ class TestQCChecks:
     input_context = context.Context({})
 
     def test_qc_checks(self):
-        from banzai_nres.qc import AssessWavelengthSolution
         raw_dispersion, good_dispersion, raw_chi_squared, good_chi_squared, difference = AssessWavelengthSolution(self.input_context).calculate_dispersion(self.test_image,self.test_image.line_list)
         assert raw_dispersion >= good_dispersion
         assert raw_chi_squared >= good_chi_squared
