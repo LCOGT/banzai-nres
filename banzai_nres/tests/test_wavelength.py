@@ -90,7 +90,8 @@ class TestWavelengthCalibrate:
         image = WavelengthCalibrate(context.Context({})).do_stage(image)
         assert np.allclose(image.features['wavelength'], expected_wavelengths)
 
-    def test_do_stage(self):
+    @mock.patch('banzai_nres.wavelength.WavelengthCalibrate.refine_wavelengths')
+    def test_do_stage(self, mock_refine_wavelengths):
         # TODO
         assert True
 
@@ -166,7 +167,7 @@ class TestQCChecks:
     input_context = context.Context({})
 
     def test_qc_checks(self):
-        raw_dispersion, good_dispersion, raw_chi_squared, good_chi_squared, difference = AssessWavelengthSolution(self.input_context).calculate_dispersion(self.test_image,self.test_image.line_list)
+        raw_dispersion, good_dispersion, raw_chi_squared, good_chi_squared, difference = AssessWavelengthSolution(self.input_context).calculate_dispersion(self.test_image,self.test_image.features['wavelength'])
         assert raw_dispersion >= good_dispersion
         assert raw_chi_squared >= good_chi_squared
     
