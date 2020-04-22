@@ -6,11 +6,10 @@ from scipy.ndimage import gaussian_filter
 from banzai_nres.frames import EchelleSpectralCCDData, NRESObservationFrame
 from banzai_nres.qc.wavelength_solution_checker import AssessWavelengthSolution
 from banzai import context
+from astropy.table import Table
 import sep
 import pytest
 import mock
-
-
 
 
 class TestIdentifyFeatures:
@@ -74,7 +73,8 @@ class TestWavelengthCalibrate:
         traces = np.array([[0, 0, 0], [1, 1, 1], [1, 1, 1], [0, 0, 0], [0, 0, 0], [2, 2, 2], [3, 3, 3]])
         line_list = np.array([10, 11, 12])
         pixel_positions = np.array([1, 2, 1, 2])
-        features = {'pixel': pixel_positions, 'id': np.array([1, 1, 2, 3]), 'wavelength': pixel_positions, 'centroid_err': np.ones_like(pixel_positions)}
+        features = Table({'pixel': pixel_positions, 'id': np.array([1, 1, 2, 3]),
+                          'wavelength': pixel_positions, 'centroid_err': np.ones_like(pixel_positions)})
         image = NRESObservationFrame([EchelleSpectralCCDData(data=np.zeros((2, 2)), uncertainty=np.zeros((2, 2)),
                                       meta={'OBJECTS': 'tung&tung&none'}, features=features,
                                       traces=traces, line_list=line_list)], 'foo.fits')
@@ -85,21 +85,24 @@ class TestWavelengthCalibrate:
         # test that feature wavelengths are populated from the old solutions.
         image = self.generate_image()
         image.wavelengths = np.random.random(size=image.traces.shape)
-        image.features['xcentroid'], image.features['ycentroid'] = np.array([0, 1, 2]), np.array([2, 0, 1])
+        image.features['xcentroid'], image.features['ycentroid'] = np.array([0, 1, 2, 0]), np.array([2, 0, 1, 0])
         expected_wavelengths = image.wavelengths[image.features['ycentroid'], image.features['xcentroid']]
         image = WavelengthCalibrate(context.Context({})).do_stage(image)
         assert np.allclose(image.features['wavelength'], expected_wavelengths)
 
     @mock.patch('banzai_nres.wavelength.WavelengthCalibrate.refine_wavelengths')
-    def test_do_stage(self, mock_refine_wavelengths):
+    @mock.patch('banzai_nres.wavelength.find_feature_wavelengths', return_value=np.arange(4))
+    def test_do_stage(self, mock_find_wavelengths, mock_refine_wavelengths):
+        image = self.generate_image()
+        image.features['id'] = np.ones_like(image.features['pixel'])  # so that only one fiber is populated.
+        image = WavelengthCalibrate(context.Context({})).do_stage(image)
+        assert np.allclose(image.features['wavelength'], np.arange(4))
+
+    def test_refine_wavelengths(self):
         # TODO
         assert True
 
-    def refine_wavelengths(self):
-        # TODO
-        assert True
-
-    def fit_wavelength_model(self):
+    def test_fit_wavelength_model(self):
         # TODO
         assert True
 
