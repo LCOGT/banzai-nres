@@ -214,6 +214,7 @@ class IdentifyFeatures(Stage):
         # blaze correct the emission features fluxes. This speeds up and improves overlap fitting in xwavecal.
         features['corrected_flux'] = features['flux'] / image.blaze['blaze'][features['id'] - 1,
                                                                              np.array(features['xcentroid'], dtype=int)]
+        features['centroid_err'] = self.fwhm / np.sqrt(features['flux'])
         image.features = features
         return image
 

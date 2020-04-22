@@ -143,6 +143,10 @@ def test_get_ref_ids_and_fibers():
 
 class TestQCChecks:
     from banzai_nres.qc import AssessWavelengthSolution
-    test_image = TestWavelengthCalibrate.generate_image()
-    AssessWavelengthSolution.calculate_dispersion(test_image,test_image.line_list,dispersion_metrics)
-    AssessWavelengthSolution.calculate_photon_limited_dispersion(test_image,feature_centroid_uncertainty)
+    test_image = TestWavelengthCalibrate().generate_image()
+    input_context = context.Context({})
+    #test_image = WavelengthCalibrate(input_context).do_stage(self.generate_image())
+    raw_dispersion, good_dispersion, raw_chi_squared, good_chi_squared = AssessWavelengthSolution(input_context).calculate_dispersion(test_image,test_image.line_list)
+    assert raw_dispersion > good_dispersion
+    assert raw_chi_squared >= good_chi_squared
+    
