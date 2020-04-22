@@ -72,7 +72,7 @@ class TestWavelengthCalibrate:
     def generate_image(self):
         traces = np.array([[0, 0, 0], [1, 1, 1], [1, 1, 1], [0, 0, 0], [0, 0, 0], [2, 2, 2], [3, 3, 3]])
         line_list = np.array([10, 11, 12])
-        features = {'pixel': np.array([1, 2, 1, 2]), 'id': np.array([1, 1, 2, 3])}
+        features = {'pixel': np.array([1, 2, 1, 2]), 'id': np.array([1, 1, 2, 3]), 'wavelength': line_list, 'centroid_err': np.ones_like(line_list)}
         image = NRESObservationFrame([EchelleSpectralCCDData(data=np.zeros((2, 2)), uncertainty=np.zeros((2, 2)),
                                       meta={'OBJECTS': 'tung&tung&none'}, features=features,
                                       traces=traces, line_list=line_list)], 'foo.fits')
@@ -149,11 +149,12 @@ def test_get_ref_ids_and_fibers():
     assert np.allclose(fibers, [0, 1, 0, 1, 0, 1])
 
 class TestQCChecks:
-    from banzai_nres.qc import AssessWavelengthSolution
     test_image = TestWavelengthCalibrate().generate_image()
     input_context = context.Context({})
-    #test_image = WavelengthCalibrate(input_context).do_stage(self.generate_image())
-    raw_dispersion, good_dispersion, raw_chi_squared, good_chi_squared = AssessWavelengthSolution(input_context).calculate_dispersion(test_image,test_image.line_list)
-    assert raw_dispersion > good_dispersion
-    assert raw_chi_squared >= good_chi_squared
+
+    def test_qc_checks(self):
+        from banzai_nres.qc import AssessWavelengthSolution
+        raw_dispersion, good_dispersion, raw_chi_squared, good_chi_squared, difference = AssessWavelengthSolution(self.input_context).calculate_dispersion(self.test_image,self.test_image.line_list)
+        assert raw_dispersion >= good_dispersion
+        assert raw_chi_squared >= good_chi_squared
     

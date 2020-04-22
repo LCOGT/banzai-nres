@@ -18,8 +18,8 @@ class AssessWavelengthSolution(Stage):
     
     def do_stage(self,image):
         lab_lines = find_nearest(features['wavelength'], np.sort(line_list))
-        self.calculate_dispersion(image,lab_lines,raw_dispersion,good_dispersion,raw_chi_squared,good_chi_squared)
-        qc_results = {'raw_dispersion':raw_dispersion, 'good_dispersion':good_dispersion, 'raw_chi_squared':raw_chi_squared, 'good_chi_squared':good_chi_squared}
+        self.calculate_dispersion(image,lab_lines,raw_dispersion,good_dispersion,raw_chi_squared,good_chi_squared,difference)
+        qc_results = {'raw_dispersion':raw_dispersion, 'good_dispersion':good_dispersion, 'raw_chi_squared':raw_chi_squared, 'good_chi_squared':good_chi_squared, 'difference':difference}
         qc.save_qc_results(self.runtime_context, qc_results, image)
 
     def calculate_dispersion(self,image,lab_lines):
@@ -32,9 +32,10 @@ class AssessWavelengthSolution(Stage):
         feature_centroid_uncertainty = image.features['centroid_err']
         raw_chi_squared = np.sum((difference/feature_centroid_uncertainty)**2)/len(difference)
         good_chi_squared = np.sum((difference[low_scatter_lines]/feature_centroid_uncertainty[low_scatter_lines])**2)/len(difference[low_scatter_lines])
-        return raw_dispersion, good_dispersion, raw_chi_squared, good_chi_squared
+        return raw_dispersion, good_dispersion, raw_chi_squared, good_chi_squared, difference
 
 
         #TO DO:
         #Assess if there are systematic differences in goodness of fit across detector
         #(e.g., due to systematics in wavelength solution)
+        #wavelength residuals binned in pixel bins, or per order -- x,y directions
