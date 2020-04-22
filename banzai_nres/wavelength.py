@@ -4,7 +4,7 @@ from banzai.stages import Stage
 from banzai.calibrations import CalibrationStacker, CalibrationUser
 
 from banzai_nres.frames import NRESObservationFrame
-from banzai_nres.utils.wavelength_utils import identify_features, group_features_by_trace
+from banzai_nres.utils.wavelength_utils import identify_features, group_features_by_trace, get_principle_order_number
 from xwavecal.wavelength import find_feature_wavelengths, WavelengthSolution
 from xwavecal.utils.wavelength_utils import find_nearest
 
@@ -14,14 +14,14 @@ import os
 
 logger = logging.getLogger('banzai')
 
-NRES_PRINCIPLE_ORDER_NUMBER = 52
-MODELS = {'initial_wavelength_model': {1: [0, 1, 2], 2: [0, 1, 2]},
-          'intermediate_wavelength_model': {0: [0, 1, 2], 1: [0, 1, 2], 2: [0, 1, 2]},
-          'final_wavelength_model': {0: [0, 1, 2, 3, 4, 5],
-                                     1: [0, 1, 2, 3, 4, 5],
-                                     2: [0, 1, 2, 3, 4, 5],
-                                     3: [0, 1, 2, 3, 4, 5],
-                                     4: [0]}}
+WAVELENGTH_SOLUTION_MODEL = {0: [0, 1, 2, 3, 4, 5],
+                             1: [0, 1, 2, 3, 4, 5],
+                             2: [0, 1, 2, 3, 4, 5],
+                             3: [0, 1, 2, 3, 4, 5],
+                             4: [0]}
+
+# TODO refactor xwavecal so that we dont need this. We only need to set flux_tol to 0.5
+OVERLAP_SETTINGS = {'min_num_overlaps': 5, 'overlap_linear_scale_range': (0.5, 2), 'flux_tol': 0.5, 'max_red_overlap': 1000, 'max_blue_overlap': 2000}
 
 
 class ArcStacker(CalibrationStacker):
@@ -86,66 +86,70 @@ class WavelengthCalibrate(Stage):
     M0_RANGE = (40, 60)  # range of possible values for the integer principle order number.
 
     def do_stage(self, image):
-        image.features = self._init_feature_labels(image)
+        image.features = self.init_feature_labels(image.num_traces, image.features)
         if image.wavelengths is None:
-            # get feature wavelengths without a prior:
-            logger.info('Blind solving for the wavelengths.')
-            # TODO have this function calibrate all the fibers in features.
-            image.features['wavelength'] = find_feature_wavelengths(dict(image.features), image.line_list,
-                                                                    max_pixel=image.data.shape[1] - 1, min_pixel=0,
-                                                                    m0_range=self.M0_RANGE)
+            image.features['wavelength'] = np.zeros_like(image.features['pixel'], dtype=float)  # init wavelengths
+            for fiber in list(set(image.features['fiber'])):
+                logger.info('Blind solving for the wavelengths for fiber {0} (arbitrary label).'.format(fiber))
+                this_fiber = image.features['fiber'] == fiber
+                image.features['wavelength'][this_fiber] = find_feature_wavelengths(dict(image.features[this_fiber]), image.line_list,
+                                                                                    max_pixel=image.data.shape[1] - 1, min_pixel=0,
+                                                                                    m0_range=self.M0_RANGE,
+                                                                                    overlap_settings=OVERLAP_SETTINGS)
         else:
             logger.info('Getting feature wavelengths from past solution.')
-            # Note: we could improve this considerably with ndimage.map_coordinates(..., order=1, prefilter=False).
+            # Note: we could improve this estimate by using ndimage.map_coordinates(..., order=1, prefilter=False).
             image.features['wavelength'] = image.wavelengths[image.features['ycentroid'].astype(int),
                                                              image.features['xcentroid'].astype(int)]
-        self.fit_wavelength_solution(image)
+        self.refine_wavelengths(image)
         return image
 
-    def fit_wavelength_solution(self, image):
-        for fiber in list(set(image.features['fiber'])):
-            if np.all(image.features['wavelength'][fibers == fiber]) is None:
-                logger.error('The xwavecal wavelength solution has failed on this fiber. Check xwavecal logging.')
+    def refine_wavelengths(self, image):
+        ref_ids, fiber_ids, trace_ids = get_ref_ids_and_fibers(image.num_traces)
+        image.wavelengths = np.zeros_like(image.data, dtype=float)
+        for fiber in list(set(fiber_ids)):
+            this_fiber = image.features['fiber'] == fiber
+            if np.all(np.isnan(image.features['wavelength'][this_fiber])) or np.all(np.isclose(image.features['wavelength'][this_fiber], 0)):
+                logger.error('No prior wavelength solution for this fiber. Will not refine wavelengths.')
                 continue
 
-            trace_ids = np.arange(1, image.num_traces + 1)
-            wavelength_solution = self.fit_wavelength_function(features[fibers == fiber], image.line_list)
-            image.features['wavelength'][fibers == fiber] = wavelength_solution(features['pixel'][fibers == fiber],
-                                                                                features['order'][fibers == fiber])
-            image.wavelengths = self.create_wavelengths_image(image, trace_ids, ref_ids, wavelength_solution)
+            m0 = get_principle_order_number(np.arange(*self.M0_RANGE), image.features[this_fiber])
+            logger.info('Principle order number is {0} for fiber {1}'.format(m0, fiber))
+            wavelength_model = self.fit_wavelength_model(image.features[this_fiber], image.line_list, m0)
+
+            # save the wavelengths of each spectral feature
+            image.features['wavelength'][this_fiber] = wavelength_model(image.features['pixel'][this_fiber],
+                                                                        image.features['order'][this_fiber])
+            # populate a wavelengths image using the 2d polynomial function wavelength_solution
+            x2d, y2d = np.meshgrid(np.arange(image.shape[1]), np.arange(image.shape[0]))
+            for trace_id, ref_id in zip(trace_ids[fiber_ids == fiber], ref_ids[fiber_ids == fiber]):
+                this_trace = np.isclose(image.traces, trace_id)
+                image.wavelengths[this_trace] = wavelength_model(x2d[this_trace], ref_id * np.ones_like(x2d[this_trace]))
 
     @staticmethod
-    def _init_feature_labels(image):
-        ref_ids, fibers = get_ref_ids_and_fibers(image.num_traces)
-        image.features['order'] = ref_ids[image.features['id'] - 1]
-        image.features['fiber'] = fibers[image.features['id'] - 1]
-        return image.features
+    def init_feature_labels(num_traces, features):
+        ref_ids, fiber_ids, trace_ids = get_ref_ids_and_fibers(num_traces)
+        features['order'] = ref_ids[features['id'] - 1].astype(int)
+        features['fiber'] = fiber_ids[features['id'] - 1].astype(int)
+        return features
 
     @staticmethod
-    def create_wavelengths_image(image, trace_ids, ref_ids, wavelength_solution):
-        # overwrite old wavelengths with the new wavelengths
-        x2d, y2d = np.meshgrid(np.arange(image.shape[1]), np.arange(image.shape[0]))
-        for trace_id, ref_id in zip(trace_ids, ref_ids):
-            this_trace = np.isclose(image.traces, trace_id)
-            image.wavelengths[this_trace] = wavelength_solution(x2d[this_trace], ref_id * np.ones_like(x2d[this_trace]))
-        return image.wavelengths
-
-    @staticmethod
-    def fit_wavelength_function(features, line_list):
+    def fit_wavelength_model(features, line_list, m0):
         """
-        Recalibrate an existing wavelength solution using new measured spectral features.
+        Fit a polynomial model to the feature wavelengths with light outlier rejection. This recalibrates
+        the wavelength solution.
         :param features:
         :param line_list:
-        Real diffraction order number of the i=0 diffraction order. Also known as m0.
+        :param m0: Real diffraction order number of the i=0 diffraction order. Also known as m0.
         :return: wavelength_solution. xwavecal.wavelength.WavelengthSolution.
         wavelength_solution(x, order) will give the wavelength of the len(x) points with pixel and order coordinates
         x and order, respectively.
         where x and order are ndarray's of the same shape.
         """
-        m0 = self.get_principle_order_number(np.arange(*self.M0_RANGE), center_wavelengths, ref_ids)
-        logger.info('Principle order number is {0}'.format(m0))
-        # see if you can avoid providing WavelengthSolution the domain over it which it will be evaluated.
-        wcs = WavelengthSolution(model=MODELS.get('final_wavelength_model'), measured_lines=dict(features),
+        # TODO update xwavecal so that WavelengthSolution does not need min_order, max_order, min_pixel, max_pixel.
+        wcs = WavelengthSolution(model=WAVELENGTH_SOLUTION_MODEL, measured_lines=dict(features),
+                                 min_order=0, max_order=np.max(features['order']),
+                                 min_pixel=0, max_pixel=np.max(features['pixel']),
                                  reference_lines=line_list, m0=m0)
         wavelengths_to_fit = find_nearest(features['wavelength'], np.sort(line_list))
         weights = np.ones_like(wavelengths_to_fit, dtype=float)
@@ -154,41 +158,6 @@ class WavelengthCalibrate(Stage):
         weights[~np.isclose(wavelengths_to_fit, wcs.measured_lines['wavelength'], atol=0.1)] = 0
         wcs.model_coefficients = wcs.solve(wcs.measured_lines, wavelengths_to_fit, weights)
         return wcs
-
-    @staticmethod
-    def get_principle_order_number(m0_values, wavelengths, traces, trace_ids, ref_ids):
-        """
-        Finds the principle order number m0. Selects the m0 such that the function y(i) = (m0 + i) * central_wavelengths
-        has the smallest slope. I.e. this selects the m0 that allows constant/(m0+i) to best fit central_wavelengths.
-        This is exactly what CERES does. See equation 3 of Brahm et al. 2016.
-
-        :param m0_values: ndarray of integers. 1d.
-        :param center_wavelengths: ndarray of wavelengths. The wavelengths of the center pixels down the detector, for
-        one fiber
-        :param ref_ids: ndarray of integers. The reference id's of the traces from which central_wavelengths came.
-        Same shape as central_wavelengths. i.e. central_wavelengths[0] is the center wavelength of the trace with reference
-        id ref_ids[0]
-        :return: m0: int.
-        The principle order number for the fiber from which central_wavelengths were taken.
-        This is the true order index of the the trace that corresponds to ref_id[0].
-        """
-        center_wavelengths = self.get_center_wavelengths(wavelengths, traces, trace_ids)
-        slopes = []
-        for m0 in m0_values:
-            # note: replacing np.ptp with some outlier resistant measure of the scatter would be more robust.
-            slopes.append(np.ptp(center_wavelengths * (m0 + ref_ids)))
-
-        if np.count_nonzero(np.isclose(slopes, np.min(slopes), rtol=0.01)) > 1:
-            logger.warning('Two or more viable principle order numbers for this fiber! The m0 recovered from the '
-                           'wavelength solution could be wrong!')
-        return m0_values[np.argmin(slopes)]
-
-    @staticmethod
-    def get_center_wavelengths(wavelengths, traces, trace_ids):
-        # get the center wavelength from each trace in trace_ids.
-        cc = wavelengths.shape[1] // 2
-        center_wavelengths = [wavelengths[:, cc][traces[:, cc] == i].flatten()[0] for i in trace_ids]
-        return center_wavelengths
 
 
 class IdentifyFeatures(Stage):
@@ -205,12 +174,9 @@ class IdentifyFeatures(Stage):
         features = features[features['id'] != 0]  # throw out features that are outside of any trace.
         if len(features) == 0:
             logger.error('No emission features found on this image!', image=image)
-        # mask data
-        masked_data, masked_err = np.copy(image.data), np.copy(image.uncertainty)
-        masked_data[np.isclose(image.mask, 1)], masked_err[np.isclose(image.mask, 1)] = 0, 0
         # get total flux in each emission feature. For now just sum_circle, although we should use sum_ellipse.
-        features['flux'], features['fluxerr'], _ = sep.sum_circle(masked_data, features['xcentroid'], features['ycentroid'],
-                                                                  self.fwhm, gain=1.0, err=masked_err)
+        features['flux'], features['fluxerr'], _ = sep.sum_circle(image.data, features['xcentroid'], features['ycentroid'],
+                                                                  self.fwhm, gain=1.0, err=image.uncertainty, mask=image.mask)
         # blaze correct the emission features fluxes. This speeds up and improves overlap fitting in xwavecal.
         features['corrected_flux'] = features['flux'] / image.blaze['blaze'][features['id'] - 1,
                                                                              np.array(features['xcentroid'], dtype=int)]
@@ -227,4 +193,4 @@ def get_ref_ids_and_fibers(num_traces):
         ref_id[fibers == fiber] = np.arange(np.count_nonzero(fibers == fiber))
     # note that the fiber designation does not matter, all that matters is that we separate the two AGU's wavelength
     # solutions.
-    return ref_id, fibers
+    return ref_id, fibers, np.arange(1, num_traces + 1)

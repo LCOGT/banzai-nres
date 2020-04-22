@@ -1,5 +1,6 @@
 import numpy as np
-from banzai_nres.utils.wavelength_utils import identify_features, group_features_by_trace
+from banzai_nres.utils.wavelength_utils import identify_features, group_features_by_trace, \
+    get_principle_order_number, get_center_wavelengths
 from banzai_nres.wavelength import IdentifyFeatures, WavelengthCalibrate, get_ref_ids_and_fibers
 from scipy.ndimage import gaussian_filter
 from banzai_nres.frames import EchelleSpectralCCDData, NRESObservationFrame
@@ -77,25 +78,30 @@ class TestWavelengthCalibrate:
                                       traces=traces, line_list=line_list)], 'foo.fits')
         return image
 
-    @mock.patch('banzai_nres.wavelength.WavelengthCalibrate.calibrate_fiber',
-                side_effect=lambda x, y, z, image, t: image)
-    def test_do_stage(self, mock_calibrate_fiber):
-        input_context = context.Context({})
-        image = WavelengthCalibrate(input_context).do_stage(self.generate_image())
-        assert np.allclose(image.features['order'], [0, 0, 0, 1])
-        assert np.allclose(image.features['fiber'], [0, 0, 1, 0])
-
-    def test_calibrate_fiber(self):
+    def test_do_stage(self):
         # TODO
         assert True
+
+    def refine_wavelengths(self):
+        # TODO
+        assert True
+
+    def fit_wavelength_model(self):
+        # TODO
+        assert True
+
+    def test_init_feature_labels(self):
+        features = {'id': np.array([1, 2, 3, 3, 4, 5, 6])}
+        features = WavelengthCalibrate.init_feature_labels(6, features)
+        assert np.allclose(features['fiber'], [0, 1, 0, 0, 1, 0, 1])
+        assert np.allclose(features['order'], [0, 0, 1, 1, 1, 2, 2])
 
 
 @mock.patch('banzai_nres.wavelength.WavelengthSolution.solve', side_effect=lambda x, y, z: (x, y, z))
 def test_recalibrate(mock_solve):
-    measured_lines = {'wavelength': [10, 11, 50], 'pixel': [1, 2, 3], 'order': [0, 0, 0]}
+    features = {'wavelength': [10, 11, 50], 'pixel': [1, 2, 3], 'order': [0, 0, 1]}
     line_list = np.array([10.05, 11.05, 60, 11.5])
-    pixel, order, principle_order_number = np.arange(10), np.arange(10), 30
-    wavelength_solution = WavelengthCalibrate.fit_wavelength_function(measured_lines, line_list, pixel, order, principle_order_number)
+    wavelength_solution = WavelengthCalibrate(context.Context({})).fit_wavelength_model(features, line_list, 30)
     # the mock patch populated wavelength_solution.model_coefficients with the arguments fed to WavelengthSolution.solve
     # could use mock_solve.assert_called_with here, but it is not as straightforward because measured_lines changes.
     measured_lines, wavelengths_to_fit, weights = wavelength_solution.model_coefficients
@@ -109,35 +115,36 @@ def test_group_features_by_trace():
     features = group_features_by_trace(features, traces)
     assert np.allclose(features['id'], [0, 1, 2, 0])
 
-
-def test_get_principle_order_number():
-    m0_values, ref_id = np.arange(10, 100), np.arange(20)
+@mock.patch('banzai_nres.utils.wavelength_utils.get_center_wavelengths')
+def test_get_principle_order_number(mock_wavelengths):
+    m0_values, ref_ids = np.arange(10, 100), np.arange(20)
     true_m0 = 30
-    center_wavelengths = np.random.normal(5000, 10, len(ref_id))/(true_m0 + ref_id)
-    assert true_m0 == WavelengthCalibrate.get_principle_order_number(m0_values, center_wavelengths, ref_id)
+    mock_wavelengths.return_value = np.random.normal(5000, 10, len(ref_ids))/(true_m0 + ref_ids)
+    assert true_m0 == get_principle_order_number(m0_values, {'order': ref_ids})
 
 
-def test_get_principle_order_number_warns_on_degenerate_m0():
-    m0_values, ref_id = 30*np.ones(40), np.arange(20)
+@mock.patch('banzai_nres.utils.wavelength_utils.get_center_wavelengths')
+def test_get_principle_order_number_warns_on_degenerate_m0(mock_wavelengths):
+    m0_values, ref_ids = 30*np.ones(40), np.arange(20)
     true_m0 = 30
-    center_wavelengths = np.random.normal(5000, 50, len(ref_id))/(true_m0 + ref_id)
-    WavelengthCalibrate.get_principle_order_number(m0_values, center_wavelengths, ref_id)
+    mock_wavelengths.return_value = np.random.normal(5000, 50, len(ref_ids))/(true_m0 + ref_ids)
+    get_principle_order_number(m0_values, {'order': ref_ids})
     # right now this just tests whether the warning if statement does not cause a crash.
     assert True
 
 
 def test_get_center_wavelengths():
-    trace_ids = np.array([1, 2])
-    traces = np.array([[0, 0, 0], [1, 1, 1], [1, 1, 1], [0, 0, 0], [0, 0, 0], [2, 2, 2]])
-    center_wavelengths = WavelengthCalibrate.get_center_wavelengths(traces * 3, traces, trace_ids)
-    assert np.allclose(center_wavelengths, [3, 6])
+    features = {'pixel': np.array([2, 4, 1, 5, 3]), 'order': np.array([1, 1, 2, 2, 3]),
+                'wavelength': np.array([20, 40, 10, 50, 30])}
+    center_wavelengths = get_center_wavelengths(features)
+    assert np.allclose(center_wavelengths, [30, 30, 30])
 
 
 def test_get_ref_ids_and_fibers():
-    ref_id, fibers = get_ref_ids_and_fibers(3)
+    ref_id, fibers, trace_ids = get_ref_ids_and_fibers(3)
     assert np.allclose(ref_id, [0, 0, 1])
     assert np.allclose(fibers, [0, 1, 0])
-    ref_id, fibers = get_ref_ids_and_fibers(6)
+    ref_id, fibers, trace_ids = get_ref_ids_and_fibers(6)
     assert np.allclose(ref_id, [0, 0, 1, 1, 2, 2])
     assert np.allclose(fibers, [0, 1, 0, 1, 0, 1])
 
