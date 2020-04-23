@@ -16,8 +16,9 @@ class AssessWavelengthSolution(Stage):
     def __init__(self, runtime_context):
         super(AssessWavelengthSolution, self).__init__(runtime_context)
     
-    def do_stage(self, image):
-        lab_lines = find_nearest(features['wavelength'], np.sort(line_list))
+    def do_stage(self,image):
+        line_list = image.line_list
+        lab_lines = find_nearest(image.features['wavelength'], np.sort(line_list))
         self.calculate_dispersion(image,lab_lines,raw_dispersion,good_dispersion,raw_chi_squared,good_chi_squared,difference)
         qc_results = {'raw_dispersion':raw_dispersion, 'good_dispersion':good_dispersion, 'raw_chi_squared':raw_chi_squared, 'good_chi_squared':good_chi_squared, 'difference':difference}
         qc.save_qc_results(self.runtime_context, qc_results, image)
