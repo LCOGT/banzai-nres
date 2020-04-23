@@ -92,7 +92,7 @@ spec:
             - name: REDIS_HOST
               value: "redis://localhost:6379/0"
             - name: BANZAI_WORKER_LOGLEVEL
-              value: "debug"
+              value: "DEBUG"
             - name: CALIBRATE_PROPOSAL_ID
               value: "calibrate"
             - name: OMP_NUM_THREADS
