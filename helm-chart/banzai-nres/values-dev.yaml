@@ -29,7 +29,7 @@ API_ROOT: http://banzai-nres-archive-api-archiveapi.dev/
 
 BUCKET: banzai-nres-lco-global
 
-BANZAI_WORKER_LOG_LEVEL: "debug"
+BANZAI_WORKER_LOGLEVEL: "debug"
 
 RAW_DATA_FRAME_URL: "http://archiveapi-internal.prod/frames"
 
