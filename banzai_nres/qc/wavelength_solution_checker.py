@@ -1,11 +1,11 @@
 import numpy as np
 
-import logging
-
 from banzai.stages import Stage
 from banzai.calibrations import CalibrationStacker, CalibrationUser
-
 from banzai_nres.wavelength import LineListLoader
+from xwavecal.utils.wavelength_utils import find_nearest
+
+import logging
 
 class AssessWavelengthSolution(Stage):
     """
@@ -13,7 +13,7 @@ class AssessWavelengthSolution(Stage):
     @author:mjohnson
     """
 
-    def __init__(self,runtime_context):
+    def __init__(self, runtime_context):
         super(AssessWavelengthSolution, self).__init__(runtime_context)
     
     def do_stage(self,image):
