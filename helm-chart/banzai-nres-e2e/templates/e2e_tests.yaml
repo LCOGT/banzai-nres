@@ -110,8 +110,8 @@ spec:
             - "banzai-celery-worker"
             - --concurrency
             - "2"
-            - -l
-            - "debug"
+            - --loglevel
+            - "DEBUG"
           resources:
             requests:
               cpu: "0.1"
