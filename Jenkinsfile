@@ -43,11 +43,11 @@ pipeline {
 			}
 		}
 		stage('DeployDevStack') {
-		//	when {
-		//		anyOf {
-		//		branch 'dev'
-		//		}
-		//	}
+			when {
+				anyOf {
+				branch 'dev'
+				}
+			}
 		    steps {
 	            script {
                     withKubeConfig([credentialsId: "dev-kube-config"]) {
