@@ -8,6 +8,7 @@ import time
 from glob import glob
 from astropy.utils.data import get_pkg_data_filename
 from banzai.celery import app, schedule_calibration_stacking
+from banzai.dbs import get_session
 import argparse
 from banzai import dbs
 from types import ModuleType
@@ -32,6 +33,7 @@ DAYS_OBS = [os.path.join(instrument, os.path.basename(dayobs_path)) for instrume
 
 TEST_PACKAGE = 'banzai_nres.tests'
 CONFIGDB_FILENAME = get_pkg_data_filename('data/configdb_example.json', TEST_PACKAGE)
+LINE_LIST_FILENAME = get_pkg_data_filename('data/ThAr_atlas_ESO.txt', TEST_PACKAGE)
 
 
 def observation_portal_side_effect(*args, **kwargs):
@@ -40,6 +42,12 @@ def observation_portal_side_effect(*args, **kwargs):
     filename = 'test_obs_portal_response_{site}_{start}.json'.format(site=site, start=start)
     filename = get_pkg_data_filename('data/{filename}'.format(filename=filename), TEST_PACKAGE)
     return FakeResponse(filename)
+
+
+def get_instrument_ids(db_address):
+    with get_session(db_address) as db_session:
+        instruments = db_session.query(dbs.instruments).all()
+    return [instrument.id for instrument in instruments]
 
 
 def celery_join():
@@ -172,8 +180,10 @@ def init(configdb):
     for instrument in INSTRUMENTS:
         for bpm_filename in glob(os.path.join(DATA_ROOT, instrument, 'bpm/*bpm*')):
             os.system(f'banzai_nres_add_bpm --filename {bpm_filename} --db-address={os.environ["DB_ADDRESS"]}')
-
-
+    instrument_ids = get_instrument_ids(os.environ["DB_ADDRESS"])
+    for instrument_id in instrument_ids:
+        os.system(f'banzai_nres_add_line_list --filename {LINE_LIST_FILENAME} --db-address={os.environ["DB_ADDRESS"]} '
+                  f'--instrument-id {instrument_id}')
 
 @pytest.mark.e2e
 @pytest.mark.master_bias

@@ -26,7 +26,8 @@ CALIBRATION_MIN_FRAMES = {'BIAS': 5,
 
 CALIBRATION_SET_CRITERIA = {'BIAS': ['binning', 'configuration_mode'],
                             'DARK': ['binning', 'configuration_mode'],
-                            'LAMPFLAT': ['binning', 'fiber0_lit', 'fiber1_lit', 'fiber2_lit']}
+                            'LAMPFLAT': ['binning', 'fiber0_lit', 'fiber1_lit', 'fiber2_lit'],
+                            'LINELIST': []}
 
 CALIBRATION_FILENAME_FUNCTIONS = {'BIAS': ('banzai_nres.utils.file_utils.config_to_filename',
                                            'banzai.utils.file_utils.ccdsum_to_filename'),

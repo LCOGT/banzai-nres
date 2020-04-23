@@ -67,7 +67,7 @@ class LineListLoader(CalibrationUser):
         master_calibration_file_info = self.get_calibration_file_info(image)
         if master_calibration_file_info is None:
             return self.on_missing_master_calibration(image)
-        line_list = np.genfromtxt(master_calibration_file_info['path'])
+        line_list = np.genfromtxt(master_calibration_file_info['path'])[:, 1].flatten()
         logger.info('Applying master calibration', image=image,
                     extra_tags={'master_calibration':  os.path.basename(master_calibration_file_info['path'])})
         return self.apply_master_calibration(image, line_list)
