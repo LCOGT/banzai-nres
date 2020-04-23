@@ -131,6 +131,8 @@ Define shared environment variables
   value: {{ .Values.INGESTER_PROCESS_NAME | quote }}
 - name: POSTPROCESS_FILES
   value: "False"
+- name: BANZAI_WORKER_LOG_LEVEL
+  value: {{ .Values.BANZAI_WORKER_LOG_LEVEL | quote }}
 - name: RAW_DATA_FRAME_URL
   value: {{ .Values.RAW_DATA_FRAME_URL | quote }}
 - name: RAW_DATA_AUTH_TOKEN
