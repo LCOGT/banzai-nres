@@ -69,8 +69,14 @@ pipeline {
 		    steps {
 	            script {
                     withKubeConfig([credentialsId: "build-kube-config"]) {
-                        sh('helm repo update && helm upgrade --install banzai-nres-e2e helm-chart/banzai-nres-e2e ' +
-                                '--set banzaiNRES.tag="${GIT_DESCRIPTION}" --force --wait --timeout=3600')
+                        sh('helm repo update')
+                        final cmd = " helm delete --purge banzai-nres-e2e &> cleanup.txt"
+                        final status = sh(script: cmd, returnStatus: true)
+                        final output = readFile('cleanup.txt').trim()
+                        sh(script: "rm -f cleanup.txt", returnStatus: true)
+                        echo output
+                        sh('helm upgrade --install banzai-nres-e2e helm-chart/banzai-nres-e2e ' +
+                            '--set banzaiNRES.tag="${GIT_DESCRIPTION}" --force --wait --timeout=3600')
 
                         podName = sh(script: 'kubectl get po -l app.kubernetes.io/instance=banzai-nres-e2e ' +
                                         '--sort-by=.status.startTime -o jsonpath="{.items[-1].metadata.name}"',

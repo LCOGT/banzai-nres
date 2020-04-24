@@ -33,27 +33,6 @@ spec:
       initContainers:
         # When the Pod is initialized, copy all files within the container at path
         # /archive/engineering into the empty data volume mounted at /data
-        - name: nres-data-cleanup
-          image:  "{{ .Values.dataImage.repository }}:{{ .Values.dataImage.tag }}"
-          imagePullPolicy: {{ .Values.dataImage.pullPolicy}}
-          securityContext:
-            runAsUser: 10087
-            runAsGroup: 10000
-          volumeMounts:
-            - name: nres-data
-              mountPath: /data
-              readOnly: false
-          command:
-            - rm
-            - -rf
-            - /data/*
-          resources:
-            requests:
-              cpu: "0.1"
-              memory: "128M"
-            limits:
-              cpu: "1"
-              memory: "1Gi"
         - name: nres-data
           image:  "{{ .Values.dataImage.repository }}:{{ .Values.dataImage.tag }}"
           imagePullPolicy: {{ .Values.dataImage.pullPolicy}}
