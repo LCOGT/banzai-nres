@@ -33,7 +33,12 @@ DAYS_OBS = [os.path.join(instrument, os.path.basename(dayobs_path)) for instrume
 
 TEST_PACKAGE = 'banzai_nres.tests'
 CONFIGDB_FILENAME = get_pkg_data_filename('data/configdb_example.json', TEST_PACKAGE)
-LINE_LIST_FILENAME = get_pkg_data_filename('data/ThAr_atlas_ESO.txt', TEST_PACKAGE)
+# distinct files for the line lists for each instrument because otherwise they will not be added to the database
+# because .db entries with the same filename are marked as duplicates (see banzai.dbs.save_calibration_info()).
+LINE_LIST_FILENAMES = [get_pkg_data_filename('data/ThAr_atlas_ESO_copy0' + str(c) + '.txt', TEST_PACKAGE) for c in [1, 2, 3, 4]]
+if len(INSTRUMENTS) > len(LINE_LIST_FILENAMES):
+    logger.warning(f'Found {len(LINE_LIST_FILENAMES)} line list files')
+    logger.warning('Not enough line list txt files for all the instruments that will be added to the database!')
 
 
 def observation_portal_side_effect(*args, **kwargs):
@@ -185,9 +190,9 @@ def init(configdb):
             logger.info(f'adding bpm {bpm_filename} to the database')
             os.system(f'banzai_nres_add_bpm --filename {bpm_filename} --db-address={os.environ["DB_ADDRESS"]}')
     instrument_ids = get_instrument_ids(os.environ["DB_ADDRESS"], names=['nres01', 'nres02'])
-    for instrument_id in instrument_ids:
+    for instrument_id, line_list in zip(instrument_ids, LINE_LIST_FILENAMES[:len(instrument_ids)]):
         logger.info(f'adding line list to the database for instrument with id {str(instrument_id)}')
-        os.system(f'banzai_nres_add_line_list --filename {LINE_LIST_FILENAME} --db-address={os.environ["DB_ADDRESS"]} '
+        os.system(f'banzai_nres_add_line_list --filename {line_list} --db-address={os.environ["DB_ADDRESS"]} '
                   f'--instrument-id {instrument_id}')
 
 @pytest.mark.e2e
