@@ -8,7 +8,6 @@ MASTER_CALIBRATION_FRAME_CLASS = 'banzai_nres.frames.NRESMasterCalibrationFrame'
 FRAME_SELECTION_CRITERIA = [('type', 'contains', 'NRES')]
 
 ORDERED_STAGES = [
-                  #'banzai_nres.wavelength.LineListLoader',
                   'banzai.bpm.BadPixelMaskLoader',
                   'banzai.bias.OverscanSubtractor',
                   'banzai.gain.GainNormalizer',
@@ -73,7 +72,7 @@ CALIBRATION_STACKER_STAGES = {'BIAS': ['banzai.bias.BiasMaker'],
                                          'banzai_nres.background.BackgroundSubtractor',
                                          'banzai_nres.wavelength.IdentifyFeatures',
                                          'banzai_nres.wavelength.WavelengthCalibrate',
-                                         'banzai_nres.qc.AssessWavelengthSolution'
+                                         #'banzai_nres.qc.AssessWavelengthSolution'
                                          ]
                               }
 

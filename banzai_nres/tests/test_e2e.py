@@ -244,6 +244,22 @@ class TestMasterFlatCreation:
 
 
 @pytest.mark.e2e
+@pytest.mark.master_arc
+class TestMasterArcCreation:
+    @pytest.fixture(autouse=True)
+    @mock.patch('banzai.utils.observation_utils.requests.get', side_effect=observation_portal_side_effect)
+    def stack_arc_frames(self, mock_lake):
+        run_reduce_individual_frames('*a00.fits*')
+        mark_frames_as_good('*a91.fits*')
+        stack_calibrations('double')
+
+    def test_if_stacked_flat_frame_was_created(self):
+        check_if_individual_frames_exist('*a00*')
+        run_check_if_stacked_calibrations_were_created('*a00.fits*', 'double')
+        run_check_if_stacked_calibrations_are_in_db('*a00.fits*', 'DOUBLE')
+
+
+@pytest.mark.e2e
 @pytest.mark.science_frames
 class TestScienceFrameProcessing:
     @pytest.fixture(autouse=True)
