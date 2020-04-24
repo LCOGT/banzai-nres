@@ -44,9 +44,12 @@ def observation_portal_side_effect(*args, **kwargs):
     return FakeResponse(filename)
 
 
-def get_instrument_ids(db_address):
+def get_instrument_ids(db_address, names):
     with get_session(db_address) as db_session:
-        instruments = db_session.query(dbs.instruments).all()
+        instruments = []
+        for name in names:
+            criteria = dbs.Instrument.name == name
+            instruments.extend(db_session.query(dbs.Instrument).filter(criteria).all())
     return [instrument.id for instrument in instruments]
 
 
@@ -179,9 +182,11 @@ def init(configdb):
     os.system(f'banzai_add_instrument --site elp --camera fl17 --name nres02 --camera-type 1m0-NRES-SciCam --db-address={os.environ["DB_ADDRESS"]}')
     for instrument in INSTRUMENTS:
         for bpm_filename in glob(os.path.join(DATA_ROOT, instrument, 'bpm/*bpm*')):
+            logger.info(f'adding bpm {bpm_filename} to the database')
             os.system(f'banzai_nres_add_bpm --filename {bpm_filename} --db-address={os.environ["DB_ADDRESS"]}')
-    instrument_ids = get_instrument_ids(os.environ["DB_ADDRESS"])
+    instrument_ids = get_instrument_ids(os.environ["DB_ADDRESS"], names=['nres01', 'nres02'])
     for instrument_id in instrument_ids:
+        logger.info(f'adding line list to the database for instrument with id {str(instrument_id)}')
         os.system(f'banzai_nres_add_line_list --filename {LINE_LIST_FILENAME} --db-address={os.environ["DB_ADDRESS"]} '
                   f'--instrument-id {instrument_id}')
 
