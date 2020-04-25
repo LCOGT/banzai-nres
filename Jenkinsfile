@@ -81,7 +81,7 @@ pipeline {
                         final output = readFile('cleanup.txt').trim()
                         sh(script: "rm -f cleanup.txt", returnStatus: true)
                         echo output
-                        sh(script: "kubectl delete pvc banzai-nres-e2e --wait --timeout=600", returnStatus: true)
+                        sh(script: "kubectl delete pvc banzai-nres-e2e --wait=true --timeout=600s", returnStatus: true)
                         sh('helm upgrade --install banzai-nres-e2e helm-chart/banzai-nres-e2e ' +
                             '--set banzaiNRES.tag="${GIT_DESCRIPTION}" --set dataImage.tag="${dataTag}" ' +
                             '--force --wait --timeout=3600')
