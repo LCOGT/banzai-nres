@@ -63,12 +63,18 @@ pipeline {
 			when {
 				anyOf {
 					branch 'PR-*'
+					branch 'dev'
 					expression { return params.forceEndToEnd }
 				}
 			}
 		    steps {
 	            script {
                     withKubeConfig([credentialsId: "build-kube-config"]) {
+                        if (env.BRANCH_NAME == "dev") {
+                            dataTag = '1.0.3'
+                        } else {
+                            dataTag = '1.0.3-slim'
+                        }
                         sh('helm repo update')
                         final cmd = " helm delete --purge banzai-nres-e2e &> cleanup.txt"
                         final status = sh(script: cmd, returnStatus: true)
@@ -77,7 +83,8 @@ pipeline {
                         echo output
                         sh(script: "kubectl delete pvc banzai-nres-e2e --wait --timeout=600", returnStatus: true)
                         sh('helm upgrade --install banzai-nres-e2e helm-chart/banzai-nres-e2e ' +
-                            '--set banzaiNRES.tag="${GIT_DESCRIPTION}" --force --wait --timeout=3600')
+                            '--set banzaiNRES.tag="${GIT_DESCRIPTION}" --set dataImage.tag="${dataTag}" ' +
+                            '--force --wait --timeout=3600')
 
                         podName = sh(script: 'kubectl get po -l app.kubernetes.io/instance=banzai-nres-e2e ' +
                                         '--sort-by=.status.startTime -o jsonpath="{.items[-1].metadata.name}"',

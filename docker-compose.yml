@@ -15,7 +15,7 @@ services:
       options:
         max-size: '100m'
         max-file: '3'
-  banzai-nres-fits-exchange:
+  banzai-nres-e2e-fits-exchange:
     image: rabbitmq:3.7.9
     network_mode: "bridge"
     container_name: banzai-nres-e2e-fits-exchange
@@ -24,14 +24,14 @@ services:
       options:
         max-size: '100m'
         max-file: '3'
-  banzai-nres-redis:
+  banzai-nres-e2e-redis:
     image: redis:5.0.3
     network_mode: "bridge"
     container_name: banzai-nres-e2e-redis
     labels:
       io.rancher.container.pull_image: always
     mem_limit: '1g'
-  banzai-nres-celery-workers:
+  banzai-nres-e2e-celery-workers:
     image: ${NRES_DOCKER_IMG}
     network_mode: "bridge"
     container_name: banzai-nres-e2e-celery-workers
@@ -40,8 +40,8 @@ services:
                  "-l", "debug", "-c", "4"]
     mem_limit: '8g'
     depends_on:
-      - banzai-nres-redis
-      - banzai-nres-fits-exchange
+      - banzai-nres-e2e-redis
+      - banzai-nres-e2e-fits-exchange
       - nres-e2e-data
     links:
       - banzai-nres-e2e-redis:redis
@@ -60,14 +60,14 @@ services:
       options:
         max-size: '100m'
         max-file: '3'
-  banzai-nres-listener:
+  banzai-nres-e2e-listener:
     image: ${NRES_DOCKER_IMG}
     network_mode: "bridge"
     container_name: banzai-nres-e2e-listener
     mem_limit: '1g'
     depends_on:
-      - banzai-nres-redis
-      - banzai-nres-fits-exchange
+      - banzai-nres-e2e-redis
+      - banzai-nres-e2e-fits-exchange
       - nres-e2e-data
     links:
       - banzai-nres-e2e-fits-exchange:broker
