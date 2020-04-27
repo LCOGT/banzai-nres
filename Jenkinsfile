@@ -188,7 +188,7 @@ pipeline {
 			steps {
 				script {
                     withKubeConfig([credentialsId: "dev-kube-config"]) {
-						sh("kubectl exec -n dev ${podName} -c banzai-nres-listener -- " +
+						sh("kubectl exec -n dev ${podName} -c banzai-nres-e2e-listener -- " +
 						        "pytest -s --durations=0 --junitxml=/home/archive/pytest-master-arc.xml " +
 						        "-m master_arc /lco/banzai-nres/")
 					}
@@ -198,7 +198,7 @@ pipeline {
 				always {
 					script {
 					    withKubeConfig([credentialsId: "dev-kube-config"]) {
-						    sh("kubectl cp -n dev -c banzai-nres-listener ${podName}:/home/archive/pytest-master-arc.xml " +
+						    sh("kubectl cp -n dev -c banzai-nres-e2e-listener ${podName}:/home/archive/pytest-master-arc.xml " +
 						            "pytest-master-arc.xml")
 						    junit "pytest-master-arc.xml"
 						}
