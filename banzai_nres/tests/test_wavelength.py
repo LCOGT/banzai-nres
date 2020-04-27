@@ -170,7 +170,8 @@ class TestQCChecks:
     input_context = context.Context({})
 
     def test_qc_checks(self):
-        sigma_Dlambda, good_sigma_Dlambda, raw_chi_squared, good_chi_squared, Delta_lambda = AssessWavelengthSolution(self.input_context).calculate_dispersion(self.test_image,self.test_image.features['wavelength'])
+        Delta_lambda = AssessWavelengthSolution(self.input_context).calculate_delta_lambda(self.test_image,self.test_image.features['wavelength'])
+        sigma_Dlambda, good_sigma_Dlambda, raw_chi_squared, good_chi_squared = AssessWavelengthSolution.calculate_1d_metrics(self.test_image,Delta_lambda)
         assert sigma_Dlambda >= good_sigma_Dlambda
         assert raw_chi_squared >= good_chi_squared
     
