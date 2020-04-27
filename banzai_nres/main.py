@@ -18,9 +18,9 @@ from datetime import datetime
 from banzai import calibrations, dbs, logs, context
 from astropy.time import Time
 
-
 import logging
 import argparse
+import requests
 
 logger = logging.getLogger(__name__)
 
@@ -110,3 +110,27 @@ def add_line_list():
                                              'is_master': True, 'is_bad': False,
                                              'frame_id': 0, 'grouping_criteria': []})
     dbs.save_calibration_info(args.filename, line_list_container, args.db_address)
+
+
+def add_bpms_from_archive():
+    parser = argparse.ArgumentParser(description="Add bad pixel mask from a given archive api")
+    parser.add_argument('--db-address', dest='db_address',
+                        default='mysql://cmccully:password@localhost/test',
+                        help='Database address: Should be in SQLAlchemy form')
+    args = parser.parse_args()
+    add_settings_to_context(args, banzai_nres.settings)
+    # Query the archive for all bpm files
+    url = f'{banzai_nres.settings.ARCHIVE_FRAME_URL}/?OBSTYPE=BPM'
+    archive_auth_token = banzai_nres.settings.ARCHIVE_AUTH_TOKEN
+    response = requests.get(url, headers=archive_auth_token)
+    response.raise_for_status()
+    results = response.json()['results']
+
+    # Load each one, saving the calibration info for each
+    frame_factory = import_utils.import_attribute(banzai_nres.settings.FRAME_FACTORY)()
+    for frame in results:
+        frame['frameid'] = frame['id']
+        bpm_image = frame_factory.open(frame, args)
+        if bpm_image is not None:
+            bpm_image.is_master = True
+            dbs.save_calibration_info(frame['filename'], bpm_image, args.db_address)

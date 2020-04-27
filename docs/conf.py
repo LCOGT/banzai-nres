@@ -19,7 +19,7 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'banzai-nres'
+project = 'banzai-nres-e2e'
 copyright = '2018, Curtis McCully and Mirek Brandt'
 author = 'Curtis McCully and Mirek Brandt'
 
@@ -132,7 +132,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'banzai-nres.tex', 'banzai-nres Documentation',
+    (master_doc, 'banzai-nres-e2e.tex', 'banzai-nres-e2e Documentation',
      'Curtis McCully and Mirek Brandt', 'manual'),
 ]
 
@@ -142,7 +142,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'banzai-nres', 'banzai-nres Documentation',
+    (master_doc, 'banzai-nres-e2e', 'banzai-nres-e2e Documentation',
      [author], 1)
 ]
 
@@ -153,8 +153,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'banzai-nres', 'banzai-nres Documentation',
-     author, 'banzai-nres', 'One line description of project.',
+    (master_doc, 'banzai-nres-e2e', 'banzai-nres-e2e Documentation',
+     author, 'banzai-nres-e2e', 'One line description of project.',
      'Miscellaneous'),
 ]
 

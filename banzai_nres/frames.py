@@ -14,8 +14,8 @@ logger = logging.getLogger('banzai')
 
 
 class NRESObservationFrame(LCOObservationFrame):
-    def __init__(self, hdu_list: list, file_path: str):
-        LCOObservationFrame.__init__(self, hdu_list, file_path)
+    def __init__(self, hdu_list: list, file_path: str, frame_id: int = None):
+        LCOObservationFrame.__init__(self, hdu_list, file_path, frame_id=frame_id)
         self.fiber0_lit, self.fiber1_lit, self.fiber2_lit = fiber_states_from_header(self.meta)
 
     def num_lit_fibers(self):
@@ -99,15 +99,16 @@ class NRESObservationFrame(LCOObservationFrame):
 
 
 class NRESCalibrationFrame(LCOCalibrationFrame, NRESObservationFrame):
-    def __init__(self, hdu_list: list, file_path: str, grouping_criteria: list = None):
-        LCOCalibrationFrame.__init__(self, hdu_list, file_path, grouping_criteria)
-        NRESObservationFrame.__init__(self, hdu_list, file_path)
+    def __init__(self, hdu_list: list, file_path: str, frame_id: int = None, grouping_criteria: list = None):
+        LCOCalibrationFrame.__init__(self, hdu_list, file_path,  grouping_criteria=grouping_criteria)
+        NRESObservationFrame.__init__(self, hdu_list, file_path, frame_id=frame_id)
 
 
 class NRESMasterCalibrationFrame(LCOMasterCalibrationFrame, NRESCalibrationFrame):
-    def __init__(self, images: list, file_path: str, grouping_criteria: list = None):
-        NRESCalibrationFrame.__init__(self, images, file_path, grouping_criteria)
-        LCOMasterCalibrationFrame.__init__(self, images, file_path, grouping_criteria)
+    def __init__(self, images: list, file_path: str, frame_id: int = None, grouping_criteria: list = None):
+        NRESCalibrationFrame.__init__(self, images, file_path, grouping_criteria=grouping_criteria)
+        LCOMasterCalibrationFrame.__init__(self, images, file_path, frame_id=frame_id,
+                                           grouping_criteria=grouping_criteria)
 
 
 class EchelleSpectralCCDData(CCDData):

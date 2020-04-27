@@ -125,4 +125,7 @@ ARCHIVE_FRAME_URL = f'{ARCHIVE_API_ROOT}frames'
 ARCHIVE_AUTH_TOKEN = {'Authorization': f'Token {os.getenv("AUTH_TOKEN")}'}
 FITS_EXCHANGE = os.getenv('FITS_EXCHANGE', 'archived_fits')
 
+RAW_DATA_FRAME_URL = os.getenv('RAW_DATA_FRAME_URL', ARCHIVE_API_ROOT)
+RAW_DATA_AUTH_TOKEN = {'Authorization': f'Token {os.getenv("RAW_DATA_AUTH_TOKEN")}'}
+
 LOSSLESS_EXTENSIONS = ['PROFILE']

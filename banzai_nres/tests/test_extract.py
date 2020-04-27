@@ -118,7 +118,7 @@ class TestGetWeights:
         assert np.allclose(weights[np.isclose(profile,1)],1./3.)
         #check that the weights of the area with zero profile are zero:
         assert np.allclose(weights[np.isclose(profile,0)],0)
-        
+
 
 def two_order_image():
     # generate 2 flat traces.
