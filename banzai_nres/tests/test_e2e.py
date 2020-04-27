@@ -139,9 +139,9 @@ def get_expected_number_of_calibrations(raw_filenames, calibration_type):
             # Group by fibers lit if we are stacking lampflats or doubles (arc frames)
             observed_fibers = []
             for raw_filename in raw_filenames_for_this_dayobs:
-                lampflat_hdu = fits.open(raw_filename)
-                observed_fibers.append(lampflat_hdu[1].header.get('OBJECTS'))
-                lampflat_hdu.close()
+                cal_hdu = fits.open(raw_filename)
+                observed_fibers.append(cal_hdu[1].header.get('OBJECTS'))
+                cal_hdu.close()
             observed_fibers = set(observed_fibers)
             number_of_stacks_that_should_have_been_created += len(observed_fibers)
         else:
@@ -194,6 +194,7 @@ def init(configdb):
         logger.info(f'adding line list to the database for instrument with id {str(instrument_id)}')
         os.system(f'banzai_nres_add_line_list --filename {line_list} --db-address={os.environ["DB_ADDRESS"]} '
                   f'--instrument-id {instrument_id}')
+
 
 @pytest.mark.e2e
 @pytest.mark.master_bias

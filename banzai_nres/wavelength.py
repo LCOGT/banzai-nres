@@ -177,10 +177,13 @@ class IdentifyFeatures(Stage):
         # get total flux in each emission feature. For now just sum_circle, although we should use sum_ellipse.
         features['flux'], features['fluxerr'], _ = sep.sum_circle(image.data, features['xcentroid'], features['ycentroid'],
                                                                   self.fwhm, gain=1.0, err=image.uncertainty, mask=image.mask)
-        # blaze correct the emission features fluxes. This speeds up and improves overlap fitting in xwavecal.
-        features['corrected_flux'] = features['flux'] / image.blaze['blaze'][features['id'] - 1,
-                                                                             np.array(features['xcentroid'], dtype=int)]
         features['centroid_err'] = self.fwhm / np.sqrt(features['flux'])
+
+        if image.blaze is not None:
+            logger.info('Blaze correcting emission feature fluxes', image=image)
+            # blaze correct the emission features fluxes. This speeds up and improves overlap fitting in xwavecal.
+            features['corrected_flux'] = features['flux'] / image.blaze['blaze'][features['id'] - 1,
+                                                                                 np.array(features['xcentroid'], dtype=int)]
         image.features = features
         return image
 
