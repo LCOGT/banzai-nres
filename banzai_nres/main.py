@@ -14,7 +14,7 @@ import celery
 import celery.bin.beat
 from banzai.utils import date_utils, import_utils
 from banzai import calibrations, dbs, logs
-
+import requests
 
 import logging
 import argparse
@@ -85,3 +85,27 @@ def add_bpm():
     bpm_image = frame_factory.open({'path': args.filename}, args)
     bpm_image.is_master = True
     dbs.save_calibration_info(args.filename, bpm_image, args.db_address)
+
+
+def add_bpms_from_archive():
+    parser = argparse.ArgumentParser(description="Add bad pixel mask from a given archive api")
+    parser.add_argument('--db-address', dest='db_address',
+                        default='mysql://cmccully:password@localhost/test',
+                        help='Database address: Should be in SQLAlchemy form')
+    args = parser.parse_args()
+    add_settings_to_context(args, banzai_nres.settings)
+    # Query the archive for all bpm files
+    url = f'{banzai_nres.settings.ARCHIVE_FRAME_URL}/?OBSTYPE=BPM'
+    archive_auth_token = banzai_nres.settings.ARCHIVE_AUTH_TOKEN
+    response = requests.get(url, headers=archive_auth_token)
+    response.raise_for_status()
+    results = response.json()['results']
+
+    # Load each one, saving the calibration info for each
+    frame_factory = import_utils.import_attribute(banzai_nres.settings.FRAME_FACTORY)()
+    for frame in results:
+        frame['frameid'] = frame['id']
+        bpm_image = frame_factory.open(frame, args)
+        if bpm_image is not None:
+            bpm_image.is_master = True
+            dbs.save_calibration_info(frame['filename'], bpm_image, args.db_address)
