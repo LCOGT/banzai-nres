@@ -118,7 +118,7 @@ class TestGetWeights:
         assert np.allclose(weights[np.isclose(profile,1)],1./3.)
         #check that the weights of the area with zero profile are zero:
         assert np.allclose(weights[np.isclose(profile,0)],0)
-        
+
 
 def two_order_image():
     # generate 2 flat traces.
@@ -135,12 +135,13 @@ def two_order_image():
     image.traces = traces
     return image
 
+
 def five_hundred_square_image(maxflux,number_traces,trace_width, read_noise=10):
     traces = np.zeros((500,500))
     data = np.ones_like(traces, dtype=float)
     profile = np.zeros_like(traces, dtype=float)
     ix = np.arange(0,trace_width)
-    for i in range (0,number_traces): 
+    for i in range (0,number_traces):
         traces[50*i:50*i+trace_width,:]=i
         for j in range (0,trace_width):
             data[50*i+j,:]+=maxflux*np.exp((-1.)*(ix[j]-trace_width/2.)**2/(trace_width/6.)**2)
