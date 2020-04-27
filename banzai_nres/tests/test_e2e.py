@@ -135,8 +135,8 @@ def get_expected_number_of_calibrations(raw_filenames, calibration_type):
     number_of_stacks_that_should_have_been_created = 0
     for day_obs in DAYS_OBS:
         raw_filenames_for_this_dayobs = glob(os.path.join(DATA_ROOT, day_obs, 'raw', raw_filenames))
-        if calibration_type.lower() == 'lampflat':
-            # Group by fibers lit
+        if calibration_type.lower() == 'lampflat' or calibration_type.lower() == 'double':
+            # Group by fibers lit if we are stacking lampflats or doubles (arc frames)
             observed_fibers = []
             for raw_filename in raw_filenames_for_this_dayobs:
                 lampflat_hdu = fits.open(raw_filename)
