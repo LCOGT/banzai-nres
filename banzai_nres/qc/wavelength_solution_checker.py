@@ -19,21 +19,21 @@ class AssessWavelengthSolution(Stage):
     def do_stage(self,image):
         line_list = image.line_list
         lab_lines = find_nearest(image.features['wavelength'], np.sort(line_list))
-        self.calculate_dispersion(image,lab_lines,raw_dispersion,good_dispersion,raw_chi_squared,good_chi_squared,difference)
-        qc_results = {'raw_dispersion':raw_dispersion, 'good_dispersion':good_dispersion, 'raw_chi_squared':raw_chi_squared, 'good_chi_squared':good_chi_squared, 'difference':difference}
+        self.calculate_dispersion(image,lab_lines,sigma_Dlambda,good_sigma_Dlambda,raw_chi_squared,good_chi_squared,Delta_lambda)
+        qc_results = {'sigma_Dlambda':sigma_Dlambda, 'good_sigma_Dlambda':good_sigma_Dlambda, 'raw_chi_squared':raw_chi_squared, 'good_chi_squared':good_chi_squared, 'Delta_lambda':Delta_lambda}
         qc.save_qc_results(self.runtime_context, qc_results, image)
 
     def calculate_dispersion(self,image,lab_lines):
         measured_wavelengths = image.features['wavelength']
         #actual_wavelengths = image.wcs.measured_lines['wavelength']
-        difference = measured_wavelengths - lab_lines
-        raw_dispersion = np.std(difference)
-        low_scatter_lines = np.isclose(difference,0,atol=0.1)
-        good_dispersion = np.std(difference[low_scatter_lines])
+        Delta_lambda = measured_wavelengths - lab_lines
+        sigma_Dlambda = np.std(Delta_lambda)
+        low_scatter_lines = np.isclose(Delta_lambda,0,atol=0.1)
+        good_sigma_Dlambda = np.std(Delta_lambda[low_scatter_lines])
         feature_centroid_uncertainty = image.features['centroid_err']
-        raw_chi_squared = np.sum((difference/feature_centroid_uncertainty)**2)/len(difference)
-        good_chi_squared = np.sum((difference[low_scatter_lines]/feature_centroid_uncertainty[low_scatter_lines])**2)/len(difference[low_scatter_lines])
-        return raw_dispersion, good_dispersion, raw_chi_squared, good_chi_squared, difference
+        raw_chi_squared = np.sum((Delta_lambda/feature_centroid_uncertainty)**2)/len(Delta_lambda)
+        good_chi_squared = np.sum((Delta_lambda[low_scatter_lines]/feature_centroid_uncertainty[low_scatter_lines])**2)/len(Delta_lambda[low_scatter_lines])
+        return sigma_Dlambda, good_sigma_Dlambda, raw_chi_squared, good_chi_squared, Delta_lambda
 
 
         #TO DO:
