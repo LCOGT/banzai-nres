@@ -17,7 +17,7 @@ from astropy.io import fits
 
 import logging
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('banzai')
 
 TEST_PACKAGE = 'banzai_nres.tests'
 
