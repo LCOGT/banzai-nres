@@ -18,7 +18,7 @@ from astropy.io import fits
 
 import logging
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('banzai')
 
 TEST_PACKAGE = 'banzai_nres.tests'
 
@@ -62,11 +62,11 @@ def celery_join():
     celery_inspector = app.control.inspect()
     log_counter = 0
     while True:
-        queues = [celery_inspector.active(), celery_inspector.scheduled(), celery_inspector.reserved()]
         time.sleep(1)
         log_counter += 1
         if log_counter % 5 == 0:
             logger.info('Processing: ' + '. ' * (log_counter // 5))
+        queues = [celery_inspector.active(), celery_inspector.scheduled(), celery_inspector.reserved()]
         if any([queue is None or 'celery@banzai-celery-worker' not in queue for queue in queues]):
             logger.warning('No valid celery queues were detected, retrying...', extra_tags={'queues': queues})
             # Reset the celery connection
