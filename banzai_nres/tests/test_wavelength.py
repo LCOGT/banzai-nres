@@ -73,7 +73,7 @@ class TestWavelengthCalibrate:
         traces = np.array([[0, 0, 0], [1, 1, 1], [1, 1, 1], [0, 0, 0], [0, 0, 0], [2, 2, 2], [3, 3, 3]])
         line_list = np.array([10, 11, 12])
         pixel_positions = np.array([1, 2, 1, 2])
-        features = Table({'pixel': pixel_positions, 'id': np.array([1, 1, 2, 3]),
+        features = Table({'pixel': pixel_positions, 'id': np.array([1, 1, 2, 3]), 'order': np.array([1, 1, 2, 3])
                           'wavelength': pixel_positions, 'centroid_err': np.ones_like(pixel_positions)})
         image = NRESObservationFrame([EchelleSpectralCCDData(data=np.zeros((2, 2)), uncertainty=np.zeros((2, 2)),
                                       meta={'OBJECTS': 'tung&tung&none'}, features=features,
@@ -174,4 +174,7 @@ class TestQCChecks:
         sigma_Dlambda, good_sigma_Dlambda, raw_chi_squared, good_chi_squared = AssessWavelengthSolution(self.input_context).calculate_1d_metrics(self.test_image,Delta_lambda)
         assert sigma_Dlambda >= good_sigma_Dlambda
         assert raw_chi_squared >= good_chi_squared
+        x_sigma_Dlambda, order_sigma_Dlambda = AssessWavelengthSolution(self.input_context).calculate_2d_metrics(self.test_image,Delta_lambda)
+        assert x_sigma_Dlambda[x_sigma_Dlambda >= 0] == x_sigma_Dlambda
+        assert order_sigma_Dlambda[order_sigma_Dlambda >= 0] == order_sigma_Dlambda
     
