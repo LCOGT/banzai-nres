@@ -46,7 +46,7 @@ class AssessWavelengthSolution(Stage):
     def calculate_2d_metrics(self,image,Delta_lambda):
         x, order = image.features['pixel'], image.features['order']
         bins = 20
-        bins_x, bins_order = np.histogram2d(x, order, bins=bins)
+        histogram, bins_x, bins_order = np.histogram2d(x, order, bins=bins)
         x_indices, order_indices = np.digitize(x, bins_x), np.digitize(order, bins_order)
         x_sigma_Dlambda, order_sigma_Dlambda = np.ones_like(bins_x), np.ones_like(bins_order)
         for i in range (0,len(bins_x)):
