@@ -46,15 +46,15 @@ class AssessWavelengthSolution(Stage):
     def calculate_2d_metrics(self,image,Delta_lambda):
         x, order = image.features['pixel'], image.features['order']
         bins = 20
-        histogram, bins_x, bins_order = np.histogram2d(x, order, bins=bins)
-        x_indices, order_indices = np.digitize(x, bins_x), np.digitize(order, bins_order)
-        x_sigma_Dlambda, order_sigma_Dlambda = np.ones_like(bins_x), np.ones_like(bins_order)
+        histogramx, bins_x = np.histogram(x, bins=bins, range=([np.min(x)-1,np.max(x)+1]))
+        histogramo, bins_order = np.histogram(order, bins=bins, range=([np.min(order)-1,np.max(order)+1]))
+        x_indices, order_indices = np.digitize(x, bins_x[1:]), np.digitize(order, bins_order[1:])
+        x_sigma_Dlambda, order_sigma_Dlambda = np.zeros_like(histogramx), np.zeros_like(histogramo)
         for i in range (0,bins):
-            x_sigma_Dlambda[i], order_sigma_Dlambda[i] = np.std(Delta_lambda[x_indices == i]), np.std(Delta_lambda[order_indices == i])
+            if histogramx[i] != 0: x_sigma_Dlambda[i] = np.mean(Delta_lambda[x_indices == i])
+            if histogramo[i] != 0: order_sigma_Dlambda[i] = np.mean(Delta_lambda[order_indices == i])
         return x_sigma_Dlambda, order_sigma_Dlambda
 
 
         #TO DO:
-        #Assess if there are systematic differences in goodness of fit across detector
-        #(e.g., due to systematics in wavelength solution)
-        #wavelength residuals binned in pixel bins, or per order -- x,y directions
+        #Rename variables, clean up code
