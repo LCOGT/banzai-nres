@@ -49,7 +49,7 @@ class AssessWavelengthSolution(Stage):
         histogram, bins_x, bins_order = np.histogram2d(x, order, bins=bins)
         x_indices, order_indices = np.digitize(x, bins_x), np.digitize(order, bins_order)
         x_sigma_Dlambda, order_sigma_Dlambda = np.ones_like(bins_x), np.ones_like(bins_order)
-        for i in range (0,len(bins_x)):
+        for i in range (0,bins):
             x_sigma_Dlambda[i], order_sigma_Dlambda[i] = np.std(Delta_lambda[x_indices == i]), np.std(Delta_lambda[order_indices == i])
         return x_sigma_Dlambda, order_sigma_Dlambda
 
