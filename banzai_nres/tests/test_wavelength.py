@@ -182,6 +182,9 @@ class TestQCChecks:
     test_image = TestWavelengthCalibrate().generate_image()
     input_context = context.Context({})
 
+    def test_qc_do_stage(self):
+        AssessWavelengthSolution(self.input_context).do_stage(self.test_image)
+
     def test_qc_checks(self):
         Delta_lambda = AssessWavelengthSolution(self.input_context).calculate_delta_lambda(self.test_image,self.test_image.features['wavelength'])
         sigma_Dlambda, good_sigma_Dlambda, raw_chi_squared, good_chi_squared = AssessWavelengthSolution(self.input_context).calculate_1d_metrics(self.test_image,Delta_lambda)
@@ -190,4 +193,8 @@ class TestQCChecks:
         x_diff_Dlambda, order_diff_Dlambda = AssessWavelengthSolution(self.input_context).calculate_2d_metrics(self.test_image,Delta_lambda)
         assert np.any(np.isfinite(x_diff_Dlambda))
         assert np.any(np.isfinite(order_diff_Dlambda))
+
+    
+
+
     
