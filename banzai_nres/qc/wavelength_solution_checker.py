@@ -7,6 +7,8 @@ from xwavecal.utils.wavelength_utils import find_nearest
 
 import logging
 
+from scipy.stats import binned_statistic
+
 class AssessWavelengthSolution(Stage):
     """
     Calculate the dispersion in the wavelength solution and assess whether it is photon-limited or not
@@ -45,15 +47,5 @@ class AssessWavelengthSolution(Stage):
     def calculate_2d_metrics(self,image,Delta_lambda):
         x, order = image.features['pixel'], image.features['order']
         bins = 20
-        histogramx, bins_x = np.histogram(x, bins=bins, range=([np.min(x)-1,np.max(x)+1]))
-        histogramo, bins_order = np.histogram(order, bins=bins, range=([np.min(order)-1,np.max(order)+1]))
-        x_indices, order_indices = np.digitize(x, bins_x[1:]), np.digitize(order, bins_order[1:])
-        x_diff_Dlambda, order_diff_Dlambda = np.zeros_like(histogramx), np.zeros_like(histogramo)
-        for i in range (0,bins):
-            if histogramx[i] != 0: x_diff_Dlambda[i] = np.mean(Delta_lambda[x_indices == i])
-            if histogramo[i] != 0: order_diff_Dlambda[i] = np.mean(Delta_lambda[order_indices == i])
-        return x_diff_Dlambda, order_diff_Dlambda
-
-
-        #TO DO:
-        #clean up code
+        x_diff_Dlambda, order_diff_Dlambda = binned_statistic(x, Delta_lambda, statistic='mean', bins=bins, range=([np.min(x)-1,np.max(x)+1])), binned_statistic(order, Delta_lambda, statistic='mean', bins=bins, range=([np.min(order)-1,np.max(order)+1]))
+        return x_diff_Dlambda.statistic, order_diff_Dlambda.statistic

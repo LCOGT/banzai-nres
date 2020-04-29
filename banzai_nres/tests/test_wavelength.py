@@ -188,6 +188,6 @@ class TestQCChecks:
         assert sigma_Dlambda >= good_sigma_Dlambda
         assert raw_chi_squared >= good_chi_squared
         x_diff_Dlambda, order_diff_Dlambda = AssessWavelengthSolution(self.input_context).calculate_2d_metrics(self.test_image,Delta_lambda)
-        assert np.all(x_diff_Dlambda >= 0)
-        assert np.all(order_diff_Dlambda >= 0)
+        assert np.any(np.isfinite(x_diff_Dlambda))
+        assert np.any(np.isfinite(order_diff_Dlambda))
     
