@@ -50,7 +50,7 @@ services:
     environment:
       RETRY_DELAY: "0"
       TASK_HOST: "redis://redis:6379/0"
-      LAKE_URL: "http://lake-old.lco.gtn/blocks/"
+      OBSERVATION_PORTAL_URL: "http://lake-old.lco.gtn/blocks/"
       NUM_OMP_THREADS: "1"
       OPENTSDB_PYTHON_METRICS_TEST_MODE: "1"
     labels:
@@ -81,7 +81,7 @@ services:
       FITS_EXCHANGE: fits_files
       FITS_BROKER: broker
       OPENTSDB_PYTHON_METRICS_TEST_MODE: "1"
-      LAKE_URL: "http://lake-old.lco.gtn/blocks/"
+      OBSERVATION_PORTAL_URL: "http://lake-old.lco.gtn/blocks/"
     volumes_from:
     - nres-e2e-data
     labels:

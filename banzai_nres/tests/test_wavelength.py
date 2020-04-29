@@ -56,6 +56,19 @@ class TestIdentifyFeatures:
         assert np.allclose(image.features['id'], 1)
 
     @pytest.mark.integration
+    def test_do_stage_no_blaze(self):
+        input_context = context.Context({})
+        image = NRESObservationFrame([EchelleSpectralCCDData(data=self.data, uncertainty=self.err,
+                                                             meta={'OBJECTS': 'tung&tung&none'},
+                                       traces=np.ones_like(self.data, dtype=int))], 'foo.fits')
+        stage = IdentifyFeatures(input_context)
+        stage.fwhm, stage.nsigma = self.sigma, 0.5
+        image = stage.do_stage(image)
+        assert np.allclose(image.features['pixel'], self.xcoords, atol=0.001)
+        assert np.allclose(image.features['ycentroid'], self.ycoords, atol=0.001)
+        assert np.allclose(image.features['id'], 1)
+
+    @pytest.mark.integration
     def test_do_stage_on_empty_features(self):
         input_context = context.Context({})
         image = NRESObservationFrame([EchelleSpectralCCDData(data=self.data, uncertainty=self.err,

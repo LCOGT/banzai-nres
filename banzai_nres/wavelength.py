@@ -164,7 +164,7 @@ class IdentifyFeatures(Stage):
     """
     Stage to identify all sharp emission-like features on an Arc lamp frame.
     """
-    nsigma = 3.0  # minimum signal to noise @ peak flux for a feature to be counted.
+    nsigma = 10.0  # minimum signal to noise @ peak flux for a feature to be counted.
     fwhm = 6.0  # minimum feature size in pixels for the feature to be counted.
 
     def do_stage(self, image):
@@ -172,15 +172,19 @@ class IdentifyFeatures(Stage):
         features = identify_features(image.data, image.uncertainty, image.mask, nsigma=self.nsigma, fwhm=self.fwhm)
         features = group_features_by_trace(features, image.traces)
         features = features[features['id'] != 0]  # throw out features that are outside of any trace.
+        logger.info('{0} emission features found on this image'.format(len(features)), image=image)
         if len(features) == 0:
             logger.error('No emission features found on this image!', image=image)
         # get total flux in each emission feature. For now just sum_circle, although we should use sum_ellipse.
         features['flux'], features['fluxerr'], _ = sep.sum_circle(image.data, features['xcentroid'], features['ycentroid'],
                                                                   self.fwhm, gain=1.0, err=image.uncertainty, mask=image.mask)
-        # blaze correct the emission features fluxes. This speeds up and improves overlap fitting in xwavecal.
-        features['corrected_flux'] = features['flux'] / image.blaze['blaze'][features['id'] - 1,
-                                                                             np.array(features['xcentroid'], dtype=int)]
         features['centroid_err'] = self.fwhm / np.sqrt(features['flux'])
+
+        if image.blaze is not None:
+            logger.info('Blaze correcting emission feature fluxes', image=image)
+            # blaze correct the emission features fluxes. This speeds up and improves overlap fitting in xwavecal.
+            features['corrected_flux'] = features['flux'] / image.blaze['blaze'][features['id'] - 1,
+                                                                                 np.array(features['xcentroid'], dtype=int)]
         image.features = features
         return image
 
