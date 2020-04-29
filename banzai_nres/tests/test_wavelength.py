@@ -174,7 +174,7 @@ class TestQCChecks:
         sigma_Dlambda, good_sigma_Dlambda, raw_chi_squared, good_chi_squared = AssessWavelengthSolution(self.input_context).calculate_1d_metrics(self.test_image,Delta_lambda)
         assert sigma_Dlambda >= good_sigma_Dlambda
         assert raw_chi_squared >= good_chi_squared
-        x_sigma_Dlambda, order_sigma_Dlambda = AssessWavelengthSolution(self.input_context).calculate_2d_metrics(self.test_image,Delta_lambda)
-        assert np.all(x_sigma_Dlambda >= 0)
-        assert np.all(order_sigma_Dlambda >= 0)
+        x_diff_Dlambda, order_diff_Dlambda = AssessWavelengthSolution(self.input_context).calculate_2d_metrics(self.test_image,Delta_lambda)
+        assert np.all(x_diff_Dlambda >= 0)
+        assert np.all(order_diff_Dlambda >= 0)
     
