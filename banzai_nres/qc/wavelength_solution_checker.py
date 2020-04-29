@@ -1,6 +1,7 @@
 import numpy as np
 
 from banzai.stages import Stage
+from banzai.utils import qc
 from banzai.calibrations import CalibrationStacker, CalibrationUser
 from banzai_nres.wavelength import LineListLoader
 from xwavecal.utils.wavelength_utils import find_nearest
