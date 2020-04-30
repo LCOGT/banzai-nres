@@ -91,7 +91,7 @@ class WavelengthCalibrate(Stage):
         if image.wavelengths is None:
             image.features['wavelength'] = np.zeros_like(image.features['pixel'], dtype=float)  # init wavelengths
             for fiber in list(set(image.features['fiber'])):
-                logger.info('Blind solving for the wavelengths for fiber {0} (arbitrary label).'.format(fiber))
+                logger.info('Blind solving for the wavelengths for fiber {0} (arbitrary label).'.format(fiber), image=image)
                 this_fiber = image.features['fiber'] == fiber
                 image.features['wavelength'][this_fiber] = find_feature_wavelengths(dict(image.features[this_fiber]), image.line_list,
                                                                                     max_pixel=image.data.shape[1] - 1, min_pixel=0,
@@ -111,11 +111,11 @@ class WavelengthCalibrate(Stage):
         for fiber in list(set(fiber_ids)):
             this_fiber = image.features['fiber'] == fiber
             if np.all(np.isnan(image.features['wavelength'][this_fiber])) or np.all(np.isclose(image.features['wavelength'][this_fiber], 0)):
-                logger.error('No prior wavelength solution for this fiber. Will not refine wavelengths.')
+                logger.error('All zeros for image.wavelengths for fiber {0}. Will not refine wavelengths.'.format(fiber), image=image)
                 continue
 
             m0 = get_principle_order_number(np.arange(*self.M0_RANGE), image.features[this_fiber])
-            logger.info('Principle order number is {0} for fiber {1}'.format(m0, fiber))
+            logger.info('Principle order number is {0} for fiber {1}'.format(m0, fiber), image=image)
             wavelength_model = self.fit_wavelength_model(image.features[this_fiber], image.line_list, m0)
 
             # save the wavelengths of each spectral feature
