@@ -50,7 +50,7 @@ class ArcLoader(CalibrationUser):
             super().on_missing_master_calibration(image)
 
     def apply_master_calibration(self, image: NRESObservationFrame, master_calibration_image):
-        image.wavelength = master_calibration_image.wavelength
+        image.wavelengths = master_calibration_image.wavelengths
         return image
 
 
@@ -83,7 +83,8 @@ class WavelengthCalibrate(Stage):
     We re-wavelength calibrate from scratch if the image does not have a pre-existing wavelength solution.
     We lightly recalibrate the wavelength calibration if the image has a pre-existing wavelength solution.
     """
-    M0_RANGE = (40, 60)  # range of possible values for the integer principle order number.
+    # TODO change to (40, 60) once hangups are figured out in overlap fitting.
+    M0_RANGE = (49, 53)  # range of possible values for the integer principle order number.
 
     def do_stage(self, image):
         image.features = self.init_feature_labels(image.num_traces, image.features)
@@ -164,7 +165,8 @@ class IdentifyFeatures(Stage):
     """
     Stage to identify all sharp emission-like features on an Arc lamp frame.
     """
-    nsigma = 10.0  # minimum signal to noise @ peak flux for a feature to be counted.
+    # TODO change nsigma to 20 or 15 once hangups in overlap fitting are figured out.
+    nsigma = 50.0  # minimum signal to noise @ peak flux for a feature to be counted.
     fwhm = 6.0  # minimum feature size in pixels for the feature to be counted.
 
     def do_stage(self, image):

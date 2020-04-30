@@ -254,7 +254,7 @@ class TestMasterArcCreation:
         mark_frames_as_good('*a91.fits*')
         stack_calibrations('double')
 
-    def test_if_stacked_flat_frame_was_created(self):
+    def test_if_stacked_arc_frame_was_created(self):
         check_if_individual_frames_exist('*a00*')
         run_check_if_stacked_calibrations_were_created('*a00.fits*', 'double')
         run_check_if_stacked_calibrations_are_in_db('*a00.fits*', 'DOUBLE')
