@@ -1,6 +1,7 @@
 import numpy as np
 
 from banzai.stages import Stage
+from banzai.utils import qc
 from banzai.calibrations import CalibrationStacker, CalibrationUser
 from banzai_nres.wavelength import LineListLoader
 from xwavecal.utils.wavelength_utils import find_nearest
@@ -21,9 +22,9 @@ class AssessWavelengthSolution(Stage):
     def do_stage(self,image):
         line_list = image.line_list
         lab_lines = find_nearest(image.features['wavelength'], np.sort(line_list))
-        self.calculate_delta_lambda(image,lab_lines,Delta_lambda)
-        self.calculate_1d_metrics(image,Delta_lambda,sigma_Dlambda,good_sigma_Dlambda,raw_chi_squared,good_chi_squared,)
-        self.calculate_2d_metrics(image,Delta_lambda,x_diff_Dlambda, order_diff_Dlambda)
+        Delta_lambda = self.calculate_delta_lambda(image,lab_lines)
+        sigma_Dlambda, good_sigma_Dlambda, raw_chi_squared, good_chi_squared = self.calculate_1d_metrics(image,Delta_lambda)
+        x_diff_Dlambda, order_diff_Dlambda = self.calculate_2d_metrics(image,Delta_lambda)
         qc_results = {'sigma_Dlambda':sigma_Dlambda, 'good_sigma_Dlambda':good_sigma_Dlambda, 
                         'raw_chi_squared':raw_chi_squared, 'good_chi_squared':good_chi_squared, 
                         'Delta_lambda':Delta_lambda, 'x_diff_Dlambda':x_diff_Dlambda, 
