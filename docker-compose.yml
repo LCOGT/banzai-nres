@@ -1,7 +1,7 @@
 version: '2'
 services:
   nres-e2e-data:
-    image: docker.lco.global/nres-pipeline-e2e-data:1.0.3
+    image: docker.lco.global/nres-pipeline-e2e-data:1.0.3-slim
     container_name: nres-e2e-data
     network_mode: "bridge"
     entrypoint:
