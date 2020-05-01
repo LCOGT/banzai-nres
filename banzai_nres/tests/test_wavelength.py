@@ -2,9 +2,10 @@ import numpy as np
 from banzai_nres.utils.wavelength_utils import identify_features, group_features_by_trace, \
     get_principle_order_number, get_center_wavelengths
 from banzai_nres.wavelength import IdentifyFeatures, WavelengthCalibrate, get_ref_ids_and_fibers
+from banzai_nres.wavelength import ArcLoader, LineListLoader, ArcStacker
 from scipy.ndimage import gaussian_filter
 from banzai_nres.frames import EchelleSpectralCCDData, NRESObservationFrame
-from banzai_nres.qc.wavelength_solution_checker import AssessWavelengthSolution
+from banzai_nres.qc.wavelength import AssessWavelengthSolution
 from banzai import context
 from astropy.table import Table
 import sep
@@ -178,12 +179,57 @@ def test_get_ref_ids_and_fibers():
     assert np.allclose(ref_id, [0, 0, 1, 1, 2, 2])
     assert np.allclose(fibers, [0, 1, 0, 1, 0, 1])
 
+
+def test_stage_caltypes():
+    assert ArcStacker(context.Context({})).calibration_type == 'DOUBLE'
+    assert LineListLoader(context.Context({})).calibration_type == 'LINELIST'
+
+
+class TestLineListLoader:
+    stage = LineListLoader(context.Context({}))
+    @mock.patch('banzai_nres.wavelength.LineListLoader.on_missing_master_calibration', return_value=None)
+    @mock.patch('banzai_nres.wavelength.LineListLoader.get_calibration_file_info', return_value=None)
+    def test_do_stage_aborts(self, fake_get_cal, fake_miss):
+        assert self.stage.do_stage('image') is None
+
+    @mock.patch('banzai_nres.wavelength.LineListLoader.get_calibration_file_info', return_value={'path': 'path/list.txt'})
+    @mock.patch('numpy.genfromtxt', return_value=np.array([[1, 1]]))
+    def test_do_stage(self, fake_load, fake_getcal):
+        image = type('image', (), {})
+        image = self.stage.do_stage(image)
+        assert np.allclose(image.line_list, [1])
+
+    def test_apply_master_calibration(self):
+        test_image = type('image', (), {})
+        assert np.allclose(self.stage.apply_master_calibration(test_image, [1, 2]).line_list, [1, 2])
+
+
+class TestArcLoader:
+    stage = ArcLoader(context.Context({}))
+
+    def test_double_on_missing_master_calibration(self):
+        test_image = type('image', (), {'obstype': 'DOUBLE'})
+        assert self.stage.on_missing_master_calibration(test_image).obstype == 'DOUBLE'
+
+    @mock.patch('banzai_nres.wavelength.CalibrationUser.on_missing_master_calibration')
+    def test_on_missing_master_calibration(self, mock_parent_miss):
+        test_image = type('image', (), {'obstype': 'ELSE'})
+        assert self.stage.on_missing_master_calibration(test_image) is None
+
+    def test_apply_master_calibration(self):
+        master_cal = type('image', (), {'wavelengths': [1, 2]})
+        test_image = type('image', (), {'wavelengths': None})
+        assert np.allclose(self.stage.apply_master_calibration(test_image, master_cal).wavelengths, [1, 2])
+        assert self.stage.calibration_type == 'DOUBLE'
+
+
 class TestQCChecks:
     test_image = TestWavelengthCalibrate().generate_image()
     input_context = context.Context({})
 
     def test_qc_do_stage(self):
-        AssessWavelengthSolution(self.input_context).do_stage(self.test_image)
+        image = AssessWavelengthSolution(self.input_context).do_stage(self.test_image)
+        assert image is not None
 
     def test_qc_checks(self):
         Delta_lambda = AssessWavelengthSolution(self.input_context).calculate_delta_lambda(self.test_image,self.test_image.features['wavelength'])
@@ -193,8 +239,3 @@ class TestQCChecks:
         x_diff_Dlambda, order_diff_Dlambda = AssessWavelengthSolution(self.input_context).calculate_2d_metrics(self.test_image,Delta_lambda)
         assert np.any(np.isfinite(x_diff_Dlambda))
         assert np.any(np.isfinite(order_diff_Dlambda))
-
-    
-
-
-    

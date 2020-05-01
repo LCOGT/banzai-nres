@@ -16,17 +16,17 @@ class AssessWavelengthSolution(Stage):
     def __init__(self, runtime_context):
         super(AssessWavelengthSolution, self).__init__(runtime_context)
     
-    def do_stage(self,image):
-        line_list = image.line_list
-        lab_lines = find_nearest(image.features['wavelength'], np.sort(line_list))
+    def do_stage(self, image):
+        lab_lines = find_nearest(image.features['wavelength'], np.sort(image.line_list))
         Delta_lambda = self.calculate_delta_lambda(image,lab_lines)
         sigma_Dlambda, good_sigma_Dlambda, raw_chi_squared, good_chi_squared = self.calculate_1d_metrics(image,Delta_lambda)
         x_diff_Dlambda, order_diff_Dlambda = self.calculate_2d_metrics(image,Delta_lambda)
-        qc_results = {'sigma_Dlambda':sigma_Dlambda, 'good_sigma_Dlambda':good_sigma_Dlambda, 
-                        'raw_chi_squared':raw_chi_squared, 'good_chi_squared':good_chi_squared, 
-                        'Delta_lambda':Delta_lambda, 'x_diff_Dlambda':x_diff_Dlambda, 
-                        'order_diff_Dlambda':order_diff_Dlambda}
+        qc_results = {'sigma_Dlambda': sigma_Dlambda, 'good_sigma_Dlambda': good_sigma_Dlambda,
+                        'raw_chi_squared': raw_chi_squared, 'good_chi_squared': good_chi_squared,
+                        'Delta_lambda': Delta_lambda, 'x_diff_Dlambda': x_diff_Dlambda,
+                        'order_diff_Dlambda': order_diff_Dlambda}
         qc.save_qc_results(self.runtime_context, qc_results, image)
+        return image
 
     def calculate_delta_lambda(self,image,lab_lines):
         measured_wavelengths = image.features['wavelength']

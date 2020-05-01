@@ -80,11 +80,11 @@ CALIBRATION_STACKER_STAGES = {'BIAS': ['banzai.bias.BiasMaker'],
                                          #'banzai_nres.background.BackgroundSubtractor',
                                          'banzai_nres.wavelength.IdentifyFeatures',
                                          'banzai_nres.wavelength.WavelengthCalibrate',
-                                         #'banzai_nres.qc.AssessWavelengthSolution'
+                                         'banzai_nres.qc.wavelength.AssessWavelengthSolution'
                                          ]
                               }
 
-# Stack delays are expressed in seconds--namely, each is five minutes
+# Stack delays are expressed in seconds. 300 is five minutes.
 CALIBRATION_STACK_DELAYS = {'BIAS': 300,
                             'DARK': 300,
                             'LAMPFLAT': 300,

@@ -47,7 +47,7 @@ class ArcLoader(CalibrationUser):
         if image.obstype.upper() == 'DOUBLE':
             return image
         else:
-            super().on_missing_master_calibration(image)
+            super(ArcLoader, self).on_missing_master_calibration(image)
 
     def apply_master_calibration(self, image: NRESObservationFrame, master_calibration_image):
         image.wavelengths = master_calibration_image.wavelengths
@@ -55,7 +55,6 @@ class ArcLoader(CalibrationUser):
 
 
 class LineListLoader(CalibrationUser):
-    # TODO Work with Curtis to implement each line in the .db
     """
     Loads the reference line list for wavelength calibration
     """
