@@ -168,6 +168,19 @@ def run_check_if_stacked_calibrations_were_created(raw_filenames, calibration_ty
     assert len(created_stacked_calibrations) == number_of_stacks_that_should_have_been_created
 
 
+def run_check_if_stacked_calibrations_have_extensions(calibration_type, extensions_to_check):
+    created_stacked_calibrations = []
+    for day_obs in DAYS_OBS:
+        created_stacked_calibrations += glob(os.path.join(DATA_ROOT, day_obs, 'processed',
+                                                          '*' + calibration_type.lower() + '*.fits*'))
+    for cal in created_stacked_calibrations:
+        hdulist = fits.open(cal)
+        extnames = [hdulist[i].header.get('extname', None) for i in range(len(hdulist))]
+        for ext in extensions_to_check:
+            logger.info(f'checking if {ext} is in the saved extensions of {cal}')
+            assert ext in extnames
+
+
 def run_check_if_stacked_calibrations_are_in_db(raw_filenames, calibration_type):
     number_of_stacks_that_should_have_been_created = get_expected_number_of_calibrations(raw_filenames, calibration_type)
     with dbs.get_session(os.environ['DB_ADDRESS']) as db_session:
@@ -241,6 +254,7 @@ class TestMasterFlatCreation:
     def test_if_stacked_flat_frame_was_created(self):
         check_if_individual_frames_exist('*w00*')
         run_check_if_stacked_calibrations_were_created('*w00.fits*', 'lampflat')
+        run_check_if_stacked_calibrations_have_extensions('lampflat', ['TRACES', 'PROFILE', 'BLAZE'])
         run_check_if_stacked_calibrations_are_in_db('*w00.fits*', 'LAMPFLAT')
 
 
@@ -257,6 +271,7 @@ class TestMasterArcCreation:
     def test_if_stacked_arc_frame_was_created(self):
         check_if_individual_frames_exist('*a00*')
         run_check_if_stacked_calibrations_were_created('*a00.fits*', 'double')
+        run_check_if_stacked_calibrations_have_extensions('double', ['WAVELENGTH', 'FEATURES'])
         run_check_if_stacked_calibrations_are_in_db('*a00.fits*', 'DOUBLE')
 
 
@@ -269,3 +284,4 @@ class TestScienceFrameProcessing:
 
     def test_if_science_frames_were_created(self):
         check_if_individual_frames_exist('*e00.fits*')
+        run_check_if_stacked_calibrations_have_extensions('target', ['1DSPEC'])
