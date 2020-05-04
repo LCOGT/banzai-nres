@@ -284,4 +284,3 @@ class TestScienceFrameProcessing:
 
     def test_if_science_frames_were_created(self):
         check_if_individual_frames_exist('*e00.fits*')
-        run_check_if_stacked_calibrations_have_extensions('target', ['1DSPEC'])
