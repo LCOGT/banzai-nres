@@ -5,7 +5,7 @@ from banzai_nres.wavelength import IdentifyFeatures, WavelengthCalibrate, get_re
 from banzai_nres.wavelength import ArcLoader, LineListLoader, ArcStacker
 from scipy.ndimage import gaussian_filter
 from banzai_nres.frames import EchelleSpectralCCDData, NRESObservationFrame
-from banzai_nres.qc.wavelength import AssessWavelengthSolution
+from banzai_nres.qc.qc_wavelength import AssessWavelengthSolution
 from banzai import context
 from astropy.table import Table
 import sep
