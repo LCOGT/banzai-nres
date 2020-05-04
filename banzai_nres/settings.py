@@ -80,7 +80,7 @@ CALIBRATION_STACKER_STAGES = {'BIAS': ['banzai.bias.BiasMaker'],
                                          #'banzai_nres.background.BackgroundSubtractor',
                                          'banzai_nres.wavelength.IdentifyFeatures',
                                          'banzai_nres.wavelength.WavelengthCalibrate',
-                                         'banzai_nres.qc.wavelength.AssessWavelengthSolution'
+                                         'banzai_nres.qc.qc_wavelength.AssessWavelengthSolution'
                                          ]
                               }
 
