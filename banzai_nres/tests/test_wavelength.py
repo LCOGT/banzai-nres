@@ -188,13 +188,13 @@ def test_stage_caltypes():
 class TestLineListLoader:
     stage = LineListLoader(context.Context({}))
     @mock.patch('banzai_nres.wavelength.LineListLoader.on_missing_master_calibration', return_value=None)
-    @mock.patch('banzai_nres.wavelength.LineListLoader.get_calibration_file_info', return_value=None)
-    def test_do_stage_aborts(self, fake_get_cal, fake_miss):
-        assert self.stage.do_stage('image') is None
+    def test_do_stage_aborts(self, fake_miss):
+        stage = LineListLoader(context.Context({}))
+        stage.LINE_LIST_FILENAME = 'some/bad/path'
+        assert stage.do_stage('image') is None
 
-    @mock.patch('banzai_nres.wavelength.LineListLoader.get_calibration_file_info', return_value={'path': 'path/list.txt'})
     @mock.patch('numpy.genfromtxt', return_value=np.array([[1, 1]]))
-    def test_do_stage(self, fake_load, fake_getcal):
+    def test_do_stage(self, fake_load):
         image = type('image', (), {})
         image = self.stage.do_stage(image)
         assert np.allclose(image.line_list, [1])

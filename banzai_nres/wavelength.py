@@ -11,6 +11,8 @@ from xwavecal.utils.wavelength_utils import find_nearest
 import sep
 import logging
 import os
+import pkg_resources
+
 
 logger = logging.getLogger('banzai')
 
@@ -58,17 +60,17 @@ class LineListLoader(CalibrationUser):
     """
     Loads the reference line list for wavelength calibration
     """
+    LINE_LIST_FILENAME = pkg_resources.resource_filename('banzai_nres', 'data/ThAr_atlas_ESO.txt')
     @property
     def calibration_type(self):
         return 'LINELIST'
 
     def do_stage(self, image):
-        master_calibration_file_info = self.get_calibration_file_info(image)
-        if master_calibration_file_info is None:
+        if not os.path.exists(self.LINE_LIST_FILENAME):
             return self.on_missing_master_calibration(image)
-        line_list = np.genfromtxt(master_calibration_file_info['path'])[:, 1].flatten()
+        line_list = np.genfromtxt(self.LINE_LIST_FILENAME)[:, 1].flatten()
         logger.info('Applying master calibration', image=image,
-                    extra_tags={'master_calibration':  os.path.basename(master_calibration_file_info['path'])})
+                    extra_tags={'master_calibration':  os.path.basename(self.LINE_LIST_FILENAME)})
         return self.apply_master_calibration(image, line_list)
 
     def apply_master_calibration(self, image, line_list):
