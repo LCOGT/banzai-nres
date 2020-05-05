@@ -8,6 +8,7 @@ import time
 from glob import glob
 from astropy.utils.data import get_pkg_data_filename
 from banzai.celery import app, schedule_calibration_stacking
+from banzai.dbs import get_session
 import argparse
 from banzai import dbs
 from types import ModuleType
@@ -32,6 +33,12 @@ DAYS_OBS = [os.path.join(instrument, os.path.basename(dayobs_path)) for instrume
 
 TEST_PACKAGE = 'banzai_nres.tests'
 CONFIGDB_FILENAME = get_pkg_data_filename('data/configdb_example.json', TEST_PACKAGE)
+# distinct files for the line lists for each instrument because otherwise they will not be added to the database
+# because .db entries with the same filename are marked as duplicates (see banzai.dbs.save_calibration_info()).
+LINE_LIST_FILENAMES = [get_pkg_data_filename('data/ThAr_atlas_ESO_copy0' + str(c) + '.txt', TEST_PACKAGE) for c in [1, 2, 3, 4]]
+if len(INSTRUMENTS) > len(LINE_LIST_FILENAMES):
+    logger.warning(f'Found {len(LINE_LIST_FILENAMES)} line list files')
+    logger.warning('Not enough line list txt files for all the instruments that will be added to the database!')
 
 
 def observation_portal_side_effect(*args, **kwargs):
@@ -40,6 +47,15 @@ def observation_portal_side_effect(*args, **kwargs):
     filename = 'test_obs_portal_response_{site}_{start}.json'.format(site=site, start=start)
     filename = get_pkg_data_filename('data/{filename}'.format(filename=filename), TEST_PACKAGE)
     return FakeResponse(filename)
+
+
+def get_instrument_ids(db_address, names):
+    with get_session(db_address) as db_session:
+        instruments = []
+        for name in names:
+            criteria = dbs.Instrument.name == name
+            instruments.extend(db_session.query(dbs.Instrument).filter(criteria).all())
+    return [instrument.id for instrument in instruments]
 
 
 def celery_join():
@@ -119,13 +135,13 @@ def get_expected_number_of_calibrations(raw_filenames, calibration_type):
     number_of_stacks_that_should_have_been_created = 0
     for day_obs in DAYS_OBS:
         raw_filenames_for_this_dayobs = glob(os.path.join(DATA_ROOT, day_obs, 'raw', raw_filenames))
-        if calibration_type.lower() == 'lampflat':
-            # Group by fibers lit
+        if calibration_type.lower() == 'lampflat' or calibration_type.lower() == 'double':
+            # Group by fibers lit if we are stacking lampflats or doubles (arc frames)
             observed_fibers = []
             for raw_filename in raw_filenames_for_this_dayobs:
-                lampflat_hdu = fits.open(raw_filename)
-                observed_fibers.append(lampflat_hdu[1].header.get('OBJECTS'))
-                lampflat_hdu.close()
+                cal_hdu = fits.open(raw_filename)
+                observed_fibers.append(cal_hdu[1].header.get('OBJECTS'))
+                cal_hdu.close()
             observed_fibers = set(observed_fibers)
             number_of_stacks_that_should_have_been_created += len(observed_fibers)
         else:
@@ -152,6 +168,19 @@ def run_check_if_stacked_calibrations_were_created(raw_filenames, calibration_ty
     assert len(created_stacked_calibrations) == number_of_stacks_that_should_have_been_created
 
 
+def run_check_if_stacked_calibrations_have_extensions(calibration_type, extensions_to_check):
+    created_stacked_calibrations = []
+    for day_obs in DAYS_OBS:
+        created_stacked_calibrations += glob(os.path.join(DATA_ROOT, day_obs, 'processed',
+                                                          '*' + calibration_type.lower() + '*.fits*'))
+    for cal in created_stacked_calibrations:
+        hdulist = fits.open(cal)
+        extnames = [hdulist[i].header.get('extname', None) for i in range(len(hdulist))]
+        for ext in extensions_to_check:
+            logger.info(f'checking if {ext} is in the saved extensions of {cal}')
+            assert ext in extnames
+
+
 def run_check_if_stacked_calibrations_are_in_db(raw_filenames, calibration_type):
     number_of_stacks_that_should_have_been_created = get_expected_number_of_calibrations(raw_filenames, calibration_type)
     with dbs.get_session(os.environ['DB_ADDRESS']) as db_session:
@@ -171,8 +200,13 @@ def init(configdb):
     os.system(f'banzai_add_instrument --site elp --camera fl17 --name nres02 --camera-type 1m0-NRES-SciCam --db-address={os.environ["DB_ADDRESS"]}')
     for instrument in INSTRUMENTS:
         for bpm_filename in glob(os.path.join(DATA_ROOT, instrument, 'bpm/*bpm*')):
+            logger.info(f'adding bpm {bpm_filename} to the database')
             os.system(f'banzai_nres_add_bpm --filename {bpm_filename} --db-address={os.environ["DB_ADDRESS"]}')
-
+    instrument_ids = get_instrument_ids(os.environ["DB_ADDRESS"], names=['nres01', 'nres02'])
+    for instrument_id, line_list in zip(instrument_ids, LINE_LIST_FILENAMES[:len(instrument_ids)]):
+        logger.info(f'adding line list to the database for instrument with id {str(instrument_id)}')
+        os.system(f'banzai_nres_add_line_list --filename {line_list} --db-address={os.environ["DB_ADDRESS"]} '
+                  f'--instrument-id {instrument_id}')
 
 
 @pytest.mark.e2e
@@ -220,7 +254,25 @@ class TestMasterFlatCreation:
     def test_if_stacked_flat_frame_was_created(self):
         check_if_individual_frames_exist('*w00*')
         run_check_if_stacked_calibrations_were_created('*w00.fits*', 'lampflat')
+        run_check_if_stacked_calibrations_have_extensions('lampflat', ['TRACES', 'PROFILE', 'BLAZE'])
         run_check_if_stacked_calibrations_are_in_db('*w00.fits*', 'LAMPFLAT')
+
+
+@pytest.mark.e2e
+@pytest.mark.master_arc
+class TestMasterArcCreation:
+    @pytest.fixture(autouse=True)
+    @mock.patch('banzai.utils.observation_utils.requests.get', side_effect=observation_portal_side_effect)
+    def stack_arc_frames(self, mock_lake):
+        run_reduce_individual_frames('*a00.fits*')
+        mark_frames_as_good('*a91.fits*')
+        stack_calibrations('double')
+
+    def test_if_stacked_arc_frame_was_created(self):
+        check_if_individual_frames_exist('*a00*')
+        run_check_if_stacked_calibrations_were_created('*a00.fits*', 'double')
+        run_check_if_stacked_calibrations_have_extensions('double', ['WAVELENGTH', 'FEATURES'])
+        run_check_if_stacked_calibrations_are_in_db('*a00.fits*', 'DOUBLE')
 
 
 @pytest.mark.e2e

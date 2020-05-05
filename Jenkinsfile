@@ -178,6 +178,34 @@ pipeline {
 				}
 			}
 		}
+		stage('Test-Master-Arc-Creation') {
+			when {
+				anyOf {
+					branch 'PR-*'
+					expression { return params.forceEndToEnd }
+				}
+			}
+			steps {
+				script {
+                    withKubeConfig([credentialsId: "build-kube-config"]) {
+						sh("kubectl exec ${podName} -c banzai-nres-e2e-listener -- " +
+						        "pytest -s --durations=0 --junitxml=/home/archive/pytest-master-arc.xml " +
+						        "-m master_arc /lco/banzai-nres/")
+					}
+				}
+			}
+			post {
+				always {
+					script {
+					    withKubeConfig([credentialsId: "build-kube-config"]) {
+						    sh("kubectl cp -c banzai-nres-e2e-listener ${podName}:/home/archive/pytest-master-arc.xml " +
+						            "pytest-master-arc.xml")
+						    junit "pytest-master-arc.xml"
+						}
+					}
+				}
+			}
+		}
 		stage('Test-Science-Frame-Creation') {
 			when {
 				anyOf {

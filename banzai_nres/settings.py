@@ -7,7 +7,8 @@ MASTER_CALIBRATION_FRAME_CLASS = 'banzai_nres.frames.NRESMasterCalibrationFrame'
 
 FRAME_SELECTION_CRITERIA = [('type', 'contains', 'NRES')]
 
-ORDERED_STAGES = ['banzai.bpm.BadPixelMaskLoader',
+ORDERED_STAGES = [
+                  'banzai.bpm.BadPixelMaskLoader',
                   'banzai.bias.OverscanSubtractor',
                   'banzai.gain.GainNormalizer',
                   'banzai.trim.Trimmer',
@@ -15,17 +16,23 @@ ORDERED_STAGES = ['banzai.bpm.BadPixelMaskLoader',
                   'banzai.dark.DarkSubtractor',
                   'banzai_nres.flats.FlatLoader',
                   'banzai_nres.background.BackgroundSubtractor',
+                  'banzai_nres.wavelength.ArcLoader',
                   'banzai_nres.extract.GetOptimalExtractionWeights',
                   'banzai_nres.extract.WeightedExtract',
                   ]
 
 CALIBRATION_MIN_FRAMES = {'BIAS': 5,
                           'DARK': 3,
-                          'LAMPFLAT': 5}
+                          'LAMPFLAT': 5,
+                          'DOUBLE': 1,
+                          }
 
 CALIBRATION_SET_CRITERIA = {'BIAS': ['binning', 'configuration_mode'],
                             'DARK': ['binning', 'configuration_mode'],
-                            'LAMPFLAT': ['binning', 'fiber0_lit', 'fiber1_lit', 'fiber2_lit']}
+                            'LAMPFLAT': ['binning', 'fiber0_lit', 'fiber1_lit', 'fiber2_lit'],
+                            'DOUBLE': ['binning', 'fiber0_lit', 'fiber1_lit', 'fiber2_lit'],
+                            'LINELIST': [],
+                            }
 
 CALIBRATION_FILENAME_FUNCTIONS = {'BIAS': ('banzai_nres.utils.file_utils.config_to_filename',
                                            'banzai.utils.file_utils.ccdsum_to_filename'),
@@ -33,19 +40,29 @@ CALIBRATION_FILENAME_FUNCTIONS = {'BIAS': ('banzai_nres.utils.file_utils.config_
                                            'banzai.utils.file_utils.ccdsum_to_filename'),
                                   'LAMPFLAT': ('banzai_nres.utils.file_utils.config_to_filename',
                                                'banzai.utils.file_utils.ccdsum_to_filename',
-                                               'banzai_nres.fibers.fibers_state_to_filename')}
+                                               'banzai_nres.fibers.fibers_state_to_filename'),
+                                  'DOUBLE': ('banzai_nres.utils.file_utils.config_to_filename',
+                                             'banzai.utils.file_utils.ccdsum_to_filename',
+                                             'banzai_nres.fibers.fibers_state_to_filename')
+                                  }
 
 TELESCOPE_FILENAME_FUNCTION = 'banzai_nres.utils.runtime_utils.get_telescope_filename'
 
-CALIBRATION_IMAGE_TYPES = ['BPM', 'BIAS', 'DARK', 'LAMPFLAT', 'ARC']
+CALIBRATION_IMAGE_TYPES = ['BPM', 'BIAS', 'DARK', 'LAMPFLAT', 'DOUBLE']
 
 LAST_STAGE = {'BIAS': 'banzai.trim.Trimmer',
               'DARK': 'banzai.bias.BiasSubtractor',
-              'LAMPFLAT': 'banzai.dark.DarkSubtractor', 'TARGET': None, 'DOUBLE': None}
+              'LAMPFLAT': 'banzai.dark.DarkSubtractor',
+              'DOUBLE': 'banzai.dark.DarkSubtractor',
+              'TARGET': None,
+              }
 
 EXTRA_STAGES = {'BIAS': ['banzai.bias.BiasMasterLevelSubtractor', 'banzai.bias.BiasComparer'],
                 'DARK': ['banzai.dark.DarkNormalizer', 'banzai.dark.DarkComparer'],
-                'LAMPFLAT': [], 'TARGET': None, 'DOUBLE': None}
+                'LAMPFLAT': [],
+                'DOUBLE': [],
+                'TARGET': None,
+                }
 
 CALIBRATION_STACKER_STAGES = {'BIAS': ['banzai.bias.BiasMaker'],
                               'DARK': ['banzai.dark.DarkMaker'],
@@ -55,12 +72,24 @@ CALIBRATION_STACKER_STAGES = {'BIAS': ['banzai.bias.BiasMaker'],
                                            'banzai_nres.background.BackgroundSubtractor',
                                            'banzai_nres.traces.TraceRefiner',
                                            'banzai_nres.profile.ProfileFitter'
-                                           ]}
+                                           ],
+                              'DOUBLE': ['banzai_nres.wavelength.ArcStacker',  # stack
+                                         'banzai_nres.flats.FlatLoader',  # load traces
+                                         'banzai_nres.wavelength.ArcLoader',  # load wavelengths, ref_ids, etc...
+                                         'banzai_nres.wavelength.LineListLoader',  # load reference laboratory wavelengths
+                                         #'banzai_nres.background.BackgroundSubtractor',
+                                         'banzai_nres.wavelength.IdentifyFeatures',
+                                         'banzai_nres.wavelength.WavelengthCalibrate',
+                                         'banzai_nres.qc.qc_wavelength.AssessWavelengthSolution'
+                                         ]
+                              }
 
-# Stack delays are expressed in seconds--namely, each is five minutes
+# Stack delays are expressed in seconds. 300 is five minutes.
 CALIBRATION_STACK_DELAYS = {'BIAS': 300,
                             'DARK': 300,
-                            'LAMPFLAT': 300}
+                            'LAMPFLAT': 300,
+                            'DOUBLE': 300,
+                            }
 
 SCHEDULE_STACKING_CRON_ENTRIES = {'cpt': {'minute': 0, 'hour': 15},
                                   'tlv': {'minute': 45, 'hour': 8},
@@ -73,12 +102,13 @@ CALIBRATE_PROPOSAL_ID = os.getenv('CALIBRATE_PROPOSAL_ID', 'calibrate')
 
 CONFIGDB_URL = os.getenv('CONFIGDB_URL', 'http://configdb.lco.gtn/sites/')
 
-OBSERVATION_REQUEST_TYPES = {'BIAS': 'NRESBIAS', 'DARK': 'NRESDARK'}
+OBSERVATION_REQUEST_TYPES = {'BIAS': 'NRESBIAS', 'DARK': 'NRESDARK', 'DOUBLE': 'ARC'}
 
 # For some extension names, we want to just have corresponding BPM or ERR extensions
 EXTENSION_NAMES_TO_CONDENSE = ['SPECTRUM']
 
-CALIBRATION_LOOKBACK = {'BIAS': 2.5, 'DARK': 4.5, 'LAMPFLAT': 0.5}
+# number of days to lookback and stack frames:
+CALIBRATION_LOOKBACK = {'BIAS': 2.5, 'DARK': 4.5, 'LAMPFLAT': 0.5, 'DOUBLE': 0.5}
 
 PIPELINE_VERSION = banzai_nres.__version__
 

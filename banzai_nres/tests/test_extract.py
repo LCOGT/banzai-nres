@@ -137,16 +137,16 @@ def two_order_image():
 
 
 def five_hundred_square_image(maxflux,number_traces,trace_width, read_noise=10):
-    traces = np.zeros((500,500))
+    traces = np.zeros((500, 500))
     data = np.ones_like(traces, dtype=float)
     profile = np.zeros_like(traces, dtype=float)
-    ix = np.arange(0,trace_width)
-    for i in range (0,number_traces):
-        traces[50*i:50*i+trace_width,:]=i
-        for j in range (0,trace_width):
-            data[50*i+j,:]+=maxflux*np.exp((-1.)*(ix[j]-trace_width/2.)**2/(trace_width/6.)**2)
-        for j in range (0,trace_width):
-            profile[50*i+j,:]=data[50*i+j,:]/np.sum(data[50*i:50*i+trace_width,0])
+    ix = np.arange(0, trace_width)
+    for i in range(0, number_traces):
+        traces[50 * i:50 * i + trace_width, :] = i
+        for j in range(0,trace_width):
+            data[50 * i + j, :] += maxflux * np.exp((-1.) * (ix[j]-trace_width/2.) ** 2/(trace_width/6.)**2)
+        for j in range(0, trace_width):
+            profile[50 * i + j, :] = data[50 * i + j, :] / np.sum(data[50 * i: 50 * i + trace_width, 0])
 
     data += np.random.poisson(data)
     data += np.random.normal(0.0, read_noise, size=data.shape)

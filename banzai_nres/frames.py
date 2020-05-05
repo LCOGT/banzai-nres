@@ -73,6 +73,30 @@ class NRESObservationFrame(LCOObservationFrame):
     def blaze(self, value):
         self.primary_hdu.blaze = value
 
+    @property
+    def features(self):
+        return self.primary_hdu.features
+
+    @features.setter
+    def features(self, value):
+        self.primary_hdu.features = value
+
+    @property
+    def line_list(self):
+        return self.primary_hdu.line_list
+
+    @line_list.setter
+    def line_list(self, value):
+        self.primary_hdu.line_list = value
+
+    @property
+    def wavelengths(self):
+        return self.primary_hdu.wavelengths
+
+    @wavelengths.setter
+    def wavelengths(self, value):
+        self.primary_hdu.wavelengths = value
+
 
 class NRESCalibrationFrame(LCOCalibrationFrame, NRESObservationFrame):
     def __init__(self, hdu_list: list, file_path: str, frame_id: int = None, grouping_criteria: list = None):
@@ -90,14 +114,18 @@ class NRESMasterCalibrationFrame(LCOMasterCalibrationFrame, NRESCalibrationFrame
 class EchelleSpectralCCDData(CCDData):
     def __init__(self, data: Union[np.array, Table], meta: fits.Header,
                  mask: np.array = None, name: str = '', uncertainty: np.array = None,
-                 background: np.array = None,  traces: np.array = None,
-                 profile: np.array = None, weights: np.array = None,
-                 spectrum: Table = None, blaze: Table = None, memmap=True):
+                 background: np.array = None,  traces: np.array = None, wavelengths: np.array = None,
+                 profile: np.array = None, weights: np.array = None, line_list=None,
+                 spectrum: Table = None, blaze: Table = None, memmap=True, features: Table = None):
         super().__init__(data=data, meta=meta, mask=mask, name=name, memmap=memmap, uncertainty=uncertainty)
         if traces is None:
             self._traces = None
         else:
             self.traces = traces
+        if wavelengths is None:
+            self._wavelengths = None
+        else:
+            self.wavelengths = wavelengths
         if background is None:
             self._background = None
         else:
@@ -113,6 +141,8 @@ class EchelleSpectralCCDData(CCDData):
 
         self.spectrum = spectrum
         self.blaze = blaze
+        self.features = features
+        self.line_list = line_list
 
 
     @property
@@ -130,6 +160,14 @@ class EchelleSpectralCCDData(CCDData):
     @traces.setter
     def traces(self, value):
         self._traces = self._init_array(value)
+
+    @property
+    def wavelengths(self):
+        return self._wavelengths
+
+    @wavelengths.setter
+    def wavelengths(self, value):
+        self._wavelengths = self._init_array(value)
 
     @property
     def num_traces(self):
@@ -179,12 +217,18 @@ class EchelleSpectralCCDData(CCDData):
         if self.weights is not None:
             hdu_list.append(to_fits_image_extension(self.weights, self.extension_name, 'WEIGHTS', context,
                                                     extension_version=self.meta.get('EXTVER')))
+        if self.wavelengths is not None:
+            hdu_list.append(to_fits_image_extension(self.wavelengths, self.extension_name, 'WAVELENGTH', context,
+                                                    extension_version=self.meta.get('EXTVER')))
         if self.spectrum is not None:
-            extname = self.extension_name + '1DSPEC'
+            extname = '1DSPEC'
             hdu_list.append(fits.BinTableHDU(self.spectrum, name=extname, header=fits.Header({'EXTNAME': extname})))
         if self.blaze is not None:
-            extname = self.extension_name + 'BLAZE'
+            extname = 'BLAZE'
             hdu_list.append(fits.BinTableHDU(self.blaze, name=extname, header=fits.Header({'EXTNAME': extname})))
+        if self.features is not None:
+            extname = 'FEATURES'
+            hdu_list.append(fits.BinTableHDU(self.features, name=extname, header=fits.Header({'EXTNAME': extname})))
 
         return hdu_list
 
