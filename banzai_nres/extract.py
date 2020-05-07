@@ -12,10 +12,14 @@ logger = logging.getLogger('banzai')
 class WeightedExtract(Stage):
     def do_stage(self, image: EchelleSpectralCCDData):
         if image.weights is None:
-            logger.error('Extraction weights missing. Rejecting image.', image=image)
+            logger.error('Extraction weights are missing. Rejecting image.', image=image)
+            return None
+        if image.wavelengths is None:
+            logger.error('Wavelengths are missing. Rejecting image.', image=image)
             return None
         # consider adding a method to image, i.e. image.extracted_spectrum_shape.
         flux = np.zeros((image.num_traces, image.data.shape[1]), dtype=float)
+        wavelength = np.zeros_like(flux, dtype=float)
         variance = np.zeros_like(flux, dtype=float)
 
         trace_ids = np.arange(1, image.num_traces + 1)
@@ -24,9 +28,10 @@ class WeightedExtract(Stage):
             # get the horizontal (x) extent of the trace. Consider making this a get_extent function.
             x_extent = slice(np.min(this_trace[1]), np.max(this_trace[1]) + 1)
             flux[i, x_extent] = self.extract_order(image.data[this_trace], image.weights[this_trace])
+            wavelength[i, x_extent] = self.extract_order(image.wavelengths[this_trace], weights=1/image.wavelengths[this_trace].shape[0])
             variance[i, x_extent] = self.extract_order(image.uncertainty[this_trace] ** 2, image.weights[this_trace] ** 2)
 
-        image.spectrum = Table({'id': trace_ids, 'flux': flux, 'uncertainty': np.sqrt(variance)})
+        image.spectrum = Table({'id': trace_ids, 'wavelength': wavelength, 'flux': flux, 'uncertainty': np.sqrt(variance)})
         return image
 
     @staticmethod

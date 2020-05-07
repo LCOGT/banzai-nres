@@ -15,7 +15,7 @@ from setuptools import setup, find_packages
 setup(name='lco-banzai-nres-e2e',
       author=['Curtis McCully', 'G. Mirek Brandt', 'Marshall Johnson', 'Timothy D. Brandt'],
       author_email=['cmccully@lco.global', 'gmbrandt@ucsb.edu', '@lco.global', 'tbrandt@physics.ucsb.edu'],
-      version='0.5.0',
+      version='0.5.1',
       python_requires='>=3.6',
       packages=find_packages(),
       use_scm_version=True,
