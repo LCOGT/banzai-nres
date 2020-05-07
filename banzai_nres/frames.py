@@ -252,7 +252,8 @@ class NRESFrameFactory(LCOFrameFactory):
         return LCOFrameFactory().associated_extensions + [{'FITS_NAME': 'TRACES', 'NAME': 'traces'},
                                                           {'FITS_NAME': 'BACKGROUND', 'NAME': 'background'},
                                                           {'FITS_NAME': 'PROFILE', 'NAME': 'profile'},
-                                                          {'FITS_NAME': 'BLAZE', 'NAME': 'blaze'}]
+                                                          {'FITS_NAME': 'BLAZE', 'NAME': 'blaze'},
+                                                          {'FITS_NAME': 'WAVELENGTH', 'NAME': 'wavelengths'}]
 
     def open(self, path, runtime_context) -> Optional[ObservationFrame]:
         image = super().open(path, runtime_context)
