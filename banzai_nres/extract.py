@@ -28,8 +28,9 @@ class WeightedExtract(Stage):
             # get the horizontal (x) extent of the trace. Consider making this a get_extent function.
             x_extent = slice(np.min(this_trace[1]), np.max(this_trace[1]) + 1)
             flux[i, x_extent] = self.extract_order(image.data[this_trace], image.weights[this_trace])
-            wavelength[i, x_extent] = self.extract_order(image.wavelengths[this_trace], weights=1/image.wavelengths[this_trace].shape[0])
             variance[i, x_extent] = self.extract_order(image.uncertainty[this_trace] ** 2, image.weights[this_trace] ** 2)
+            # get the average wavelength: Sum wavelengths weighted by 1 over the vertical width of the trace (e.g. 1/10)
+            wavelength[i, x_extent] = self.extract_order(image.wavelengths[this_trace], weights=1/image.wavelengths[this_trace].shape[0])
 
         image.spectrum = Table({'id': trace_ids, 'wavelength': wavelength, 'flux': flux, 'uncertainty': np.sqrt(variance)})
         return image
