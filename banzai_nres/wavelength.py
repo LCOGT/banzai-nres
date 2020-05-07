@@ -53,6 +53,7 @@ class ArcLoader(CalibrationUser):
 
     def apply_master_calibration(self, image: NRESObservationFrame, master_calibration_image):
         image.wavelengths = master_calibration_image.wavelengths
+        image.meta['L1IDARC'] = master_calibration_image.filename, 'ID of ARC/DOUBLE frame'
         return image
 
 
