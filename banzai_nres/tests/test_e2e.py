@@ -3,10 +3,12 @@ from banzai.tests.utils import FakeResponse, get_min_and_max_dates
 from banzai_nres import settings
 import os
 import mock
+import numpy as np
 from banzai.utils import file_utils
 import time
 from glob import glob
 from astropy.utils.data import get_pkg_data_filename
+from astropy.table import Table
 from banzai.celery import app, schedule_calibration_stacking
 from banzai.dbs import get_session
 import argparse
@@ -175,6 +177,17 @@ def run_check_if_stacked_calibrations_have_extensions(calibration_type, extensio
             assert ext in extnames
 
 
+def check_extracted_spectra(raw_filename, spec_extname, columns):
+    created_images = []
+    for day_obs in DAYS_OBS:
+        created_images += glob(os.path.join(DATA_ROOT, day_obs, 'processed', raw_filename))
+    for fname in created_images:
+        spectrum = Table(fits.open(fname)[spec_extname].data)
+        for colname in columns:
+            assert colname in spectrum.colnames
+            assert not np.allclose(spectrum[colname], 0)
+
+
 def run_check_if_stacked_calibrations_are_in_db(raw_filenames, calibration_type):
     number_of_stacks_that_should_have_been_created = get_expected_number_of_calibrations(raw_filenames, calibration_type)
     with dbs.get_session(os.environ['DB_ADDRESS']) as db_session:
@@ -273,3 +286,4 @@ class TestScienceFrameProcessing:
 
     def test_if_science_frames_were_created(self):
         check_if_individual_frames_exist('*e00.fits*')
+        check_extracted_spectra('*e91.fits*', '1DSPEC', ['wavelength', 'flux', 'uncertainty'])
