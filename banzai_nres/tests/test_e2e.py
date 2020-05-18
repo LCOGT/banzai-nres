@@ -6,10 +6,9 @@ import mock
 from banzai.utils import file_utils
 import time
 from glob import glob
-from astropy.utils.data import get_pkg_data_filename
+import pkg_resources
 from banzai.celery import app, schedule_calibration_stacking
 from banzai.dbs import get_session
-import argparse
 from banzai import dbs
 from types import ModuleType
 from datetime import datetime
@@ -31,11 +30,10 @@ INSTRUMENTS = [os.path.join(site, os.path.basename(instrument_path)) for site in
 DAYS_OBS = [os.path.join(instrument, os.path.basename(dayobs_path)) for instrument in INSTRUMENTS
             for dayobs_path in glob(os.path.join(DATA_ROOT, instrument, '201*'))]
 
-TEST_PACKAGE = 'banzai_nres.tests'
-CONFIGDB_FILENAME = get_pkg_data_filename('data/configdb_example.json', TEST_PACKAGE)
+CONFIGDB_FILENAME = pkg_resources.resource_filename('banzai_nres.tests', 'data/configdb_example.json')
 # distinct files for the line lists for each instrument because otherwise they will not be added to the database
 # because .db entries with the same filename are marked as duplicates (see banzai.dbs.save_calibration_info()).
-LINE_LIST_FILENAMES = [get_pkg_data_filename('data/ThAr_atlas_ESO_copy0' + str(c) + '.txt', TEST_PACKAGE) for c in [1, 2, 3, 4]]
+LINE_LIST_FILENAMES = [pkg_resources.resource_filename('banzai_nres.tests', 'data/ThAr_atlas_ESO_copy0' + str(c) + '.txt') for c in [1, 2, 3, 4]]
 if len(INSTRUMENTS) > len(LINE_LIST_FILENAMES):
     logger.warning(f'Found {len(LINE_LIST_FILENAMES)} line list files')
     logger.warning('Not enough line list txt files for all the instruments that will be added to the database!')
@@ -45,7 +43,7 @@ def observation_portal_side_effect(*args, **kwargs):
     site = kwargs['params']['site']
     start = datetime.strftime(parse(kwargs['params']['start_after']).replace(tzinfo=None).date(), '%Y%m%d')
     filename = 'test_obs_portal_response_{site}_{start}.json'.format(site=site, start=start)
-    filename = get_pkg_data_filename('data/{filename}'.format(filename=filename), TEST_PACKAGE)
+    filename = pkg_resources.resource_filename('banzai_nres.tests', f'data/{filename}')
     return FakeResponse(filename)
 
 
@@ -74,19 +72,6 @@ def celery_join():
             continue
         if all([len(queue['celery@banzai-celery-worker']) == 0 for queue in queues]):
             break
-
-
-def run_end_to_end_tests():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--marker', dest='marker', help='PyTest marker to run')
-    parser.add_argument('--junit-file', dest='junit_file', help='Path to junit xml file with results')
-    parser.add_argument('--code-path', dest='code_path', help='Path to directory with setup.py')
-    args = parser.parse_args()
-    os.chdir(args.code_path)
-    command = 'python setup.py test -a "--durations=0 --junitxml={junit_file} -m {marker}"'
-
-    # Bitshift by 8 because Python encodes exit status in the leftmost 8 bits
-    return os.system(command.format(junit_file=args.junit_file, marker=args.marker)) >> 8
 
 
 def run_reduce_individual_frames(raw_filenames):
