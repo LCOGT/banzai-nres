@@ -112,3 +112,6 @@ venv.bak/
 test_data/
 
 requirements.lock
+
+# Locally downloaded helm charts
+helm-chart/banzai-nres/charts/

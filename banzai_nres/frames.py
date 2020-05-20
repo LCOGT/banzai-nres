@@ -1,6 +1,6 @@
 from banzai_nres.fibers import fiber_states_from_header
 from banzai.utils.fits_utils import to_fits_image_extension
-from banzai.lco import LCOFrameFactory, LCOObservationFrame, LCOMasterCalibrationFrame, LCOCalibrationFrame
+from banzai.lco import LCOFrameFactory, LCOObservationFrame, LCOCalibrationFrame
 from banzai.frames import ObservationFrame
 from banzai.data import CCDData
 import logging
@@ -14,8 +14,8 @@ logger = logging.getLogger('banzai')
 
 
 class NRESObservationFrame(LCOObservationFrame):
-    def __init__(self, hdu_list: list, file_path: str, frame_id: int = None):
-        LCOObservationFrame.__init__(self, hdu_list, file_path, frame_id=frame_id)
+    def __init__(self, hdu_list: list, file_path: str, frame_id: int = None, hdu_order: list = None):
+        LCOObservationFrame.__init__(self, hdu_list, file_path, frame_id=frame_id, hdu_order=hdu_order)
         self.fiber0_lit, self.fiber1_lit, self.fiber2_lit = fiber_states_from_header(self.meta)
 
     def num_lit_fibers(self):
@@ -99,16 +99,10 @@ class NRESObservationFrame(LCOObservationFrame):
 
 
 class NRESCalibrationFrame(LCOCalibrationFrame, NRESObservationFrame):
-    def __init__(self, hdu_list: list, file_path: str, frame_id: int = None, grouping_criteria: list = None):
+    def __init__(self, hdu_list: list, file_path: str, frame_id: int = None, grouping_criteria: list = None,
+                 hdu_order: list = None):
         LCOCalibrationFrame.__init__(self, hdu_list, file_path,  grouping_criteria=grouping_criteria)
-        NRESObservationFrame.__init__(self, hdu_list, file_path, frame_id=frame_id)
-
-
-class NRESMasterCalibrationFrame(LCOMasterCalibrationFrame, NRESCalibrationFrame):
-    def __init__(self, images: list, file_path: str, frame_id: int = None, grouping_criteria: list = None):
-        NRESCalibrationFrame.__init__(self, images, file_path, grouping_criteria=grouping_criteria)
-        LCOMasterCalibrationFrame.__init__(self, images, file_path, frame_id=frame_id,
-                                           grouping_criteria=grouping_criteria)
+        NRESObservationFrame.__init__(self, hdu_list, file_path, frame_id=frame_id, hdu_order=hdu_order)
 
 
 class EchelleSpectralCCDData(CCDData):
