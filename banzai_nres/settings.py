@@ -3,7 +3,7 @@ import banzai_nres
 
 FRAME_FACTORY = 'banzai_nres.frames.NRESFrameFactory'
 
-MASTER_CALIBRATION_FRAME_CLASS = 'banzai_nres.frames.NRESMasterCalibrationFrame'
+CALIBRATION_FRAME_CLASS = 'banzai_nres.frames.NRESCalibrationFrame'
 
 FRAME_SELECTION_CRITERIA = [('type', 'contains', 'NRES')]
 
@@ -129,3 +129,26 @@ RAW_DATA_FRAME_URL = os.getenv('RAW_DATA_FRAME_URL', ARCHIVE_API_ROOT)
 RAW_DATA_AUTH_TOKEN = {'Authorization': f'Token {os.getenv("RAW_DATA_AUTH_TOKEN")}'}
 
 LOSSLESS_EXTENSIONS = ['PROFILE']
+
+REDUCED_DATA_EXTENSION_ORDERING = {'BIAS': ['SPECTRUM', 'BPM', 'ERR'],
+                                   'DARK': ['SPECTRUM', 'BPM', 'ERR'],
+                                   'LAMPFLAT': ['SPECTRUM', 'BPM', 'ERR'],
+                                   'DOUBLE': ['SPECTRUM', 'BPM', 'ERR'],
+                                   'TARGET': ['SPECTRUM', 'BPM', 'ERR', 'TRACES', 'PROFILE', 'BLAZE', 'WAVELENGTH']}
+
+MASTER_CALIBRATION_EXTENSION_ORDER = {'BIAS': ['SPECTRUM', 'BPM', 'ERR'],
+                                      'DARK': ['SPECTRUM', 'BPM', 'ERR'],
+                                      'LAMPFLAT': ['SPECTRUM', 'BPM', 'ERR', 'TRACES', 'PROFILE', 'BLAZE'],
+                                      'DOUBLE': ['SPECTRUM', 'BPM', 'ERR', 'TRACES', 'PROFILE', 'BLAZE', 'WAVELENGTH', 'FEATURES']}
+
+REDUCED_DATA_EXTENSION_TYPES = {
+                                'ERR': 'float32',
+                                'BPM': 'uint8',
+                                'SPECTRUM': 'float32',
+                                'TRACES': 'int32',
+                                'PROFILE': 'float32',
+                                'WAVELENGTH': 'float64',
+                                'BLAZE': 'float32',  # bin table HDU so not sure if this is right.
+                                'FEATURES': 'float32',  # bin table HDU so not sure if this is right.
+                                '1DSPEC': 'float32',  # bin table HDU so not sure if this is right.
+                                }
