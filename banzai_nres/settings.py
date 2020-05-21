@@ -13,6 +13,7 @@ ORDERED_STAGES = [
                   'banzai.gain.GainNormalizer',
                   'banzai.trim.Trimmer',
                   'banzai.bias.BiasSubtractor',
+                  'banzai.uncertainty.PoissonInitializer',
                   'banzai.dark.DarkSubtractor',
                   'banzai_nres.flats.FlatLoader',
                   'banzai_nres.background.BackgroundSubtractor',
@@ -51,7 +52,7 @@ TELESCOPE_FILENAME_FUNCTION = 'banzai_nres.utils.runtime_utils.get_telescope_fil
 CALIBRATION_IMAGE_TYPES = ['BPM', 'BIAS', 'DARK', 'LAMPFLAT', 'DOUBLE']
 
 LAST_STAGE = {'BIAS': 'banzai.trim.Trimmer',
-              'DARK': 'banzai.bias.BiasSubtractor',
+              'DARK': 'banzai.uncertainty.PoissonInitializer',
               'LAMPFLAT': 'banzai.dark.DarkSubtractor',
               'DOUBLE': 'banzai.dark.DarkSubtractor',
               'TARGET': None,
@@ -145,10 +146,7 @@ REDUCED_DATA_EXTENSION_TYPES = {
                                 'ERR': 'float32',
                                 'BPM': 'uint8',
                                 'SPECTRUM': 'float32',
-                                'TRACES': 'int32',
+                                'TRACES': 'int32',  # try uint8
                                 'PROFILE': 'float32',
                                 'WAVELENGTH': 'float64',
-                                'BLAZE': 'float32',  # bin table HDU so not sure if this is right.
-                                'FEATURES': 'float32',  # bin table HDU so not sure if this is right.
-                                '1DSPEC': 'float32',  # bin table HDU so not sure if this is right.
                                 }

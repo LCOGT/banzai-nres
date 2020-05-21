@@ -13,10 +13,7 @@ from banzai.celery import app, schedule_calibration_stacking
 import celery
 import celery.bin.beat
 from banzai.utils import date_utils, import_utils
-from banzai_nres.wavelength import LineListLoader
-from datetime import datetime
-from banzai import calibrations, dbs, logs, context
-from astropy.time import Time
+from banzai import calibrations, dbs, logs
 
 import logging
 import argparse

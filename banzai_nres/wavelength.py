@@ -166,8 +166,7 @@ class IdentifyFeatures(Stage):
     """
     Stage to identify all sharp emission-like features on an Arc lamp frame.
     """
-    # TODO change nsigma to 20 or 15 once hangups in overlap fitting are figured out.
-    nsigma = 50.0  # minimum signal to noise @ peak flux for a feature to be counted.
+    nsigma = 10.0  # minimum signal to noise @ peak flux for a feature to be counted.
     fwhm = 6.0  # minimum feature size in pixels for the feature to be counted.
 
     def do_stage(self, image):
