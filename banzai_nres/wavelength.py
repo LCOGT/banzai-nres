@@ -112,7 +112,9 @@ class WavelengthCalibrate(Stage):
         for fiber in list(set(fiber_ids)):
             this_fiber = image.features['fiber'] == fiber
             if np.all(np.isnan(image.features['wavelength'][this_fiber])) or np.all(np.isclose(image.features['wavelength'][this_fiber], 0)):
-                logger.error('All zeros for image.wavelengths for fiber {0}. Will not refine wavelengths.'.format(fiber), image=image)
+                logger.error('All zeros for image.wavelengths for fiber {0}. Will not refine '
+                             'wavelengths and marking image as bad.'.format(fiber), image=image)
+                image.is_bad = True
                 continue
 
             m0 = get_principle_order_number(np.arange(*self.M0_RANGE), image.features[this_fiber])
@@ -166,27 +168,37 @@ class IdentifyFeatures(Stage):
     """
     Stage to identify all sharp emission-like features on an Arc lamp frame.
     """
-    nsigma = 40.0  # minimum signal to noise @ peak flux for a feature to be counted.
-    fwhm = 6.0  # minimum feature size in pixels for the feature to be counted.
+    nsigma = 20.0  # minimum signal to noise for the feature (sum of flux / sqrt(sum of error^2) within the aperture)
+    # where the aperture is a circular aperture of radius fwhm.
+    fwhm = 6.0  # fwhm estimate of the elliptical gaussian PSF for each feature
 
     def do_stage(self, image):
         # identify emission feature (pixel, order) positions.
-        features = identify_features(image.data, image.uncertainty, image.mask, nsigma=self.nsigma, fwhm=self.fwhm)
+        features = identify_features(image.data, image.uncertainty, image.mask, nsigma=self.nsigma/2, fwhm=self.fwhm)
         features = group_features_by_trace(features, image.traces)
         features = features[features['id'] != 0]  # throw out features that are outside of any trace.
         logger.info('{0} emission features found on this image'.format(len(features)), image=image)
-        if len(features) == 0:
-            logger.error('No emission features found on this image!', image=image)
         # get total flux in each emission feature. For now just sum_circle, although we should use sum_ellipse.
         features['flux'], features['fluxerr'], _ = sep.sum_circle(image.data, features['xcentroid'], features['ycentroid'],
                                                                   self.fwhm, gain=1.0, err=image.uncertainty, mask=image.mask)
-        features['centroid_err'] = self.fwhm / np.sqrt(features['flux'])
-
         if image.blaze is not None:
             logger.info('Blaze correcting emission feature fluxes', image=image)
             # blaze correct the emission features fluxes. This speeds up and improves overlap fitting in xwavecal.
             features['corrected_flux'] = features['flux'] / image.blaze['blaze'][features['id'] - 1,
                                                                                  np.array(features['xcentroid'], dtype=int)]
+
+        # TODO calculations/cuts that identify_features() should ideally do automatically:
+        # calculate the error in the centroids provided by identify_features()
+        features['centroid_err'] = self.fwhm / np.sqrt(features['flux'])
+        # Select which features to keep
+        valid_features = features['flux']/features['fluxerr'] > self.nsigma
+        features = features[valid_features]
+
+        # report statistics
+        logger.info('{0} emission features on this image will be used'.format(len(features)), image=image)
+        if len(features) == 0:
+            logger.error('No emission features found on this image!', image=image)
+
         image.features = features
         return image
 
