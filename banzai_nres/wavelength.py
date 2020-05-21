@@ -23,7 +23,7 @@ WAVELENGTH_SOLUTION_MODEL = {0: [0, 1, 2, 3, 4, 5],
                              4: [0]}
 
 # TODO refactor xwavecal so that we dont need this. We only need to set flux_tol to 0.5
-OVERLAP_SETTINGS = {'min_num_overlaps': 5, 'overlap_linear_scale_range': (0.5, 2), 'flux_tol': 0.5, 'max_red_overlap': 1000, 'max_blue_overlap': 2000}
+OVERLAP_SETTINGS = {'min_num_overlaps': 5, 'overlap_linear_scale_range': (0.5, 2), 'flux_tol': 0.1, 'max_red_overlap': 1000, 'max_blue_overlap': 2000}
 
 
 class ArcStacker(CalibrationStacker):
@@ -166,7 +166,7 @@ class IdentifyFeatures(Stage):
     """
     Stage to identify all sharp emission-like features on an Arc lamp frame.
     """
-    nsigma = 15.0  # minimum signal to noise @ peak flux for a feature to be counted.
+    nsigma = 40.0  # minimum signal to noise @ peak flux for a feature to be counted.
     fwhm = 6.0  # minimum feature size in pixels for the feature to be counted.
 
     def do_stage(self, image):
