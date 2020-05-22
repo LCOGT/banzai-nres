@@ -51,6 +51,7 @@ class TestIdentifyFeatures:
         stage = IdentifyFeatures(input_context)
         stage.fwhm, stage.nsigma = self.sigma, 0.5
         image = stage.do_stage(image)
+        image.features.sort('pixel')
         assert np.allclose(image.features['corrected_flux'], image.features['flux'] / blaze_factor, rtol=1E-4)
         assert np.allclose(image.features['pixel'], self.xcoords, atol=0.001)
         assert np.allclose(image.features['ycentroid'], self.ycoords, atol=0.001)
@@ -65,6 +66,7 @@ class TestIdentifyFeatures:
         stage = IdentifyFeatures(input_context)
         stage.fwhm, stage.nsigma = self.sigma, 0.5
         image = stage.do_stage(image)
+        image.features.sort('pixel')
         assert np.allclose(image.features['pixel'], self.xcoords, atol=0.001)
         assert np.allclose(image.features['ycentroid'], self.ycoords, atol=0.001)
         assert np.allclose(image.features['id'], 1)
