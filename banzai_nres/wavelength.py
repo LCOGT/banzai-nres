@@ -7,6 +7,7 @@ from banzai_nres.frames import NRESObservationFrame
 from banzai_nres.utils.wavelength_utils import identify_features, group_features_by_trace, get_principle_order_number
 from xwavecal.wavelength import find_feature_wavelengths, WavelengthSolution
 from xwavecal.utils.wavelength_utils import find_nearest
+from astropy.table import vstack
 
 import sep
 import logging
@@ -23,7 +24,7 @@ WAVELENGTH_SOLUTION_MODEL = {0: [0, 1, 2, 3, 4, 5],
                              4: [0]}
 
 # TODO refactor xwavecal so that we dont need this. We only need to set flux_tol to 0.5
-OVERLAP_SETTINGS = {'min_num_overlaps': 5, 'overlap_linear_scale_range': (0.5, 2), 'flux_tol': 0.1, 'max_red_overlap': 1000, 'max_blue_overlap': 2000}
+OVERLAP_SETTINGS = {'min_num_overlaps': 5, 'overlap_linear_scale_range': (0.5, 2), 'flux_tol': 0.4, 'max_red_overlap': 1000, 'max_blue_overlap': 2000}
 
 
 class ArcStacker(CalibrationStacker):
@@ -84,8 +85,7 @@ class WavelengthCalibrate(Stage):
     We re-wavelength calibrate from scratch if the image does not have a pre-existing wavelength solution.
     We lightly recalibrate the wavelength calibration if the image has a pre-existing wavelength solution.
     """
-    # TODO change to (40, 60) once hangups are figured out in overlap fitting.
-    M0_RANGE = (49, 53)  # range of possible values for the integer principle order number.
+    M0_RANGE = (48, 55)  # range of possible values for the integer principle order number.
 
     def do_stage(self, image):
         image.features = self.init_feature_labels(image.num_traces, image.features)
@@ -168,9 +168,10 @@ class IdentifyFeatures(Stage):
     """
     Stage to identify all sharp emission-like features on an Arc lamp frame.
     """
-    nsigma = 20.0  # minimum signal to noise for the feature (sum of flux / sqrt(sum of error^2) within the aperture)
+    nsigma = 15.0  # minimum signal to noise for the feature (sum of flux / sqrt(sum of error^2) within the aperture)
     # where the aperture is a circular aperture of radius fwhm.
     fwhm = 6.0  # fwhm estimate of the elliptical gaussian PSF for each feature
+    num_features_max = 6000  # maximum number of features to keep. Will keep the num_features_max highest S/N features.
 
     def do_stage(self, image):
         # identify emission feature (pixel, order) positions.
@@ -190,9 +191,12 @@ class IdentifyFeatures(Stage):
         # TODO calculations/cuts that identify_features() should ideally do automatically:
         # calculate the error in the centroids provided by identify_features()
         features['centroid_err'] = self.fwhm / np.sqrt(features['flux'])
-        # Select which features to keep
+        # Keep features that pass the signal to noise check.
         valid_features = features['flux']/features['fluxerr'] > self.nsigma
         features = features[valid_features]
+        # Keep the highest S/N features
+        features = features[np.argsort(features['flux']/features['fluxerr'])[::-1]]
+        features = features[:int(self.num_features_max)]
 
         # report statistics
         logger.info('{0} emission features on this image will be used'.format(len(features)), image=image)
