@@ -15,6 +15,7 @@ from types import ModuleType
 from datetime import datetime
 from dateutil.parser import parse
 from astropy.io import fits
+from astropy.table import Table
 
 import logging
 
