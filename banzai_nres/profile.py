@@ -25,6 +25,7 @@ class ProfileFitter(Stage):
             image.profile[this_trace] /= image.profile[this_trace].sum(axis=0)
 
             # Divide the original image by best fit spline (Pixel-to-pixel sensitivity)
+            # TODO: propagate the division of blaze and profile to the uncertainties of the image!!!
             image.data[this_trace] /= blaze
             image.data[this_trace] /= image.profile[this_trace]
             # Normalize the pixel-to-pixel sensitivity by the median

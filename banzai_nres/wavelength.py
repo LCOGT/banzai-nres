@@ -7,6 +7,7 @@ from banzai_nres.frames import NRESObservationFrame
 from banzai_nres.utils.wavelength_utils import identify_features, group_features_by_trace, get_principle_order_number
 from xwavecal.wavelength import find_feature_wavelengths, WavelengthSolution
 from xwavecal.utils.wavelength_utils import find_nearest
+from astropy.table import vstack
 
 import sep
 import logging
@@ -23,7 +24,7 @@ WAVELENGTH_SOLUTION_MODEL = {0: [0, 1, 2, 3, 4, 5],
                              4: [0]}
 
 # TODO refactor xwavecal so that we dont need this. We only need to set flux_tol to 0.5
-OVERLAP_SETTINGS = {'min_num_overlaps': 5, 'overlap_linear_scale_range': (0.5, 2), 'flux_tol': 0.5, 'max_red_overlap': 1000, 'max_blue_overlap': 2000}
+OVERLAP_SETTINGS = {'min_num_overlaps': 5, 'overlap_linear_scale_range': (0.5, 2), 'flux_tol': 0.4, 'max_red_overlap': 1000, 'max_blue_overlap': 2000}
 
 
 class ArcStacker(CalibrationStacker):
@@ -85,8 +86,7 @@ class WavelengthCalibrate(Stage):
     We re-wavelength calibrate from scratch if the image does not have a pre-existing wavelength solution.
     We lightly recalibrate the wavelength calibration if the image has a pre-existing wavelength solution.
     """
-    # TODO change to (40, 60) once hangups are figured out in overlap fitting.
-    M0_RANGE = (49, 53)  # range of possible values for the integer principle order number.
+    M0_RANGE = (48, 55)  # range of possible values for the integer principle order number.
 
     def do_stage(self, image):
         image.features = self.init_feature_labels(image.num_traces, image.features)
@@ -113,7 +113,9 @@ class WavelengthCalibrate(Stage):
         for fiber in list(set(fiber_ids)):
             this_fiber = image.features['fiber'] == fiber
             if np.all(np.isnan(image.features['wavelength'][this_fiber])) or np.all(np.isclose(image.features['wavelength'][this_fiber], 0)):
-                logger.error('All zeros for image.wavelengths for fiber {0}. Will not refine wavelengths.'.format(fiber), image=image)
+                logger.error('All zeros for image.wavelengths for fiber {0}. Will not refine '
+                             'wavelengths and marking image as bad.'.format(fiber), image=image)
+                image.is_bad = True
                 continue
 
             m0 = get_principle_order_number(np.arange(*self.M0_RANGE), image.features[this_fiber])
@@ -167,28 +169,41 @@ class IdentifyFeatures(Stage):
     """
     Stage to identify all sharp emission-like features on an Arc lamp frame.
     """
-    # TODO change nsigma to 20 or 15 once hangups in overlap fitting are figured out.
-    nsigma = 40.0  # minimum signal to noise @ peak flux for a feature to be counted.
-    fwhm = 6.0  # minimum feature size in pixels for the feature to be counted.
+    nsigma = 15.0  # minimum signal to noise for the feature (sum of flux / sqrt(sum of error^2) within the aperture)
+    # where the aperture is a circular aperture of radius fwhm.
+    fwhm = 6.0  # fwhm estimate of the elliptical gaussian PSF for each feature
+    num_features_max = 6000  # maximum number of features to keep. Will keep the num_features_max highest S/N features.
 
     def do_stage(self, image):
         # identify emission feature (pixel, order) positions.
-        features = identify_features(image.data, image.uncertainty, image.mask, nsigma=self.nsigma, fwhm=self.fwhm)
+        features = identify_features(image.data, image.uncertainty, image.mask, nsigma=self.nsigma/2, fwhm=self.fwhm)
         features = group_features_by_trace(features, image.traces)
         features = features[features['id'] != 0]  # throw out features that are outside of any trace.
         logger.info('{0} emission features found on this image'.format(len(features)), image=image)
-        if len(features) == 0:
-            logger.error('No emission features found on this image!', image=image)
         # get total flux in each emission feature. For now just sum_circle, although we should use sum_ellipse.
         features['flux'], features['fluxerr'], _ = sep.sum_circle(image.data, features['xcentroid'], features['ycentroid'],
                                                                   self.fwhm, gain=1.0, err=image.uncertainty, mask=image.mask)
-        features['centroid_err'] = self.fwhm / np.sqrt(features['flux'])
-
         if image.blaze is not None:
             logger.info('Blaze correcting emission feature fluxes', image=image)
             # blaze correct the emission features fluxes. This speeds up and improves overlap fitting in xwavecal.
             features['corrected_flux'] = features['flux'] / image.blaze['blaze'][features['id'] - 1,
                                                                                  np.array(features['xcentroid'], dtype=int)]
+
+        # cutting which lines to keep:
+        # calculate the error in the centroids provided by identify_features()
+        features['centroid_err'] = self.fwhm / np.sqrt(features['flux'])
+        # Keep features that pass the signal to noise check.
+        valid_features = features['flux']/features['fluxerr'] > self.nsigma
+        features = features[valid_features]
+        # Keep the highest S/N features
+        features = features[np.argsort(features['flux']/features['fluxerr'])[::-1]]
+        features = features[:int(self.num_features_max)]
+
+        # report statistics
+        logger.info('{0} emission features on this image will be used'.format(len(features)), image=image)
+        if len(features) == 0:
+            logger.error('No emission features found on this image!', image=image)
+
         image.features = features
         return image
 

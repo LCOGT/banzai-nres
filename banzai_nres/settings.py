@@ -3,7 +3,7 @@ import banzai_nres
 
 FRAME_FACTORY = 'banzai_nres.frames.NRESFrameFactory'
 
-MASTER_CALIBRATION_FRAME_CLASS = 'banzai_nres.frames.NRESMasterCalibrationFrame'
+CALIBRATION_FRAME_CLASS = 'banzai_nres.frames.NRESCalibrationFrame'
 
 FRAME_SELECTION_CRITERIA = [('type', 'contains', 'NRES')]
 
@@ -13,6 +13,7 @@ ORDERED_STAGES = [
                   'banzai.gain.GainNormalizer',
                   'banzai.trim.Trimmer',
                   'banzai.bias.BiasSubtractor',
+                  'banzai.uncertainty.PoissonInitializer',
                   'banzai.dark.DarkSubtractor',
                   'banzai_nres.flats.FlatLoader',
                   'banzai_nres.background.BackgroundSubtractor',
@@ -51,7 +52,7 @@ TELESCOPE_FILENAME_FUNCTION = 'banzai_nres.utils.runtime_utils.get_telescope_fil
 CALIBRATION_IMAGE_TYPES = ['BPM', 'BIAS', 'DARK', 'LAMPFLAT', 'DOUBLE']
 
 LAST_STAGE = {'BIAS': 'banzai.trim.Trimmer',
-              'DARK': 'banzai.bias.BiasSubtractor',
+              'DARK': 'banzai.uncertainty.PoissonInitializer',
               'LAMPFLAT': 'banzai.dark.DarkSubtractor',
               'DOUBLE': 'banzai.dark.DarkSubtractor',
               'TARGET': None,
@@ -129,3 +130,23 @@ RAW_DATA_FRAME_URL = os.getenv('RAW_DATA_FRAME_URL', ARCHIVE_API_ROOT)
 RAW_DATA_AUTH_TOKEN = {'Authorization': f'Token {os.getenv("RAW_DATA_AUTH_TOKEN")}'}
 
 LOSSLESS_EXTENSIONS = ['PROFILE']
+
+REDUCED_DATA_EXTENSION_ORDERING = {'BIAS': ['SPECTRUM', 'BPM', 'ERR'],
+                                   'DARK': ['SPECTRUM', 'BPM', 'ERR'],
+                                   'LAMPFLAT': ['SPECTRUM', 'BPM', 'ERR'],
+                                   'DOUBLE': ['SPECTRUM', 'BPM', 'ERR'],
+                                   'TARGET': ['SPECTRUM', 'BPM', 'ERR', 'TRACES', 'PROFILE', 'BLAZE', 'WAVELENGTH']}
+
+MASTER_CALIBRATION_EXTENSION_ORDER = {'BIAS': ['SPECTRUM', 'BPM', 'ERR'],
+                                      'DARK': ['SPECTRUM', 'BPM', 'ERR'],
+                                      'LAMPFLAT': ['SPECTRUM', 'BPM', 'ERR', 'TRACES', 'PROFILE', 'BLAZE'],
+                                      'DOUBLE': ['SPECTRUM', 'BPM', 'ERR', 'TRACES', 'PROFILE', 'BLAZE', 'WAVELENGTH', 'FEATURES']}
+
+REDUCED_DATA_EXTENSION_TYPES = {
+                                'ERR': 'float32',
+                                'BPM': 'uint8',
+                                'SPECTRUM': 'float32',
+                                'TRACES': 'int32',  # try uint8
+                                'PROFILE': 'float32',
+                                'WAVELENGTH': 'float64',
+                                }
