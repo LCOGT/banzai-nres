@@ -172,7 +172,7 @@ class IdentifyFeatures(Stage):
     nsigma = 15.0  # minimum signal to noise for the feature (sum of flux / sqrt(sum of error^2) within the aperture)
     # where the aperture is a circular aperture of radius fwhm.
     fwhm = 6.0  # fwhm estimate of the elliptical gaussian PSF for each feature
-    num_features_max = 6000  # maximum number of features to keep. Will keep the num_features_max highest S/N features.
+    num_features_max = 4000  # maximum number of features to keep. Will keep the num_features_max highest S/N features.
 
     def do_stage(self, image):
         # identify emission feature (pixel, order) positions.
