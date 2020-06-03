@@ -161,6 +161,7 @@ class EchelleSpectralCCDData(CCDData):
 
     @wavelengths.setter
     def wavelengths(self, value):
+        # Initialize wavelengths to zeros. See note in banzai_nres.wavelength.WavelengthCalibrate() for explanation.
         self._wavelengths = self._init_array(value)
 
     @property

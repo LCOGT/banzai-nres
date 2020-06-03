@@ -21,7 +21,7 @@ def identify_features(data, err, mask=None, nsigma=2., fwhm=6.0, **kwargs):
              of the jth feature. features['ycentroid'][j] gives the y pixel (vertical) position of the jth feature.
     """
     daofind = DAOStarFinder(fwhm=fwhm, threshold=nsigma, exclude_border=True, **kwargs)
-    features = daofind(data/err, mask=mask)
+    features = daofind(data / err, mask=mask)
     if features is None:
         features = Table({'xcentroid': [], 'ycentroid': [], 'flux': []})
     features['pixel'] = features['xcentroid']  # because xwavecal uses 'pixel' as the coordinate key.

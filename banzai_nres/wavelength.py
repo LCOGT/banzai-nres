@@ -85,6 +85,10 @@ class WavelengthCalibrate(Stage):
     Stage to recalibrate wavelength-calibration (e.g. arc lamp) frames.
     We re-wavelength calibrate from scratch if the image does not have a pre-existing wavelength solution.
     We lightly recalibrate the wavelength calibration if the image has a pre-existing wavelength solution.
+
+    NOTE: Pixels that are uncalibrated (e.g. regions of the CCD chip where there is not actually any spectrum present,
+    or if the calibration failed on one or both fibers) are assigned a ZERO wavelength. This is because zeros compress
+    well in fits fpack. So a pixel with a Zero means that pixel has an UNDEFINED (uncalibrated) wavelength.
     """
     M0_RANGE = (48, 55)  # range of possible values for the integer principle order number.
 
