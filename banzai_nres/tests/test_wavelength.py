@@ -51,6 +51,7 @@ class TestIdentifyFeatures:
         stage = IdentifyFeatures(input_context)
         stage.fwhm, stage.nsigma = self.sigma, 0.5
         image = stage.do_stage(image)
+        image.features.sort('pixel')
         assert np.allclose(image.features['corrected_flux'], image.features['flux'] / blaze_factor, rtol=1E-4)
         assert np.allclose(image.features['pixel'], self.xcoords, atol=0.001)
         assert np.allclose(image.features['ycentroid'], self.ycoords, atol=0.001)
@@ -65,6 +66,7 @@ class TestIdentifyFeatures:
         stage = IdentifyFeatures(input_context)
         stage.fwhm, stage.nsigma = self.sigma, 0.5
         image = stage.do_stage(image)
+        image.features.sort('pixel')
         assert np.allclose(image.features['pixel'], self.xcoords, atol=0.001)
         assert np.allclose(image.features['ycentroid'], self.ycoords, atol=0.001)
         assert np.allclose(image.features['id'], 1)
@@ -188,13 +190,13 @@ def test_stage_caltypes():
 class TestLineListLoader:
     stage = LineListLoader(context.Context({}))
     @mock.patch('banzai_nres.wavelength.LineListLoader.on_missing_master_calibration', return_value=None)
-    @mock.patch('banzai_nres.wavelength.LineListLoader.get_calibration_file_info', return_value=None)
-    def test_do_stage_aborts(self, fake_get_cal, fake_miss):
-        assert self.stage.do_stage('image') is None
+    def test_do_stage_aborts(self, fake_miss):
+        stage = LineListLoader(context.Context({}))
+        stage.LINE_LIST_FILENAME = 'some/bad/path'
+        assert stage.do_stage('image') is None
 
-    @mock.patch('banzai_nres.wavelength.LineListLoader.get_calibration_file_info', return_value={'path': 'path/list.txt'})
     @mock.patch('numpy.genfromtxt', return_value=np.array([[1, 1]]))
-    def test_do_stage(self, fake_load, fake_getcal):
+    def test_do_stage(self, fake_load):
         image = type('image', (), {})
         image = self.stage.do_stage(image)
         assert np.allclose(image.line_list, [1])
@@ -217,10 +219,11 @@ class TestArcLoader:
         assert self.stage.on_missing_master_calibration(test_image) is None
 
     def test_apply_master_calibration(self):
-        master_cal = type('image', (), {'wavelengths': [1, 2]})
-        test_image = type('image', (), {'wavelengths': None})
+        master_cal = type('image', (), {'wavelengths': [1, 2], 'filename': 'foo.fits'})
+        test_image = type('image', (), {'wavelengths': None, 'meta':{}})
         assert np.allclose(self.stage.apply_master_calibration(test_image, master_cal).wavelengths, [1, 2])
         assert self.stage.calibration_type == 'DOUBLE'
+        assert test_image.meta['L1IDARC'][0] == 'foo.fits'
 
 
 class TestQCChecks:

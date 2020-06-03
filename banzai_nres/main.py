@@ -13,10 +13,7 @@ from banzai.celery import app, schedule_calibration_stacking
 import celery
 import celery.bin.beat
 from banzai.utils import date_utils, import_utils
-from banzai_nres.wavelength import LineListLoader
-from datetime import datetime
-from banzai import calibrations, dbs, logs, context
-from astropy.time import Time
+from banzai import calibrations, dbs, logs
 
 import logging
 import argparse
@@ -88,28 +85,6 @@ def add_bpm():
     bpm_image = frame_factory.open({'path': args.filename}, args)
     bpm_image.is_master = True
     dbs.save_calibration_info(args.filename, bpm_image, args.db_address)
-
-
-def add_line_list():
-    # add a line list to the database for particular instrument.
-    parser = argparse.ArgumentParser(description="Add a bad pixel mask to the db.")
-    parser.add_argument('--filename', help='Full path to Line list .txt file.')
-    parser.add_argument('--instrument-id', help='instrument id as in the database')
-    parser.add_argument("--log-level", default='debug', choices=['debug', 'info', 'warning',
-                                                                 'critical', 'fatal', 'error'])
-    parser.add_argument('--db-address', dest='db_address',
-                        default='mysql://cmccully:password@localhost/test',
-                        help='Database address: Should be in SQLAlchemy form')
-    args = parser.parse_args()
-    add_settings_to_context(args, banzai_nres.settings)
-    logs.set_log_level(args.log_level)
-    utc_now = Time(datetime.utcnow(), scale='utc').datetime
-    line_list_container = type('Image', (), {'obstype': LineListLoader(context.Context({})).calibration_type.upper(),
-                                             'dateobs': utc_now, 'datecreated': utc_now,
-                                             'instrument': type('Image', (), {'id': args.instrument_id}),
-                                             'is_master': True, 'is_bad': False,
-                                             'frame_id': 0, 'grouping_criteria': []})
-    dbs.save_calibration_info(args.filename, line_list_container, args.db_address)
 
 
 def add_bpms_from_archive():

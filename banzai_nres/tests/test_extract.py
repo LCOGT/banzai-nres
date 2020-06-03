@@ -17,13 +17,19 @@ def test_get_region():
 class TestExtract:
     def test_rejects_on_no_weights(self):
         con = context.Context({})
-        assert GetOptimalExtractionWeights(con).do_stage(two_order_image()) is None
+        assert WeightedExtract(con).do_stage(two_order_image()) is None
+
+    def test_rejects_on_no_wavelengths(self):
+        con = context.Context({})
+        image = type('image', (), {'weights': 'notnone', 'wavelengths': None})
+        assert WeightedExtract(con).do_stage(image) is None
 
     @pytest.mark.integration
     def test_unit_weights_extraction(self):
         image = two_order_image()
         image.weights = np.ones_like(image.data)
         expected_extracted_flux = np.max(image.data) * 3
+        expected_extracted_wavelength = np.max(image.wavelengths)
         expected_extracted_uncertainty = np.sqrt(3) * np.max(image.data)
         input_context = context.Context({})
 
@@ -32,22 +38,25 @@ class TestExtract:
         spectrum = output_image.spectrum
 
         assert np.allclose(spectrum['flux'][0], expected_extracted_flux)
+        assert np.allclose(spectrum['wavelength'][0], expected_extracted_wavelength)
         assert np.allclose(spectrum['uncertainty'][0], expected_extracted_uncertainty)
         assert np.allclose(spectrum['id'][0], 1)
 
         assert np.allclose(spectrum['flux'][1][1:-1], expected_extracted_flux)
+        assert np.allclose(spectrum['wavelength'][1][1:-1], expected_extracted_wavelength)
         assert np.allclose(spectrum['flux'][1][[0, -1]], 0)
         assert np.allclose(spectrum['uncertainty'][1:-1], expected_extracted_uncertainty)
         assert np.allclose(spectrum['uncertainty'][1][[0, -1]], 0)
         assert np.allclose(spectrum['id'][1], 2)
 
-
     @pytest.mark.integration
-    def test_weights_in_poisson_regime(self):
+    def test_extract_in_poisson_regime(self):
         trace_width, number_traces = 20, 10
         image = five_hundred_square_image(50000, number_traces, trace_width)
+        expected_extracted_wavelength = np.max(image.wavelengths)
         image2 = NRESObservationFrame([EchelleSpectralCCDData(data=image.data, uncertainty=image.uncertainty,
-                                                         meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
+                                                              wavelengths=image.wavelengths,
+                                                              meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
         image2.traces = image.traces
         image2.profile = np.ones_like(image.data)
         input_context = context.Context({})
@@ -59,14 +68,17 @@ class TestExtract:
         optimal_image = stage2.do_stage(image)
         box_image = stage2.do_stage(image2)
         assert np.allclose(optimal_image.spectrum['flux'], box_image.spectrum['flux'], rtol=0.05)
+        assert np.allclose(optimal_image.spectrum['wavelength'][0][100:-100], expected_extracted_wavelength)
+        assert np.allclose(optimal_image.spectrum['wavelength'][2][100:-100], expected_extracted_wavelength)
         assert np.allclose(optimal_image.spectrum['uncertainty'], box_image.spectrum['uncertainty'], rtol=0.05)
 
     @pytest.mark.integration
-    def test_weights_in_readnoise_regime(self):
+    def test_extract_in_readnoise_regime(self):
         trace_width, number_traces = 20, 10
         image = five_hundred_square_image(100, number_traces, trace_width, read_noise=100)
         image2 = NRESObservationFrame([EchelleSpectralCCDData(data=image.data, uncertainty=image.uncertainty,
-                                                         meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
+                                                              wavelengths=image.wavelengths,
+                                                              meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
         image2.traces = image.traces
         image2.profile = np.ones_like(image.data)
         input_context = context.Context({})
@@ -130,9 +142,10 @@ def two_order_image():
     data = np.ones_like(traces, dtype=float)
     data[~np.isclose(traces, 0)] = 100.
     uncertainty = 1. * data
+    wavelengths = np.ones_like(traces) * 5  # dummy wavelengths image that has values distinct from flux and traces.
     image = NRESObservationFrame([EchelleSpectralCCDData(data=data, uncertainty=uncertainty,
+                                                         wavelengths=wavelengths, traces=traces,
                                                          meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
-    image.traces = traces
     return image
 
 
@@ -151,8 +164,8 @@ def five_hundred_square_image(maxflux,number_traces,trace_width, read_noise=10):
     data += np.random.poisson(data)
     data += np.random.normal(0.0, read_noise, size=data.shape)
     uncertainty = np.sqrt(data + read_noise ** 2)
-
-    image = NRESObservationFrame([EchelleSpectralCCDData(data=data, uncertainty=uncertainty,
+    wavelengths = np.ones_like(traces) * 5  # dummy wavelengths image that has values distinct from flux and traces.
+    image = NRESObservationFrame([EchelleSpectralCCDData(data=data, uncertainty=uncertainty, traces=traces,
+                                                         profile=profile, wavelengths=wavelengths,
                                                          meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
-    image.traces, image.profile = traces, profile
     return image

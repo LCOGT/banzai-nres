@@ -3,6 +3,7 @@ from banzai.tests.utils import FakeResponse, get_min_and_max_dates
 from banzai_nres import settings
 import os
 import mock
+import numpy as np
 from banzai.utils import file_utils
 import time
 from glob import glob
@@ -14,6 +15,7 @@ from types import ModuleType
 from datetime import datetime
 from dateutil.parser import parse
 from astropy.io import fits
+from astropy.table import Table
 
 import logging
 
@@ -30,13 +32,9 @@ INSTRUMENTS = [os.path.join(site, os.path.basename(instrument_path)) for site in
 DAYS_OBS = [os.path.join(instrument, os.path.basename(dayobs_path)) for instrument in INSTRUMENTS
             for dayobs_path in glob(os.path.join(DATA_ROOT, instrument, '201*'))]
 
+TEST_PACKAGE = 'banzai_nres.tests'
 CONFIGDB_FILENAME = pkg_resources.resource_filename('banzai_nres.tests', 'data/configdb_example.json')
-# distinct files for the line lists for each instrument because otherwise they will not be added to the database
-# because .db entries with the same filename are marked as duplicates (see banzai.dbs.save_calibration_info()).
-LINE_LIST_FILENAMES = [pkg_resources.resource_filename('banzai_nres.tests', 'data/ThAr_atlas_ESO_copy0' + str(c) + '.txt') for c in [1, 2, 3, 4]]
-if len(INSTRUMENTS) > len(LINE_LIST_FILENAMES):
-    logger.warning(f'Found {len(LINE_LIST_FILENAMES)} line list files')
-    logger.warning('Not enough line list txt files for all the instruments that will be added to the database!')
+
 
 
 def observation_portal_side_effect(*args, **kwargs):
@@ -166,6 +164,17 @@ def run_check_if_stacked_calibrations_have_extensions(calibration_type, extensio
             assert ext in extnames
 
 
+def check_extracted_spectra(raw_filename, spec_extname, columns):
+    created_images = []
+    for day_obs in DAYS_OBS:
+        created_images += glob(os.path.join(DATA_ROOT, day_obs, 'processed', raw_filename))
+    for fname in created_images:
+        spectrum = Table(fits.open(fname)[spec_extname].data)
+        for colname in columns:
+            assert colname in spectrum.colnames
+            assert not np.allclose(spectrum[colname], 0)
+
+
 def run_check_if_stacked_calibrations_are_in_db(raw_filenames, calibration_type):
     number_of_stacks_that_should_have_been_created = get_expected_number_of_calibrations(raw_filenames, calibration_type)
     with dbs.get_session(os.environ['DB_ADDRESS']) as db_session:
@@ -187,11 +196,6 @@ def init(configdb):
         for bpm_filename in glob(os.path.join(DATA_ROOT, instrument, 'bpm/*bpm*')):
             logger.info(f'adding bpm {bpm_filename} to the database')
             os.system(f'banzai_nres_add_bpm --filename {bpm_filename} --db-address={os.environ["DB_ADDRESS"]}')
-    instrument_ids = get_instrument_ids(os.environ["DB_ADDRESS"], names=['nres01', 'nres02'])
-    for instrument_id, line_list in zip(instrument_ids, LINE_LIST_FILENAMES[:len(instrument_ids)]):
-        logger.info(f'adding line list to the database for instrument with id {str(instrument_id)}')
-        os.system(f'banzai_nres_add_line_list --filename {line_list} --db-address={os.environ["DB_ADDRESS"]} '
-                  f'--instrument-id {instrument_id}')
 
 
 @pytest.mark.e2e
@@ -269,3 +273,4 @@ class TestScienceFrameProcessing:
 
     def test_if_science_frames_were_created(self):
         check_if_individual_frames_exist('*e00.fits*')
+        check_extracted_spectra('*e91.fits*', '1DSPEC', ['wavelength', 'flux', 'uncertainty'])
