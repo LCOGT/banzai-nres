@@ -104,6 +104,14 @@ class NRESObservationFrame(LCOObservationFrame):
     def wavelengths(self, value):
         self.primary_hdu.wavelengths = value
 
+    @property
+    def fibers(self):
+        return self.primary_hdu.fibers
+
+    @fibers.setter
+    def fibers(self, value):
+        self.primary_hdu.fibers = value
+
 
 class NRESCalibrationFrame(LCOCalibrationFrame, NRESObservationFrame):
     def __init__(self, hdu_list: list, file_path: str, frame_id: int = None, grouping_criteria: list = None,
@@ -118,7 +126,7 @@ class EchelleSpectralCCDData(CCDData):
                  background: np.array = None,  traces: np.array = None, wavelengths: np.array = None,
                  profile: np.array = None, weights: np.array = None, line_list=None,
                  spectrum: Table = None, blaze: Table = None, memmap=True, features: Table = None,
-                 fibers: Table = None, ccf: Table = None):
+                 fibers: np.array = None, ccf: Table = None):
         super().__init__(data=data, meta=meta, mask=mask, name=name, memmap=memmap, uncertainty=uncertainty)
         if traces is None:
             self._traces = None
