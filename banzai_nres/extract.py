@@ -32,6 +32,7 @@ class WeightedExtract(Stage):
             # get the average wavelength: Sum wavelengths weighted by 1 over the vertical width of the trace (e.g. 1/10)
             wavelength[i, x_extent] = self.extract_order(image.wavelengths[this_trace], weights=1/image.wavelengths[this_trace].shape[0])
 
+        # TODO: Add physical order and fiber to this table. Set the images.fibers attribute back to None
         image.spectrum = Table({'id': trace_ids, 'wavelength': wavelength, 'flux': flux, 'uncertainty': np.sqrt(variance)})
         return image
 

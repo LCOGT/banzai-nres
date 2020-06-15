@@ -54,6 +54,7 @@ class ArcLoader(CalibrationUser):
 
     def apply_master_calibration(self, image: NRESObservationFrame, master_calibration_image):
         image.wavelengths = master_calibration_image.wavelengths
+        image.fibers = master_calibration_image.fibers
         image.meta['L1IDARC'] = master_calibration_image.filename, 'ID of ARC/DOUBLE frame'
         return image
 
@@ -134,6 +135,14 @@ class WavelengthCalibrate(Stage):
             for trace_id, ref_id in zip(trace_ids[fiber_ids == fiber], ref_ids[fiber_ids == fiber]):
                 this_trace = np.isclose(image.traces, trace_id)
                 image.wavelengths[this_trace] = wavelength_model(x2d[this_trace], ref_id * np.ones_like(x2d[this_trace]))
+            # Set the true physical order number
+            ref_ids[fiber_ids == fiber] += m0
+        # TODO: Add the logic to calculate which fiber is which.
+        # the first ref_id = 50 (arbitrary, but somewhere about the middle of the detector)
+        # is largest fiber number that is lit.
+        # in output table fiber=fiber set to real fiber that is lit
+        # Other fiber_id is set to other lit fiber
+        # set fibers attribute on image
 
     @staticmethod
     def init_feature_labels(num_traces, features):

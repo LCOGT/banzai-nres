@@ -3,6 +3,7 @@ from banzai.frames import ObservationFrame
 import pkg_resources
 from astropy.io import fits
 import numpy as np
+from astropy.table import Table
 
 
 def cross_correlate(velocities, wavelength, flux, flux_uncertainty, template_wavelength, template_flux):
@@ -19,7 +20,7 @@ def cross_correlate(velocities, wavelength, flux, flux_uncertainty, template_wav
     Zackay & Ofek, 2017, ApJ, 836, 187
     """
     # Speed of light in km/s
-    c = 3e5
+    c = 299792.458
 
     x_cor = []
     # for steps in 1 km/s from -2000 to +2000 km/s
@@ -48,29 +49,28 @@ class RVCalculator(Stage):
         # Load in the template
         template_hdu = fits.open(self.TEMPLATE_FILENAME)
         ccfs = []
-        for i in orders:
+        for i in image.fibers[image.fibers['fiber'] == image.science_fiber]['trace']:
             # for steps in 1 km/s from -2000 to +2000 km/s
             velocities = np.arange(-2000, 2001, 1)
             # calculate the variance ahead of time
-            x_cor = cross_correlate(velocities, image.spectrum['wavelength'], image.spectrum['flux'],
-                                    image.spectrum['uncertainty'],
+            x_cor = cross_correlate(velocities, image.spectrum[i]['wavelength'], image.spectrum[i]['flux'],
+                                    image.spectrum[i]['uncertainty'],
                                     template_hdu[1].data['wavelength'], template_hdu[1].data['flux'])
 
             # take the peak
             best_v = velocities[np.argmax(x_cor)]
             # for steps of 1m/s around that peak take +- 2 km/s and repeat the process
             velocities = np.arange(best_v - 2, best_v + 2 + 1e-4, 1e-3)
-            x_cor = cross_correlate(velocities, image.spectrum['wavelength'], image.spectrum['flux'],
-                                    image.spectrum['uncertainty'],
+            x_cor = cross_correlate(velocities, image.spectrum[i]['wavelength'], image.spectrum[i]['flux'],
+                                    image.spectrum[i]['uncertainty'],
                                     template_hdu[1].data['wavelength'], template_hdu[1].data['flux'])
 
             # Save the 1 m/s cross correlation function
-            ccfs.append({'v': velocities, 'x': x_cor})
+            ccfs.append({'v': velocities, 'xcor': x_cor})
 
-        # TODO: add the ccfs into the image object and output file
-        rvs_per_order = [ccf['v'][np.argmax(ccf['x'])] for ccf in ccfs]
-        # Save the peak v in the header
+        rvs_per_order = [ccf['v'][np.argmax(ccf['xcor'])] for ccf in ccfs]
+        # Save the peak v in the header (converting to m/s)
         image.header['RV'] = (np.mean(rvs_per_order) * 1000, 'Radial Velocity [m/s]')
         image.header['RVERR'] = (np.std(rvs_per_order) * 1000, 'Radial Velocity Uncertainty [m/s]')
-
+        image.ccf = Table(ccfs)
         return image

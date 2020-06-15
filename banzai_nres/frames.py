@@ -22,6 +22,13 @@ class NRESObservationFrame(LCOObservationFrame):
         return 1 * self.fiber0_lit + 1 * self.fiber1_lit + 1 * self.fiber2_lit
 
     @property
+    def science_fiber(self):
+        if self.fiber0_lit:
+            return 0
+        elif self.fiber2_lit:
+            return 2
+
+    @property
     def traces(self):
         return self.primary_hdu.traces
 
@@ -110,7 +117,8 @@ class EchelleSpectralCCDData(CCDData):
                  mask: np.array = None, name: str = '', uncertainty: np.array = None,
                  background: np.array = None,  traces: np.array = None, wavelengths: np.array = None,
                  profile: np.array = None, weights: np.array = None, line_list=None,
-                 spectrum: Table = None, blaze: Table = None, memmap=True, features: Table = None):
+                 spectrum: Table = None, blaze: Table = None, memmap=True, features: Table = None,
+                 fibers: Table = None, ccf: Table = None):
         super().__init__(data=data, meta=meta, mask=mask, name=name, memmap=memmap, uncertainty=uncertainty)
         if traces is None:
             self._traces = None
@@ -137,15 +145,8 @@ class EchelleSpectralCCDData(CCDData):
         self.blaze = blaze
         self.features = features
         self.line_list = line_list
-
-
-    @property
-    def traces(self):
-        return self._traces
-
-    @traces.setter
-    def traces(self, value):
-        self._traces = self._init_array(value)
+        self.fibers = fibers
+        self.ccf = ccf
 
     @property
     def traces(self):
@@ -198,6 +199,22 @@ class EchelleSpectralCCDData(CCDData):
         self.data -= value
         self._background = self._init_array(value)
 
+    @property
+    def fibers(self):
+        return self._fibers
+
+    @fibers.setter
+    def fibers(self, value):
+        self._fibers = value
+
+    @property
+    def ccf(self):
+        return self._ccf
+
+    @ccf.setter
+    def ccf(self, value):
+        self._ccf = value
+
     def to_fits(self, context):
         hdu_list = super().to_fits(context)
         if self.traces is not None:
@@ -225,6 +242,13 @@ class EchelleSpectralCCDData(CCDData):
             extname = 'FEATURES'
             hdu_list.append(fits.BinTableHDU(self.features, name=extname, header=fits.Header({'EXTNAME': extname})))
 
+        if self.fibers is not None:
+            extname = 'FIBERS'
+            hdu_list.append(fits.BinTableHDU(self.fibers, name=extname, header=fits.Header({'EXTNAME': extname})))
+
+        if self.ccf is not None:
+            extname = 'CCF'
+            hdu_list.append(fits.BinTableHDU(self.ccf, name=extname, header=fits.Header({'EXTNAME': extname})))
         return hdu_list
 
 
@@ -248,7 +272,9 @@ class NRESFrameFactory(LCOFrameFactory):
                                                           {'FITS_NAME': 'BACKGROUND', 'NAME': 'background'},
                                                           {'FITS_NAME': 'PROFILE', 'NAME': 'profile'},
                                                           {'FITS_NAME': 'BLAZE', 'NAME': 'blaze'},
-                                                          {'FITS_NAME': 'WAVELENGTH', 'NAME': 'wavelengths'}]
+                                                          {'FITS_NAME': 'WAVELENGTH', 'NAME': 'wavelengths'},
+                                                          {'FITS_NAME': 'FIBERS', 'NAME': 'fibers'},
+                                                          {'FITS_NAME': 'CCF', 'NAME': 'ccf'}]
 
     def open(self, path, runtime_context) -> Optional[ObservationFrame]:
         image = super().open(path, runtime_context)
