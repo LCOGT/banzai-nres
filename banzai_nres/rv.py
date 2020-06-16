@@ -4,6 +4,10 @@ import pkg_resources
 from astropy.io import fits
 import numpy as np
 from astropy.table import Table
+from astropy import constants
+
+# Speed of light in km/s
+c = constants.c.to('km / s').value
 
 
 def cross_correlate(velocities, wavelength, flux, flux_uncertainty, template_wavelength, template_flux):
@@ -19,9 +23,6 @@ def cross_correlate(velocities, wavelength, flux, flux_uncertainty, template_wav
     This is consistent with what we did in the satellite pipeline and
     Zackay & Ofek, 2017, ApJ, 836, 187
     """
-    # Speed of light in km/s
-    c = 299792.458
-
     x_cor = []
     # for steps in 1 km/s from -2000 to +2000 km/s
     # calculate the variance ahead of time
