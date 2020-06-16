@@ -138,9 +138,9 @@ class WavelengthCalibrate(Stage):
             # Set the true physical order number
             ref_ids[fiber_ids == fiber] += m0
         # Calculate which fiber is which.
-        # the first ref_id = 50 (arbitrary, but somewhere about the middle of the detector)
+        # the first ref_id = 80 (arbitrary, but somewhere about the middle of the detector)
         # is largest fiber number that is lit.
-        largest_fiber_index = fiber_ids[ref_ids.tolist().index(50)]
+        largest_fiber_index = fiber_ids[ref_ids.tolist().index(80)]
         if image.fiber2_lit:
             largest_fiber_number = 2
             smaller_fiber_number = 1
