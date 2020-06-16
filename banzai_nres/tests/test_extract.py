@@ -168,5 +168,5 @@ def five_hundred_square_image(maxflux, number_traces, trace_width, read_noise=10
     image = NRESObservationFrame([EchelleSpectralCCDData(data=data, uncertainty=uncertainty, traces=traces,
                                                          profile=profile, wavelengths=wavelengths,
                                                          meta={'OBJECTS': 'tung&tung&none'},
-                                                         fibers=np.arange(number_traces))], 'foo.fits')
+                                                         fibers={'fiber': np.arange(number_traces)})], 'foo.fits')
     return image
