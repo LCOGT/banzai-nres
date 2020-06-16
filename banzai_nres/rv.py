@@ -12,10 +12,10 @@ c = constants.c.to('km / s').value
 
 def cross_correlate(velocities, wavelength, flux, flux_uncertainty, template_wavelength, template_flux):
     """
-
     :param velocities: in km / s
     :param wavelength:
     :param flux:
+    :param flux_uncertainty:
     :param template_wavelength:
     :param template_flux:
     :return:
