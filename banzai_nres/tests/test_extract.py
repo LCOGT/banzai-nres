@@ -144,7 +144,8 @@ def two_order_image():
     uncertainty = 1. * data
     wavelengths = np.ones_like(traces) * 5  # dummy wavelengths image that has values distinct from flux and traces.
     image = NRESObservationFrame([EchelleSpectralCCDData(data=data, uncertainty=uncertainty,
-                                                         wavelengths=wavelengths, traces=traces, fibers=np.arange(2),
+                                                         wavelengths=wavelengths, traces=traces,
+                                                         fibers={'fiber': np.arange(2)},
                                                          meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
     return image
 
@@ -168,5 +169,5 @@ def five_hundred_square_image(maxflux, number_traces, trace_width, read_noise=10
     image = NRESObservationFrame([EchelleSpectralCCDData(data=data, uncertainty=uncertainty, traces=traces,
                                                          profile=profile, wavelengths=wavelengths,
                                                          meta={'OBJECTS': 'tung&tung&none'},
-                                                         fibers=np.arange(number_traces))], 'foo.fits')
+                                                         fibers={'fiber': np.arange(number_traces)})], 'foo.fits')
     return image
