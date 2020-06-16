@@ -8,7 +8,7 @@ def gaussian(x, mu, sigma):
 
 def test_cross_correlate():
     test_wavelengths = np.arange(5000.0, 6000.0, 0.01)
-    flux = np.ones(test_wavelengths.shape, dtype=int) * 1000
+    flux = np.ones(test_wavelengths.shape) * 1000
 
     read_noise = 10.0
     # add in fake lines
@@ -19,7 +19,7 @@ def test_cross_correlate():
         flux += gaussian(test_wavelengths, central_wavelength, sigma) * 10000.0 * np.random.uniform()
 
     true_v = 1.0
-    noisy_flux = np.random.poisson(flux)
+    noisy_flux = np.random.poisson(flux).astype(float)
     noisy_flux += np.random.normal(0.0, read_noise, size=len(flux))
 
     uncertainty = np.sqrt(flux + read_noise**2.0)
@@ -28,4 +28,4 @@ def test_cross_correlate():
     velocity_steps = np.arange(-5.0, 5.0, 0.1)
     ccf = cross_correlate(velocity_steps, test_wavelengths * (1.0 + true_v / c), noisy_flux,
                           uncertainty, test_wavelengths, flux)
-    assert np.argmax(ccf) == velocity_steps.tolist().index(true_v)
+    assert np.argmax(ccf) == np.argmin(np.abs(velocity_steps - true_v))
