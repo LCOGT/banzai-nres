@@ -56,6 +56,7 @@ def barycentric_correction(time, exptime, ra, dec, site):
     site_location = EarthLocation.from_geodetic(lat=lat, lon=-lon, height=height*u.m)
     sky_coordinates = SkyCoord(ra=ra*u.hourangle, dec=dec*u.deg)
     # The time given in the NRES header is the exposure start time; correct this to the midpoint
+    # Eventually, we will want to use the flux-weighted mid-point calculated from emeter data
     obs_time = Time(time, location=site_location) + exptime/2.*u.s
     barycorr_rv = sky_coordinates.radial_velocity_correction(obstime=obs_time, location=site_location)
     bjd_tdb = obs_time.tdb + obs_time.light_travel_time(sky_coordinates)
@@ -89,11 +90,9 @@ class RVCalculator(Stage):
             ccfs.append({'v': velocities, 'xcor': x_cor})
 
         rvs_per_order = [ccf['v'][np.argmax(ccf['xcor'])] for ccf in ccfs]
-        # TODO: change the time to be the mid-time of the exposure rather than the start;
-        # eventually, use flux-weighted mid-point calculated from emeter data
         # Calculate the peak v (converting to m/s) in the spectrograph frame
         rv_measured = (np.mean(rvs_per_order)) * 1000
-        # Compute the barycentric RV correction
+        # Compute the barycentric RV and observing time corrections
         rv_correction, bjd_tdb = barycentric_correction(image.header['DATE-OBS'],image.header['EXPTIME'],
                                                 image.header['RA'],image.header['DEC'],image.header['SITEID'])
         # Correct the RV per Wright & Eastman (2014) and save in the header
