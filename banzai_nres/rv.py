@@ -56,9 +56,10 @@ def barycentric_correction(time, exptime, ra, dec, site):
     site_location = EarthLocation.from_geodetic(lat=lat, lon=-lon, height=height*u.m)
     sky_coordinates = SkyCoord(ra=ra*u.hourangle, dec=dec*u.deg)
     # The time given in the NRES header is the exposure start time; correct this to the midpoint
-    obs_time = Time(time) + exptime/2.*u.s
-    barycorr = sky_coordinates.radial_velocity_correction(obstime=obs_time, location=site_location)
-    return barycorr.to(u.m/u.s).value
+    obs_time = Time(time, location=site_location) + exptime/2.*u.s
+    barycorr_rv = sky_coordinates.radial_velocity_correction(obstime=obs_time, location=site_location)
+    bjd_tdb = obs_time.tdb + obs_time.light_travel_time(sky_coordinates)
+    return barycorr_rv.to(u.m/u.s).value, bjd_tdb.to_value('jd')
 
 
 class RVCalculator(Stage):
@@ -93,12 +94,13 @@ class RVCalculator(Stage):
         # Calculate the peak v (converting to m/s) in the spectrograph frame
         rv_measured = (np.mean(rvs_per_order)) * 1000
         # Compute the barycentric RV correction
-        rv_correction = barycentric_correction(image.header['DATE-OBS'],image.header['EXPTIME'],
+        rv_correction, bjd_tdb = barycentric_correction(image.header['DATE-OBS'],image.header['EXPTIME'],
                                                 image.header['RA'],image.header['DEC'],image.header['SITEID'])
         # Correct the RV per Wright & Eastman (2014) and save in the header
         image.header['RV'] = rv_measured + rv_correction + rv_measured * rv_correction / c, 'Radial Velocity [m/s]'
         # The following assumes that the uncertainty on the barycentric correction is negligible w.r.t. that
         # on the RV measured from the CCF, which should generally be true
         image.header['RVERR'] = (np.std(rvs_per_order) * 1000, 'Radial Velocity Uncertainty [m/s]')
+        image.header['BJD_TDB'] = bjd_tdb, 'Exposure Mid-Time (Barycentric Julian Date)'
         image.ccf = Table(ccfs)
         return image
