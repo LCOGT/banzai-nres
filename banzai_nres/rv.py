@@ -6,7 +6,7 @@ import numpy as np
 from astropy.table import Table
 from astropy import constants
 from astropy.time import Time
-from astropy.coordinates import SkyCoord, EarthLocation
+from astropy.coordinates import SkyCoord, EarthLocation, solar_system_ephemeris
 import astropy.units as u
 
 # Speed of light in km/s
@@ -100,6 +100,11 @@ class RVCalculator(Stage):
         # The following assumes that the uncertainty on the barycentric correction is negligible w.r.t. that
         # on the RV measured from the CCF, which should generally be true
         image.header['RVERR'] = (np.std(rvs_per_order) * 1000, 'Radial Velocity Uncertainty [m/s]')
-        image.header['BJD_TDB'] = bjd_tdb, 'Exposure Mid-Time (Barycentric Julian Date)'
+        image.header['TCORR'] = bjd_tdb, 'Exposure Mid-Time (Barycentric Julian Date)'
+        image.header['TCORVERN'] = 'astropy.time.light_travel_time', 'Time correction code version'
+        image.header['TCORCOMP'] = 'ROMER, CLOCK', 'Time corrections done'
+        image.header['TCOREPOS'] = 'ERFA', 'Source of Earth position'
+        image.header['TCORSYST'] = 'BJD_TDB ', 'Ref. frame_timesystem of TCORR column'
+        image.header['PLEPHEM'] = solar_system_ephemeris.get, 'Source of planetary ephemerides'
         image.ccf = Table(ccfs)
         return image
