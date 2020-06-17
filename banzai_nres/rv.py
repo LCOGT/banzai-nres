@@ -53,12 +53,12 @@ def barycentric_correction(time, exptime, ra, dec, site):
     if site == 'cpt': lat, lon, height = '-32:22:48', '20:48:36', 1460.
     if site == 'tlv': lat, lon, height = '30:35:45', '34:45:48', 875.
     # The following is largely taken from the astropy example page
-    site_location = EarthLocation.from_geodetic(lat=lat, lon=-lon, height=height*u.m)
+    site_location = EarthLocation.from_geodetic(lat=lat, lon=lon, height=height*u.m)
     sky_coordinates = SkyCoord(ra=ra*u.hourangle, dec=dec*u.deg)
     # The time given in the NRES header is the exposure start time; correct this to the midpoint
     # Eventually, we will want to use the flux-weighted mid-point calculated from emeter data
     obs_time = Time(time, location=site_location) + exptime/2.*u.s
-    barycorr_rv = sky_coordinates.radial_velocity_correction(obstime=obs_time, location=site_location)
+    barycorr_rv = sky_coordinates.radial_velocity_correction(obstime=obs_time)
     bjd_tdb = obs_time.tdb + obs_time.light_travel_time(sky_coordinates)
     return barycorr_rv.to(u.m/u.s).value, bjd_tdb.to_value('jd')
 
