@@ -45,16 +45,17 @@ def cross_correlate(velocities, wavelength, flux, flux_uncertainty, template_wav
 
     return np.array(x_cor)
 
+
 def barycentric_correction(time, exptime, ra, dec, site):
-    #TODO: figure out something better than hard-coding the NRES site coordinates
+    # TODO: figure out something better than hard-coding the NRES site coordinates
     if site == 'lsc': lat, lon, height = '-30:10:2.64', '-70:48:17.28', 2198.
     if site == 'elp': lat, lon, height = '30:40:12', '-104:01:12', 2070.
     if site == 'cpt': lat, lon, height = '-32:22:48', '20:48:36', 1460.
     if site == 'tlv': lat, lon, height = '30:35:45', '34:45:48', 875.
-    #The following is largely taken from the astropy example page
-    site_location = EarthLocation.from_geodetic(lat=lat, lon=-long, height=height*u.m)
+    # The following is largely taken from the astropy example page
+    site_location = EarthLocation.from_geodetic(lat=lat, lon=-lon, height=height*u.m)
     sky_coordinates = SkyCoord(ra=ra*u.hourangle, dec=dec*u.deg)
-    #The time given in the NRES header is the exposure start time; correct this to the midpoint
+    # The time given in the NRES header is the exposure start time; correct this to the midpoint
     obs_time = Time(time) + exptime/2.*u.s
     barycorr = sky_coordinates.radial_velocity_correction(obstime=obs_time, location=site_location)
     return barycorr.to(u.m/u.s).value
@@ -87,17 +88,17 @@ class RVCalculator(Stage):
             ccfs.append({'v': velocities, 'xcor': x_cor})
 
         rvs_per_order = [ccf['v'][np.argmax(ccf['xcor'])] for ccf in ccfs]
-        #TODO: change the time to be the mid-time of the exposure rather than the start; 
+        # TODO: change the time to be the mid-time of the exposure rather than the start;
         # eventually, use flux-weighted mid-point calculated from emeter data
-        #Calculate the peak v (converting to m/s) in the spectrograph frame
+        # Calculate the peak v (converting to m/s) in the spectrograph frame
         rv_measured = (np.mean(rvs_per_order)) * 1000
-        #Compute the barycentric RV correction
+        # Compute the barycentric RV correction
         rv_correction = barycentric_correction(image.header['DATE-OBS'],image.header['EXPTIME'],
                                                 image.header['RA'],image.header['DEC'],image.header['SITEID'])
         # Correct the RV per Wright & Eastman (2014) and save in the header
-        image.header['RV'] = rv_measured + rv_correction + rv_measured*rv_correction/c, 'Radial Velocity [m/s]')
-        #The following assumes that the uncertainty on the barycentric correction is negligible w.r.t. that
-        #on the RV measured from the CCF, which should generally be true
+        image.header['RV'] = rv_measured + rv_correction + rv_measured * rv_correction / c, 'Radial Velocity [m/s]'
+        # The following assumes that the uncertainty on the barycentric correction is negligible w.r.t. that
+        # on the RV measured from the CCF, which should generally be true
         image.header['RVERR'] = (np.std(rvs_per_order) * 1000, 'Radial Velocity Uncertainty [m/s]')
         image.ccf = Table(ccfs)
         return image
