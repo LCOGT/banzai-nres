@@ -96,10 +96,11 @@ class RVCalculator(Stage):
         rv_correction, bjd_tdb = barycentric_correction(image.header['DATE-OBS'],image.header['EXPTIME'],
                                                 image.header['RA'],image.header['DEC'],image.header['SITEID'])
         # Correct the RV per Wright & Eastman (2014) and save in the header
-        image.header['RV'] = rv_measured + rv_correction + rv_measured * rv_correction / c, 'Radial Velocity [m/s]'
+        image.header['RV'] = rv_measured + rv_correction + rv_measured * rv_correction / c, 'Radial Velocity in Barycentric Frame [m/s]'
         # The following assumes that the uncertainty on the barycentric correction is negligible w.r.t. that
         # on the RV measured from the CCF, which should generally be true
         image.header['RVERR'] = (np.std(rvs_per_order) * 1000, 'Radial Velocity Uncertainty [m/s]')
+        image.header['BARYCORR'] = rv_correction, 'Barycentric Correction Applied to the RV [m/s]'
         image.header['TCORR'] = bjd_tdb, 'Exposure Mid-Time (Barycentric Julian Date)'
         image.header['TCORVERN'] = 'astropy.time.light_travel_time', 'Time correction code version'
         image.header['TCORCOMP'] = 'ROMER, CLOCK', 'Time corrections done'
