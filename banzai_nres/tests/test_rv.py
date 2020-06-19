@@ -29,3 +29,9 @@ def test_cross_correlate():
     ccf = cross_correlate(velocity_steps, test_wavelengths * (1.0 + true_v / c), noisy_flux,
                           uncertainty, test_wavelengths, flux)
     assert np.argmax(ccf) == np.argmin(np.abs(velocity_steps - true_v))
+
+
+def test_rv():
+    # Make fake data from orders 75-100
+    # Run the RV code on the solstice
+    pass

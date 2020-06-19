@@ -16,6 +16,7 @@ from datetime import datetime
 from dateutil.parser import parse
 from astropy.io import fits
 from astropy.table import Table
+from banzai.utils import fits_utils
 
 import logging
 
@@ -168,11 +169,14 @@ def check_extracted_spectra(raw_filename, spec_extname, columns):
     created_images = []
     for day_obs in DAYS_OBS:
         created_images += glob(os.path.join(DATA_ROOT, day_obs, 'processed', raw_filename))
-    for fname in created_images:
-        spectrum = Table(fits.open(fname)[spec_extname].data)
+    for filename in created_images:
+        with fits.open(filename) as f:
+            hdu = fits_utils.unpack(f)
+        spectrum = Table(hdu[spec_extname].data)
         for colname in columns:
             assert colname in spectrum.colnames
             assert not np.allclose(spectrum[colname], 0)
+        assert 'RV' in hdu[0].header
 
 
 def run_check_if_stacked_calibrations_are_in_db(raw_filenames, calibration_type):

@@ -7,7 +7,8 @@ from astropy.table import Table
 from astropy import constants
 from astropy.time import Time
 from astropy.coordinates import SkyCoord, EarthLocation, solar_system_ephemeris
-import astropy.units as u
+from astropy import units
+from banzai import stats
 
 # Speed of light in km/s
 c = constants.c.to('km / s').value
@@ -53,14 +54,27 @@ def barycentric_correction(time, exptime, ra, dec, site):
     if site == 'cpt': lat, lon, height = '-32:22:48', '20:48:36', 1460.
     if site == 'tlv': lat, lon, height = '30:35:45', '34:45:48', 875.
     # The following is largely taken from the astropy example page
-    site_location = EarthLocation.from_geodetic(lat=lat, lon=lon, height=height*u.m)
-    sky_coordinates = SkyCoord(ra=ra*u.hourangle, dec=dec*u.deg)
+    site_location = EarthLocation.from_geodetic(lat=lat, lon=lon, height=height*units.m)
+    sky_coordinates = SkyCoord(ra=ra*units.hourangle, dec=dec*units.deg)
     # The time given in the NRES header is the exposure start time; correct this to the midpoint
     # Eventually, we will want to use the flux-weighted mid-point calculated from emeter data
-    obs_time = Time(time, location=site_location) + exptime/2.*u.s
+    obs_time = Time(time, location=site_location) + exptime / 2.0 * units.s
     barycorr_rv = sky_coordinates.radial_velocity_correction(obstime=obs_time)
     bjd_tdb = obs_time.tdb + obs_time.light_travel_time(sky_coordinates)
-    return barycorr_rv.to(u.m/u.s).value, bjd_tdb.to_value('jd')
+    return barycorr_rv.to('m / s').value, bjd_tdb.to_value('jd')
+
+
+def cross_correlate_over_traces(image, orders_to_use, velocities, template):
+    ccfs = []
+
+    for i in image.fibers[image.fibers['fiber'] == image.science_fiber]['trace']:
+        if i in orders_to_use:
+            # calculate the variance ahead of time
+            x_cor = cross_correlate(velocities, image.spectrum[i]['wavelength'], image.spectrum[i]['flux'],
+                                    image.spectrum[i]['uncertainty'],
+                                    template['wavelength'], template['flux'])
+        ccfs.append({'order': i, 'v': velocities, 'xcor': x_cor})
+    return Table(ccfs)
 
 
 class RVCalculator(Stage):
@@ -69,43 +83,43 @@ class RVCalculator(Stage):
     def do_stage(self, image) -> ObservationFrame:
         # Load in the template
         template_hdu = fits.open(self.TEMPLATE_FILENAME)
-        ccfs = []
-        for i in image.fibers[image.fibers['fiber'] == image.science_fiber]['trace']:
-            # for steps in 1 km/s from -2000 to +2000 km/s
-            velocities = np.arange(-2000, 2001, 1)
-            # calculate the variance ahead of time
-            x_cor = cross_correlate(velocities, image.spectrum[i]['wavelength'], image.spectrum[i]['flux'],
-                                    image.spectrum[i]['uncertainty'],
-                                    template_hdu[1].data['wavelength'], template_hdu[1].data['flux'])
 
-            # take the peak
-            best_v = velocities[np.argmax(x_cor)]
-            # for steps of 1m/s around that peak take +- 2 km/s and repeat the process
-            velocities = np.arange(best_v - 2, best_v + 2 + 1e-4, 1e-3)
-            x_cor = cross_correlate(velocities, image.spectrum[i]['wavelength'], image.spectrum[i]['flux'],
-                                    image.spectrum[i]['uncertainty'],
-                                    template_hdu[1].data['wavelength'], template_hdu[1].data['flux'])
+        template = {'wavlength': template_hdu[1].data['wavelength'], 'flux': template_hdu[1].data['flux']}
+        # This is mostly arbitrary. Just pick orders near the center of the detector
+        orders_to_use = np.arange(75, 101, 1)
 
-            # Save the 1 m/s cross correlation function
-            ccfs.append({'v': velocities, 'xcor': x_cor})
+        # for steps in 1 km/s from -2000 to +2000 km/s
+        velocities = np.arange(-2000, 2001, 1)
 
-        rvs_per_order = [ccf['v'][np.argmax(ccf['xcor'])] for ccf in ccfs]
+        coarse_ccfs = cross_correlate_over_traces(image, orders_to_use, velocities, template)
+
+        # take the peak
+        velocity_peaks = [velocities[np.argmax(ccf['xcor'])] for ccf in coarse_ccfs]
+        best_v = stats.sigma_clipped_mean(velocity_peaks, 3.0)
+        velocities = np.arange(best_v - 2, best_v + 2 + 1e-4, 1e-3)
+
+        final_ccfs = cross_correlate_over_traces(image, orders_to_use, velocities, template)
+
+        rvs_per_order = [ccf['v'][np.argmax(ccf['xcor'])] for ccf in final_ccfs]
         # Calculate the peak v (converting to m/s) in the spectrograph frame
-        rv_measured = (np.mean(rvs_per_order)) * 1000
+        rv_measured = stats.sigma_clipped_mean(rvs_per_order, 3.0) * 1000
+
+        # TODO: Add ra and dec to observation frame object
         # Compute the barycentric RV and observing time corrections
-        rv_correction, bjd_tdb = barycentric_correction(image.header['DATE-OBS'],image.header['EXPTIME'],
-                                                image.header['RA'],image.header['DEC'],image.header['SITEID'])
+        rv_correction, bjd_tdb = barycentric_correction(image.dateobs, image.exptime,
+                                                        image.header['RA'], image.header['DEC'], image.instrument.site)
         # Correct the RV per Wright & Eastman (2014) and save in the header
-        image.header['RV'] = rv_measured + rv_correction + rv_measured * rv_correction / c, 'Radial Velocity in Barycentric Frame [m/s]'
+        rv = rv_measured + rv_correction + rv_measured * rv_correction / c
+        image.header['RV'] = rv, 'Radial Velocity in Barycentric Frame [m/s]'
         # The following assumes that the uncertainty on the barycentric correction is negligible w.r.t. that
         # on the RV measured from the CCF, which should generally be true
-        image.header['RVERR'] = (np.std(rvs_per_order) * 1000, 'Radial Velocity Uncertainty [m/s]')
+        image.header['RVERR'] = stats.robust_standard_deviation(rvs_per_order) * 1000, 'Radial Velocity Uncertainty [m/s]'
         image.header['BARYCORR'] = rv_correction, 'Barycentric Correction Applied to the RV [m/s]'
         image.header['TCORR'] = bjd_tdb, 'Exposure Mid-Time (Barycentric Julian Date)'
         image.header['TCORVERN'] = 'astropy.time.light_travel_time', 'Time correction code version'
         image.header['TCORCOMP'] = 'ROMER, CLOCK', 'Time corrections done'
         image.header['TCOREPOS'] = 'ERFA', 'Source of Earth position'
         image.header['TCORSYST'] = 'BJD_TDB ', 'Ref. frame_timesystem of TCORR column'
-        image.header['PLEPHEM'] = solar_system_ephemeris.get, 'Source of planetary ephemerides'
-        image.ccf = Table(ccfs)
+        image.header['PLEPHEM'] = solar_system_ephemeris.get(), 'Source of planetary ephemerides'
+        image.ccf = final_ccfs
         return image

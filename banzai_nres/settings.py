@@ -20,6 +20,7 @@ ORDERED_STAGES = [
                   'banzai_nres.wavelength.ArcLoader',
                   'banzai_nres.extract.GetOptimalExtractionWeights',
                   'banzai_nres.extract.WeightedExtract',
+                  'banzai_nres.rv.RVCalculator'
                   ]
 
 CALIBRATION_MIN_FRAMES = {'BIAS': 5,
