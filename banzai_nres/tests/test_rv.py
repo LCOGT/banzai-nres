@@ -1,5 +1,6 @@
-from banzai_nres.rv import cross_correlate, c
+from banzai_nres.rv import cross_correlate, c, barycentric_correction
 import numpy as np
+
 
 
 def gaussian(x, mu, sigma):
@@ -34,4 +35,13 @@ def test_cross_correlate():
 def test_rv():
     # Make fake data from orders 75-100
     # Run the RV code on the solstice
+    pass
+
+def test_bc_correction():
+    #Celestial coordinates of the North Ecliptic Pole
+    ra, dec = 18.0, 66.+33./60.+38.55/3600.
+    site = 'elp'
+    time, exptime = '2019-07-10T07:27:13.647', 0.0
+    bc_rv, bjd_tdb = barycentric_correction(time, exptime, ra, dec, site)
+    #assert np.close(np.abs(bc_rv),0.0,100) #Check RV correction is within 100 m/s of 0
     pass
