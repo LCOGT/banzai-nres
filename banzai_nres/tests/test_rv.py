@@ -1,4 +1,4 @@
-from banzai_nres.rv import cross_correlate, c, RVCalculator
+from banzai_nres.rv import cross_correlate, c, RVCalculator, barycentric_correction
 import numpy as np
 import mock
 from astropy.io import fits
@@ -6,6 +6,7 @@ from banzai_nres.frames import NRESObservationFrame
 from banzai_nres.frames import EchelleSpectralCCDData
 from types import SimpleNamespace
 from astropy.table import Table
+
 
 
 def gaussian(x, mu, sigma):
@@ -85,3 +86,13 @@ def test_rv(mock_fits):
 
     # Assert that the true_v + rv_correction is what is in the header within 5 m/s
     assert np.abs(true_v * 1000.0 + image.meta['BARYCORR'] - image.meta['RV']) < 5.0
+
+
+def test_bc_correction():
+    #Celestial coordinates of the North Ecliptic Pole
+    ra, dec = 18.0, 66.+33./60.+38.55/3600.
+    site = 'elp'
+    time, exptime = '2019-07-10T07:27:13.647', 0.0
+    bc_rv, bjd_tdb = barycentric_correction(time, exptime, ra, dec, site)
+    #assert np.close(np.abs(bc_rv),0.0,100) #Check RV correction is within 100 m/s of 0
+    pass
