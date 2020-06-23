@@ -71,7 +71,7 @@ def test_rv(mock_fits):
     for i in range(26):
         order = slice(i * 7000, (i + 1) * 7000, 1)
         row = {'wavelength': test_wavelengths[order] * (1.0 + true_v / c),
-               'flux': noisy_flux[order], 'uncertainty': uncertainty[order], 'fiber': 0, 'trace': i + 75}
+               'flux': noisy_flux[order], 'uncertainty': uncertainty[order], 'fiber': 0, 'order': i + 75}
         spectrum.append(row)
 
     image = NRESObservationFrame([EchelleSpectralCCDData(np.zeros((1, 1)), meta=header, spectrum=Table(spectrum))],
