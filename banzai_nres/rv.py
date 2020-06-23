@@ -9,6 +9,10 @@ from astropy.time import Time
 from astropy.coordinates import SkyCoord, EarthLocation, solar_system_ephemeris
 from astropy import units
 from banzai.utils import stats
+import logging
+
+
+logger = logging.getLogger('banzai')
 
 # Speed of light in km/s
 c = constants.c.to('km / s').value
@@ -64,6 +68,7 @@ def cross_correlate_over_traces(image, orders_to_use, velocities, template):
     ccfs = []
 
     for i in orders_to_use:
+        logger.info(f'Cross correlating for order: {i}')
         order = image.spectrum[np.logical_and(image.spectrum['fiber'] == image.science_fiber, image.spectrum['order'] == i)][0]
         # calculate the variance ahead of time
         x_cor = cross_correlate(velocities, order['wavelength'], order['flux'], order['uncertainty'],
