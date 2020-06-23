@@ -151,7 +151,7 @@ class WavelengthCalibrate(Stage):
         true_fibers = [largest_fiber_number if fiber_id == largest_fiber_index else smaller_fiber_number
                        for fiber_id in fiber_ids]
         # set fibers attribute on image
-        image.fibers = Table({'trace': trace_ids, 'fiber': true_fibers})
+        image.fibers = Table({'order': ref_ids, 'fiber': true_fibers})
 
     @staticmethod
     def init_feature_labels(num_traces, features):

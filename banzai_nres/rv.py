@@ -64,7 +64,7 @@ def cross_correlate_over_traces(image, orders_to_use, velocities, template):
     ccfs = []
 
     for i in orders_to_use:
-        order = image.spectrum[np.logical_and(image.spectrum['fiber'] == image.science_fiber, image.spectrum['trace'] == i)][0]
+        order = image.spectrum[np.logical_and(image.spectrum['fiber'] == image.science_fiber, image.spectrum['order'] == i)][0]
         # calculate the variance ahead of time
         x_cor = cross_correlate(velocities, order['wavelength'], order['flux'], order['uncertainty'],
                                 template['wavelength'], template['flux'])
