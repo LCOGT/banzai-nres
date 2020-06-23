@@ -194,6 +194,8 @@ def run_check_if_stacked_calibrations_are_in_db(raw_filenames, calibration_type)
 def init(configdb):
     os.system(f'banzai_create_db --db-address={os.environ["DB_ADDRESS"]}')
     dbs.populate_instrument_tables(db_address=os.environ["DB_ADDRESS"], configdb_address='http://fakeconfigdb')
+    os.system(f'banzai_add_site --site elp --latitude 30.67986944 --longitude -104.015175 --timezone -6 --db-address={os.environ["DB_ADDRESS"]}')
+    os.system(f'banzai_add_site --site lsc --latitude -30.1673833333 --longitude -70.8047888889 --timezone -4 --db-address={os.environ["DB_ADDRESS"]}')
     os.system(f'banzai_add_instrument --site lsc --camera fl09 --name nres01 --camera-type 1m0-NRES-SciCam --db-address={os.environ["DB_ADDRESS"]}')
     os.system(f'banzai_add_instrument --site elp --camera fl17 --name nres02 --camera-type 1m0-NRES-SciCam --db-address={os.environ["DB_ADDRESS"]}')
     for instrument in INSTRUMENTS:

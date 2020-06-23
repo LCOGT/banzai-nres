@@ -8,7 +8,6 @@ from types import SimpleNamespace
 from astropy.table import Table
 
 
-
 def gaussian(x, mu, sigma):
     return (2.0 * np.pi) ** -0.5 / sigma * np.exp(-0.5 * (x - mu) ** 2 / sigma ** 2)
 
@@ -63,7 +62,7 @@ def test_rv(mock_fits):
     # Make the fake image
     # Set the site to the north pole, and the ra and dec to the ecliptic pole. The time we chose is just
     # to minimize the rv correction
-    header = fits.Header({'DATE-OBS': '2020-09-12T00:00:00.000000',  'RA': 269.99998557, 'DEC': 66.55911605,
+    header = fits.Header({'DATE-OBS': '2020-09-12T00:00:00.000000',  'RA': 18.0, 'DEC': 66.55911605,
                           'OBJECTS': 'foo&none&none', 'EXPTIME': 1200.0})
     site_info = {'longitude': 0.0, 'latitude': 90.0, 'elevation': 0.0}
 
@@ -89,10 +88,10 @@ def test_rv(mock_fits):
 
 
 def test_bc_correction():
-    #Celestial coordinates of the North Ecliptic Pole
-    ra, dec = 18.0, 66.+33./60.+38.55/3600.
-    site = 'elp'
-    time, exptime = '2019-07-10T07:27:13.647', 0.0
-    bc_rv, bjd_tdb = barycentric_correction(time, exptime, ra, dec, site)
-    #assert np.close(np.abs(bc_rv),0.0,100) #Check RV correction is within 100 m/s of 0
-    pass
+    # Celestial coordinates of the North Ecliptic Pole (decimal hours, degrees)
+    ra, dec = 18.0, 66.55911605
+    # From the north pole
+    site_info = {'longitude': 0.0, 'latitude': 90.0, 'elevation': 0.0}
+    time, exptime = '2020-09-12T00:00:00.000000', 0.0
+    bc_rv, bjd_tdb = barycentric_correction(time, exptime, ra, dec, SimpleNamespace(**site_info))
+    assert np.abs(bc_rv) < 10.0  # Check RV correction is within 10 m/s of 0
