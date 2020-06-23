@@ -112,6 +112,8 @@ class RVCalculator(Stage):
         image.meta['BARYCORR'] = rv_correction, 'Barycentric Correction Applied to the RV [m/s]'
         image.meta['TCORR'] = bjd_tdb, 'Exposure Mid-Time (Barycentric Julian Date)'
         image.meta['TCORVERN'] = 'astropy.time.light_travel_time', 'Time correction code version'
+        #TODO: verify that the following are in fact the time corrections done by astropy;
+        #this isn't completely obvious from the online documentation
         image.meta['TCORCOMP'] = 'ROMER, CLOCK', 'Time corrections done'
         image.meta['TCOREPOS'] = 'ERFA', 'Source of Earth position'
         image.meta['TCORSYST'] = 'BJD_TDB ', 'Ref. frame_timesystem of TCORR column'
