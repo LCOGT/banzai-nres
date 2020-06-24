@@ -37,8 +37,9 @@ def test_cross_correlate():
     assert np.argmax(ccf) == np.argmin(np.abs(velocity_steps - true_v))
 
 
+@mock.patch('banzai.dbs.get_site')
 @mock.patch('banzai_nres.rv.fits.open')
-def test_rv(mock_fits):
+def test_rv(mock_fits, mock_db):
     # Make fake data from orders 74-101
     test_wavelengths = np.arange(4500.0, 6500.0, 0.01)
     flux = np.ones(test_wavelengths.shape) * 1000
@@ -77,10 +78,11 @@ def test_rv(mock_fits):
     image = NRESObservationFrame([EchelleSpectralCCDData(np.zeros((1, 1)), meta=header, spectrum=Table(spectrum))],
                                  'test.fits')
     image.instrument = SimpleNamespace()
-    image.instrument.site = SimpleNamespace(**site_info)
+    image.instrument.site = 'npt'
+    mock_db.return_value = SimpleNamespace(**site_info)
 
     # Run the RV code
-    stage = RVCalculator(None)
+    stage = RVCalculator(SimpleNamespace(db_address='foo'))
     image = stage.do_stage(image)
 
     # Assert that the true_v + rv_correction is what is in the header within 5 m/s

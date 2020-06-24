@@ -1,5 +1,6 @@
 from banzai.stages import Stage
 from banzai.frames import ObservationFrame
+from banzai import dbs
 import pkg_resources
 from astropy.io import fits
 import numpy as np
@@ -68,11 +69,15 @@ def cross_correlate_over_traces(image, orders_to_use, velocities, template):
     ccfs = []
 
     for i in orders_to_use:
-        logger.info(f'Cross correlating for order: {i}')
-        order = image.spectrum[np.logical_and(image.spectrum['fiber'] == image.science_fiber, image.spectrum['order'] == i)][0]
-        # calculate the variance ahead of time
+        logger.info(f'Cross correlating for order: {i}', image=image)
+        order = image.spectrum[np.logical_and(image.spectrum['fiber'] == image.science_fiber,
+                                              image.spectrum['order'] == i)][0]
+
+        # Only pass in the given wavelength range +- 1 Angstrom to boost performance
+        order_indices = np.logical_and(template['wavelength'] >= np.min(order['wavelength'] - 1.0),
+                                       template['wavelength'] <= np.max(order['wavelength'] + 1.0))
         x_cor = cross_correlate(velocities, order['wavelength'], order['flux'], order['uncertainty'],
-                                template['wavelength'], template['flux'])
+                                template['wavelength'][order_indices], template['flux'][order_indices])
         ccfs.append({'order': i, 'v': velocities, 'xcor': x_cor})
     return Table(ccfs)
 
@@ -107,7 +112,8 @@ class RVCalculator(Stage):
         # TODO: Add ra and dec to observation frame object
         # Compute the barycentric RV and observing time corrections
         rv_correction, bjd_tdb = barycentric_correction(image.dateobs, image.exptime,
-                                                        image.meta['RA'], image.meta['DEC'], image.instrument.site)
+                                                        image.meta['RA'], image.meta['DEC'],
+                                                        dbs.get_site(image.instrument.site, self.runtime_context.db_address))
         # Correct the RV per Wright & Eastman (2014) and save in the header
         rv = rv_measured + rv_correction + rv_measured * rv_correction / c
         image.meta['RV'] = rv, 'Radial Velocity in Barycentric Frame [m/s]'
@@ -117,8 +123,8 @@ class RVCalculator(Stage):
         image.meta['BARYCORR'] = rv_correction, 'Barycentric Correction Applied to the RV [m/s]'
         image.meta['TCORR'] = bjd_tdb, 'Exposure Mid-Time (Barycentric Julian Date)'
         image.meta['TCORVERN'] = 'astropy.time.light_travel_time', 'Time correction code version'
-        #TODO: verify that the following are in fact the time corrections done by astropy;
-        #this isn't completely obvious from the online documentation
+        # TODO: verify that the following are in fact the time corrections done by astropy;
+        # this isn't completely obvious from the online documentation
         image.meta['TCORCOMP'] = 'ROMER, CLOCK', 'Time corrections done'
         image.meta['TCOREPOS'] = 'ERFA', 'Source of Earth position'
         image.meta['TCORSYST'] = 'BJD_TDB ', 'Ref. frame_timesystem of TCORR column'
