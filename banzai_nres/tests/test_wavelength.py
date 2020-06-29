@@ -219,8 +219,8 @@ class TestArcLoader:
         assert self.stage.on_missing_master_calibration(test_image) is None
 
     def test_apply_master_calibration(self):
-        master_cal = type('image', (), {'wavelengths': [1, 2], 'filename': 'foo.fits'})
-        test_image = type('image', (), {'wavelengths': None, 'meta':{}})
+        master_cal = type('image', (), {'wavelengths': [1, 2], 'filename': 'foo.fits', 'fibers': [0, 1]})
+        test_image = type('image', (), {'wavelengths': None, 'meta': {}})
         assert np.allclose(self.stage.apply_master_calibration(test_image, master_cal).wavelengths, [1, 2])
         assert self.stage.calibration_type == 'DOUBLE'
         assert test_image.meta['L1IDARC'][0] == 'foo.fits'

@@ -16,6 +16,7 @@ from datetime import datetime
 from dateutil.parser import parse
 from astropy.io import fits
 from astropy.table import Table
+from banzai.utils import fits_utils
 
 import logging
 
@@ -168,11 +169,14 @@ def check_extracted_spectra(raw_filename, spec_extname, columns):
     created_images = []
     for day_obs in DAYS_OBS:
         created_images += glob(os.path.join(DATA_ROOT, day_obs, 'processed', raw_filename))
-    for fname in created_images:
-        spectrum = Table(fits.open(fname)[spec_extname].data)
+    for filename in created_images:
+        with fits.open(filename) as f:
+            hdu = fits_utils.unpack(f)
+        spectrum = Table(hdu[spec_extname].data)
         for colname in columns:
             assert colname in spectrum.colnames
             assert not np.allclose(spectrum[colname], 0)
+        assert 'RV' in hdu[0].header
 
 
 def run_check_if_stacked_calibrations_are_in_db(raw_filenames, calibration_type):
@@ -190,6 +194,8 @@ def run_check_if_stacked_calibrations_are_in_db(raw_filenames, calibration_type)
 def init(configdb):
     os.system(f'banzai_create_db --db-address={os.environ["DB_ADDRESS"]}')
     dbs.populate_instrument_tables(db_address=os.environ["DB_ADDRESS"], configdb_address='http://fakeconfigdb')
+    os.system(f'banzai_add_site --site elp --latitude 30.67986944 --longitude -104.015175 --elevation 2027 --timezone -6 --db-address={os.environ["DB_ADDRESS"]}')
+    os.system(f'banzai_add_site --site lsc --latitude -30.1673833333 --longitude -70.8047888889 --elevation 2198 --timezone -4 --db-address={os.environ["DB_ADDRESS"]}')
     os.system(f'banzai_add_instrument --site lsc --camera fl09 --name nres01 --camera-type 1m0-NRES-SciCam --db-address={os.environ["DB_ADDRESS"]}')
     os.system(f'banzai_add_instrument --site elp --camera fl17 --name nres02 --camera-type 1m0-NRES-SciCam --db-address={os.environ["DB_ADDRESS"]}')
     for instrument in INSTRUMENTS:

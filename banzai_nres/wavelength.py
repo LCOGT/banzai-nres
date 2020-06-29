@@ -7,12 +7,12 @@ from banzai_nres.frames import NRESObservationFrame
 from banzai_nres.utils.wavelength_utils import identify_features, group_features_by_trace, get_principle_order_number
 from xwavecal.wavelength import find_feature_wavelengths, WavelengthSolution
 from xwavecal.utils.wavelength_utils import find_nearest
-from astropy.table import vstack
 
 import sep
 import logging
 import os
 import pkg_resources
+from astropy.table import Table
 
 
 logger = logging.getLogger('banzai')
@@ -54,6 +54,7 @@ class ArcLoader(CalibrationUser):
 
     def apply_master_calibration(self, image: NRESObservationFrame, master_calibration_image):
         image.wavelengths = master_calibration_image.wavelengths
+        image.fibers = master_calibration_image.fibers
         image.meta['L1IDARC'] = master_calibration_image.filename, 'ID of ARC/DOUBLE frame'
         return image
 
@@ -134,6 +135,23 @@ class WavelengthCalibrate(Stage):
             for trace_id, ref_id in zip(trace_ids[fiber_ids == fiber], ref_ids[fiber_ids == fiber]):
                 this_trace = np.isclose(image.traces, trace_id)
                 image.wavelengths[this_trace] = wavelength_model(x2d[this_trace], ref_id * np.ones_like(x2d[this_trace]))
+            # Set the true physical order number
+            ref_ids[fiber_ids == fiber] += m0
+        # Calculate which fiber is which.
+        # the first ref_id = 80 (arbitrary, but somewhere about the middle of the detector)
+        # is largest fiber number that is lit.
+        largest_fiber_index = fiber_ids[ref_ids.tolist().index(80)]
+        if image.fiber2_lit:
+            largest_fiber_number = 2
+            smaller_fiber_number = 1
+        else:
+            largest_fiber_number = 1
+            smaller_fiber_number = 0
+
+        true_fibers = [largest_fiber_number if fiber_id == largest_fiber_index else smaller_fiber_number
+                       for fiber_id in fiber_ids]
+        # set fibers attribute on image
+        image.fibers = Table({'order': ref_ids, 'fiber': true_fibers})
 
     @staticmethod
     def init_feature_labels(num_traces, features):

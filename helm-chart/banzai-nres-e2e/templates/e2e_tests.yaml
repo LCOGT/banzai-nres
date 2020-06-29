@@ -153,4 +153,4 @@ spec:
               memory: "128M"
             limits:
               cpu: "1"
-              memory: "1Gi"
+              memory: "4Gi"

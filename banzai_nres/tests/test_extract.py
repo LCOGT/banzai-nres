@@ -55,7 +55,7 @@ class TestExtract:
         image = five_hundred_square_image(50000, number_traces, trace_width)
         expected_extracted_wavelength = np.max(image.wavelengths)
         image2 = NRESObservationFrame([EchelleSpectralCCDData(data=image.data, uncertainty=image.uncertainty,
-                                                              wavelengths=image.wavelengths,
+                                                              wavelengths=image.wavelengths, fibers=image.fibers,
                                                               meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
         image2.traces = image.traces
         image2.profile = np.ones_like(image.data)
@@ -77,7 +77,7 @@ class TestExtract:
         trace_width, number_traces = 20, 10
         image = five_hundred_square_image(100, number_traces, trace_width, read_noise=100)
         image2 = NRESObservationFrame([EchelleSpectralCCDData(data=image.data, uncertainty=image.uncertainty,
-                                                              wavelengths=image.wavelengths,
+                                                              wavelengths=image.wavelengths, fibers=image.fibers,
                                                               meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
         image2.traces = image.traces
         image2.profile = np.ones_like(image.data)
@@ -145,21 +145,22 @@ def two_order_image():
     wavelengths = np.ones_like(traces) * 5  # dummy wavelengths image that has values distinct from flux and traces.
     image = NRESObservationFrame([EchelleSpectralCCDData(data=data, uncertainty=uncertainty,
                                                          wavelengths=wavelengths, traces=traces,
+                                                         fibers={'fiber': np.arange(2), 'order': np.arange(2)},
                                                          meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
     return image
 
 
-def five_hundred_square_image(maxflux,number_traces,trace_width, read_noise=10):
+def five_hundred_square_image(maxflux, number_traces, trace_width, read_noise=10):
     traces = np.zeros((500, 500))
     data = np.ones_like(traces, dtype=float)
     profile = np.zeros_like(traces, dtype=float)
-    ix = np.arange(0, trace_width)
-    for i in range(0, number_traces):
-        traces[50 * i:50 * i + trace_width, :] = i
-        for j in range(0,trace_width):
-            data[50 * i + j, :] += maxflux * np.exp((-1.) * (ix[j]-trace_width/2.) ** 2/(trace_width/6.)**2)
+    ix = np.arange(trace_width)
+    for i in range(1, number_traces + 1):
+        traces[40 * i:40 * i + trace_width, :] = i
         for j in range(0, trace_width):
-            profile[50 * i + j, :] = data[50 * i + j, :] / np.sum(data[50 * i: 50 * i + trace_width, 0])
+            data[40 * i + j, :] += maxflux * np.exp((-1.) * (ix[j]-trace_width/2.) ** 2/(trace_width/6.)**2)
+        for j in range(0, trace_width):
+            profile[40 * i + j, :] = data[40 * i + j, :] / np.sum(data[40 * i: 40 * i + trace_width, 0])
 
     data += np.random.poisson(data)
     data += np.random.normal(0.0, read_noise, size=data.shape)
@@ -167,5 +168,7 @@ def five_hundred_square_image(maxflux,number_traces,trace_width, read_noise=10):
     wavelengths = np.ones_like(traces) * 5  # dummy wavelengths image that has values distinct from flux and traces.
     image = NRESObservationFrame([EchelleSpectralCCDData(data=data, uncertainty=uncertainty, traces=traces,
                                                          profile=profile, wavelengths=wavelengths,
-                                                         meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
+                                                         meta={'OBJECTS': 'tung&tung&none'},
+                                                         fibers={'fiber': np.arange(number_traces),
+                                                                 'order': np.arange(number_traces)})], 'foo.fits')
     return image
