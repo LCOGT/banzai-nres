@@ -70,12 +70,11 @@ def cross_correlate_over_traces(image, orders_to_use, velocities, template):
 
     for i in orders_to_use:
         logger.info(f'Cross correlating for order: {i}', image=image)
-        order = image.spectrum[np.logical_and(image.spectrum['fiber'] == image.science_fiber,
-                                              image.spectrum['order'] == i)][0]
+        order = image.spectrum[image.science_fiber, i]
 
         # Only pass in the given wavelength range +- 1 Angstrom to boost performance
-        order_indices = np.logical_and(template['wavelength'] >= np.min(order['wavelength'] - 1.0),
-                                       template['wavelength'] <= np.max(order['wavelength'] + 1.0))
+        order_indices = np.logical_and(template['wavelength'] >= np.min(order['wavelength']) - 1.0,
+                                       template['wavelength'] <= np.max(order['wavelength']) + 1.0)
         x_cor = cross_correlate(velocities, order['wavelength'], order['flux'], order['uncertainty'],
                                 template['wavelength'][order_indices], template['flux'][order_indices])
         ccfs.append({'order': i, 'v': velocities, 'xcor': x_cor})
@@ -110,6 +109,7 @@ class RVCalculator(Stage):
         rv_measured = stats.sigma_clipped_mean(rvs_per_order, 3.0) * 1000
 
         # TODO: Add ra and dec to observation frame object
+        # Note: the RA and DEC from the header are where the telescope thinks it is pointing, not the requested RA/Dec
         # Compute the barycentric RV and observing time corrections
         rv_correction, bjd_tdb = barycentric_correction(image.dateobs, image.exptime,
                                                         image.meta['RA'], image.meta['DEC'],

@@ -1,9 +1,8 @@
-from banzai_nres.frames import NRESObservationFrame, EchelleSpectralCCDData
+from banzai_nres.frames import NRESObservationFrame, EchelleSpectralCCDData, Spectrum1D
 from banzai.data import HeaderOnly
 from banzai import context
 
 import numpy as np
-from astropy.table import Table
 
 
 def test_get_num_lit_fibers():
@@ -15,7 +14,7 @@ def test_get_num_lit_fibers():
 
 def test_to_fits():
     data = np.ones((2, 2))
-    spec = Table({'flux': np.arange(10)})
+    spec = Spectrum1D({'fiber': 0, 'order': 1, 'flux': np.arange(10)})
     image = EchelleSpectralCCDData(data=data, uncertainty=2 * data,
                                    traces=3 * data, weights=4 * data,
                                    background=5 * data, spectrum=spec,
@@ -29,4 +28,4 @@ def test_to_fits():
         if name != '1DSPEC':
             assert np.allclose(hdulist[i].data, getattr(image, attribute[name]))
         else:
-            np.allclose(hdulist[i].data['flux'], image.spectrum['flux'])
+            assert np.allclose(hdulist[i].data[0]['flux'], image.spectrum[0, 1]['flux'])

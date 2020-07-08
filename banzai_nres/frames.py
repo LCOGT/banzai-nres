@@ -9,8 +9,30 @@ import numpy as np
 from astropy.table import Table
 from typing import Union
 from astropy.io import fits
+from types import SimpleNamespace
+
 
 logger = logging.getLogger('banzai')
+
+
+class Spectrum1D:
+    def __init__(self, data):
+        self._table = Table(data)
+        self._table['mask'] = np.array([row['wavelength'] == 0.0 for row in self._table], dtype=np.uint8)
+
+    def __getitem__(self, item):
+        """
+        Get the spectrum given a fiber and order
+        :param item: tuple of fiber, order
+        :return: SimpleNamespace
+        """
+        fiber, order = item
+        row = self._table[np.logical_and(self._table['fiber'] == fiber, self._table['order'] == order)][0]
+        good_pixels = row['mask'] == 0
+        return SimpleNamespace(**{column: row[column][good_pixels] for column in row.colnames if column != 'mask'})
+
+    def to_fits(self, extname):
+        return fits.BinTableHDU(self._table, name=extname, header=fits.Header({'EXTNAME': extname}))
 
 
 class NRESObservationFrame(LCOObservationFrame):
@@ -242,7 +264,7 @@ class EchelleSpectralCCDData(CCDData):
                                                     extension_version=self.meta.get('EXTVER')))
         if self.spectrum is not None:
             extname = '1DSPEC'
-            hdu_list.append(fits.BinTableHDU(self.spectrum, name=extname, header=fits.Header({'EXTNAME': extname})))
+            hdu_list.append(self.spectrum.to_fits(extname))
         if self.blaze is not None:
             extname = 'BLAZE'
             hdu_list.append(fits.BinTableHDU(self.blaze, name=extname, header=fits.Header({'EXTNAME': extname})))
