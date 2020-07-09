@@ -1,8 +1,7 @@
 import numpy as np
-from astropy.table import Table
 
 from banzai.stages import Stage
-from banzai_nres.frames import EchelleSpectralCCDData
+from banzai_nres.frames import EchelleSpectralCCDData, Spectrum1D
 from banzai_nres.utils.trace_utils import get_trace_region
 import logging
 
@@ -32,9 +31,9 @@ class WeightedExtract(Stage):
             # get the average wavelength: Sum wavelengths weighted by 1 over the vertical width of the trace (e.g. 1/10)
             wavelength[i, x_extent] = self.extract_order(image.wavelengths[this_trace], weights=1/image.wavelengths[this_trace].shape[0])
 
-        image.spectrum = Table({'id': trace_ids, 'order': image.fibers['order'],
-                                'fiber': image.fibers['fiber'], 'wavelength': wavelength,
-                                'flux': flux, 'uncertainty': np.sqrt(variance)})
+        image.spectrum = Spectrum1D({'id': trace_ids, 'order': image.fibers['order'],
+                                     'fiber': image.fibers['fiber'], 'wavelength': wavelength,
+                                     'flux': flux, 'uncertainty': np.sqrt(variance)})
         image.fibers = None
         return image
 
