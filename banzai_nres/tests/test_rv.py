@@ -3,7 +3,7 @@ import numpy as np
 import mock
 from astropy.io import fits
 from banzai_nres.frames import NRESObservationFrame
-from banzai_nres.frames import EchelleSpectralCCDData
+from banzai_nres.frames import EchelleSpectralCCDData, Spectrum1D
 from types import SimpleNamespace
 from astropy.table import Table
 
@@ -75,7 +75,7 @@ def test_rv(mock_fits, mock_db):
                'flux': noisy_flux[order], 'uncertainty': uncertainty[order], 'fiber': 0, 'order': i + 75}
         spectrum.append(row)
 
-    image = NRESObservationFrame([EchelleSpectralCCDData(np.zeros((1, 1)), meta=header, spectrum=Table(spectrum))],
+    image = NRESObservationFrame([EchelleSpectralCCDData(np.zeros((1, 1)), meta=header, spectrum=Spectrum1D(spectrum))],
                                  'test.fits')
     image.instrument = SimpleNamespace()
     image.instrument.site = 'npt'

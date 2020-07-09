@@ -14,7 +14,7 @@ def test_get_num_lit_fibers():
 
 def test_to_fits():
     data = np.ones((2, 2))
-    spec = Spectrum1D({'fiber': 0, 'order': 1, 'flux': np.arange(10)})
+    spec = Spectrum1D({'fiber': [0], 'order': [1], 'flux': [np.arange(10)], 'wavelength': [np.arange(10)]})
     image = EchelleSpectralCCDData(data=data, uncertainty=2 * data,
                                    traces=3 * data, weights=4 * data,
                                    background=5 * data, spectrum=spec,
@@ -28,4 +28,4 @@ def test_to_fits():
         if name != '1DSPEC':
             assert np.allclose(hdulist[i].data, getattr(image, attribute[name]))
         else:
-            assert np.allclose(hdulist[i].data[0]['flux'], image.spectrum[0, 1]['flux'])
+            assert np.allclose(hdulist[i].data[0]['flux'][1:], image.spectrum[0, 1]['flux'])

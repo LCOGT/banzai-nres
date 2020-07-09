@@ -9,7 +9,6 @@ import numpy as np
 from astropy.table import Table
 from typing import Union
 from astropy.io import fits
-from types import SimpleNamespace
 
 
 logger = logging.getLogger('banzai')
@@ -24,12 +23,13 @@ class Spectrum1D:
         """
         Get the spectrum given a fiber and order
         :param item: tuple of fiber, order
-        :return: SimpleNamespace
+        :return: dict
         """
         fiber, order = item
         row = self._table[np.logical_and(self._table['fiber'] == fiber, self._table['order'] == order)][0]
         good_pixels = row['mask'] == 0
-        return SimpleNamespace(**{column: row[column][good_pixels] for column in row.colnames if column != 'mask'})
+        return {column: row[column][good_pixels] if isinstance(row[column], np.ndarray) else row[column]
+                for column in row.colnames if column != 'mask'}
 
     def to_fits(self, extname):
         return fits.BinTableHDU(self._table, name=extname, header=fits.Header({'EXTNAME': extname}))

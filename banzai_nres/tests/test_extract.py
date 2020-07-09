@@ -37,17 +37,17 @@ class TestExtract:
         output_image = stage.do_stage(image)
         spectrum = output_image.spectrum
 
-        assert np.allclose(spectrum['flux'][0], expected_extracted_flux)
-        assert np.allclose(spectrum['wavelength'][0], expected_extracted_wavelength)
-        assert np.allclose(spectrum['uncertainty'][0], expected_extracted_uncertainty)
-        assert np.allclose(spectrum['id'][0], 1)
+        assert np.allclose(spectrum[0, 0]['flux'], expected_extracted_flux)
+        assert np.allclose(spectrum[0, 0]['wavelength'], expected_extracted_wavelength)
+        assert np.allclose(spectrum[0, 0]['uncertainty'], expected_extracted_uncertainty)
+        assert np.allclose(spectrum[0, 0]['id'], 1)
 
-        assert np.allclose(spectrum['flux'][1][1:-1], expected_extracted_flux)
-        assert np.allclose(spectrum['wavelength'][1][1:-1], expected_extracted_wavelength)
-        assert np.allclose(spectrum['flux'][1][[0, -1]], 0)
-        assert np.allclose(spectrum['uncertainty'][1:-1], expected_extracted_uncertainty)
-        assert np.allclose(spectrum['uncertainty'][1][[0, -1]], 0)
-        assert np.allclose(spectrum['id'][1], 2)
+        assert np.allclose(spectrum[1, 1]['flux'][1:-1], expected_extracted_flux)
+        assert np.allclose(spectrum[1, 1]['wavelength'][1:-1], expected_extracted_wavelength)
+        assert len(spectrum[1, 1]['flux']) == image.traces.shape[1] - 2
+        assert np.allclose(spectrum[1, 1]['uncertainty'][1:-1], expected_extracted_uncertainty)
+        assert len(spectrum[1, 1]['uncertainty']) == image.traces.shape[1] - 2
+        assert np.allclose(spectrum[1, 1]['id'], 2)
 
     @pytest.mark.integration
     def test_extract_in_poisson_regime(self):
@@ -67,10 +67,10 @@ class TestExtract:
         stage2 = WeightedExtract(input_context)
         optimal_image = stage2.do_stage(image)
         box_image = stage2.do_stage(image2)
-        assert np.allclose(optimal_image.spectrum['flux'], box_image.spectrum['flux'], rtol=0.05)
-        assert np.allclose(optimal_image.spectrum['wavelength'][0][100:-100], expected_extracted_wavelength)
-        assert np.allclose(optimal_image.spectrum['wavelength'][2][100:-100], expected_extracted_wavelength)
-        assert np.allclose(optimal_image.spectrum['uncertainty'], box_image.spectrum['uncertainty'], rtol=0.05)
+        for i in range(1, number_traces + 1):
+            assert np.allclose(optimal_image.spectrum[i, i]['flux'], box_image.spectrum[i, i]['flux'], rtol=0.05)
+            assert np.allclose(optimal_image.spectrum[i, i]['wavelength'], expected_extracted_wavelength)
+            assert np.allclose(optimal_image.spectrum[i, i]['uncertainty'], box_image.spectrum[i, i]['uncertainty'], rtol=0.05)
 
     @pytest.mark.integration
     def test_extract_in_readnoise_regime(self):
@@ -89,9 +89,10 @@ class TestExtract:
         stage2 = WeightedExtract(input_context)
         optimal_image = stage2.do_stage(image)
         box_image = stage2.do_stage(image2)
-        optimal_median_sn = np.median(optimal_image.spectrum['flux'] / optimal_image.spectrum['uncertainty'])
-        box_median_sn = np.median(box_image.spectrum['flux'] / box_image.spectrum['uncertainty'])
-        assert optimal_median_sn > 1.45 * box_median_sn
+        for i in range(1, number_traces + 1):
+            optimal_median_sn = np.median(optimal_image.spectrum[i, i]['flux'] / optimal_image.spectrum[i,i]['uncertainty'])
+            box_median_sn = np.median(box_image.spectrum[i, i]['flux'] / box_image.spectrum[i, i]['uncertainty'])
+            assert optimal_median_sn > 1.45 * box_median_sn
 
 
 class TestGetWeights:
@@ -126,9 +127,9 @@ class TestGetWeights:
 
         stage = GetOptimalExtractionWeights(input_context)
         weights = stage.weights(profile,variance,mask)
-        #check that the weights in the order are 1/width of the order:
+        # check that the weights in the order are 1/width of the order:
         assert np.allclose(weights[np.isclose(profile,1)],1./3.)
-        #check that the weights of the area with zero profile are zero:
+        # check that the weights of the area with zero profile are zero:
         assert np.allclose(weights[np.isclose(profile,0)],0)
 
 
@@ -169,6 +170,6 @@ def five_hundred_square_image(maxflux, number_traces, trace_width, read_noise=10
     image = NRESObservationFrame([EchelleSpectralCCDData(data=data, uncertainty=uncertainty, traces=traces,
                                                          profile=profile, wavelengths=wavelengths,
                                                          meta={'OBJECTS': 'tung&tung&none'},
-                                                         fibers={'fiber': np.arange(number_traces),
-                                                                 'order': np.arange(number_traces)})], 'foo.fits')
+                                                         fibers={'fiber': np.arange(number_traces) + 1,
+                                                                 'order': np.arange(number_traces) + 1})], 'foo.fits')
     return image
