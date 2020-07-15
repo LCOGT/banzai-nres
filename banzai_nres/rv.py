@@ -11,6 +11,7 @@ from astropy.coordinates import SkyCoord, EarthLocation, solar_system_ephemeris
 from astropy import units
 from banzai.utils import stats
 import logging
+from banzai_nres.fitting import fit_polynomial
 
 
 logger = logging.getLogger('banzai')
@@ -75,8 +76,14 @@ def cross_correlate_over_traces(image, orders_to_use, velocities, template):
         # Only pass in the given wavelength range +- 1 Angstrom to boost performance
         order_indices = np.logical_and(template['wavelength'] >= np.min(order['wavelength']) - 1.0,
                                        template['wavelength'] <= np.max(order['wavelength']) + 1.0)
-        x_cor = cross_correlate(velocities, order['wavelength'], order['flux'], order['uncertainty'],
-                                template['wavelength'][order_indices], template['flux'][order_indices])
+        template_to_fit = {'wavelength': template['wavelength'][order_indices], 'flux': template['flux'][order_indices]}
+        # Assume that the models are about S/N = 1000
+        template_error = 1e-3 * template_to_fit['flux']
+        continuum_model = fit_polynomial(template_to_fit['flux'], template_error, x=template_to_fit['wavelength'])
+        normalized_template = {'wavelength': template_to_fit['wavelength'],
+                               'flux': template_to_fit['flux'] / continuum_model(template_to_fit['wavelength'])}
+        x_cor = cross_correlate(velocities, order['wavelength'], order['normflux'], order['uncertainty'],
+                                normalized_template['wavelength'], normalized_template['flux'])
         ccfs.append({'order': i, 'v': velocities, 'xcor': x_cor})
     return Table(ccfs)
 
