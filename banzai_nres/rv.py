@@ -82,7 +82,7 @@ def cross_correlate_over_traces(image, orders_to_use, velocities, template):
         continuum_model = fit_polynomial(template_to_fit['flux'], template_error, x=template_to_fit['wavelength'])
         normalized_template = {'wavelength': template_to_fit['wavelength'],
                                'flux': template_to_fit['flux'] / continuum_model(template_to_fit['wavelength'])}
-        x_cor = cross_correlate(velocities, order['wavelength'], order['normflux'], order['uncertainty'],
+        x_cor = cross_correlate(velocities, order['wavelength'], order['normflux'], order['normuncertainty'],
                                 normalized_template['wavelength'], normalized_template['flux'])
         ccfs.append({'order': i, 'v': velocities, 'xcor': x_cor})
     return Table(ccfs)
