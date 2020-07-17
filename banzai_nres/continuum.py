@@ -5,7 +5,7 @@ from banzai_nres.fitting import fit_polynomial
 
 class ContinuumNormalizer(Stage):
     def do_stage(self, image) -> NRESObservationFrame:
-        for fiber, order in image.spectrum.orders:
+        for fiber, order in zip(image.spectrum.orders):
             spectrum = image.spectrum[fiber, order]
             normalized_flux = spectrum['flux'] / spectrum['blaze']
             normalized_error = spectrum['uncertainty'] / spectrum['blaze']
