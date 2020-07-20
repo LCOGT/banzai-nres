@@ -40,8 +40,11 @@ def test_cross_correlate():
 @mock.patch('banzai.dbs.get_site')
 @mock.patch('banzai_nres.rv.fits.open')
 def test_rv(mock_fits, mock_db):
-    # Make fake data from orders 74-101
-    test_wavelengths = np.arange(4500.0, 6500.0, 0.01)
+    num_orders = 5
+    lam_per_order = 70
+    res = 0.1
+    # Make fake data
+    test_wavelengths = np.arange(4500.0, 4500 + num_orders * lam_per_order, res)
     flux = np.ones(test_wavelengths.shape) * 1000
 
     read_noise = 10.0
@@ -69,10 +72,11 @@ def test_rv(mock_fits, mock_db):
 
     # Each NRES order is ~70 Angstroms wide
     spectrum = []
-    for i in range(26):
-        order = slice(i * 7000, (i + 1) * 7000, 1)
+    dx = int(lam_per_order/res)
+    for i in range(5):
+        order = slice(i * dx, (i + 1) * dx, 1)
         row = {'wavelength': test_wavelengths[order] * (1.0 + true_v / c),
-               'flux': noisy_flux[order], 'uncertainty': uncertainty[order], 'fiber': 0, 'order': i + 75}
+               'flux': noisy_flux[order], 'uncertainty': uncertainty[order], 'fiber': 0, 'order': i}
         spectrum.append(row)
 
     image = NRESObservationFrame([EchelleSpectralCCDData(np.zeros((1, 1)), meta=header, spectrum=Table(spectrum))],
@@ -83,6 +87,7 @@ def test_rv(mock_fits, mock_db):
 
     # Run the RV code
     stage = RVCalculator(SimpleNamespace(db_address='foo'))
+    stage.MIN_ORDER_TO_CORRELATE, stage.MAX_ORDER_TO_CORRELATE = 0, num_orders - 1
     image = stage.do_stage(image)
 
     # Assert that the true_v + rv_correction is what is in the header within 5 m/s
