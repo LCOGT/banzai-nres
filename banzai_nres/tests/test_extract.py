@@ -144,7 +144,8 @@ def two_order_image():
     image = NRESObservationFrame([EchelleSpectralCCDData(data=data, uncertainty=uncertainty,
                                                          wavelengths=wavelengths, traces=traces,
                                                          fibers={'fiber': np.arange(2), 'order': np.arange(2)},
-                                                         blaze={'id': np.arange(2), 'blaze': [np.arange(20), np.arange(20)]},
+                                                         blaze={'id': np.arange(2), 'blaze': [np.arange(20), np.arange(20)],
+                                                                'blaze_error': [np.arange(20), np.arange(20)]},
                                                          meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
     return image
 
@@ -169,7 +170,8 @@ def five_hundred_square_image(maxflux, number_traces, trace_width, read_noise=10
                                                          profile=profile, wavelengths=wavelengths,
                                                          meta={'OBJECTS': 'tung&tung&none'},
                                                          blaze={'id': np.arange(number_traces) + 1,
-                                                                'blaze': [np.ones(traces.shape[1]) for i in range(number_traces)]},
+                                                                'blaze': [np.ones(traces.shape[1]) for i in range(number_traces)],
+                                                                'blaze_error': [np.ones(traces.shape[1]) for i in range(number_traces)]},
                                                          fibers={'fiber': np.arange(number_traces) + 1,
                                                                  'order': np.arange(number_traces) + 1})], 'foo.fits')
     return image
