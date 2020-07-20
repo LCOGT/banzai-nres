@@ -8,6 +8,7 @@ class ProfileFitter(Stage):
     def do_stage(self, image):
         image.profile = np.zeros_like(image.data)
         blazes = np.zeros((image.num_traces, image.data.shape[1]), dtype=float)
+        blazes_errors = np.zeros((image.num_traces, image.data.shape[1]), dtype=float)
         trace_ids = range(1, image.num_traces + 1)
         for i, trace_id in enumerate(trace_ids):
             # Extract the pixels from the spectrum extension in that order
@@ -39,6 +40,7 @@ class ProfileFitter(Stage):
             image.data[this_trace] /= np.median(this_trace)
             x_extent = slice(np.min(this_trace[1]), np.max(this_trace[1]) + 1)  # get the horizontal (x) extent of the trace.
             blazes[i, x_extent] = blaze
-        image.blaze = Table({'id': trace_ids, 'blaze': blazes, 'blaze_error': blaze_errors})
+            blazes_errors[i, x_extent] = blaze_errors
+        image.blaze = Table({'id': trace_ids, 'blaze': blazes, 'blaze_error': blazes_errors})
 
         return image

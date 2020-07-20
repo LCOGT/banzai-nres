@@ -13,8 +13,8 @@ def test_do_stage(mock_fit_polynomial):
     # make a single order spectrum
     flux = np.arange(1, 101)*2
     x = np.arange(1, 101)
-    spectrum = Table({'wavelength': [x, 2*x], 'flux': [flux, 2*flux], 'blaze': [flux, 2*flux],
-                      'uncertainty': [flux, 2*flux], 'fiber': [0, 0], 'order': [1, 2]})
+    spectrum = Table({'wavelength': [x, 2*x], 'flux': [flux, 2 * flux], 'blaze': [flux, 2 * flux],
+                      'blaze_error': [flux, 2 * flux], 'uncertainty': [flux, 2*flux], 'fiber': [0, 0], 'order': [1, 2]})
     image = NRESObservationFrame([EchelleSpectralCCDData(np.zeros((1, 1)), meta={'OBJECTS': 'tung&tung&none'},
                                                          spectrum=Spectrum1D(spectrum))],
                                  'test.fits')
