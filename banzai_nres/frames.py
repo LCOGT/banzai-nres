@@ -9,6 +9,7 @@ import numpy as np
 from astropy.table import Table
 from typing import Union
 from astropy.io import fits
+import os
 
 
 logger = logging.getLogger('banzai')
@@ -42,6 +43,10 @@ class NRESObservationFrame(LCOObservationFrame):
 
     def num_lit_fibers(self):
         return 1 * self.fiber0_lit + 1 * self.fiber1_lit + 1 * self.fiber2_lit
+
+    def get_output_directory(self, runtime_context) -> str:
+        return os.path.join(runtime_context.processed_path, self.instrument.site,
+                            self.instrument.name, self.epoch, 'processed')
 
     @property
     def science_fiber(self):
