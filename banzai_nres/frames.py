@@ -35,12 +35,14 @@ class Spectrum1D:
         fiber, order, column_name = key
         if column_name not in self._table.colnames:
             self._table.add_column([np.zeros_like(row['flux']) for row in self._table], name=column_name)
-        row = self._table[np.logical_and(self._table['fiber'] == fiber, self._table['order'] == order)][0]
-        good_pixels = row['mask'] == 0
-        row[column_name][good_pixels] = value
+        correct_row = np.where(np.logical_and(self._table['fiber'] == fiber, self._table['order'] == order))[0][0]
+        good_pixels = self._table[correct_row]['mask'] == 0
+        # call column name first then the logical bool array for the astropy table to actually set the values
+        self._table[column_name][correct_row, good_pixels] = value
+
 
     @property
-    def orders(self):
+    def fibers_and_orders(self):
         return self._table['fiber'], self._table['order']
 
     def to_fits(self, extname):

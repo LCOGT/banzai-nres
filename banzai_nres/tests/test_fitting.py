@@ -26,8 +26,8 @@ class TestFitPolynomial:
 
     def test_with_noise(self):
         best_fit = fit_polynomial(self.continuum + self.noise, self.continuum_error, x=self.x)
-        assert np.allclose(best_fit(self.x), self.continuum, atol=5)
+        assert np.allclose(best_fit(self.x), self.continuum, atol=self.sigma/2)
 
     def test_with_noise_and_outliers(self):
         best_fit = fit_polynomial(self.continuum + self.noise + self.outliers, self.continuum_error, x=self.x)
-        assert np.allclose(best_fit(self.x), self.continuum, atol=5)
+        assert np.allclose(best_fit(self.x), self.continuum, atol=self.sigma/2)

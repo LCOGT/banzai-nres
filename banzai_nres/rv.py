@@ -74,9 +74,9 @@ def cross_correlate_over_traces(image, orders_to_use, velocities, template):
         order = image.spectrum[image.science_fiber, i]
 
         # Only pass in the given wavelength range +- 1 Angstrom to boost performance
-        order_indices = np.logical_and(template['wavelength'] >= np.min(order['wavelength']) - 1.0,
-                                       template['wavelength'] <= np.max(order['wavelength']) + 1.0)
-        template_to_fit = {'wavelength': template['wavelength'][order_indices], 'flux': template['flux'][order_indices]}
+        relevant_region = np.logical_and(template['wavelength'] >= np.min(order['wavelength']) - 1.0,
+                                         template['wavelength'] <= np.max(order['wavelength']) + 1.0)
+        template_to_fit = {'wavelength': template['wavelength'][relevant_region], 'flux': template['flux'][relevant_region]}
         # Assume that the models are about S/N = 1000
         template_error = 1e-3 * template_to_fit['flux']
         continuum_model = fit_polynomial(template_to_fit['flux'], template_error, x=template_to_fit['wavelength'])
