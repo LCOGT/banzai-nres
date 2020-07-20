@@ -40,11 +40,12 @@ def test_cross_correlate():
 @mock.patch('banzai.dbs.get_site')
 @mock.patch('banzai_nres.rv.fits.open')
 def test_rv(mock_fits, mock_db):
+    # parameters that define the test data
     num_orders = 5
     lam_per_order = 70
     res = 0.1
     # Make fake data
-    test_wavelengths = np.arange(4500.0, 4500 + num_orders * lam_per_order, res)
+    test_wavelengths = np.arange(4500.0, 4500 + num_orders * lam_per_order + 100, res)
     flux = np.ones(test_wavelengths.shape) * 1000
 
     read_noise = 10.0
