@@ -90,14 +90,16 @@ def cross_correlate_over_traces(image, orders_to_use, velocities, template):
 
 class RVCalculator(Stage):
     TEMPLATE_FILENAME = pkg_resources.resource_filename('banzai_nres', 'data/g2v_template.fits')
+    MIN_ORDER_TO_CORRELATE = 75
+    MAX_ORDER_TO_CORRELATE = 101
 
     def do_stage(self, image) -> ObservationFrame:
         # Load in the template
         template_hdu = fits.open(self.TEMPLATE_FILENAME)
 
         template = {'wavelength': template_hdu[1].data['wavelength'], 'flux': template_hdu[1].data['flux']}
-        # This is mostly arbitrary. Just pick orders near the center of the detector
-        orders_to_use = np.arange(75, 101, 1)
+        # Pick orders near the center of the detector that have a high Signal to noise and are free of tellurics.
+        orders_to_use = np.arange(self.MIN_ORDER_TO_CORRELATE, self.MAX_ORDER_TO_CORRELATE, 1)
 
         # for steps in 1 km/s from -2000 to +2000 km/s
         velocities = np.arange(-2000, 2001, 1)
