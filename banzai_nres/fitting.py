@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.interpolate import SmoothBivariateSpline, UnivariateSpline
 from statsmodels.robust.norms import HuberT
+from astropy.modeling import fitting, polynomial
 
 
 def fit_smooth_spline(y, error, mask=None, n_iter=1, x=None, sigma=5):
@@ -38,4 +39,28 @@ def fit_smooth_spline(y, error, mask=None, n_iter=1, x=None, sigma=5):
 
         # Iteratively reweight to reject outliers
         weights = huber_t.weights(np.abs(y_to_fit - best_fit(*x_to_fit, **kwargs)) / error_to_fit) / error_to_fit
+    return best_fit
+
+
+def fit_polynomial(y, error, mask=None, n_iter=5, x=None, sigma=5, order=3, domain=None):
+    if mask is None:
+        mask = np.zeros(y.shape, dtype=bool)
+
+    if x is None:
+        x = np.arange(len(y), dtype=float)
+    y_to_fit = y[np.logical_not(mask)]
+    error_to_fit = error[np.logical_not(mask)]
+    x_to_fit = x[np.logical_not(mask)]
+    # Start with variance weighting
+    weights = error_to_fit ** -2.0
+    huber_t = HuberT(t=sigma)
+
+    fitter = fitting.LinearLSQFitter()
+    model = polynomial.Legendre1D(order, domain=domain)
+
+    for i in range(n_iter):
+        best_fit = fitter(model, x_to_fit, y_to_fit, weights=weights)
+
+        # Iteratively reweight to reject outliers
+        weights = huber_t.weights(np.abs(y_to_fit - best_fit(x_to_fit)) / error_to_fit) / error_to_fit ** 2.0
     return best_fit

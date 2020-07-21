@@ -32,6 +32,20 @@ class Spectrum1D:
         return {column: row[column][good_pixels] if isinstance(row[column], np.ndarray) else row[column]
                 for column in row.colnames if column != 'mask'}
 
+    def __setitem__(self, key, value):
+        fiber, order, column_name = key
+        if column_name not in self._table.colnames:
+            self._table.add_column([np.zeros_like(row['flux']) for row in self._table], name=column_name)
+        correct_row = np.where(np.logical_and(self._table['fiber'] == fiber, self._table['order'] == order))[0][0]
+        good_pixels = self._table[correct_row]['mask'] == 0
+        # call column name first then the logical bool array for the astropy table to actually set the values
+        self._table[column_name][correct_row, good_pixels] = value
+
+
+    @property
+    def fibers_and_orders(self):
+        return self._table['fiber'], self._table['order']
+
     def to_fits(self, extname):
         return fits.BinTableHDU(self._table, name=extname, header=fits.Header({'EXTNAME': extname}))
 

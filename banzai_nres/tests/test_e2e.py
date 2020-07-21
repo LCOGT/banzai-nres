@@ -196,8 +196,8 @@ def init(configdb):
     dbs.populate_instrument_tables(db_address=os.environ["DB_ADDRESS"], configdb_address='http://fakeconfigdb')
     os.system(f'banzai_add_site --site elp --latitude 30.67986944 --longitude -104.015175 --elevation 2027 --timezone -6 --db-address={os.environ["DB_ADDRESS"]}')
     os.system(f'banzai_add_site --site lsc --latitude -30.1673833333 --longitude -70.8047888889 --elevation 2198 --timezone -4 --db-address={os.environ["DB_ADDRESS"]}')
-    os.system(f'banzai_add_instrument --site lsc --camera fl09 --name nres01 --camera-type 1m0-NRES-SciCam --db-address={os.environ["DB_ADDRESS"]}')
-    os.system(f'banzai_add_instrument --site elp --camera fl17 --name nres02 --camera-type 1m0-NRES-SciCam --db-address={os.environ["DB_ADDRESS"]}')
+    os.system(f'banzai_add_instrument --site lsc --camera fl09 --name nres01 --instrument-type 1m0-NRES-SciCam --db-address={os.environ["DB_ADDRESS"]}')
+    os.system(f'banzai_add_instrument --site elp --camera fl17 --name nres02 --instrument-type 1m0-NRES-SciCam --db-address={os.environ["DB_ADDRESS"]}')
     for instrument in INSTRUMENTS:
         for bpm_filename in glob(os.path.join(DATA_ROOT, instrument, 'bpm/*bpm*')):
             logger.info(f'adding bpm {bpm_filename} to the database')

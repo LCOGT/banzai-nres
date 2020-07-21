@@ -33,8 +33,11 @@ class WeightedExtract(Stage):
 
         image.spectrum = Spectrum1D({'id': trace_ids, 'order': image.fibers['order'],
                                      'fiber': image.fibers['fiber'], 'wavelength': wavelength,
-                                     'flux': flux, 'uncertainty': np.sqrt(variance)})
+                                     'flux': flux, 'uncertainty': np.sqrt(variance), 'blaze': image.blaze['blaze'],
+                                     'blaze_error': image.blaze['blaze_error']})
+        # Remove the fibers and the blaze extensions now that the info is stored in the extracted spectrum
         image.fibers = None
+        image.blaze = None
         return image
 
     @staticmethod

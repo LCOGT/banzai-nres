@@ -52,12 +52,11 @@ class TestExtract:
     @pytest.mark.integration
     def test_extract_in_poisson_regime(self):
         trace_width, number_traces = 20, 10
-        image = five_hundred_square_image(50000, number_traces, trace_width)
+        seed = 1408235915
+        image = five_hundred_square_image(50000, number_traces, trace_width, seed=seed)
         expected_extracted_wavelength = np.max(image.wavelengths)
-        image2 = NRESObservationFrame([EchelleSpectralCCDData(data=image.data, uncertainty=image.uncertainty,
-                                                              wavelengths=image.wavelengths, fibers=image.fibers,
-                                                              meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
-        image2.traces = image.traces
+
+        image2 = five_hundred_square_image(50000, number_traces, trace_width, seed=seed)
         image2.profile = np.ones_like(image.data)
         input_context = context.Context({})
 
@@ -75,11 +74,9 @@ class TestExtract:
     @pytest.mark.integration
     def test_extract_in_readnoise_regime(self):
         trace_width, number_traces = 20, 10
-        image = five_hundred_square_image(100, number_traces, trace_width, read_noise=100)
-        image2 = NRESObservationFrame([EchelleSpectralCCDData(data=image.data, uncertainty=image.uncertainty,
-                                                              wavelengths=image.wavelengths, fibers=image.fibers,
-                                                              meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
-        image2.traces = image.traces
+        seed = 192074123
+        image = five_hundred_square_image(100, number_traces, trace_width, read_noise=100, seed=seed)
+        image2 = five_hundred_square_image(100, number_traces, trace_width, read_noise=100, seed=seed)
         image2.profile = np.ones_like(image.data)
         input_context = context.Context({})
 
@@ -147,11 +144,13 @@ def two_order_image():
     image = NRESObservationFrame([EchelleSpectralCCDData(data=data, uncertainty=uncertainty,
                                                          wavelengths=wavelengths, traces=traces,
                                                          fibers={'fiber': np.arange(2), 'order': np.arange(2)},
+                                                         blaze={'id': np.arange(2), 'blaze': [np.arange(20), np.arange(20)],
+                                                                'blaze_error': [np.arange(20), np.arange(20)]},
                                                          meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
     return image
 
 
-def five_hundred_square_image(maxflux, number_traces, trace_width, read_noise=10):
+def five_hundred_square_image(maxflux, number_traces, trace_width, read_noise=10, seed=None):
     traces = np.zeros((500, 500))
     data = np.ones_like(traces, dtype=float)
     profile = np.zeros_like(traces, dtype=float)
@@ -162,7 +161,7 @@ def five_hundred_square_image(maxflux, number_traces, trace_width, read_noise=10
             data[40 * i + j, :] += maxflux * np.exp((-1.) * (ix[j]-trace_width/2.) ** 2/(trace_width/6.)**2)
         for j in range(0, trace_width):
             profile[40 * i + j, :] = data[40 * i + j, :] / np.sum(data[40 * i: 40 * i + trace_width, 0])
-
+    np.random.seed(seed=seed)
     data += np.random.poisson(data)
     data += np.random.normal(0.0, read_noise, size=data.shape)
     uncertainty = np.sqrt(data + read_noise ** 2)
@@ -170,6 +169,9 @@ def five_hundred_square_image(maxflux, number_traces, trace_width, read_noise=10
     image = NRESObservationFrame([EchelleSpectralCCDData(data=data, uncertainty=uncertainty, traces=traces,
                                                          profile=profile, wavelengths=wavelengths,
                                                          meta={'OBJECTS': 'tung&tung&none'},
+                                                         blaze={'id': np.arange(number_traces) + 1,
+                                                                'blaze': [np.ones(traces.shape[1]) for i in range(number_traces)],
+                                                                'blaze_error': [np.ones(traces.shape[1]) for i in range(number_traces)]},
                                                          fibers={'fiber': np.arange(number_traces) + 1,
                                                                  'order': np.arange(number_traces) + 1})], 'foo.fits')
     return image
