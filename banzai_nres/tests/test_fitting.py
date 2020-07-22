@@ -1,5 +1,4 @@
 import numpy as np
-
 from banzai_nres.fitting import fit_polynomial
 
 
