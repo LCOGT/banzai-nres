@@ -44,6 +44,8 @@ def refine_traces(traces, image, weights=None):
         # Refit the centroids to reject cosmic rays etc, but only evaluate where the S/N is good
         x_center = np.arange(min(x2d[traces == i]), max(x2d[traces == i]) + 1, dtype=np.float)
         logger.info(f'Fitting a polynomial to order {i}', image=image)
+        # we chose order 5 based on visually inspecting the residuals between the trace centers and the model fit centers
+        # TODO we need to verify that an order 5 polynomial fit is the best thing to do.
         best_fit = fit_polynomial(y_center[x_center.astype(int)], y_center_errors[x_center.astype(int)], x=x_center, order=5)
         # TODO: extrapolate fit and go out to pixels that have a cumulative S/N = 10
         y_center = best_fit(x_center)
@@ -92,6 +94,10 @@ class TraceInitializer(Stage):
         for i, label in enumerate(true_labels):
             labeled_image[labeled_image == label] = i + 1
         return refine_traces(labeled_image, image, weights=labeled_image > 0)
+
+
+# TODO do flux weighted mean residuals across 10, 11, 20,21 30,31,.. 40, ..., 130
+#  use get_trace_region to check the residuals and that order 5 is correct.
 
 
 class TraceRefiner(Stage):
