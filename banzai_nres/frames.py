@@ -153,6 +153,14 @@ class NRESObservationFrame(LCOObservationFrame):
     def fibers(self, value):
         self.primary_hdu.fibers = value
 
+    @property
+    def ccf(self):
+        return self.primary_hdu.ccf
+
+    @ccf.setter
+    def ccf(self, value):
+        self.primary_hdu.ccf = value
+
 
 class NRESCalibrationFrame(LCOCalibrationFrame, NRESObservationFrame):
     def __init__(self, hdu_list: list, file_path: str, frame_id: int = None, grouping_criteria: list = None,
