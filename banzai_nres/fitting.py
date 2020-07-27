@@ -3,17 +3,21 @@ from statsmodels.robust.norms import HuberT
 from astropy.modeling import fitting, polynomial
 
 
-def fit_polynomial(y, error, mask=None, n_iter=5, x=None, sigma=5, order=3, domain=None):
+def fit_polynomial(y, error, mask=None, n_iter=5, x=None, sigma=5, order=3, domain=None, initial_weights=None):
     if mask is None:
         mask = np.zeros(y.shape, dtype=bool)
 
     if x is None:
         x = np.arange(len(y), dtype=float)
+
+    if initial_weights is None:
+        # Start with variance weighting if none supplied
+        initial_weights = error ** -2.0
     y_to_fit = y[np.logical_not(mask)]
     error_to_fit = error[np.logical_not(mask)]
     x_to_fit = x[np.logical_not(mask)]
-    # Start with variance weighting
-    weights = error_to_fit ** -2.0
+    weights = initial_weights[np.logical_not(mask)]
+    # instantiate fitter
     huber_t = HuberT(t=sigma)
 
     fitter = fitting.LinearLSQFitter()
