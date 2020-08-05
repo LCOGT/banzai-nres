@@ -14,7 +14,7 @@ def main():
     for root, dirs, files in os.walk(args.input_dir):
         for file in files:
             # Get the wavelength file
-            if 'wavelength' in file.lower():
+            if 'wave' in file.lower():
                 wavelength_filename = file
             elif file.endswith(".fits"):
                 model_files.append(file)
