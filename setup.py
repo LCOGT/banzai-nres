@@ -31,4 +31,4 @@ setup(name='lco-banzai-nres-e2e',
                                         'banzai_nres_make_master_calibrations=banzai_nres.main:nres_make_master_calibrations',
                                         'banzai_nres_add_bpm=banzai_nres.main:add_bpm',
                                         'banzai_nres_populate_bpms=banzai_nres.main:add_bpms_from_archive',
-                                        'banzai_nres_munge_phoenix:banzai_nres.data.munge_phoenix_models:main']})
+                                        'banzai_nres_munge_phoenix=banzai_nres.data.munge_phoenix_models:main']})
