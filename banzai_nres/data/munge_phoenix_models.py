@@ -4,6 +4,10 @@ import os
 import argparse
 
 
+def format_plus_minus(value, fmt):
+    output_str = f'{value:{fmt}}'
+    return output_str.replace('+', 'p').replace('-', 'm')
+
 def main():
     parser = argparse.ArgumentParser('This copies out the optical region 300nm - 1000nm into fresh files for BANZAI')
     parser.add_argument('--input-dir', dest='input_dir', help='Top level directory with the PHOENIX models')
@@ -32,7 +36,7 @@ def main():
         logg = hdu[0].header['PHXLOGG']
         metallicity = hdu[0].header['PHXM_H']
         alpha = hdu[0].header['PHXALPHA']
-        output_filename = f'phoenix-{int(Teff):05d}{logg:+0.1f}{metallicity:+0.1f}{alpha:+0.1f}.fits'
+        output_filename = f'phoenix-{format_plus_minus(int(Teff), "05d")}-{format_plus_minus(logg, "+0.1f")}-{format_plus_minus(metallicity, "+0.1f")}-{format_plus_minus(alpha, "+0.1f")}.fits'
         hdu.writeto(os.path.join(args.output_dir, output_filename))
 
     # Truncate and save the wavelength file
