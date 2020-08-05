@@ -32,7 +32,7 @@ def main():
         logg = hdu[0].header['PHXLOGG']
         metallicity = hdu[0].header['PHXM_H']
         alpha = hdu[0].header['PHXALPHA']
-        output_filename = f'phoenix-{Teff:04d}-{logg:0.1f}-{metallicity:0.1f}-{alpha:0.1f}.fits'
+        output_filename = f'phoenix-{int(Teff):04d}-{logg:0.1f}-{metallicity:0.1f}-{alpha:0.1f}.fits'
         hdu.writeto(os.path.join(args.output_dir, output_filename))
 
     # Truncate and save the wavelength file
