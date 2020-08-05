@@ -15,9 +15,9 @@ def main():
         for file in files:
             # Get the wavelength file
             if 'wave' in file.lower():
-                wavelength_filename = file
+                wavelength_filename = os.path.join(root, file)
             elif file.endswith(".fits"):
-                model_files.append(file)
+                model_files.append(os.path.join(root, file))
 
     # Find the indices that correspond to the optical region
     wavelength_hdu = fits.open(wavelength_filename)
