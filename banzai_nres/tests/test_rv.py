@@ -38,8 +38,8 @@ def test_cross_correlate():
 
 
 @mock.patch('banzai.dbs.get_site')
-@mock.patch('banzai_nres.rv.fits.open')
-def test_rv(mock_fits, mock_db):
+@mock.patch('banzai_nres.rv.phoenix_utils.load_phoenix_model')
+def test_rv(mock_model, mock_db):
     # parameters that define the test data
     num_orders = 5
     lam_per_order = 70
@@ -60,8 +60,7 @@ def test_rv(mock_fits, mock_db):
     noisy_flux += np.random.normal(0.0, read_noise, size=len(flux))
     uncertainty = np.sqrt(flux + read_noise**2.0)
 
-    mock_fits.return_value = fits.HDUList([fits.PrimaryHDU(),
-                                           fits.BinTableHDU(Table({'wavelength': test_wavelengths, 'flux': flux}))])
+    mock_model.return_value = {'wavelength': test_wavelengths, 'flux': flux}
     true_v = 1.205  # km / s
 
     # Make the fake image

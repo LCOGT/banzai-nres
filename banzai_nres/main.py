@@ -13,7 +13,8 @@ from banzai.celery import app, schedule_calibration_stacking
 import celery
 import celery.bin.beat
 from banzai.utils import date_utils, import_utils
-from banzai import calibrations, dbs, logs
+from banzai import calibrations, logs
+from banzai_nres import dbs
 
 import logging
 import argparse
@@ -109,3 +110,42 @@ def add_bpms_from_archive():
         if bpm_image is not None:
             bpm_image.is_master = True
             dbs.save_calibration_info(frame['filename'], bpm_image, args.db_address)
+
+
+def create_db():
+    """
+    Create the database structure.
+
+    This only needs to be run once on initialization of the database.
+    """
+    parser = argparse.ArgumentParser("Create the database.\n\n"
+                                     "This only needs to be run once on initialization of the database.")
+
+    parser.add_argument("--log-level", default='debug', choices=['debug', 'info', 'warning',
+                                                                 'critical', 'fatal', 'error'])
+    parser.add_argument('--db-address', dest='db_address',
+                        default='sqlite3:///test.db',
+                        help='Database address: Should be in SQLAlchemy form')
+    args = parser.parse_args()
+    logs.set_log_level(args.log_level)
+
+    dbs.create_db(args.db_address)
+
+
+def populate_phoenix_models():
+    parser = argparse.ArgumentParser("Populate the database with the Phoenix models.\n\n"
+                                     "This only needs to be run once on initialization of the database.")
+    parser.add_argument('--model-location', dest='model_location',
+                        help='Location of the phoenix models. \
+                        This should either be s3://bucket-name or an absolute directory path.')
+    parser.add_argument("--log-level", default='debug', choices=['debug', 'info', 'warning',
+                                                                 'critical', 'fatal', 'error'])
+    parser.add_argument('--db-address', dest='db_address',
+                        default='sqlite3:///test.db',
+                        help='Database address: Should be in SQLAlchemy form')
+    args = parser.parse_args()
+    logs.set_log_level(args.log_level)
+
+    dbs.create_db(args.db_address)
+    dbs.populate_phoenix_models(args.model_location, args.db_address)
+
