@@ -192,7 +192,7 @@ def run_check_if_stacked_calibrations_are_in_db(raw_filenames, calibration_type)
 @pytest.fixture(scope='module')
 @mock.patch('banzai.dbs.requests.get', return_value=FakeResponse(CONFIGDB_FILENAME))
 def init(configdb):
-    os.system(f'banzai_create_db --db-address={os.environ["DB_ADDRESS"]}')
+    os.system(f'banzai_nres_create_db --db-address={os.environ["DB_ADDRESS"]}')
     dbs.populate_instrument_tables(db_address=os.environ["DB_ADDRESS"], configdb_address='http://fakeconfigdb')
     os.system(f'banzai_add_site --site elp --latitude 30.67986944 --longitude -104.015175 --elevation 2027 --timezone -6 --db-address={os.environ["DB_ADDRESS"]}')
     os.system(f'banzai_add_site --site lsc --latitude -30.1673833333 --longitude -70.8047888889 --elevation 2198 --timezone -4 --db-address={os.environ["DB_ADDRESS"]}')
