@@ -148,4 +148,3 @@ def populate_phoenix_models():
 
     dbs.create_db(args.db_address)
     dbs.populate_phoenix_models(args.model_location, args.db_address)
-
