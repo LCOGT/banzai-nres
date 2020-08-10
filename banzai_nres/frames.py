@@ -41,7 +41,6 @@ class Spectrum1D:
         # call column name first then the logical bool array for the astropy table to actually set the values
         self._table[column_name][correct_row, good_pixels] = value
 
-
     @property
     def fibers_and_orders(self):
         return self._table['fiber'], self._table['order']
