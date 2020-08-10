@@ -11,7 +11,7 @@ class PhoenixModelLoader:
         _wavelengths = self.open_model_fits_file(settings.PHOENIX_WAVELENGTH_FILE_LOCATION,
                                                  settings.PHOENIX_WAVELENGTH_FILENAME)
 
-    def load_phoenix_model(self, db_address, T_effective, log_g, metallicity, alpha):
+    def load(self, db_address, T_effective, log_g, metallicity, alpha):
         # Load in the template
         model_record = get_phoenix_model_record(db_address, T_effective, log_g, metallicity, alpha)
         flux = self.open_model_fits_file(model_record.location, model_record.filename)
