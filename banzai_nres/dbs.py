@@ -4,6 +4,10 @@ import boto3
 import banzai.dbs
 import os
 from glob import glob
+import logging
+
+
+logger = logging.getLogger('banzai')
 
 
 class PhoenixModel(Base):
@@ -43,6 +47,7 @@ def populate_phoenix_models(model_location, db_address):
             if 'wave' in filename.lower():
                 continue
             equivalence_criteria = {'filename': filename}
+            # This naming convention assumes we follow the convention from the munge_phoenix_models.py code.
             _, T_effective, log_g, metallicity, alpha = os.path.splitext(filename)[0].split('_')
             record_attributes = {'filename': filename,
                                  'location': location,
@@ -61,4 +66,9 @@ def get_phoenix_model_record(db_address, T_effective, log_g, metallicity, alpha)
         query &= PhoenixModel.metallicity == metallicity
         query &= PhoenixModel.alpha == alpha
         model = db_session.query(PhoenixModel).filter(query).first()
+        if model is None:
+            logger.error('Phoenix model does not exist for these parameters',
+                         extra_tags={'T_effective': T_effective, 'log_g': log_g,
+                                     'metallicity': metallicity, 'alpha': alpha})
+            raise ValueError('Phoenix Model Missing')
     return model

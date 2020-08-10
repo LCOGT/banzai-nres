@@ -8,6 +8,7 @@ def format_plus_minus(value, fmt):
     output_str = f'{value:{fmt}}'
     return output_str.replace('+', 'p').replace('-', 'm')
 
+
 def main():
     parser = argparse.ArgumentParser('This copies out the optical region 300nm - 1000nm into fresh files for BANZAI')
     parser.add_argument('--input-dir', dest='input_dir', help='Top level directory with the PHOENIX models')
