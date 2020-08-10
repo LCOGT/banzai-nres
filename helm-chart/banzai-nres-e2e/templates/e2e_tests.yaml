@@ -101,6 +101,16 @@ spec:
               value: "fits_files"
             - name: OPENTSDB_PYTHON_METRICS_TEST_MODE
               value: "1"
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: banzai-nres-secrets
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: banzai-nres-secrets
+                  key: AWS_SECRET_ACCESS_KEY
           command:
             - celery
             - -A
@@ -141,6 +151,16 @@ spec:
               value: "fits_files"
             - name: OPENTSDB_PYTHON_METRICS_TEST_MODE
               value: "1"
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: banzai-nres-secrets
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: banzai-nres-secrets
+                  key: AWS_SECRET_ACCESS_KEY
           command:
             - banzai_nres_run_realtime_pipeline
             - "--db-address=sqlite:////archive/engineering/test.db"
