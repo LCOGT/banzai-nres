@@ -8,7 +8,7 @@ def pm_to_plus_minus(value):
 
 
 def filename_to_parameters(filename):
-    _, T_effective, log_g, metallicity, alpha = filename.split('-')
+    _, T_effective, log_g, metallicity, alpha = filename.replace('.fits', '').split('-')
     T_effective = int(pm_to_plus_minus(T_effective))
     log_g = float(pm_to_plus_minus(log_g))
     metallicity = float(pm_to_plus_minus(metallicity))
