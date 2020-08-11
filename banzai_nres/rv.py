@@ -1,7 +1,6 @@
 from banzai.stages import Stage
 from banzai.frames import ObservationFrame
 from banzai import dbs
-from astropy.io import fits
 import numpy as np
 from astropy.table import Table
 from astropy import constants
@@ -11,7 +10,7 @@ from astropy import units
 from banzai.utils import stats
 import logging
 from banzai_nres.fitting import fit_polynomial
-from banzai_nres.utils import phoenix_utils
+from banzai_nres import phoenix
 
 logger = logging.getLogger('banzai')
 
@@ -93,7 +92,7 @@ class RVCalculator(Stage):
 
     def do_stage(self, image) -> ObservationFrame:
         # Get a G2V template for the moment
-        phoenix_loader = phoenix_utils.PhoenixModelLoader()
+        phoenix_loader = phoenix.PhoenixModelLoader()
         template = phoenix_loader.load(self.runtime_context.db_address, 5700, 4.5, 0.0, 0.0)
         # Pick orders near the center of the detector that have a high Signal to noise and are free of tellurics.
         orders_to_use = np.arange(self.MIN_ORDER_TO_CORRELATE, self.MAX_ORDER_TO_CORRELATE, 1)

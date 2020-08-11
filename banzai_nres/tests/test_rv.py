@@ -37,7 +37,7 @@ def test_cross_correlate():
 
 
 @mock.patch('banzai.dbs.get_site')
-@mock.patch('banzai_nres.rv.phoenix_utils.PhoenixModelLoader')
+@mock.patch('banzai_nres.rv.phoenix.PhoenixModelLoader')
 def test_rv(mock_loader, mock_db):
     # parameters that define the test data
     num_orders = 5

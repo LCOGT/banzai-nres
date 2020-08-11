@@ -2,11 +2,7 @@ from astropy.io import fits
 import numpy as np
 import os
 import argparse
-
-
-def format_plus_minus(value, fmt):
-    output_str = f'{value:{fmt}}'
-    return output_str.replace('+', 'p').replace('-', 'm')
+from banzai_nres.utils import phoenix_utils
 
 
 def main():
@@ -37,7 +33,7 @@ def main():
         logg = hdu[0].header['PHXLOGG']
         metallicity = hdu[0].header['PHXM_H']
         alpha = hdu[0].header['PHXALPHA']
-        output_filename = f'phoenix-{format_plus_minus(int(Teff), "05d")}-{format_plus_minus(logg, "+0.1f")}-{format_plus_minus(metallicity, "+0.1f")}-{format_plus_minus(alpha, "+0.1f")}.fits'
+        output_filename = phoenix_utils.parameters_to_filename(Teff, logg, metallicity, alpha)
         hdu.writeto(os.path.join(args.output_dir, output_filename))
 
     # Truncate and save the wavelength file

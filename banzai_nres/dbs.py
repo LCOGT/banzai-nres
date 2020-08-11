@@ -5,6 +5,7 @@ import banzai.dbs
 import os
 from glob import glob
 import logging
+from banzai_nres.utils import phoenix_utils
 
 
 logger = logging.getLogger('banzai')
@@ -48,7 +49,7 @@ def populate_phoenix_models(model_location, db_address):
                 continue
             equivalence_criteria = {'filename': filename}
             # This naming convention assumes we follow the convention from the munge_phoenix_models.py code.
-            _, T_effective, log_g, metallicity, alpha = os.path.splitext(filename)[0].split('_')
+            T_effective, log_g, metallicity, alpha = phoenix_utils.filename_to_parameters(filename)
             record_attributes = {'filename': filename,
                                  'location': location,
                                  'T_effective': T_effective,
