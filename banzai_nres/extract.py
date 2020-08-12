@@ -20,6 +20,7 @@ class WeightedExtract(Stage):
         flux = np.zeros((image.num_traces, image.data.shape[1]), dtype=float)
         wavelength = np.zeros_like(flux, dtype=float)
         variance = np.zeros_like(flux, dtype=float)
+        mask = np.zeros_like(flux, dtype=np.uint8)
 
         trace_ids = np.arange(1, image.num_traces + 1)
         for i, trace_id in enumerate(trace_ids):
@@ -30,11 +31,12 @@ class WeightedExtract(Stage):
             variance[i, x_extent] = self.extract_order(image.uncertainty[this_trace] ** 2, image.weights[this_trace] ** 2)
             # get the average wavelength: Sum wavelengths weighted by 1 over the vertical width of the trace (e.g. 1/10)
             wavelength[i, x_extent] = self.extract_order(image.wavelengths[this_trace], weights=1/image.wavelengths[this_trace].shape[0])
+            mask[i, x_extent] = image.weights[this_trace].sum(axis=0) == 0.0
 
         image.spectrum = Spectrum1D({'id': trace_ids, 'order': image.fibers['order'],
                                      'fiber': image.fibers['fiber'], 'wavelength': wavelength,
                                      'flux': flux, 'uncertainty': np.sqrt(variance), 'blaze': image.blaze['blaze'],
-                                     'blaze_error': image.blaze['blaze_error']})
+                                     'blaze_error': image.blaze['blaze_error'], 'mask': mask})
         # Remove the fibers and the blaze extensions now that the info is stored in the extracted spectrum
         image.fibers = None
         image.blaze = None
