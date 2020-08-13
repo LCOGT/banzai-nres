@@ -17,6 +17,6 @@ def filename_to_parameters(filename):
 
 
 def parameters_to_filename(T_effective, log_g, metallicity, alpha):
-    filename =  f'phoenix-{plus_minus_to_pm(int(T_effective), "05d")}-{plus_minus_to_pm(log_g, "+0.1f")}'
+    filename = f'phoenix-{plus_minus_to_pm(int(T_effective), "05d")}-{plus_minus_to_pm(log_g, "+0.1f")}'
     filename += f'-{plus_minus_to_pm(metallicity, "+0.1f")}-{plus_minus_to_pm(alpha, "+0.1f")}.fits'
     return filename
