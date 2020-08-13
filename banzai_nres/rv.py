@@ -92,7 +92,7 @@ class RVCalculator(Stage):
 
     def do_stage(self, image) -> ObservationFrame:
         # Get a G2V template for the moment
-        phoenix_loader = phoenix.PhoenixModelLoader()
+        phoenix_loader = phoenix.PhoenixModelLoader(self.runtime_context.db_address))
         template = phoenix_loader.load(self.runtime_context.db_address, 5700, 4.5, 0.0, 0.0)
         # Pick orders near the center of the detector that have a high Signal to noise and are free of tellurics.
         orders_to_use = np.arange(self.MIN_ORDER_TO_CORRELATE, self.MAX_ORDER_TO_CORRELATE, 1)
