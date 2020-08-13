@@ -152,7 +152,3 @@ REDUCED_DATA_EXTENSION_TYPES = {
                                 'PROFILE': 'float32',
                                 'WAVELENGTH': 'float64',
                                 }
-
-
-PHOENIX_WAVELENGTH_FILE_LOCATION = os.getenv('PHOENIX_WAVELENGTH_FILE_LOCATION', 's3://banzai-nres-phoenix-models-lco-global')
-PHOENIX_WAVELENGTH_FILENAME = os.getenv('PHOENIX_WAVELENGTH_FILENAME', 'phoenix_wavelength.fits')

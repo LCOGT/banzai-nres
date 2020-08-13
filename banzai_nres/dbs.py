@@ -23,6 +23,14 @@ class PhoenixModel(Base):
     Index('idx_model', 'T_effective', 'log_g', 'metallicity', 'alpha')
 
 
+class ResourceFile(Base):
+    __tablename__ = 'resourcefiles'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    key = Column(String(100), unique=True, index=True)
+    filename = Column(String(100), unique=True)
+    location = Column(String(150))
+
+
 def create_nres_db(db_address):
     create_db(db_address)
 
@@ -46,7 +54,8 @@ def populate_phoenix_models(model_location, db_address):
                 location = os.path.dirname(model_file)
 
             if 'wave' in filename.lower():
-                continue
+                banzai.dbs.add_or_update_record(db_session, ResourceFile, {'key': 'phoenix_wavelengths'},
+                                                {'fileanme': filename, 'location': location, 'key': 'phoenix_wavelengths'})
             equivalence_criteria = {'filename': filename}
             # This naming convention assumes we follow the convention from the munge_phoenix_models.py code.
             T_effective, log_g, metallicity, alpha = phoenix_utils.filename_to_parameters(filename)
@@ -73,3 +82,9 @@ def get_phoenix_model_record(db_address, T_effective, log_g, metallicity, alpha)
                                      'metallicity': metallicity, 'alpha': alpha})
             raise ValueError('Phoenix Model Missing')
     return model
+
+
+def get_resource_file(db_address, key):
+    with banzai.dbs.get_session(db_address=db_address) as db_session:
+        resource_file = db_session.query(ResourceFile).filter(ResourceFile.key == key).first()
+    return resource_file
