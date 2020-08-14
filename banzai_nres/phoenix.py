@@ -1,4 +1,3 @@
-from banzai_nres import settings
 import os
 from astropy.io import fits
 import boto3
