@@ -55,7 +55,7 @@ def populate_phoenix_models(model_location, db_address):
 
             if 'wave' in filename.lower():
                 banzai.dbs.add_or_update_record(db_session, ResourceFile, {'key': 'phoenix_wavelengths'},
-                                                {'fileanme': filename, 'location': location, 'key': 'phoenix_wavelengths'})
+                                                {'filename': filename, 'location': location, 'key': 'phoenix_wavelengths'})
                 continue
             equivalence_criteria = {'filename': filename}
             # This naming convention assumes we follow the convention from the munge_phoenix_models.py code.
