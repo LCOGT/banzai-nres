@@ -192,12 +192,14 @@ def run_check_if_stacked_calibrations_are_in_db(raw_filenames, calibration_type)
 @pytest.fixture(scope='module')
 @mock.patch('banzai.dbs.requests.get', return_value=FakeResponse(CONFIGDB_FILENAME))
 def init(configdb):
-    os.system(f'banzai_create_db --db-address={os.environ["DB_ADDRESS"]}')
+    os.system(f'banzai_nres_create_db --db-address={os.environ["DB_ADDRESS"]}')
     dbs.populate_instrument_tables(db_address=os.environ["DB_ADDRESS"], configdb_address='http://fakeconfigdb')
     os.system(f'banzai_add_site --site elp --latitude 30.67986944 --longitude -104.015175 --elevation 2027 --timezone -6 --db-address={os.environ["DB_ADDRESS"]}')
     os.system(f'banzai_add_site --site lsc --latitude -30.1673833333 --longitude -70.8047888889 --elevation 2198 --timezone -4 --db-address={os.environ["DB_ADDRESS"]}')
     os.system(f'banzai_add_instrument --site lsc --camera fl09 --name nres01 --instrument-type 1m0-NRES-SciCam --db-address={os.environ["DB_ADDRESS"]}')
     os.system(f'banzai_add_instrument --site elp --camera fl17 --name nres02 --instrument-type 1m0-NRES-SciCam --db-address={os.environ["DB_ADDRESS"]}')
+    os.system(f'banzai_nres_populate_phoenix_models --model-location {settings.PHOENIX_MODEL_LOCATION} \
+                --db-address={os.environ["DB_ADDRESS"]}')
     for instrument in INSTRUMENTS:
         for bpm_filename in glob(os.path.join(DATA_ROOT, instrument, 'bpm/*bpm*')):
             logger.info(f'adding bpm {bpm_filename} to the database')

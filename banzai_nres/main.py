@@ -13,7 +13,9 @@ from banzai.celery import app, schedule_calibration_stacking
 import celery
 import celery.bin.beat
 from banzai.utils import date_utils, import_utils
-from banzai import calibrations, dbs, logs
+from banzai import calibrations, logs
+from banzai_nres import dbs
+import banzai.dbs
 
 import logging
 import argparse
@@ -65,7 +67,8 @@ def nres_make_master_calibrations():
                                                    'Must be in the format "YYYY-MM-DDThh:mm:ss".'}}]
 
     runtime_context = parse_args(banzai_nres.settings, extra_console_arguments=extra_console_arguments)
-    instrument = dbs.query_for_instrument(runtime_context.db_address, runtime_context.site, runtime_context.camera)
+    instrument = banzai.dbs.query_for_instrument(runtime_context.db_address, runtime_context.site,
+                                                 runtime_context.camera)
     calibrations.make_master_calibrations(instrument,  runtime_context.frame_type.upper(),
                                           runtime_context.min_date, runtime_context.max_date, runtime_context)
 
@@ -84,7 +87,7 @@ def add_bpm():
     frame_factory = import_utils.import_attribute(banzai_nres.settings.FRAME_FACTORY)()
     bpm_image = frame_factory.open({'path': args.filename}, args)
     bpm_image.is_master = True
-    dbs.save_calibration_info(args.filename, bpm_image, args.db_address)
+    banzai.dbs.save_calibration_info(args.filename, bpm_image, args.db_address)
 
 
 def add_bpms_from_archive():
@@ -109,3 +112,41 @@ def add_bpms_from_archive():
         if bpm_image is not None:
             bpm_image.is_master = True
             dbs.save_calibration_info(frame['filename'], bpm_image, args.db_address)
+
+
+def create_db():
+    """
+    Create the database structure.
+
+    This only needs to be run once on initialization of the database.
+    """
+    parser = argparse.ArgumentParser("Create the database.\n\n"
+                                     "This only needs to be run once on initialization of the database.")
+
+    parser.add_argument("--log-level", default='debug', choices=['debug', 'info', 'warning',
+                                                                 'critical', 'fatal', 'error'])
+    parser.add_argument('--db-address', dest='db_address',
+                        default='sqlite3:///test.db',
+                        help='Database address: Should be in SQLAlchemy form')
+    args = parser.parse_args()
+    logs.set_log_level(args.log_level)
+
+    dbs.create_db(args.db_address)
+
+
+def populate_phoenix_models():
+    parser = argparse.ArgumentParser("Populate the database with the Phoenix models.\n\n"
+                                     "This only needs to be run once on initialization of the database.")
+    parser.add_argument('--model-location', dest='model_location',
+                        help='Location of the phoenix models. \
+                        This should either be s3://bucket-name or an absolute directory path.')
+    parser.add_argument("--log-level", default='debug', choices=['debug', 'info', 'warning',
+                                                                 'critical', 'fatal', 'error'])
+    parser.add_argument('--db-address', dest='db_address',
+                        default='sqlite3:///test.db',
+                        help='Database address: Should be in SQLAlchemy form')
+    args = parser.parse_args()
+    logs.set_log_level(args.log_level)
+
+    dbs.create_db(args.db_address)
+    dbs.populate_phoenix_models(args.model_location, args.db_address)

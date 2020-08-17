@@ -144,11 +144,12 @@ MASTER_CALIBRATION_EXTENSION_ORDER = {'BIAS': ['SPECTRUM', 'BPM', 'ERR'],
                                       'LAMPFLAT': ['SPECTRUM', 'BPM', 'ERR', 'TRACES', 'PROFILE', 'BLAZE'],
                                       'DOUBLE': ['SPECTRUM', 'BPM', 'ERR', 'TRACES', 'PROFILE', 'BLAZE', 'WAVELENGTH', 'FEATURES']}
 
-REDUCED_DATA_EXTENSION_TYPES = {
-                                'ERR': 'float32',
+REDUCED_DATA_EXTENSION_TYPES = {'ERR': 'float32',
                                 'BPM': 'uint8',
                                 'SPECTRUM': 'float32',
                                 'TRACES': 'int32',  # try uint8
                                 'PROFILE': 'float32',
                                 'WAVELENGTH': 'float64',
                                 }
+
+PHOENIX_MODEL_LOCATION = os.getenv('PHOENIX_FILE_LOCATION', 's3://banzai-nres-phoenix-models-lco-global')

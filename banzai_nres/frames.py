@@ -18,7 +18,9 @@ logger = logging.getLogger('banzai')
 class Spectrum1D:
     def __init__(self, data):
         self._table = Table(data)
-        self._table['mask'] = np.array([row['wavelength'] == 0.0 for row in self._table], dtype=np.uint8)
+        if 'mask' not in self._table.colnames:
+            self._table['mask'] = np.zeros_like(self._table['wavelength'], dtype=np.uint8)
+        self._table['mask'] |= np.array([row['wavelength'] == 0.0 for row in self._table], dtype=np.uint8)
 
     def __getitem__(self, item):
         """
@@ -40,7 +42,6 @@ class Spectrum1D:
         good_pixels = self._table[correct_row]['mask'] == 0
         # call column name first then the logical bool array for the astropy table to actually set the values
         self._table[column_name][correct_row, good_pixels] = value
-
 
     @property
     def fibers_and_orders(self):

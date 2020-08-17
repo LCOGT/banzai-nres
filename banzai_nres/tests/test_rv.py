@@ -5,7 +5,6 @@ from astropy.io import fits
 from banzai_nres.frames import NRESObservationFrame
 from banzai_nres.frames import EchelleSpectralCCDData, Spectrum1D
 from types import SimpleNamespace
-from astropy.table import Table
 
 
 def gaussian(x, mu, sigma):
@@ -38,8 +37,8 @@ def test_cross_correlate():
 
 
 @mock.patch('banzai.dbs.get_site')
-@mock.patch('banzai_nres.rv.fits.open')
-def test_rv(mock_fits, mock_db):
+@mock.patch('banzai_nres.rv.phoenix.PhoenixModelLoader')
+def test_rv(mock_loader, mock_db):
     # parameters that define the test data
     num_orders = 5
     lam_per_order = 70
@@ -60,8 +59,10 @@ def test_rv(mock_fits, mock_db):
     noisy_flux += np.random.normal(0.0, read_noise, size=len(flux))
     uncertainty = np.sqrt(flux + read_noise**2.0)
 
-    mock_fits.return_value = fits.HDUList([fits.PrimaryHDU(),
-                                           fits.BinTableHDU(Table({'wavelength': test_wavelengths, 'flux': flux}))])
+    class MockLoader:
+        def load(self, *args):
+            return {'wavelength': test_wavelengths, 'flux': flux}
+    mock_loader.return_value = MockLoader()
     true_v = 1.205  # km / s
 
     # Make the fake image

@@ -1,8 +1,6 @@
 from banzai.stages import Stage
 from banzai.frames import ObservationFrame
 from banzai import dbs
-import pkg_resources
-from astropy.io import fits
 import numpy as np
 from astropy.table import Table
 from astropy import constants
@@ -12,7 +10,7 @@ from astropy import units
 from banzai.utils import stats
 import logging
 from banzai_nres.fitting import fit_polynomial
-
+from banzai_nres import phoenix
 
 logger = logging.getLogger('banzai')
 
@@ -79,6 +77,7 @@ def cross_correlate_over_traces(image, orders_to_use, velocities, template):
         template_to_fit = {'wavelength': template['wavelength'][relevant_region], 'flux': template['flux'][relevant_region]}
         # Assume that the models are about S/N = 1000
         template_error = 1e-3 * template_to_fit['flux']
+        # TODO reject absorption lines prior to fit. refactor method from continuum.ContinuumNormalizer into its own function
         continuum_model = fit_polynomial(template_to_fit['flux'], template_error, x=template_to_fit['wavelength'])
         normalized_template = {'wavelength': template_to_fit['wavelength'],
                                'flux': template_to_fit['flux'] / continuum_model(template_to_fit['wavelength'])}
@@ -89,15 +88,13 @@ def cross_correlate_over_traces(image, orders_to_use, velocities, template):
 
 
 class RVCalculator(Stage):
-    TEMPLATE_FILENAME = pkg_resources.resource_filename('banzai_nres', 'data/g2v_template.fits')
     MIN_ORDER_TO_CORRELATE = 75
     MAX_ORDER_TO_CORRELATE = 101
 
     def do_stage(self, image) -> ObservationFrame:
-        # Load in the template
-        template_hdu = fits.open(self.TEMPLATE_FILENAME)
-
-        template = {'wavelength': template_hdu[1].data['wavelength'], 'flux': template_hdu[1].data['flux']}
+        # Get a G2V template for the moment
+        phoenix_loader = phoenix.PhoenixModelLoader(self.runtime_context.db_address)
+        template = phoenix_loader.load(self.runtime_context.db_address, 5700, 4.5, 0.0, 0.0)
         # Pick orders near the center of the detector that have a high Signal to noise and are free of tellurics.
         orders_to_use = np.arange(self.MIN_ORDER_TO_CORRELATE, self.MAX_ORDER_TO_CORRELATE, 1)
 
