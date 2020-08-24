@@ -28,6 +28,22 @@ def identify_features(data, err, mask=None, nsigma=2., fwhm=6.0, **kwargs):
     return features
 
 
+def index_of_refraction(vacuum_wavelength):
+    """
+    From Ciddor 1996, Also (copied from Ciddor 1996): See T.-O. Husser et al.: A new extensive library of PHOENIX stellar
+    atmospheres and synthetic spectra: https://www.aanda.org/articles/aa/pdf/2013/05/aa19058-12.pdf. Equation 9 and 10.
+    :param vacuum_wavelength: wavelength in vacuum
+    :return: index of refraction at that wavelength.
+    Comments:
+    Standard air: dry air at 15 °C, 101.325 kPa and with 450 ppm CO2 content.
+    wavelength_vacuum: true
+    temperature: 15 °C
+    pressure: 101325 Pa
+    """
+    sig2 = (1E4/vacuum_wavelength)**2
+    return 1 + 0.05792105/(238.0185 - sig2) + 0.00167917/(57.362 - sig2)
+
+
 def group_features_by_trace(features, traces):
     """
     :return: features.

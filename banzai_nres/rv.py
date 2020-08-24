@@ -2,7 +2,7 @@ from banzai.stages import Stage
 from banzai.frames import ObservationFrame
 from banzai import dbs
 import numpy as np
-from astropy.table import Table
+from astropy.table import Table, hstack
 from astropy import constants
 from astropy.time import Time
 from astropy.coordinates import SkyCoord, EarthLocation, solar_system_ephemeris
@@ -11,6 +11,7 @@ from banzai.utils import stats
 import logging
 from banzai_nres.fitting import fit_polynomial
 from banzai_nres import phoenix
+from banzai_nres.continuum import mark_absorption_or_emission_features
 
 logger = logging.getLogger('banzai')
 
@@ -75,12 +76,21 @@ def cross_correlate_over_traces(image, orders_to_use, velocities, template):
         relevant_region = np.logical_and(template['wavelength'] >= np.min(order['wavelength']) - 1.0,
                                          template['wavelength'] <= np.max(order['wavelength']) + 1.0)
         template_to_fit = {'wavelength': template['wavelength'][relevant_region], 'flux': template['flux'][relevant_region]}
-        # Assume that the models are about S/N = 1000
-        template_error = 1e-3 * template_to_fit['flux']
-        # TODO reject absorption lines prior to fit. refactor method from continuum.ContinuumNormalizer into its own function
-        continuum_model = fit_polynomial(template_to_fit['flux'], template_error, x=template_to_fit['wavelength'])
+        # continuum normalize template
+        # Assume that the models are about S/N = 100
+        template_error = 1e-2 * template_to_fit['flux']
+        mask = np.zeros_like(template_to_fit['flux'])
+        # reject absorption lines
+        mask = mark_absorption_or_emission_features(mask, template_to_fit['flux'], 10)
+        #
+        continuum_model = fit_polynomial(template_to_fit['flux'], template_error, x=template_to_fit['wavelength'],
+                                         order=3, mask=mask)
         normalized_template = {'wavelength': template_to_fit['wavelength'],
                                'flux': template_to_fit['flux'] / continuum_model(template_to_fit['wavelength'])}
+        # NOTE PHOENIX WAVELENGTHS ARE CONVERTED TO AIR UPON INGESTION INTO BANZAINRES
+        # NRES WAVELENGTHS ARE TIED TO WHATEVER LINE LIST WAS USED (e.g. nres wavelengths will be in air if ThAr atlas
+        # was used, and they will be in vacuum if a vacuum line list was used.).
+        # AS OF Aug 24 2020, NRES WAVELENGTHS ARE IN AIR.
         x_cor = cross_correlate(velocities, order['wavelength'], order['normflux'], order['normuncertainty'],
                                 normalized_template['wavelength'], normalized_template['flux'])
         ccfs.append({'order': i, 'v': velocities, 'xcor': x_cor})
@@ -99,18 +109,18 @@ class RVCalculator(Stage):
         orders_to_use = np.arange(self.MIN_ORDER_TO_CORRELATE, self.MAX_ORDER_TO_CORRELATE, 1)
 
         # for steps in 1 km/s from -2000 to +2000 km/s
-        velocities = np.arange(-2000, 2001, 1)
+        coarse_velocities = np.arange(-2000, 2001, 1)
 
-        coarse_ccfs = cross_correlate_over_traces(image, orders_to_use, velocities, template)
+        coarse_ccfs = cross_correlate_over_traces(image, orders_to_use, coarse_velocities, template)
 
         # take the peak
-        velocity_peaks = np.array([velocities[np.argmax(ccf['xcor'])] for ccf in coarse_ccfs])
+        velocity_peaks = np.array([coarse_velocities[np.argmax(ccf['xcor'])] for ccf in coarse_ccfs])
         best_v = stats.sigma_clipped_mean(velocity_peaks, 3.0)
         velocities = np.arange(best_v - 2, best_v + 2 + 1e-4, 1e-3)
 
-        final_ccfs = cross_correlate_over_traces(image, orders_to_use, velocities, template)
+        ccfs = cross_correlate_over_traces(image, orders_to_use, velocities, template)
 
-        rvs_per_order = np.array([ccf['v'][np.argmax(ccf['xcor'])] for ccf in final_ccfs])
+        rvs_per_order = np.array([ccf['v'][np.argmax(ccf['xcor'])] for ccf in ccfs])
         # Calculate the peak v (converting to m/s) in the spectrograph frame
         rv_measured = stats.sigma_clipped_mean(rvs_per_order, 3.0) * 1000
 
@@ -135,5 +145,8 @@ class RVCalculator(Stage):
         image.meta['TCOREPOS'] = 'ERFA', 'Source of Earth position'
         image.meta['TCORSYST'] = 'BJD_TDB ', 'Ref. frame_timesystem of TCORR column'
         image.meta['PLEPHEM'] = solar_system_ephemeris.get(), 'Source of planetary ephemerides'
+        # save the fine + coarse ccfs together
+        final_ccfs = hstack(coarse_ccfs, ccfs)
+        final_ccfs.sort('v')
         image.ccf = final_ccfs
         return image

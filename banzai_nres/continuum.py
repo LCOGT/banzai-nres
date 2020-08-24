@@ -18,19 +18,13 @@ class ContinuumNormalizer(Stage):
             blaze_corrected_flux = spectrum['flux'] / spectrum['blaze']
             blaze_corrected_error = blaze_corrected_flux * np.sqrt((spectrum['uncertainty'] / spectrum['flux']) ** 2.0 + (spectrum['blaze_error'] / spectrum['blaze']) ** 2.0)
             detector_resolution = 4  # pixels
-            # identify features quickly
-            first_derivative = np.hstack([[0], blaze_corrected_flux[1:] - blaze_corrected_flux[:-1]])
-            mad = median_absolute_deviation(first_derivative)
-            features = np.abs(first_derivative) > 1.5 * mad
-            # Mask features
+            # instantiate the mask
             mask = np.zeros_like(blaze_corrected_flux, dtype=int)
-            mask[features] = 1
+            # identify absorption or emission features
+            mask = mark_absorption_or_emission_features(mask, blaze_corrected_flux, int(detector_resolution))
             # Mask the prohibited wavelength regions.
             for mask_region in WAVELENGTHS_TO_MASK:
                 mask[np.logical_and(spectrum['wavelength'] >= min(mask_region), spectrum['wavelength'] <= max(mask_region))] = 1
-            # Mask the immediate +- pixels around each absorption feature as well.
-            # 2 binary dilations work too, but we will binary dilate up to the detector resolution.
-            mask = binary_dilation(mask, iterations=int(detector_resolution))
             # do the fit.
             best_fit = fit_polynomial(blaze_corrected_flux, blaze_corrected_error, x=spectrum['wavelength'],
                                       order=3, sigma=5, mask=mask)
@@ -39,3 +33,15 @@ class ContinuumNormalizer(Stage):
             # adds is complicated enough to track that we do not attempt that here.
             image.spectrum[fiber, order, 'normuncertainty'] = blaze_corrected_error / best_fit(spectrum['wavelength'])
         return image
+
+
+def mark_absorption_or_emission_features(mask, flux, line_width):
+    first_derivative = np.hstack([[0], flux[1:] - flux[:-1]])
+    mad = median_absolute_deviation(first_derivative)
+    features = np.abs(first_derivative) > 1.5 * mad
+    # Mask features
+    mask[features] = 1
+    # Mask the immediate +- pixels around each absorption feature as well.
+    # we binary dilate up to the width of the absorption lines so that we cover their wings as well.
+    mask = binary_dilation(mask, iterations=line_width)
+    return mask
