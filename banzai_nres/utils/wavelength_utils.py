@@ -44,14 +44,14 @@ def index_of_refraction_Ciddor1996(vacuum_wavelength):
     return 1 + 0.05792105/(238.0185 - sig2) + 0.00167917/(57.362 - sig2)
 
 
-def index_of_refraction_Edlen_revised(vacuum_wavelength):
+def index_of_refraction_Edlen(vacuum_wavelength):
     """
-    The revised Edlen Equation ( K P Birch and M J Downs 1993 Metrologia 30 155, https://doi.org/10.1088/0026-1394/30/3/004)
+    The original 1966 Edlen Equation (Bengt Edlén 1966 Metrologia 2 71, https://doi.org/10.1088/0026-1394/2/2/002)
     :param vacuum_wavelength: wavelength in vacuum
     :return: index of refraction at that wavelength.
     """
     sig2 = (1E4/vacuum_wavelength)**2
-    return 1 + 1E-8 * (8343.05 + 2406294/(130 - sig2) + 15999/(38.9 - sig2))
+    return 1 + 1E-8 * (8342.13 + 2406030/(130 - sig2) + 15997/(38.9 - sig2))
 
 
 def group_features_by_trace(features, traces):
