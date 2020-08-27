@@ -28,7 +28,7 @@ def identify_features(data, err, mask=None, nsigma=2., fwhm=6.0, **kwargs):
     return features
 
 
-def index_of_refraction(vacuum_wavelength):
+def index_of_refraction_Ciddor1996(vacuum_wavelength):
     """
     From Ciddor 1996, Also (copied from Ciddor 1996): See T.-O. Husser et al.: A new extensive library of PHOENIX stellar
     atmospheres and synthetic spectra: https://www.aanda.org/articles/aa/pdf/2013/05/aa19058-12.pdf. Equation 9 and 10.
@@ -42,6 +42,16 @@ def index_of_refraction(vacuum_wavelength):
     """
     sig2 = (1E4/vacuum_wavelength)**2
     return 1 + 0.05792105/(238.0185 - sig2) + 0.00167917/(57.362 - sig2)
+
+
+def index_of_refraction_Edlen_revised(vacuum_wavelength):
+    """
+    The revised Edlen Equation ( K P Birch and M J Downs 1993 Metrologia 30 155, https://doi.org/10.1088/0026-1394/30/3/004)
+    :param vacuum_wavelength: wavelength in vacuum
+    :return: index of refraction at that wavelength.
+    """
+    sig2 = (1E4/vacuum_wavelength)**2
+    return 1 + 1E-8 * (8343.05 + 2406294/(130 - sig2) + 15999/(38.9 - sig2))
 
 
 def group_features_by_trace(features, traces):

@@ -3,7 +3,6 @@ import numpy as np
 import os
 import argparse
 from banzai_nres.utils import phoenix_utils
-from banzai_nres.utils.wavelength_utils import index_of_refraction
 
 
 def main():
@@ -22,7 +21,7 @@ def main():
                 model_files.append(os.path.join(root, file))
 
     # Find the indices that correspond to the optical region
-    # NOTE PHEONIX WAVELENGTHS ARE IN VACUUM WHEN LOADED IN
+    # NOTE PHOENIX WAVELENGTHS ARE IN VACUUM
     wavelength_hdu = fits.open(wavelength_filename)
     optical = np.logical_and(wavelength_hdu[0].data >= 3000.0, wavelength_hdu[0].data <= 10000.0)
 
@@ -38,9 +37,7 @@ def main():
         output_filename = phoenix_utils.parameters_to_filename(Teff, logg, metallicity, alpha)
         hdu.writeto(os.path.join(args.output_dir, output_filename))
 
-    # convert wavelengths to air to agree with NRES
-    wavelength_hdu[0].data = wavelength_hdu[0].data[optical]/index_of_refraction(wavelength_hdu[0].data[optical])
-    # TODO CHANGE THE NRES INPUT LINE LIST SO THAT IT IS CALIBRATED IN VACUUM AND THEN DO NOT
-    #  DIVIDE THE TEMPLATE WAVELENGTHS BY n (converting to air)
-    # save the model
+    # Restrict the wavelengths to the optical regime
+    wavelength_hdu[0].data = wavelength_hdu[0].data[optical]
+    # save the wavelengths as a separate file
     wavelength_hdu.writeto(os.path.join(args.output_dir, 'phoenix_wavelength.fits'))

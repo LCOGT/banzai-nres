@@ -2,7 +2,7 @@ from banzai.stages import Stage
 from banzai.frames import ObservationFrame
 from banzai import dbs
 import numpy as np
-from astropy.table import Table, hstack
+from astropy.table import Table
 from astropy import constants
 from astropy.time import Time
 from astropy.coordinates import SkyCoord, EarthLocation, solar_system_ephemeris
@@ -87,10 +87,10 @@ def cross_correlate_over_traces(image, orders_to_use, velocities, template):
                                          order=3, mask=mask)
         normalized_template = {'wavelength': template_to_fit['wavelength'],
                                'flux': template_to_fit['flux'] / continuum_model(template_to_fit['wavelength'])}
-        # NOTE PHOENIX WAVELENGTHS ARE CONVERTED TO AIR UPON INGESTION INTO BANZAINRES
-        # NRES WAVELENGTHS ARE TIED TO WHATEVER LINE LIST WAS USED (e.g. nres wavelengths will be in air if ThAr atlas
-        # was used, and they will be in vacuum if a vacuum line list was used.).
-        # AS OF Aug 24 2020, NRES WAVELENGTHS ARE IN AIR.
+        # NOTE PHOENIX WAVELENGTHS ARE IN VACUUM
+        # NRES WAVELENGTHS ARE TIED TO WHATEVER LINE LIST WAS USED (e.g. nres wavelengths will be in air if ThAr atlas air
+        # was used, and they will be in vacuum if ThAr_atlas_ESO_vacuum.txt was used.).
+        # AS OF Aug 27 2020, NRES WAVELENGTHS ARE IN VACUUM BECAUSE ThAr_atlas_ESO_vacuum.txt IS THE LINE LIST USED.
         x_cor = cross_correlate(velocities, order['wavelength'], order['normflux'], order['normuncertainty'],
                                 normalized_template['wavelength'], normalized_template['flux'])
         ccfs.append({'order': i, 'v': velocities, 'xcor': x_cor})
@@ -146,7 +146,14 @@ class RVCalculator(Stage):
         image.meta['TCORSYST'] = 'BJD_TDB ', 'Ref. frame_timesystem of TCORR column'
         image.meta['PLEPHEM'] = solar_system_ephemeris.get(), 'Source of planetary ephemerides'
         # save the fine + coarse ccfs together
-        final_ccfs = hstack(coarse_ccfs, ccfs)
-        final_ccfs.sort('v')
+        coarse_ccfs.sort('order')
+        ccfs.sort('order')
+        final_ccfs = Table({'order': ccfs['order'],
+                            'v': np.hstack([coarse_ccfs['v'], ccfs['v']]),
+                            'xcor': np.hstack([coarse_ccfs['xcor'], ccfs['xcor']])})
+        # sorting xcor by the velocity grid
+        sort_array = np.argsort(final_ccfs['v'][0])
+        final_ccfs['xcor'] = final_ccfs['xcor'][:, sort_array]
+        final_ccfs['v'] = final_ccfs['v'][:, sort_array]
         image.ccf = final_ccfs
         return image
