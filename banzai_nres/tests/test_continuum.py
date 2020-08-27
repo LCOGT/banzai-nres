@@ -27,3 +27,20 @@ def test_do_stage(mock_fit_polynomial):
     for order in [1, 2]:
         assert np.allclose(image.spectrum[0, order]['normflux'], expected)
         assert np.allclose(image.spectrum[0, order]['normuncertainty'], expected)
+
+
+def test_do_stage_does_not_fit_non_science_fiber():
+    # make a single order spectrum
+    flux = np.arange(1, 101)*2
+    x = np.arange(1, 101)
+    spectrum = Table({'wavelength': [x], 'flux': [flux], 'blaze': [flux],
+                      'blaze_error': [flux], 'uncertainty': [flux], 'fiber': [1], 'order': [1]})
+    image = NRESObservationFrame([EchelleSpectralCCDData(np.zeros((1, 1)), meta={'OBJECTS': 'tung&tung&none'},
+                                                         spectrum=Spectrum1D(spectrum))],
+                                 'test.fits')
+
+    # Run the normalizer code
+    stage = ContinuumNormalizer(SimpleNamespace(db_address='foo'))
+    image = stage.do_stage(image)
+    assert 'normflux' not in image.spectrum._table.colnames
+    assert 'normuncertainty' not in image.spectrum._table.colnames
