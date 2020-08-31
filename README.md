@@ -28,7 +28,9 @@ http://www.eso.org/sci/facilities/paranal/instruments/uves/tools/tharatlas.html 
 These lines were converted to vacuum wavelength using the original 1966 Edlen Equation (Bengt Edlén 1966 Metrologia 2 71, 
 https://doi.org/10.1088/0026-1394/2/2/002) for the index of refraction of air. 
 We use this equation because the ThAr atlas contains wavelengths that were originally vacuum wavelengths, which were then 
-converted to air wavelengths using the original 1966 Edlen Equation (NEED CITATION / VERIFY THIS IS CORRECT)
+converted to air wavelengths using the original 1966 Edlen Equation (Murphy et al. 2007, 
+DOI 10.1111/j.1365-2966.2007.11768.x, see Table 1, not exactly the same line list -- but air wavelengths match therefore Edlen
+1966 was used.)
  
  The Edlen Equation that we used is 
 banzai_nres.utils.wavelength_utils.index_of_refraction_Edlen . One can roughly convert to vacuum by multiplying all the wavelengths in 
