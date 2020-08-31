@@ -28,16 +28,6 @@ def identify_features(data, err, mask=None, nsigma=2., fwhm=6.0, **kwargs):
     return features
 
 
-def index_of_refraction_Edlen(vacuum_wavelength):
-    """
-    The original 1966 Edlen Equation (Bengt Edlén 1966 Metrologia 2 71, https://doi.org/10.1088/0026-1394/2/2/002)
-    :param vacuum_wavelength: wavelength in vacuum
-    :return: index of refraction at that wavelength.
-    """
-    sig2 = (1E4/vacuum_wavelength)**2
-    return 1 + 1E-8 * (8342.13 + 2406030/(130 - sig2) + 15997/(38.9 - sig2))
-
-
 def group_features_by_trace(features, traces):
     """
     :return: features.

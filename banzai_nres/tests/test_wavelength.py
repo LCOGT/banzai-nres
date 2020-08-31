@@ -195,7 +195,7 @@ class TestLineListLoader:
         stage.LINE_LIST_FILENAME = 'some/bad/path'
         assert stage.do_stage('image') is None
 
-    @mock.patch('numpy.genfromtxt', return_value=np.array([[1, 1]]))
+    @mock.patch('astropy.table.Table.read', return_value=Table({'lambda_vac': [1]}))
     def test_do_stage(self, fake_load):
         image = type('image', (), {})
         image = self.stage.do_stage(image)

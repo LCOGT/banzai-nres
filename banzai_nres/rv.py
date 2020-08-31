@@ -89,9 +89,7 @@ def cross_correlate_over_traces(image, orders_to_use, velocities, template):
         normalized_template = {'wavelength': template_to_fit['wavelength'],
                                'flux': template_to_fit['flux'] / continuum_model(template_to_fit['wavelength'])}
         # NOTE PHOENIX WAVELENGTHS ARE IN VACUUM
-        # NRES WAVELENGTHS ARE TIED TO WHATEVER LINE LIST WAS USED (e.g. nres wavelengths will be in air if ThAr atlas air
-        # was used, and they will be in vacuum if ThAr_atlas_ESO_vacuum.txt was used.).
-        # AS OF Aug 27 2020, NRES WAVELENGTHS ARE IN VACUUM BECAUSE ThAr_atlas_ESO_vacuum.txt IS THE LINE LIST USED.
+        # AS OF Aug 31 2020, NRES WAVELENGTHS ARE IN VACUUM BECAUSE THE lambda_vac COLUMN OF THE LINE MURPHY 2007 LINE LIST IS USED
         x_cor = cross_correlate(velocities, order['wavelength'], order['normflux'], order['normuncertainty'],
                                 normalized_template['wavelength'], normalized_template['flux'])
         ccfs.append({'order': i, 'v': velocities, 'xcor': x_cor})

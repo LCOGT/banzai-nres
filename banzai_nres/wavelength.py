@@ -63,7 +63,7 @@ class LineListLoader(CalibrationUser):
     """
     Loads the reference line list for wavelength calibration
     """
-    LINE_LIST_FILENAME = pkg_resources.resource_filename('banzai_nres', 'data/ThAr_atlas_ESO_vacuum.txt')
+    LINE_LIST_FILENAME = pkg_resources.resource_filename('banzai_nres', 'data/thar_MM201006.dat')
     @property
     def calibration_type(self):
         return 'LINELIST'
@@ -71,7 +71,7 @@ class LineListLoader(CalibrationUser):
     def do_stage(self, image):
         if not os.path.exists(self.LINE_LIST_FILENAME):
             return self.on_missing_master_calibration(image)
-        line_list = np.genfromtxt(self.LINE_LIST_FILENAME)[:, 1].flatten()
+        line_list = Table.read(self.LINE_LIST_FILENAME, format='ascii')['lambda_vac'].data
         logger.info('Applying master calibration', image=image,
                     extra_tags={'master_calibration':  os.path.basename(self.LINE_LIST_FILENAME)})
         return self.apply_master_calibration(image, line_list)
