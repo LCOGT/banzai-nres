@@ -85,6 +85,12 @@ def cross_correlate_over_traces(image, orders_to_use, velocities, template):
         ccfs.append({'order': i, 'v': velocities, 'xcor': x_cor})
     return Table(ccfs)
 
+def get_requested_coordinates(image):
+    #figure out which fiber is illuminated
+
+    #map that to telescope
+
+    #get the coordinates from the correct telescope extension
 
 class RVCalculator(Stage):
     MIN_ORDER_TO_CORRELATE = 75
@@ -116,8 +122,9 @@ class RVCalculator(Stage):
         # TODO: Add ra and dec to observation frame object
         # Note: the RA and DEC from the header are where the telescope thinks it is pointing, not the requested RA/Dec
         # Compute the barycentric RV and observing time corrections
+        image.meta['RA_REQUEST'], image.meta['DEC_REQUEST'] = get_requested_coordinates(image)
         rv_correction, bjd_tdb = barycentric_correction(image.dateobs, image.exptime,
-                                                        image.meta['RA'], image.meta['DEC'],
+                                                        image.meta['RA_REQUEST'], image.meta['DEC_REQUEST'],
                                                         dbs.get_site(image.instrument.site, self.runtime_context.db_address))
         # Correct the RV per Wright & Eastman (2014) and save in the header
         rv = rv_measured + rv_correction + rv_measured * rv_correction / c
