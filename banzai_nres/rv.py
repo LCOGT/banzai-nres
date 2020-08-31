@@ -77,8 +77,9 @@ def cross_correlate_over_traces(image, orders_to_use, velocities, template):
                                          template['wavelength'] <= np.max(order['wavelength']) + 1.0)
         template_to_fit = {'wavelength': template['wavelength'][relevant_region], 'flux': template['flux'][relevant_region]}
         # continuum normalize template
-        # Assume that the models are about S/N = 100
-        template_error = 1e-2 * template_to_fit['flux']
+        # Set the model S/N = 1000 -- from looking by eye at
+        # scatter in the model and from systematic uncertainties in the model
+        template_error = 1e-3 * template_to_fit['flux']
         mask = np.zeros_like(template_to_fit['flux'])
         # reject absorption lines
         mask = mark_absorption_or_emission_features(mask, template_to_fit['flux'], 10)

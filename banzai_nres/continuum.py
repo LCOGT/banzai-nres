@@ -39,6 +39,8 @@ class ContinuumNormalizer(Stage):
 def mark_absorption_or_emission_features(mask, flux, line_width):
     first_derivative = np.hstack([[0], flux[1:] - flux[:-1]])
     mad = median_absolute_deviation(first_derivative)
+    # 1.5 mad is roughly 1 sigma, which is very aggressive. However, empirically 1.5 mad works well on absorption line
+    # spectra. See e.g. NRES absolute orders 75, 85, 95, and 110.
     features = np.abs(first_derivative) > 1.5 * mad
     # Mask features
     mask[features] = 1
