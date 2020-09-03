@@ -87,7 +87,6 @@ def cross_correlate_over_traces(image, orders_to_use, velocities, template):
 
 def get_requested_coordinates(image):
     #figure out which fiber is illuminated
-    #this seems a little f
     if image.meta['OBJECT'] == hdu[5].header['OBJECT']: 
         nres_telescope, telescope_header = 1, 5
     elif image.meta['OBJECT'] == hdu[6].header['OBJECT']:
@@ -96,8 +95,8 @@ def get_requested_coordinates(image):
         ERROR
 
     #get the coordinates from the correct telescope extension
-    ra_request, dec_request = hdu[telescope_header].header['CAT-RA'], hdu[telescope_header].header['CAT-DEC']
-    return ra_request, dec_request
+    ra_catalog, dec_catalog = hdu[telescope_header].header['CAT-RA'], hdu[telescope_header].header['CAT-DEC']
+    return ra_catalog, dec_catalog
 
 class RVCalculator(Stage):
     MIN_ORDER_TO_CORRELATE = 75
@@ -129,9 +128,8 @@ class RVCalculator(Stage):
         # TODO: Add ra and dec to observation frame object
         # Note: the RA and DEC from the header are where the telescope thinks it is pointing, not the requested RA/Dec
         # Compute the barycentric RV and observing time corrections
-        image.meta['RA_REQUEST'], image.meta['DEC_REQUEST'] = get_requested_coordinates(image)
         rv_correction, bjd_tdb = barycentric_correction(image.dateobs, image.exptime,
-                                                        image.meta['RA_REQUEST'], image.meta['DEC_REQUEST'],
+                                                        image.meta['RA'], image.meta['DEC'],
                                                         dbs.get_site(image.instrument.site, self.runtime_context.db_address))
         # Correct the RV per Wright & Eastman (2014) and save in the header
         rv = rv_measured + rv_correction + rv_measured * rv_correction / c
