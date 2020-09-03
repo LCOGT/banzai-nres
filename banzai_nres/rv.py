@@ -87,10 +87,17 @@ def cross_correlate_over_traces(image, orders_to_use, velocities, template):
 
 def get_requested_coordinates(image):
     #figure out which fiber is illuminated
-
-    #map that to telescope
+    #this seems a little f
+    if image.meta['OBJECT'] == hdu[5].header['OBJECT']: 
+        nres_telescope, telescope_header = 1, 5
+    elif image.meta['OBJECT'] == hdu[6].header['OBJECT']:
+        nres_telescope, telescope_header = 2, 6
+    else:
+        ERROR
 
     #get the coordinates from the correct telescope extension
+    ra_request, dec_request = hdu[telescope_header].header['CAT-RA'], hdu[telescope_header].header['CAT-DEC']
+    return ra_request, dec_request
 
 class RVCalculator(Stage):
     MIN_ORDER_TO_CORRELATE = 75
