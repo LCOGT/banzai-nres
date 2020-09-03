@@ -95,8 +95,8 @@ def get_requested_coordinates(image):
         ERROR
 
     #get the coordinates from the correct telescope extension
-    ra_catalog, dec_catalog = hdu[telescope_header].header['CAT-RA'], hdu[telescope_header].header['CAT-DEC']
-    return ra_catalog, dec_catalog
+    ra_catalog, dec_catalog, pm_ra_catalog, pm_dec_catalog = hdu[telescope_header].header['CAT-RA'], hdu[telescope_header].header['CAT-DEC'], hdu[telescope_header].header['PM-RA'], hdu[telescope_header].header['PM-DEC']
+    return ra_catalog, dec_catalog, pm_ra_catalog, pm_dec_catalog
 
 class RVCalculator(Stage):
     MIN_ORDER_TO_CORRELATE = 75
