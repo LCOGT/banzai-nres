@@ -23,7 +23,7 @@ WAVELENGTH_SOLUTION_MODEL = {0: [0, 1, 2, 3, 4, 5],
                              3: [0, 1, 2, 3, 4, 5],
                              4: [0]}
 
-# TODO refactor xwavecal so that we dont need this. We only need to set flux_tol to 0.5
+# TODO refactor xwavecal so that we dont need to feed in the whole dictionary, we give just flux_tol=0.4
 OVERLAP_SETTINGS = {'min_num_overlaps': 5, 'overlap_linear_scale_range': (0.5, 2), 'flux_tol': 0.4, 'max_red_overlap': 1000, 'max_blue_overlap': 2000}
 
 
@@ -140,6 +140,7 @@ class WavelengthCalibrate(Stage):
         # Calculate which fiber is which.
         # the first ref_id = 80 (arbitrary, but somewhere about the middle of the detector)
         # is largest fiber number that is lit.
+        # TODO IF WAVELENGTH CALIBRATION ABOVE FAILS, THEN LINE 144 BELOW ERRORS OUT BECAUSE INDEX 80 DOES NOT EXIST
         largest_fiber_index = fiber_ids[ref_ids.tolist().index(80)]
         if image.fiber2_lit:
             largest_fiber_number = 2
