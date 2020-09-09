@@ -91,9 +91,12 @@ class RVCalculator(Stage):
     MAX_ORDER_TO_CORRELATE = 101
 
     def do_stage(self, image) -> ObservationFrame:
+        if image.classification is None:
+            logger.warning('No classification to use for an RV template', image=image)
+            return image
         # Get a G2V template for the moment
         phoenix_loader = phoenix.PhoenixModelLoader(self.runtime_context.db_address)
-        template = phoenix_loader.load(self.runtime_context.db_address, 5700, 4.5, 0.0, 0.0)
+        template = phoenix_loader.load(image.classification)
         # Pick orders near the center of the detector that have a high Signal to noise and are free of tellurics.
         orders_to_use = np.arange(self.MIN_ORDER_TO_CORRELATE, self.MAX_ORDER_TO_CORRELATE, 1)
 
@@ -112,12 +115,11 @@ class RVCalculator(Stage):
         rvs_per_order = np.array([ccf['v'][np.argmax(ccf['xcor'])] for ccf in final_ccfs])
         # Calculate the peak v (converting to m/s) in the spectrograph frame
         rv_measured = stats.sigma_clipped_mean(rvs_per_order, 3.0) * 1000
-
         # TODO: Add ra and dec to observation frame object
         # Note: the RA and DEC from the header are where the telescope thinks it is pointing, not the requested RA/Dec
         # Compute the barycentric RV and observing time corrections
         rv_correction, bjd_tdb = barycentric_correction(image.dateobs, image.exptime,
-                                                        image.meta['RA'], image.meta['DEC'],
+                                                        image.ra, image.dec,
                                                         dbs.get_site(image.instrument.site, self.runtime_context.db_address))
         # Correct the RV per Wright & Eastman (2014) and save in the header
         rv = rv_measured + rv_correction + rv_measured * rv_correction / c

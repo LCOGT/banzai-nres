@@ -55,6 +55,15 @@ class NRESObservationFrame(LCOObservationFrame):
     def __init__(self, hdu_list: list, file_path: str, frame_id: int = None, hdu_order: list = None):
         LCOObservationFrame.__init__(self, hdu_list, file_path, frame_id=frame_id, hdu_order=hdu_order)
         self.fiber0_lit, self.fiber1_lit, self.fiber2_lit = fiber_states_from_header(self.meta)
+        self.classification = None
+        self._hdu_names = [hdu.name for hdu in hdu_list]
+
+    def __getitem__(self, item):
+        if item not in self._hdu_names and not isinstance(item, int):
+            raise ValueError('Requested HDU name is not in frame')
+        if isinstance(item, int):
+            return self._hdus[item]
+        return self._hdus[self._hdu_names.index(item)]
 
     def num_lit_fibers(self):
         return 1 * self.fiber0_lit + 1 * self.fiber1_lit + 1 * self.fiber2_lit
@@ -161,6 +170,38 @@ class NRESObservationFrame(LCOObservationFrame):
     @ccf.setter
     def ccf(self, value):
         self.primary_hdu.ccf = value
+
+    @property
+    def ra(self):
+        return self.primary_hdu.meta['RA']
+
+    @ra.setter
+    def ra(self, value):
+        self.primary_hdu.meta['RA'] = value
+
+    @property
+    def dec(self):
+        return self.primary_hdu.meta['DEC']
+
+    @dec.setter
+    def dec(self, value):
+        self.primary_hdu.meta['DEC'] = value
+
+    @property
+    def pm_ra(self):
+        return self.primary_hdu.meta['PM-RA']
+
+    @pm_ra.setter
+    def pm_ra(self, value):
+        self.primary_hdu.meta['PM-RA'] = value
+
+    @property
+    def pm_dec(self):
+        return self.primary_hdu.meta['PM-DEC']
+
+    @pm_dec.setter
+    def pm_dec(self, value):
+        self.primary_hdu.meta['PM-DEC'] = value
 
 
 class NRESCalibrationFrame(LCOCalibrationFrame, NRESObservationFrame):
@@ -341,5 +382,14 @@ class NRESFrameFactory(LCOFrameFactory):
         # products to distinguish.
         if image is None or 'nres' not in image.meta.get('TELESCOP', '').lower():
             return None
+
+        # Fix the RA and DEC keywords to be the requested values for all of our measurements
+        if image['TELESCOPE_1'].meta['OBJECT'].lower() in image.meta['OBJECTS'].lower():
+            telescope_num = 1
         else:
-            return image
+            telescope_num = 2
+        image.ra = image[f'TELESCOPE_{telescope_num}'].meta['CAT-RA']
+        image.dec = image[f'TELESCOPE_{telescope_num}'].meta['CAT-DEC']
+        image.pm_ra = image[f'TELESCOPE_{telescope_num}'].meta['PM-RA']
+        image.pm_dec = image[f'TELESCOPE_{telescope_num}'].meta['PM-DEC']
+        return image

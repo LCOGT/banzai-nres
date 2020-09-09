@@ -37,7 +37,6 @@ TEST_PACKAGE = 'banzai_nres.tests'
 CONFIGDB_FILENAME = pkg_resources.resource_filename('banzai_nres.tests', 'data/configdb_example.json')
 
 
-
 def observation_portal_side_effect(*args, **kwargs):
     site = kwargs['params']['site']
     start = datetime.strftime(parse(kwargs['params']['start_after']).replace(tzinfo=None).date(), '%Y%m%d')
@@ -272,11 +271,30 @@ class TestMasterArcCreation:
         run_check_if_stacked_calibrations_are_in_db('*a00.fits*', 'DOUBLE')
 
 
+mock_simbad_response = [{'RA': '07 39 18.1195',
+                         'DEC': '+05 13 29.955',
+                         'PMRA': -714.59,
+                         'PMDEC': -1036.8,
+                         'Fe_H_Teff': 6654,
+                         'Fe_H_log_g': 3.950000047683716},
+                        {'RA': '07 39 17.8800',
+                         'DEC': '+05 13 26.800',
+                         'PMRA': -709.0,
+                         'PMDEC': -1024.0,
+                         'Fe_H_Teff': 7870,
+                         'Fe_H_log_g': 8.079999923706055}]
+
+
 @pytest.mark.e2e
 @pytest.mark.science_frames
 class TestScienceFrameProcessing:
     @pytest.fixture(autouse=True)
-    def process_frames(self):
+    @mock.patch('banzai_nres.classify.simbad.query_region')
+    @mock.patch('banzai_nres.classify.astroquery.gaia.Gaia.query_object')
+    def process_frames(self, mock_gaia, mock_simbad):
+        # return an empty dummy value because Procyon is not in Gaia
+        mock_gaia.return_value = Table({'a': []})
+        mock_simbad.return_value = Table(mock_simbad_response)['RA', 'DEC', 'PMRA', 'PMDEC', 'Fe_H_Teff', 'Fe_H_log_g']
         run_reduce_individual_frames('*e00.fits*')
 
     def test_if_science_frames_were_created(self):

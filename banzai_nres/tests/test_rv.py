@@ -80,11 +80,12 @@ def test_rv(mock_loader, mock_db):
         row = {'wavelength': test_wavelengths[order] * (1.0 + true_v / c),
                'normflux': noisy_flux[order], 'normuncertainty': uncertainty[order], 'fiber': 0, 'order': i}
         spectrum.append(row)
-
     image = NRESObservationFrame([EchelleSpectralCCDData(np.zeros((1, 1)), meta=header, spectrum=Spectrum1D(spectrum))],
                                  'test.fits')
     image.instrument = SimpleNamespace()
     image.instrument.site = 'npt'
+    # Classification just can't be None so that the stage does not abort.
+    image.classification = 'foo'
     mock_db.return_value = SimpleNamespace(**site_info)
 
     # Run the RV code
