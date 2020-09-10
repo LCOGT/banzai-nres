@@ -55,7 +55,7 @@ def barycentric_correction(time, exptime, ra, dec, site):
     # The following is largely taken from the astropy example page
     site_location = EarthLocation.from_geodetic(lat=site.latitude*units.deg, lon=site.longitude*units.deg,
                                                 height=site.elevation*units.m)
-    sky_coordinates = SkyCoord(ra=ra, dec=dec, unit=(units.hourangle, units.deg))
+    sky_coordinates = SkyCoord(ra=ra, dec=dec, unit=(units.deg, units.deg))
     # The time given in the NRES header is the exposure start time; correct this to the midpoint
     # Eventually, we will want to use the flux-weighted mid-point calculated from emeter data
     obs_time = Time(time, location=site_location) + exptime / 2.0 * units.s
