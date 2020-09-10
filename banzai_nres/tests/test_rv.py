@@ -68,7 +68,7 @@ def test_rv(mock_loader, mock_db):
     # Make the fake image
     # Set the site to the north pole, and the ra and dec to the ecliptic pole. The time we chose is just
     # to minimize the rv correction
-    header = fits.Header({'DATE-OBS': '2020-09-12T00:00:00.000000',  'RA': 18.0, 'DEC': 66.55911605,
+    header = fits.Header({'DATE-OBS': '2020-09-12T00:00:00.000000',  'RA': '01:12:00', 'DEC': '+66:33:32.8178',
                           'OBJECTS': 'foo&none&none', 'EXPTIME': 1200.0})
     site_info = {'longitude': 0.0, 'latitude': 90.0, 'elevation': 0.0}
 

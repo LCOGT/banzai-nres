@@ -17,16 +17,16 @@ def get_initial_guess(ra, dec, pm_ra, pm_dec):
 
     :param ra: hour angle
     :param dec: deg
-    :param pm_ra: arcsec/yr, Note this needs to include the cos dec term like it is in simbad
-    :param pm_dec: arcsec/yr
+    :param pm_ra: mas/yr, Note this needs to include the cos dec term like it is in simbad
+    :param pm_dec: mas/yr
     :return:
     """
 
     # Assume that the equinox and input epoch are both j2000.
     # Gaia uses an equinox of 2000, but epoch of 2015.5 for the proper motion
     coordinate = SkyCoord(ra=ra, dec=dec, unit=(units.hourangle, units.deg),
-                          frame='icrs', pm_ra_cosdec=pm_ra * units.arcsec / units.year,
-                          pm_dec=pm_dec * units.arcsec / units.year, equinox='j2000',
+                          frame='icrs', pm_ra_cosdec=pm_ra * units.mas / units.year,
+                          pm_dec=pm_dec * units.mas / units.year, equinox='j2000',
                           obstime=Time(2000.0, format='decimalyear'))
     transformed_coordinate = coordinate.apply_space_motion(new_obstime=Time(2015.5, format='decimalyear'))
 

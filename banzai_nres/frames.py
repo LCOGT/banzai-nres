@@ -10,6 +10,8 @@ from astropy.table import Table
 from typing import Union
 from astropy.io import fits
 import os
+from astropy.coordinates import Angle
+from astropy import units
 
 
 logger = logging.getLogger('banzai')
@@ -173,35 +175,53 @@ class NRESObservationFrame(LCOObservationFrame):
 
     @property
     def ra(self):
-        return self.primary_hdu.meta['RA']
+        if self.primary_hdu.meta['RA'] == 'N/A':
+            return np.nan
+        return Angle(self.primary_hdu.meta['RA'], units.hourangle).deg
 
     @ra.setter
     def ra(self, value):
-        self.primary_hdu.meta['RA'] = value
+        if np.isnan(value):
+            self.primary_hdu.meta['RA'] = 'N/A'
+        else:
+            a = Angle(value, units.deg)
+            self.primary_hdu.meta['RA'] = a.to_string(unit=units.hourangle, sep=':', precision=3, pad=True)
 
     @property
     def dec(self):
-        return self.primary_hdu.meta['DEC']
+        if self.primary_hdu.meta['DEC'] == 'N/A':
+            return np.nan
+        return Angle(self.primary_hdu.meta['DEC'], units.deg).deg
 
     @dec.setter
     def dec(self, value):
-        self.primary_hdu.meta['DEC'] = value
+        if np.isnan(value):
+            self.primary_hdu.meta['DEC'] = 'N/A'
+        else:
+            a = Angle(value, units.deg)
+            self.primary_hdu.meta['DEC'] = a.to_string(unit=units.deg, sep=':', precision=2, pad=True)
 
     @property
     def pm_ra(self):
-        return self.primary_hdu.meta['PM-RA']
+        # Proper motion is stored in arcseconds/year but we always use it in mas/year
+        # Note that the RA proper motion has the cos dec term included both in the header and when we use it
+        return self.primary_hdu.meta['PM-RA'] * 1000.0
 
     @pm_ra.setter
     def pm_ra(self, value):
-        self.primary_hdu.meta['PM-RA'] = value
+        # Proper motion is stored in arcseconds/year but we always use it in mas/year
+        # Note that the RA proper motion has the cos dec term included both in the header and when we use it
+        self.primary_hdu.meta['PM-RA'] = value / 1000.0
 
     @property
     def pm_dec(self):
-        return self.primary_hdu.meta['PM-DEC']
+        # Proper motion is stored in arcseconds/year but we always use it in mas/year
+        return self.primary_hdu.meta['PM-DEC'] * 1000.0
 
     @pm_dec.setter
     def pm_dec(self, value):
-        self.primary_hdu.meta['PM-DEC'] = value
+        # Proper motion is stored in arcseconds/year but we always use it in mas/year
+        self.primary_hdu.meta['PM-DEC'] = value / 1000.0
 
 
 class NRESCalibrationFrame(LCOCalibrationFrame, NRESObservationFrame):
