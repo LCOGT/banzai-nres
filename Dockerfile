@@ -10,4 +10,6 @@ COPY --chown=10087:10000 . /lco/banzai-nres
 
 RUN pip install /lco/banzai-nres/ --no-cache-dir
 
+RUN chown -R archive /home/archive
+
 USER archive
