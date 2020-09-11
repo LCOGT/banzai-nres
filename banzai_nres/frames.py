@@ -403,13 +403,16 @@ class NRESFrameFactory(LCOFrameFactory):
         if image is None or 'nres' not in image.meta.get('TELESCOP', '').lower():
             return None
 
-        # Fix the RA and DEC keywords to be the requested values for all of our measurements
-        if image['TELESCOPE_1'].meta['OBJECT'].lower() in image.meta['OBJECTS'].lower():
-            telescope_num = 1
-        else:
-            telescope_num = 2
-        image.ra = image[f'TELESCOPE_{telescope_num}'].meta['CAT-RA']
-        image.dec = image[f'TELESCOPE_{telescope_num}'].meta['CAT-DEC']
-        image.pm_ra = image[f'TELESCOPE_{telescope_num}'].meta['PM-RA']
-        image.pm_dec = image[f'TELESCOPE_{telescope_num}'].meta['PM-DEC']
+        # Not all NRES CDPs have all the extensions like bias frames and BPMs so we have to check
+        if 'TELESCOPE_1' in image:
+
+            # Fix the RA and DEC keywords to be the requested values for all of our measurements
+            if image['TELESCOPE_1'].meta['OBJECT'].lower() in image.meta['OBJECTS'].lower():
+                telescope_num = 1
+            else:
+                telescope_num = 2
+            image.ra = image[f'TELESCOPE_{telescope_num}'].meta['CAT-RA']
+            image.dec = image[f'TELESCOPE_{telescope_num}'].meta['CAT-DEC']
+            image.pm_ra = image[f'TELESCOPE_{telescope_num}'].meta['PM-RA']
+            image.pm_dec = image[f'TELESCOPE_{telescope_num}'].meta['PM-DEC']
         return image

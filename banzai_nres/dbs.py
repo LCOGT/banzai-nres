@@ -90,8 +90,8 @@ def populate_phoenix_models(model_location, db_address):
         # Assume they are on disk
         model_files = glob(os.path.join(model_location, '*.fits'))
     with banzai.dbs.get_session(db_address) as db_session:
-        # strip off the s3
         for model_file in model_files:
+            # strip off the s3
             if 's3' in model_location:
                 filename = model_file.key
                 location = model_location
@@ -107,8 +107,7 @@ def populate_phoenix_models(model_location, db_address):
             # Note that there are 25 header keyword value pairs in a standard phoenix model file all in cgs units
             # FITS headers have 80 character header lines
             if 's3' in model_location:
-                header_lines = s3.get_object(Bucket=model_bucket, Key=filename,
-                                             Range=f'0-{80 * 25 - 1}')['Body'].read()
+                header_lines = model_bucket.Object(model_file).get(Range=f'bytes=0-{80 * 25 - 1}')['Body'].read()
             else:
                 with open(os.path.join(location, filename), 'rb') as f:
                     header_lines = f.read(80 * 25)
