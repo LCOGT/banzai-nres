@@ -206,25 +206,39 @@ class NRESObservationFrame(LCOObservationFrame):
 
     @property
     def pm_ra(self):
+        if self.primary_hdu.meta['PM-RA'] == 'N/A':
+            return np.nan
         # Proper motion is stored in arcseconds/year but we always use it in mas/year
         # Note that the RA proper motion has the cos dec term included both in the header and when we use it
         return self.primary_hdu.meta['PM-RA'] * 1000.0
 
     @pm_ra.setter
     def pm_ra(self, value):
-        # Proper motion is stored in arcseconds/year but we always use it in mas/year
-        # Note that the RA proper motion has the cos dec term included both in the header and when we use it
-        self.primary_hdu.meta['PM-RA'] = value / 1000.0
+        if isinstance(value, str):
+            self.primary_hdu.meta['PM-RA'] = value
+        elif isinstance(value, float) and np.isnan(value):
+            self.primary_hdu.meta['PM-RA'] = 'N/A'
+        else:
+            # Proper motion is stored in arcseconds/year but we always use it in mas/year
+            # Note that the RA proper motion has the cos dec term included both in the header and when we use it
+            self.primary_hdu.meta['PM-RA'] = value / 1000.0
 
     @property
     def pm_dec(self):
+        if self.primary_hdu.meta['PM-DEC'] == 'N/A':
+            return np.nan
         # Proper motion is stored in arcseconds/year but we always use it in mas/year
         return self.primary_hdu.meta['PM-DEC'] * 1000.0
 
     @pm_dec.setter
     def pm_dec(self, value):
-        # Proper motion is stored in arcseconds/year but we always use it in mas/year
-        self.primary_hdu.meta['PM-DEC'] = value / 1000.0
+        if isinstance(value, str):
+            self.primary_hdu.meta['PM-DEC'] = value
+        elif isinstance(value, float) and np.isnan(value):
+            self.primary_hdu.meta['PM-DEC'] = 'N/A'
+        else:
+            # Proper motion is stored in arcseconds/year but we always use it in mas/year
+            self.primary_hdu.meta['PM-DEC'] = value / 1000.0
 
 
 class NRESCalibrationFrame(LCOCalibrationFrame, NRESObservationFrame):
