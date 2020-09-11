@@ -67,6 +67,9 @@ class NRESObservationFrame(LCOObservationFrame):
             return self._hdus[item]
         return self._hdus[self._hdu_names.index(item)]
 
+    def __contains__(self, item):
+        return item in self._hdu_names
+
     def num_lit_fibers(self):
         return 1 * self.fiber0_lit + 1 * self.fiber1_lit + 1 * self.fiber2_lit
 
@@ -181,7 +184,7 @@ class NRESObservationFrame(LCOObservationFrame):
 
     @ra.setter
     def ra(self, value):
-        if np.isnan(value):
+        if isinstance(value, float) and np.isnan(value):
             self.primary_hdu.meta['RA'] = 'N/A'
         else:
             a = Angle(value, units.deg)
@@ -195,7 +198,7 @@ class NRESObservationFrame(LCOObservationFrame):
 
     @dec.setter
     def dec(self, value):
-        if np.isnan(value):
+        if isinstance(value, float) and np.isnan(value):
             self.primary_hdu.meta['DEC'] = 'N/A'
         else:
             a = Angle(value, units.deg)
@@ -413,6 +416,7 @@ class NRESFrameFactory(LCOFrameFactory):
                 telescope_num = 2
             image.ra = image[f'TELESCOPE_{telescope_num}'].meta['CAT-RA']
             image.dec = image[f'TELESCOPE_{telescope_num}'].meta['CAT-DEC']
-            image.pm_ra = image[f'TELESCOPE_{telescope_num}'].meta['PM-RA']
-            image.pm_dec = image[f'TELESCOPE_{telescope_num}'].meta['PM-DEC']
+            # Convert to mas / yr from arcsec / year
+            image.pm_ra = image[f'TELESCOPE_{telescope_num}'].meta['PM-RA'] * 1000.0
+            image.pm_dec = image[f'TELESCOPE_{telescope_num}'].meta['PM-DEC'] * 1000.0
         return image
