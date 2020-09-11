@@ -414,8 +414,14 @@ class NRESFrameFactory(LCOFrameFactory):
                 telescope_num = 1
             else:
                 telescope_num = 2
-            image.ra = image[f'TELESCOPE_{telescope_num}'].meta['CAT-RA']
-            image.dec = image[f'TELESCOPE_{telescope_num}'].meta['CAT-DEC']
+
+            if 'nan' in  str(image[f'TELESCOPE_{telescope_num}'].meta['CAT-RA']).lower() or \
+                    'n/a' in  str(image[f'TELESCOPE_{telescope_num}'].meta['CAT-RA']).lower():
+                ra_dec_keyword = ''
+            else:
+                ra_dec_keyword = 'CAT-'
+            image.ra = image[f'TELESCOPE_{telescope_num}'].meta[f'{ra_dec_keyword}RA']
+            image.dec = image[f'TELESCOPE_{telescope_num}'].meta[f'{ra_dec_keyword}DEC']
             # Convert to mas / yr from arcsec / year
             image.pm_ra = image[f'TELESCOPE_{telescope_num}'].meta['PM-RA'] * 1000.0
             image.pm_dec = image[f'TELESCOPE_{telescope_num}'].meta['PM-DEC'] * 1000.0
