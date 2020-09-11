@@ -107,7 +107,7 @@ def populate_phoenix_models(model_location, db_address):
             # Note that there are 25 header keyword value pairs in a standard phoenix model file all in cgs units
             # FITS headers have 80 character header lines
             if 's3' in model_location:
-                header_lines = model_bucket.Object(model_file).get(Range=f'bytes=0-{80 * 25 - 1}')['Body'].read()
+                header_lines = model_bucket.Object(key=filename).get(Range=f'bytes=0-{80 * 25 - 1}')['Body'].read()
             else:
                 with open(os.path.join(location, filename), 'rb') as f:
                     header_lines = f.read(80 * 25)
