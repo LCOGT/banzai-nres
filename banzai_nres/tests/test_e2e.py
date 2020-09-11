@@ -290,7 +290,7 @@ mock_simbad_response = [{'RA': '07 39 18.1195',
 class TestScienceFrameProcessing:
     @pytest.fixture(autouse=True)
     @mock.patch('banzai_nres.classify.simbad.query_region')
-    @mock.patch('banzai_nres.classify.astroquery.gaia.Gaia.query_object')
+    @mock.patch('banzai_nres.classify.Gaia.query_object')
     def process_frames(self, mock_gaia, mock_simbad):
         # return an empty dummy value because Procyon is not in Gaia
         mock_gaia.return_value = Table({'a': []})
