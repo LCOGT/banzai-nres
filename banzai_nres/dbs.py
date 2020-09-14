@@ -123,6 +123,7 @@ def populate_phoenix_models(model_location, db_address):
                                  'radius': radius,
                                  'luminosity': luminosity,
                                  'mass': mass}
+            logger.info('Loading Phoenix Model', extra_tags=record_attributes)
             banzai.dbs.add_or_update_record(db_session, PhoenixModel, equivalence_criteria, record_attributes)
             db_session.commit()
 
