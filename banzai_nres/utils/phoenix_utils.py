@@ -1,4 +1,4 @@
-from banzai_nres.utils.fits_utils import fits_bytes_to_header
+from banzai_nres.utils.fits_utils import phoenix_fits_bytes_to_header
 
 
 def plus_minus_to_pm(value, fmt):
@@ -27,7 +27,7 @@ def parameters_to_filename(T_effective, log_g, metallicity, alpha):
 
 def parse_phoenix_header(header_lines):
     # Note all values are in cgs units
-    header = fits_bytes_to_header(header_lines)
+    header = phoenix_fits_bytes_to_header(header_lines)
     T_effective = header['PHXTEFF']
     log_g = header['PHXLOGG']
     metallicity = header['PHXM_H']

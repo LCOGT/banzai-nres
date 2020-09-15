@@ -1,7 +1,7 @@
 from astropy.io import fits
 
 
-def fits_bytes_to_header(header_lines):
+def phoenix_fits_bytes_to_header(header_lines):
     header_lines = header_lines.decode("utf-8")
     header = fits.Header({})
     for i in range(0, len(header_lines), 80):

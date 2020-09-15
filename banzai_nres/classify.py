@@ -5,11 +5,7 @@ import warnings
 from astropy import units
 from astropy.time import Time
 from astropy.coordinates import SkyCoord
-from astroquery.gaia import Gaia
-from astroquery.simbad import Simbad
-simbad = Simbad()
-simbad.add_votable_fields('pmra', 'pmdec', 'fe_h')
-Gaia.ROW_LIMIT = 200
+from astroquery import gaia, simbad
 
 
 def find_object_in_catalog(image, db_address):
@@ -29,7 +25,9 @@ def find_object_in_catalog(image, db_address):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         # 10 arcseconds should be a large enough radius to capture bright objects.
-        results = Gaia.query_object(coordinate=transformed_coordinate, radius=10.0 * units.arcsec)
+        gaia_connection = gaia.GaiaClass()
+        gaia_connection.ROW_LIMIT = 200
+        results = gaia_connection.query_object(coordinate=transformed_coordinate, radius=10.0 * units.arcsec)
 
     # Filter out objects fainter than r=12
     results = results[results['phot_rp_mean_mag'] < 12.0]
@@ -42,9 +40,10 @@ def find_object_in_catalog(image, db_address):
         image.pm_ra, image.pm_dec = results[0]['pmra'], results[0]['pmdec']
     # If nothing in Gaia fall back to simbad. This should only be for stars that are brighter than mag = 3
     else:
-        results = simbad.query_region(coordinate, radius='0d0m10s')
-        results.rename_column('Fe_H_log_g', 'log_g')
-        if len(results) > 0:
+        simbad_connection = simbad.Simbad()
+        simbad_connection.add_votable_fields('pmra', 'pmdec', 'fe_h')
+        results = simbad_connection.query_region(coordinate, radius='0d0m10s')
+        if results:
             image.classification = dbs.get_closest_phoenix_models(db_address, results[0]['Fe_H_Teff'],
                                                                   results[0]['Fe_H_log_g'])
             # Update the ra and dec to the catalog coordinates as those are basically always better than a user enters
@@ -60,13 +59,13 @@ class StellarClassifier(Stage):
 
         # TODO: For each param: Fix the other params, get the N closest models and save the results
 
-        if image.classifciation is None:
+        if image.classification is None:
             image.meta['CLASSIFY'] = 0, 'Was this spectrum classified'
         else:
             image.meta['CLASSIFY'] = 1, 'Was this spectrum classified'
-            image.meta['TEFF'] = image.classifciation.T_effective
-            image.meta['LOG_G'] = image.classifciation.log_g
-            image.meta['FE_H'] = image.classifciation.metallicity
-            image.meta['ALPHA'] = image.classifciation.alpha
+            image.meta['TEFF'] = image.classification.T_effective
+            image.meta['LOG_G'] = image.classification.log_g
+            image.meta['FE_H'] = image.classification.metallicity
+            image.meta['ALPHA'] = image.classification.alpha
 
         return image

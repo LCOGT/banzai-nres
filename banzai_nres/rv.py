@@ -94,7 +94,6 @@ class RVCalculator(Stage):
         if image.classification is None:
             logger.warning('No classification to use for an RV template', image=image)
             return image
-        # Get a G2V template for the moment
         phoenix_loader = phoenix.PhoenixModelLoader(self.runtime_context.db_address)
         template = phoenix_loader.load(image.classification)
         # Pick orders near the center of the detector that have a high Signal to noise and are free of tellurics.
@@ -115,8 +114,7 @@ class RVCalculator(Stage):
         rvs_per_order = np.array([ccf['v'][np.argmax(ccf['xcor'])] for ccf in final_ccfs])
         # Calculate the peak v (converting to m/s) in the spectrograph frame
         rv_measured = stats.sigma_clipped_mean(rvs_per_order, 3.0) * 1000
-        # TODO: Add ra and dec to observation frame object
-        # Note: the RA and DEC from the header are where the telescope thinks it is pointing, not the requested RA/Dec
+
         # Compute the barycentric RV and observing time corrections
         rv_correction, bjd_tdb = barycentric_correction(image.dateobs, image.exptime,
                                                         image.ra, image.dec,

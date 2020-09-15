@@ -299,8 +299,9 @@ mock_simbad_response = [{'RA': '07 39 18.1195',
 @pytest.mark.science_frames
 class TestScienceFrameProcessing:
     @pytest.fixture(autouse=True)
-    @mock.patch('banzai_nres.classify.simbad.query_region')
-    @mock.patch('banzai_nres.classify.Gaia.query_object')
+    # Note this requires the GAIA and SIMBAD services to be up. It's a little scary to depend on outside data source
+    # for our tests. To mock this, we would have to write a control command and use broadcast() to get it to the workers
+    # See https://stackoverflow.com/questions/30450468/mocking-out-a-call-within-a-celery-task
     def process_frames(self, mock_gaia, mock_simbad):
         # return an empty dummy value because Procyon is not in Gaia
         mock_gaia.return_value = Table({'a': []})
