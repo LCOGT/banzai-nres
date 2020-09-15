@@ -19,6 +19,7 @@ from astropy.table import Table
 from banzai.utils import fits_utils
 import banzai_nres.dbs
 import json
+import banzai_nres.dbs
 
 import logging
 
@@ -195,7 +196,10 @@ def mock_phoenix_models_in_db(db_address):
         phoenix_data = json.load(f)
     with dbs.get_session(db_address) as db_session:
         db_session.bulk_insert_mappings(banzai_nres.dbs.PhoenixModel, phoenix_data)
-
+        dbs.add_or_update_record(db_session, banzai_nres.dbs.ResourceFile, {'key': 'phoenix_wavelengths'},
+                                 {'filename': 'phoenix_wavelength.fits',
+                                  'location': 's3://banzai-nres-phoenix-models-lco-global',
+                                  'key': 'phoenix_wavelengths'})
 
 @pytest.mark.e2e
 @pytest.fixture(scope='module')
