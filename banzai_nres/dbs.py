@@ -5,8 +5,10 @@ import banzai.dbs
 import os
 from glob import glob
 import logging
-from banzai_nres.utils import phoenix_utils
+from sqlalchemy import func
+from sqlalchemy.ext.hybrid import hybrid_method
 
+from banzai_nres.utils.phoenix_utils import parse_phoenix_header
 
 logger = logging.getLogger('banzai')
 
@@ -20,7 +22,51 @@ class PhoenixModel(Base):
     log_g = Column(Float)
     metallicity = Column(Float)
     alpha = Column(Float)
+    radius = Column(Float)
+    luminosity = Column(Float)
+    mass = Column(Float)
     Index('idx_model', 'T_effective', 'log_g', 'metallicity', 'alpha')
+    Index('idx_observer', 'T_effective', 'luminosity')
+
+    @hybrid_method
+    def diff_T(self, value):
+        return abs(self.T_effective - value)
+
+    @diff_T.expression
+    def diff_T_expression(cls, value):
+        return func.abs(cls.T_effective - value)
+
+    @hybrid_method
+    def diff_log_g(self, value):
+        return abs(self.log_g - value)
+
+    @diff_log_g.expression
+    def diff_log_g_expression(cls, value):
+        return func.abs(cls.log_g - value)
+
+    @hybrid_method
+    def diff_alpha(self, value):
+        return abs(self.alpha - value)
+
+    @diff_alpha.expression
+    def diff_alpha_expression(cls, value):
+        return func.abs(cls.alpha - value)
+
+    @hybrid_method
+    def diff_metallicity(self, value):
+        return abs(self.metallicity - value)
+
+    @diff_metallicity.expression
+    def diff_metallicity_expression(cls, value):
+        return func.abs(cls.metallicity - value)
+
+    @hybrid_method
+    def diff_luminosity(self, value):
+        return abs(self.luminosity - value)
+
+    @diff_metallicity.expression
+    def diff_luminosity_expression(cls, value):
+        return func.abs(cls.luminosity - value)
 
 
 class ResourceFile(Base):
@@ -44,8 +90,8 @@ def populate_phoenix_models(model_location, db_address):
         # Assume they are on disk
         model_files = glob(os.path.join(model_location, '*.fits'))
     with banzai.dbs.get_session(db_address) as db_session:
-        # strip off the s3
         for model_file in model_files:
+            # strip off the s3
             if 's3' in model_location:
                 filename = model_file.key
                 location = model_location
@@ -57,29 +103,57 @@ def populate_phoenix_models(model_location, db_address):
                 banzai.dbs.add_or_update_record(db_session, ResourceFile, {'key': 'phoenix_wavelengths'},
                                                 {'filename': filename, 'location': location, 'key': 'phoenix_wavelengths'})
                 continue
+
+            # Note that there are 25 header keyword value pairs in a standard phoenix model file all in cgs units
+            # FITS headers have 80 character header lines
+            if 's3' in model_location:
+                header_lines = model_bucket.Object(key=filename).get(Range=f'bytes=0-{80 * 25 - 1}')['Body'].read()
+            else:
+                with open(os.path.join(location, filename), 'rb') as f:
+                    header_lines = f.read(80 * 25)
+            T_effective, log_g, metallicity, alpha, radius, luminosity, mass = parse_phoenix_header(header_lines)
             equivalence_criteria = {'filename': filename}
             # This naming convention assumes we follow the convention from the munge_phoenix_models.py code.
-            T_effective, log_g, metallicity, alpha = phoenix_utils.filename_to_parameters(filename)
             record_attributes = {'filename': filename,
                                  'location': location,
                                  'T_effective': T_effective,
                                  'log_g': log_g,
                                  'metallicity': metallicity,
-                                 'alpha': alpha}
+                                 'alpha': alpha,
+                                 'radius': radius,
+                                 'luminosity': luminosity,
+                                 'mass': mass}
+            logger.info('Loading Phoenix Model', extra_tags=record_attributes)
             banzai.dbs.add_or_update_record(db_session, PhoenixModel, equivalence_criteria, record_attributes)
             db_session.commit()
 
 
-def get_phoenix_model_record(db_address, T_effective, log_g, metallicity, alpha):
+def get_closest_phoenix_models(db_address, T_effective, log_g, metallicity=0.0, alpha=0.0, fixed=None):
+    if fixed is None:
+        fixed = []
     with banzai.dbs.get_session(db_address=db_address) as db_session:
-        query = PhoenixModel.T_effective == T_effective
-        query &= PhoenixModel.log_g == log_g
-        query &= PhoenixModel.metallicity == metallicity
-        query &= PhoenixModel.alpha == alpha
-        model = db_session.query(PhoenixModel).filter(query).first()
+        query = []
+        for param in fixed:
+            query.append(getattr(PhoenixModel, param) == eval(param))
+        order = [PhoenixModel.diff_T(T_effective), PhoenixModel.diff_log_g(log_g),
+                 PhoenixModel.diff_metallicity(metallicity), PhoenixModel.diff_alpha(alpha)]
+        model = db_session.query(PhoenixModel).filter(*query).order_by(*order).first()
         if model is None:
             logger.error('Phoenix model does not exist for these parameters',
                          extra_tags={'T_effective': T_effective, 'log_g': log_g,
+                                     'metallicity': metallicity, 'alpha': alpha})
+            raise ValueError('Phoenix Model Missing')
+    return model
+
+
+def get_closest_HR_phoenix_models(db_address, T_effective, luminosity, metallicity=0.0, alpha=0.0):
+    with banzai.dbs.get_session(db_address=db_address) as db_session:
+        order = [PhoenixModel.diff_T(T_effective), PhoenixModel.diff_luminosity(luminosity),
+                 PhoenixModel.diff_metallicity(metallicity), PhoenixModel.diff_alpha(alpha)]
+        model = db_session.query(PhoenixModel).order_by(*order).first()
+        if model is None:
+            logger.error('Phoenix model does not exist for these parameters',
+                         extra_tags={'T_effective': T_effective, 'Luminosity': luminosity,
                                      'metallicity': metallicity, 'alpha': alpha})
             raise ValueError('Phoenix Model Missing')
     return model
