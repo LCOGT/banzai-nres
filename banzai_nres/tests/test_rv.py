@@ -91,7 +91,6 @@ def test_rv(mock_loader, mock_db):
     stage = RVCalculator(SimpleNamespace(db_address='foo'))
     stage.MIN_ORDER_TO_CORRELATE, stage.MAX_ORDER_TO_CORRELATE = 0, num_orders - 1
     image = stage.do_stage(image)
-
     # Assert that the true_v + rv_correction is what is in the header within 5 m/s
     assert np.abs(true_v * 1000.0 + image.meta['BARYCORR'] - image.meta['RV']) < 5.0
 

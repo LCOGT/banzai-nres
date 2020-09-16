@@ -146,13 +146,21 @@ class RVCalculator(Stage):
         image.meta['TCOREPOS'] = 'ERFA', 'Source of Earth position'
         image.meta['TCORSYST'] = 'BJD_TDB ', 'Ref. frame_timesystem of TCORR column'
         image.meta['PLEPHEM'] = solar_system_ephemeris.get(), 'Source of planetary ephemerides'
+
         # save the fine + coarse ccfs together
+        # sort the coarse and fine ccf's
         coarse_ccfs.sort('order')
         ccfs.sort('order')
+        # remove entries from the coarse ccf's that fall within the velocity range of the fine ccf's
+        ccf_range = (np.min(ccfs['v'][0]), np.max(ccfs['v'][0]))
+        entries_to_keep = np.logical_or(coarse_ccfs['v'][0] < min(ccf_range), coarse_ccfs['v'][0] > max(ccf_range))
+        coarse_ccfs['v'] = coarse_ccfs['v'][:, entries_to_keep]
+        coarse_ccfs['xcor'] = coarse_ccfs['xcor'][:, entries_to_keep]
+        #
         final_ccfs = Table({'order': ccfs['order'],
                             'v': np.hstack([coarse_ccfs['v'], ccfs['v']]),
                             'xcor': np.hstack([coarse_ccfs['xcor'], ccfs['xcor']])})
-        # sorting xcor by the velocity grid
+        # sorting xcor by the velocity grid so that things are in order
         sort_array = np.argsort(final_ccfs['v'][0])
         final_ccfs['xcor'] = final_ccfs['xcor'][:, sort_array]
         final_ccfs['v'] = final_ccfs['v'][:, sort_array]

@@ -6,7 +6,9 @@ import numpy as np
 from scipy.ndimage.morphology import binary_dilation
 from scipy.stats import median_absolute_deviation
 
-# Wavelength regions where there are strong Balmer or other absorption lines. This is from CERES (thanks!)
+# Wavelength regions where there are strong Balmer or other absorption lines. This is from CERES :
+# https://ui.adsabs.harvard.edu/link_gateway/2017PASP..129c4002B/doi:10.1088/1538-3873/aa5455
+
 WAVELENGTHS_TO_MASK = np.array([[6755, 6769], [6530, 6600], [4840, 4880], [4320, 4360],
                                 [4085, 4120], [3950, 3990], [3880, 3910], [3825, 3850]])
 
