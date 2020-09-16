@@ -19,6 +19,14 @@ logger = logging.getLogger('banzai')
 c = constants.c.to('km / s').value
 
 
+# wavelength regions selected by eye by Mirek on 09 16 2020 wherever there are large (H alpha like, i.e. broad wings)
+# absorption features in the G2V pheonix template (banzai nres name phoenix-05700-p4.5-p0.0-p0.0.fits).
+# This shares many regions with the region masks in banzai_nres.continuum.WAVELENGTHS_TO_MASK
+PHOENIX_WAVELENGTHS_TO_MASK = np.array([[9215, 9250], [9000, 9035], [8725, 8760], [8800, 8815], [8855, 8875], [8525, 8560], [8650, 8675],
+                                        [8480, 8510], [6530, 6600], [5880, 5910], [5260, 5280], [5320, 5340], [5160, 5190], [4880, 4840],
+                                        [4380, 4390], [4310, 4360], [4090, 4115], [4040, 4055], [4060, 4070], [3950, 3980], [3925, 3945]])
+
+
 def cross_correlate(velocities, wavelength, flux, flux_uncertainty, template_wavelength, template_flux):
     """
     :param velocities: in km / s
@@ -83,6 +91,10 @@ def cross_correlate_over_traces(image, orders_to_use, velocities, template):
         mask = np.zeros_like(template_to_fit['flux'])
         # reject absorption lines
         mask = mark_absorption_or_emission_features(mask, template_to_fit['flux'], 10)
+        # Mask the prohibited wavelength regions.
+        for mask_region in PHOENIX_WAVELENGTHS_TO_MASK:
+            mask[np.logical_and(template_to_fit['wavelength'] >= min(mask_region),
+                                template_to_fit['wavelength'] <= max(mask_region))] = 1
         #
         continuum_model = fit_polynomial(template_to_fit['flux'], template_error, x=template_to_fit['wavelength'],
                                          order=3, mask=mask)
