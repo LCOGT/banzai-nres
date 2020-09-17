@@ -2,7 +2,7 @@ import os
 from astropy.io import fits
 import boto3
 import io
-from banzai_nres.dbs import get_phoenix_model_record, get_resource_file
+from banzai_nres.dbs import get_resource_file
 
 
 class PhoenixModelLoader:
@@ -11,9 +11,7 @@ class PhoenixModelLoader:
         self._wavelengths = self.open_model_fits_file(phoenix_wavelength_record.location,
                                                       phoenix_wavelength_record.filename)
 
-    def load(self, db_address, T_effective, log_g, metallicity, alpha):
-        # Load in the template
-        model_record = get_phoenix_model_record(db_address, T_effective, log_g, metallicity, alpha)
+    def load(self, model_record):
         flux = self.open_model_fits_file(model_record.location, model_record.filename)
         return {'wavelength': self._wavelengths, 'flux': flux}
 

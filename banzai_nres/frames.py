@@ -10,6 +10,8 @@ from astropy.table import Table
 from typing import Union
 from astropy.io import fits
 import os
+from astropy.coordinates import Angle
+from astropy import units
 
 
 logger = logging.getLogger('banzai')
@@ -55,6 +57,18 @@ class NRESObservationFrame(LCOObservationFrame):
     def __init__(self, hdu_list: list, file_path: str, frame_id: int = None, hdu_order: list = None):
         LCOObservationFrame.__init__(self, hdu_list, file_path, frame_id=frame_id, hdu_order=hdu_order)
         self.fiber0_lit, self.fiber1_lit, self.fiber2_lit = fiber_states_from_header(self.meta)
+        self.classification = None
+        self._hdu_names = [hdu.name for hdu in hdu_list]
+
+    def __getitem__(self, item):
+        if item not in self._hdu_names and not isinstance(item, int):
+            raise ValueError('Requested HDU name is not in frame')
+        if isinstance(item, int):
+            return self._hdus[item]
+        return self._hdus[self._hdu_names.index(item)]
+
+    def __contains__(self, item):
+        return item in self._hdu_names
 
     def num_lit_fibers(self):
         return 1 * self.fiber0_lit + 1 * self.fiber1_lit + 1 * self.fiber2_lit
@@ -161,6 +175,70 @@ class NRESObservationFrame(LCOObservationFrame):
     @ccf.setter
     def ccf(self, value):
         self.primary_hdu.ccf = value
+
+    @property
+    def ra(self):
+        if self.primary_hdu.meta['RA'] == 'N/A':
+            return np.nan
+        return Angle(self.primary_hdu.meta['RA'], units.hourangle).deg
+
+    @ra.setter
+    def ra(self, value):
+        if isinstance(value, float) and np.isnan(value):
+            self.primary_hdu.meta['RA'] = 'N/A'
+        else:
+            a = Angle(value, units.deg)
+            self.primary_hdu.meta['RA'] = a.to_string(unit=units.hourangle, sep=':', precision=3, pad=True)
+
+    @property
+    def dec(self):
+        if self.primary_hdu.meta['DEC'] == 'N/A':
+            return np.nan
+        return Angle(self.primary_hdu.meta['DEC'], units.deg).deg
+
+    @dec.setter
+    def dec(self, value):
+        if isinstance(value, float) and np.isnan(value):
+            self.primary_hdu.meta['DEC'] = 'N/A'
+        else:
+            a = Angle(value, units.deg)
+            self.primary_hdu.meta['DEC'] = a.to_string(unit=units.deg, sep=':', precision=2, pad=True)
+
+    @property
+    def pm_ra(self):
+        if self.primary_hdu.meta['PM-RA'] == 'N/A':
+            return np.nan
+        # Proper motion is stored in arcseconds/year but we always use it in mas/year
+        # Note that the RA proper motion has the cos dec term included both in the header and when we use it
+        return self.primary_hdu.meta['PM-RA'] * 1000.0
+
+    @pm_ra.setter
+    def pm_ra(self, value):
+        if isinstance(value, str):
+            self.primary_hdu.meta['PM-RA'] = value
+        elif isinstance(value, float) and np.isnan(value):
+            self.primary_hdu.meta['PM-RA'] = 'N/A'
+        else:
+            # Proper motion is stored in arcseconds/year but we always use it in mas/year
+            # Note that the RA proper motion has the cos dec term included both in the header and when we use it
+            self.primary_hdu.meta['PM-RA'] = value / 1000.0
+
+    @property
+    def pm_dec(self):
+        if self.primary_hdu.meta['PM-DEC'] == 'N/A':
+            return np.nan
+        # Proper motion is stored in arcseconds/year but we always use it in mas/year
+        return self.primary_hdu.meta['PM-DEC'] * 1000.0
+
+    @pm_dec.setter
+    def pm_dec(self, value):
+        if isinstance(value, str):
+            self.primary_hdu.meta['PM-DEC'] = value
+        elif isinstance(value, float) and np.isnan(value):
+            self.primary_hdu.meta['PM-DEC'] = 'N/A'
+        else:
+            # Proper motion is stored in arcseconds/year but we always use it in mas/year
+            self.primary_hdu.meta['PM-DEC'] = value / 1000.0
 
 
 class NRESCalibrationFrame(LCOCalibrationFrame, NRESObservationFrame):
@@ -341,5 +419,28 @@ class NRESFrameFactory(LCOFrameFactory):
         # products to distinguish.
         if image is None or 'nres' not in image.meta.get('TELESCOP', '').lower():
             return None
-        else:
-            return image
+
+        # Not all NRES CDPs have all the extensions like bias frames and BPMs so we have to check
+        if 'TELESCOPE_1' in image:
+
+            # Fix the RA and DEC keywords to be the requested values for all of our measurements
+            if image['TELESCOPE_1'].meta['OBJECT'].lower() in image.meta['OBJECTS'].lower():
+                telescope_num = 1
+            else:
+                telescope_num = 2
+
+            if 'nan' in  str(image[f'TELESCOPE_{telescope_num}'].meta['CAT-RA']).lower() or \
+                    'n/a' in str(image[f'TELESCOPE_{telescope_num}'].meta['CAT-RA']).lower():
+                ra_dec_keyword = ''
+            else:
+                ra_dec_keyword = 'CAT-'
+            image.ra = Angle(image[f'TELESCOPE_{telescope_num}'].meta[f'{ra_dec_keyword}RA'], units.hourangle).deg
+            image.dec = image[f'TELESCOPE_{telescope_num}'].meta[f'{ra_dec_keyword}DEC']
+            if image[f'TELESCOPE_{telescope_num}'].meta['PM-RA'] == 'N/A':
+                image.pm_ra = np.nan
+                image.pm_dec = np.nan
+            else:
+                # Convert to mas / yr from arcsec / year
+                image.pm_ra = image[f'TELESCOPE_{telescope_num}'].meta['PM-RA'] * 1000.0
+                image.pm_dec = image[f'TELESCOPE_{telescope_num}'].meta['PM-DEC'] * 1000.0
+        return image
