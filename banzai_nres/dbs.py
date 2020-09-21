@@ -33,7 +33,7 @@ class PhoenixModel(Base):
         return abs(self.T_effective - value)
 
     @diff_T.expression
-    def diff_T_expression(cls, value):
+    def diff_T(cls, value):
         return func.abs(cls.T_effective - value)
 
     @hybrid_method
@@ -41,7 +41,7 @@ class PhoenixModel(Base):
         return abs(self.log_g - value)
 
     @diff_log_g.expression
-    def diff_log_g_expression(cls, value):
+    def diff_log_g(cls, value):
         return func.abs(cls.log_g - value)
 
     @hybrid_method
@@ -49,7 +49,7 @@ class PhoenixModel(Base):
         return abs(self.alpha - value)
 
     @diff_alpha.expression
-    def diff_alpha_expression(cls, value):
+    def diff_alpha(cls, value):
         return func.abs(cls.alpha - value)
 
     @hybrid_method
@@ -57,7 +57,7 @@ class PhoenixModel(Base):
         return abs(self.metallicity - value)
 
     @diff_metallicity.expression
-    def diff_metallicity_expression(cls, value):
+    def diff_metallicity(cls, value):
         return func.abs(cls.metallicity - value)
 
     @hybrid_method
@@ -65,7 +65,7 @@ class PhoenixModel(Base):
         return abs(self.luminosity - value)
 
     @diff_metallicity.expression
-    def diff_luminosity_expression(cls, value):
+    def diff_luminosity(cls, value):
         return func.abs(cls.luminosity - value)
 
 

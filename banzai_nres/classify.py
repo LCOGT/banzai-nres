@@ -6,6 +6,7 @@ from astropy import units
 from astropy.time import Time
 from astropy.coordinates import SkyCoord
 from astroquery import gaia, simbad
+from astropy import constants
 
 
 def find_object_in_catalog(image, db_address):
@@ -28,6 +29,8 @@ def find_object_in_catalog(image, db_address):
         gaia_connection = gaia.GaiaClass()
         gaia_connection.ROW_LIMIT = 200
         results = gaia_connection.query_object(coordinate=transformed_coordinate, radius=10.0 * units.arcsec)
+        #convert the luminosity from the LSun units that Gaia provides to cgs units
+        results[0]['lum_val'] *= constants.L_sun.to('erg / s').value 
 
     # Filter out objects fainter than r=12
     results = results[results['phot_rp_mean_mag'] < 12.0]
