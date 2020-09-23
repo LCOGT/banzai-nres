@@ -35,7 +35,7 @@ def index_of_refraction_Edlen(vacuum_wavelength):
     :return: index of refraction at that wavelength.
     """
     sig2 = (1E4/vacuum_wavelength)**2
-    return 1 + 1E-8 * (8342.13 + 2406030/(130 - sig2) + 15997/(38.9 - sig2))
+    return 1 + 1E-8 * (8342.13 + 2406030 / (130 - sig2) + 15997 / (38.9 - sig2))
 
 
 def group_features_by_trace(features, traces):
