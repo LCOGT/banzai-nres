@@ -63,7 +63,7 @@ class LineListLoader(CalibrationUser):
     """
     Loads the reference line list for wavelength calibration
     """
-    LINE_LIST_FILENAME = pkg_resources.resource_filename('banzai_nres', 'data/ThAr_atlas_ESO.txt')
+    LINE_LIST_FILENAME = pkg_resources.resource_filename('banzai_nres', 'data/ThAr_atlas_ESO_vacuum.txt')
     @property
     def calibration_type(self):
         return 'LINELIST'

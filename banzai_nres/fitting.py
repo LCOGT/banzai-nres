@@ -9,11 +9,13 @@ def fit_polynomial(y, error, mask=None, n_iter=5, x=None, sigma=5, order=3, doma
 
     if x is None:
         x = np.arange(len(y), dtype=float)
+
     y_to_fit = y[np.logical_not(mask)]
     error_to_fit = error[np.logical_not(mask)]
     x_to_fit = x[np.logical_not(mask)]
-    # Start with variance weighting
+    # start with inverse variance weights
     weights = error_to_fit ** -2.0
+    # instantiate fitter
     huber_t = HuberT(t=sigma)
 
     fitter = fitting.LinearLSQFitter()

@@ -21,6 +21,7 @@ def main():
                 model_files.append(os.path.join(root, file))
 
     # Find the indices that correspond to the optical region
+    # NOTE PHOENIX WAVELENGTHS ARE IN VACUUM
     wavelength_hdu = fits.open(wavelength_filename)
     optical = np.logical_and(wavelength_hdu[0].data >= 3000.0, wavelength_hdu[0].data <= 10000.0)
 
@@ -37,6 +38,7 @@ def main():
         output_filename = phoenix_utils.parameters_to_filename(Teff, logg, metallicity, alpha)
         hdu.writeto(os.path.join(args.output_dir, output_filename))
 
-    # Truncate and save the wavelength file
+    # Restrict the wavelengths to the optical regime
     wavelength_hdu[0].data = wavelength_hdu[0].data[optical]
+    # save the wavelengths as a separate file
     wavelength_hdu.writeto(os.path.join(args.output_dir, 'phoenix_wavelength.fits'))

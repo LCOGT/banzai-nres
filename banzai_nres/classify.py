@@ -6,6 +6,7 @@ from astropy import units
 from astropy.time import Time
 from astropy.coordinates import SkyCoord
 from astroquery import gaia, simbad
+from astropy import constants
 
 
 def find_object_in_catalog(image, db_address):
@@ -32,6 +33,8 @@ def find_object_in_catalog(image, db_address):
     # Filter out objects fainter than r=12
     results = results[results['phot_rp_mean_mag'] < 12.0]
     if len(results) > 0:
+        #convert the luminosity from the LSun units that Gaia provides to cgs units
+        results[0]['lum_val'] *= constants.L_sun.to('erg / s').value
         image.classification = dbs.get_closest_HR_phoenix_models(db_address, results[0]['teff_val'],
                                                                  results[0]['lum_val'])
         # Update the ra and dec to the catalog coordinates as those are basically always better than a user enters
