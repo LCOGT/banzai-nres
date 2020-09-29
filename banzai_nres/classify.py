@@ -58,6 +58,21 @@ def find_object_in_catalog(image, db_address):
 
 class StellarClassifier(Stage):
     def do_stage(self, image) -> NRESObservationFrame:
+
+        closest_previous_classification = dbs.get_closest_existing_classification(self.runtime_context.db_address,
+                                                                                  image.ra, image.dec)
+
+        if closest_previous_classification is not None:
+            previous_coordinate = SkyCoord(closest_previous_classification.ra, closest_previous_classification.dec,
+                                           unit=(units.deg, units.deg))
+            this_coordinate = SkyCoord(image.ra, image.dec, unit=(units.deg, units.deg))
+
+            # Short circuit if the object is already classified
+            if this_coordinate.separation(previous_coordinate) < 10.0 * units.arcsec:
+                image.classification = closest_previous_classification
+                image.meta['CLASSIFY'] = 0, 'Was this spectrum classified'
+                return image
+
         find_object_in_catalog(image, self.runtime_context.db_address)
 
         # TODO: For each param: Fix the other params, get the N closest models and save the results
@@ -66,9 +81,5 @@ class StellarClassifier(Stage):
             image.meta['CLASSIFY'] = 0, 'Was this spectrum classified'
         else:
             image.meta['CLASSIFY'] = 1, 'Was this spectrum classified'
-            image.meta['TEFF'] = image.classification.T_effective
-            image.meta['LOG_G'] = image.classification.log_g
-            image.meta['FE_H'] = image.classification.metallicity
-            image.meta['ALPHA'] = image.classification.alpha
-
+            dbs.save_classification(self.runtime_context.db_address, self.image)
         return image

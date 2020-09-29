@@ -1,4 +1,4 @@
-from banzai.dbs import Base, create_db
+from banzai.dbs import Base, create_db, add_or_update_record
 from sqlalchemy import Column, String, Integer, Float, Index
 import boto3
 import banzai.dbs
@@ -67,6 +67,34 @@ class PhoenixModel(Base):
     @diff_metallicity.expression
     def diff_luminosity(cls, value):
         return func.abs(cls.luminosity - value)
+
+
+class Classification(Base):
+    __tablename__ = 'classifications'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    ra = Column(Float)
+    dec = Column(Float)
+    T_effective = Column(Float)
+    log_g = Column(Float)
+    metallicity = Column(Float)
+    alpha = Column(Float)
+    Index('idx_radec', "ra", "dec")
+
+    @hybrid_method
+    def diff_ra(self, value):
+        return abs(self.ra - value)
+
+    @diff_ra.expression
+    def diff_ra(cls, value):
+        return func.abs(cls.ra - value)
+
+    @hybrid_method
+    def diff_dec(self, value):
+        return abs(self.dec - value)
+
+    @diff_dec.expression
+    def diff_dec(cls, value):
+        return func.abs(cls.dec - value)
 
 
 class ResourceFile(Base):
@@ -163,3 +191,19 @@ def get_resource_file(db_address, key):
     with banzai.dbs.get_session(db_address=db_address) as db_session:
         resource_file = db_session.query(ResourceFile).filter(ResourceFile.key == key).first()
     return resource_file
+
+
+def get_closest_existing_classification(db_address, ra, dec):
+    with banzai.dbs.get_session(db_address=db_address) as db_session:
+        order = [Classification.diff_ra(ra), Classification.diff_dec(dec)]
+        model = db_session.query(Classification).order_by(*order).first()
+    return model
+
+
+def save_classification(db_address, frame):
+    with banzai.dbs.get_session(db_address=db_address) as db_session:
+        equivalence_criteria = {'ra': frame.ra, 'dec': frame.dec}
+        record_attributes = {'ra': frame.ra, 'dec': frame.dec, 'T_effective': frame.classification.T_effective,
+                             'log_g': frame.classification.log_g, 'metallicity': frame.classification.metallicity,
+                             'alpha': frame.classification.alpha}
+        add_or_update_record(db_session, Classification, equivalence_criteria, record_attributes)
