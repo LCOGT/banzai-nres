@@ -9,7 +9,7 @@ def lorentz_profile(x, center, width):
 
 
 @pytest.mark.parametrize('random_seed', [2131209899, 21311222, 6913219])
-class TestFeatureRejection:
+class TestFeatureMasking:
     n_lines = 30
     line_sigma = 2
     size = 800
@@ -28,8 +28,8 @@ class TestFeatureRejection:
         return flux, sharp_lines, broad_lines, {'sharp': sharp_line_locs, 'broad': self.broad_line_center}
 
     def run_masking_procedure(self, flux):
-        mask = cu.mark_absorption_or_emission_features(flux, 2 * self.line_sigma)
-        #mask = np.logical_or(mask, cu.mark_pressure_broadened_features(flux, self.broad_line_width))
+        mask = cu.mark_absorption_or_emission_features(flux, self.line_sigma)
+        mask = np.logical_or(mask,  cu.mark_absorption_or_emission_features(flux, self.broad_line_width, sigma=5))
         return mask
 
     def test_null_reject(self, random_seed):

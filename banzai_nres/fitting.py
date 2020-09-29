@@ -3,7 +3,7 @@ from statsmodels.robust.norms import HuberT
 from astropy.modeling import fitting, polynomial
 
 
-def fit_polynomial(y, error, mask=None, n_iter=5, x=None, sigma=5, order=3, domain=None):
+def fit_polynomial(y, error, mask=None, n_iter=5, x=None, sigma=5, order=3, domain=None, min_error=0):
     if mask is None:
         mask = np.zeros(y.shape, dtype=bool)
 
@@ -11,7 +11,7 @@ def fit_polynomial(y, error, mask=None, n_iter=5, x=None, sigma=5, order=3, doma
         x = np.arange(len(y), dtype=float)
 
     y_to_fit = y[np.logical_not(mask)]
-    error_to_fit = error[np.logical_not(mask)]
+    error_to_fit = np.sqrt(error[np.logical_not(mask)]**2 + min_error**2)
     x_to_fit = x[np.logical_not(mask)]
     # start with inverse variance weights
     weights = error_to_fit ** -2.0
