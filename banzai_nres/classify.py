@@ -81,5 +81,5 @@ class StellarClassifier(Stage):
             image.meta['CLASSIFY'] = 0, 'Was this spectrum classified'
         else:
             image.meta['CLASSIFY'] = 1, 'Was this spectrum classified'
-            dbs.save_classification(self.runtime_context.db_address, self.image)
+            dbs.save_classification(self.runtime_context.db_address, image)
         return image
