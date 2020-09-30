@@ -5,9 +5,9 @@ import banzai.dbs
 import os
 from glob import glob
 import logging
-from sqlalchemy import func
+from sqlalchemy import func, desc
 from sqlalchemy.ext.hybrid import hybrid_method
-import math
+import numpy as np
 
 from banzai_nres.utils.phoenix_utils import parse_phoenix_header
 
@@ -71,12 +71,9 @@ class PhoenixModel(Base):
 
 
 # We define the great circle distance here instead of using astropy because we need it to work inside the db.
-def great_circle_distance(ra1, dec1, ra2, dec2, module):
-    distance = module.acos(module.sin(module.radians(dec1)) * module.sin(module.radians(dec2))
-                           + module.cos(module.radians(dec1)) * module.cos(module.radians(dec2))
-                           * module.cos(module.radians(ra1 - ra2)))
-
-    return module.degrees(distance)
+def cos_great_circle_distance(sin_ra1, cos_ra1, sin_dec1, cos_dec1, sin_ra2, cos_ra2, sin_dec2, cos_dec2):
+    cos_distance = sin_dec1 * sin_dec2 + cos_dec1 * cos_dec2 * (cos_ra1 * cos_ra2 + sin_ra1 * sin_ra2)
+    return cos_distance
 
 
 class Classification(Base):
@@ -84,19 +81,24 @@ class Classification(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     ra = Column(Float)
     dec = Column(Float)
+    sin_ra = Column(Float)
+    cos_ra = Column(Float)
+    sin_dec = Column(Float)
+    cos_dec = Column(Float)
     T_effective = Column(Float)
     log_g = Column(Float)
     metallicity = Column(Float)
     alpha = Column(Float)
     Index('idx_radec', "ra", "dec")
+    Index('idx_radectrig', "sin_ra", "cos_ra", "sin_dec", "cos_dec")
 
     @hybrid_method
-    def distance(self, ra, dec):
-        return great_circle_distance(ra, dec, self.ra, self.dec, math)
+    def cos_distance(self, sin_ra, cos_ra, sin_dec, cos_dec):
+        return cos_great_circle_distance(sin_ra, cos_ra, sin_dec, cos_dec, self.sin_ra, self.cos_ra, self.sin_dec, self.cos_dec)
 
-    @distance.expression
-    def distance(cls, ra, dec):
-        return great_circle_distance(ra, dec, cls.ra, cls.dec, func)
+    @cos_distance.expression
+    def cos_distance(cls, sin_ra, cos_ra, sin_dec, cos_dec):
+        return cos_great_circle_distance(sin_ra, cos_ra, sin_dec, cos_dec, cls.sin_ra, cls.cos_ra, cls.sin_dec, cls.cos_dec)
 
 
 class ResourceFile(Base):
@@ -197,7 +199,7 @@ def get_resource_file(db_address, key):
 
 def get_closest_existing_classification(db_address, ra, dec):
     with banzai.dbs.get_session(db_address=db_address) as db_session:
-        order = [Classification.distance(ra, dec)]
+        order = [desc(Classification.cos_distance(ra, dec))]
         model = db_session.query(Classification).order_by(*order).first()
     return model
 
@@ -205,7 +207,10 @@ def get_closest_existing_classification(db_address, ra, dec):
 def save_classification(db_address, frame):
     with banzai.dbs.get_session(db_address=db_address) as db_session:
         equivalence_criteria = {'ra': frame.ra, 'dec': frame.dec}
-        record_attributes = {'ra': frame.ra, 'dec': frame.dec, 'T_effective': frame.classification.T_effective,
+        record_attributes = {'ra': frame.ra, 'dec': frame.dec, 'sin_ra': np.sin(np.deg2rad(frame.ra)),
+                             'cos_ra': np.cos(np.deg2rad(frame.ra)), 'sin_dec': np.sin(np.deg2rad(frame.dec)),
+                             'cos_dec': np.cos(np.deg2rad(frame.dec)),
+                             'T_effective': frame.classification.T_effective,
                              'log_g': frame.classification.log_g, 'metallicity': frame.classification.metallicity,
                              'alpha': frame.classification.alpha}
         add_or_update_record(db_session, Classification, equivalence_criteria, record_attributes)
