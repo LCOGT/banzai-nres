@@ -199,6 +199,8 @@ def get_resource_file(db_address, key):
 
 def get_closest_existing_classification(db_address, ra, dec):
     with banzai.dbs.get_session(db_address=db_address) as db_session:
+        # Note the desc here. Because sqlite does not have trig functions, we can't take an arc cos. So we need the
+        # value when the cos is maximum (which is theta = minimum)
         order = [desc(Classification.cos_distance(np.sin(np.deg2rad(ra)), np.cos(np.deg2rad(ra)),
                                                   np.sin(np.deg2rad(dec)), np.cos(np.deg2rad(dec))))]
         model = db_session.query(Classification).order_by(*order).first()
