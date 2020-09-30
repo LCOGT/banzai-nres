@@ -199,7 +199,8 @@ def get_resource_file(db_address, key):
 
 def get_closest_existing_classification(db_address, ra, dec):
     with banzai.dbs.get_session(db_address=db_address) as db_session:
-        order = [desc(Classification.cos_distance(ra, dec))]
+        order = [desc(Classification.cos_distance(np.sin(np.deg2rad(ra)), np.cos(np.deg2rad(ra)),
+                                                  np.sin(np.deg2rad(dec)), np.cos(np.deg2rad(dec))))]
         model = db_session.query(Classification).order_by(*order).first()
     return model
 
