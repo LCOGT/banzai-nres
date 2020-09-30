@@ -7,6 +7,7 @@ from glob import glob
 import logging
 from sqlalchemy import func
 from sqlalchemy.ext.hybrid import hybrid_method
+import math
 
 from banzai_nres.utils.phoenix_utils import parse_phoenix_header
 
@@ -69,6 +70,15 @@ class PhoenixModel(Base):
         return func.abs(cls.luminosity - value)
 
 
+# We define the great circle distance here instead of using astropy because we need it to work inside the db.
+def great_circle_distance(ra1, dec1, ra2, dec2, module):
+    distance = module.acos(module.sin(module.radians(dec1)) * module.sin(module.radians(dec2))
+                           + module.cos(module.radians(dec1)) * module.cos(module.radians(dec2))
+                           * module.cos(module.radians(ra1 - ra2)))
+
+    return module.degrees(distance)
+
+
 class Classification(Base):
     __tablename__ = 'classifications'
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -81,20 +91,12 @@ class Classification(Base):
     Index('idx_radec', "ra", "dec")
 
     @hybrid_method
-    def diff_ra(self, value):
-        return abs(self.ra - value)
+    def distance(self, ra, dec):
+        return great_circle_distance(ra, dec, self.ra, self.dec, math)
 
-    @diff_ra.expression
-    def diff_ra(cls, value):
-        return func.abs(cls.ra - value)
-
-    @hybrid_method
-    def diff_dec(self, value):
-        return abs(self.dec - value)
-
-    @diff_dec.expression
-    def diff_dec(cls, value):
-        return func.abs(cls.dec - value)
+    @distance.expression
+    def distance(cls, ra, dec):
+        return great_circle_distance(ra, dec, cls.ra, cls.dec, func)
 
 
 class ResourceFile(Base):
@@ -195,7 +197,7 @@ def get_resource_file(db_address, key):
 
 def get_closest_existing_classification(db_address, ra, dec):
     with banzai.dbs.get_session(db_address=db_address) as db_session:
-        order = [Classification.diff_ra(ra), Classification.diff_dec(dec)]
+        order = [Classification.distance(ra, dec)]
         model = db_session.query(Classification).order_by(*order).first()
     return model
 

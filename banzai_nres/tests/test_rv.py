@@ -85,7 +85,7 @@ def test_rv(mock_loader, mock_db):
     image.instrument = SimpleNamespace()
     image.instrument.site = 'npt'
     # Classification just can't be None so that the stage does not abort.
-    image.classification = SimpleNamespace(**{'T_effective': 10.0, 'log_g': 0.0, 'metallicity': 0.0, 'alpha': 0.0})
+    image.classification = SimpleNamespace(**{'T_effective': 5000.0, 'log_g': 0.0, 'metallicity': 0.0, 'alpha': 0.0})
     mock_db.return_value = SimpleNamespace(**site_info)
 
     # Run the RV code

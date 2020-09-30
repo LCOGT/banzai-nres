@@ -68,7 +68,8 @@ class StellarClassifier(Stage):
             this_coordinate = SkyCoord(image.ra, image.dec, unit=(units.deg, units.deg))
 
             # Short circuit if the object is already classified
-            if this_coordinate.separation(previous_coordinate) < 10.0 * units.arcsec:
+            # We choose 2.6 arcseconds as the don't reclassify cutoff radius as it is the fiber size
+            if this_coordinate.separation(previous_coordinate) < 2.6 * units.arcsec:
                 image.classification = closest_previous_classification
                 image.meta['CLASSIFY'] = 0, 'Was this spectrum classified'
                 return image
