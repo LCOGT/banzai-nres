@@ -1,12 +1,13 @@
-from banzai.dbs import Base, create_db
+from banzai.dbs import Base, create_db, add_or_update_record
 from sqlalchemy import Column, String, Integer, Float, Index
 import boto3
 import banzai.dbs
 import os
 from glob import glob
 import logging
-from sqlalchemy import func
+from sqlalchemy import func, desc
 from sqlalchemy.ext.hybrid import hybrid_method
+import numpy as np
 
 from banzai_nres.utils.phoenix_utils import parse_phoenix_header
 
@@ -67,6 +68,53 @@ class PhoenixModel(Base):
     @diff_metallicity.expression
     def diff_luminosity(cls, value):
         return func.abs(cls.luminosity - value)
+
+
+# We define the great circle distance here instead of using astropy because we need it to work inside the db.
+def cos_great_circle_distance(sin_ra1, cos_ra1, sin_dec1, cos_dec1, sin_ra2, cos_ra2, sin_dec2, cos_dec2):
+    """
+
+    :param sin_ra1: sin(ra1)
+    :param cos_ra1: cos(ra1)
+    :param sin_dec1: sin(dec1)
+    :param cos_dec1: cos(dec1)
+    :param sin_ra2: sin(ra2)
+    :param cos_ra2: cos(ra2)
+    :param sin_dec2: sin(dec2)
+    :param cos_dec2: cos(dec2)
+    :return: cos(D) where D is the great circle distance
+
+    This is the standard great circle distance from e.g. https://mathworld.wolfram.com/GreatCircle.html
+    The only difference is we also use the identity for cos(x1 - x2) (e.g. https://mathworld.wolfram.com/TrigonometricAdditionFormulas.html)
+    so that we can calculate the sin and cos terms ahead of time.
+    """
+    cos_distance = sin_dec1 * sin_dec2 + cos_dec1 * cos_dec2 * (cos_ra1 * cos_ra2 + sin_ra1 * sin_ra2)
+    return cos_distance
+
+
+class Classification(Base):
+    __tablename__ = 'classifications'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    ra = Column(Float)
+    dec = Column(Float)
+    sin_ra = Column(Float)
+    cos_ra = Column(Float)
+    sin_dec = Column(Float)
+    cos_dec = Column(Float)
+    T_effective = Column(Float)
+    log_g = Column(Float)
+    metallicity = Column(Float)
+    alpha = Column(Float)
+    Index('idx_radec', "ra", "dec")
+    Index('idx_radectrig', "sin_ra", "cos_ra", "sin_dec", "cos_dec")
+
+    @hybrid_method
+    def cos_distance(self, sin_ra, cos_ra, sin_dec, cos_dec):
+        return cos_great_circle_distance(sin_ra, cos_ra, sin_dec, cos_dec, self.sin_ra, self.cos_ra, self.sin_dec, self.cos_dec)
+
+    @cos_distance.expression
+    def cos_distance(cls, sin_ra, cos_ra, sin_dec, cos_dec):
+        return cos_great_circle_distance(sin_ra, cos_ra, sin_dec, cos_dec, cls.sin_ra, cls.cos_ra, cls.sin_dec, cls.cos_dec)
 
 
 class ResourceFile(Base):
@@ -163,3 +211,25 @@ def get_resource_file(db_address, key):
     with banzai.dbs.get_session(db_address=db_address) as db_session:
         resource_file = db_session.query(ResourceFile).filter(ResourceFile.key == key).first()
     return resource_file
+
+
+def get_closest_existing_classification(db_address, ra, dec):
+    with banzai.dbs.get_session(db_address=db_address) as db_session:
+        # Note the desc here. Because sqlite does not have trig functions, we can't take an arc cos. So we need the
+        # value when the cos is maximum (which is theta = minimum)
+        order = [desc(Classification.cos_distance(np.sin(np.deg2rad(ra)), np.cos(np.deg2rad(ra)),
+                                                  np.sin(np.deg2rad(dec)), np.cos(np.deg2rad(dec))))]
+        model = db_session.query(Classification).order_by(*order).first()
+    return model
+
+
+def save_classification(db_address, frame):
+    with banzai.dbs.get_session(db_address=db_address) as db_session:
+        equivalence_criteria = {'ra': frame.ra, 'dec': frame.dec}
+        record_attributes = {'ra': frame.ra, 'dec': frame.dec, 'sin_ra': np.sin(np.deg2rad(frame.ra)),
+                             'cos_ra': np.cos(np.deg2rad(frame.ra)), 'sin_dec': np.sin(np.deg2rad(frame.dec)),
+                             'cos_dec': np.cos(np.deg2rad(frame.dec)),
+                             'T_effective': frame.classification.T_effective,
+                             'log_g': frame.classification.log_g, 'metallicity': frame.classification.metallicity,
+                             'alpha': frame.classification.alpha}
+        add_or_update_record(db_session, Classification, equivalence_criteria, record_attributes)
