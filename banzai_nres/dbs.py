@@ -72,6 +72,22 @@ class PhoenixModel(Base):
 
 # We define the great circle distance here instead of using astropy because we need it to work inside the db.
 def cos_great_circle_distance(sin_ra1, cos_ra1, sin_dec1, cos_dec1, sin_ra2, cos_ra2, sin_dec2, cos_dec2):
+    """
+
+    :param sin_ra1: sin(ra1)
+    :param cos_ra1: cos(ra1)
+    :param sin_dec1: sin(dec1)
+    :param cos_dec1: cos(dec1)
+    :param sin_ra2: sin(ra2)
+    :param cos_ra2: cos(ra2)
+    :param sin_dec2: sin(dec2)
+    :param cos_dec2: cos(dec2)
+    :return: cos(D) where D is the great circle distance
+
+    This is the standard great circle distance from e.g. https://mathworld.wolfram.com/GreatCircle.html
+    The only difference is we also use the identity for cos(x1 - x2) (e.g. https://mathworld.wolfram.com/TrigonometricAdditionFormulas.html)
+    so that we can calculate the sin and cos terms ahead of time.
+    """
     cos_distance = sin_dec1 * sin_dec2 + cos_dec1 * cos_dec2 * (cos_ra1 * cos_ra2 + sin_ra1 * sin_ra2)
     return cos_distance
 
