@@ -5,7 +5,7 @@ from scipy.ndimage import gaussian_filter1d
 from banzai_nres.fitting import fit_polynomial
 
 
-@pytest.mark.parametrize('random_seed', [2131209899, 21311222, 6913219])
+@pytest.mark.parametrize('random_seed', [2131209899, 21311222, 6913219, 75322, 50981234, 9942111])
 class TestContinuumFitting:
     n_lines = 30
     line_sigma = 2
@@ -28,27 +28,35 @@ class TestContinuumFitting:
         return flux, sharp_lines, broad_lines, {'sharp': line_locs.astype(int), 'broad': [int(self.broad_line_center)]}
 
     def run_masking_procedure(self, flux):
-        #mask = cu.mark_absorption_or_emission_features(flux, self.line_sigma)
-        #mask = np.logical_or(mask, cu.mark_absorption_or_emission_features(flux, self.broad_line_width, sigma=5))
-        mask = cu.mark_features(flux, [4, 10], profile='gaussian')
-        broad_line_mask = cu.mark_features(flux, [20, 40], profile='lorentzian')
+        mask = cu.mark_features(flux, [4, 10], min_snr_at_line_center=2, profile='gaussian', type='absorption')
+        broad_line_mask = cu.mark_features(flux, [20, 40], min_snr_at_line_center=5, profile='lorentzian', type='absorption')
         mask = np.logical_or(mask, broad_line_mask)
         return mask
 
-    def fit_passes(self, flux, mask, atol=5):
+    def fit_passes(self, flux, mask, atol=1):
         flux_error = np.sqrt(np.ones_like(flux) ** 2 + np.sqrt(flux) ** 2)  # read plus poisson
         x = np.arange(len(flux))
         best_fit = fit_polynomial(flux, flux_error, x=x, order=3, sigma=3, mask=mask)
-        # because the continuum is 100, an atol of 5 represents continuum normalization within 5%
+        # because the continuum is 100, an atol of 1 represents continuum normalization within 1%
+        if False:
+            # debug
+            import matplotlib.pyplot as plt
+            plt.plot(flux, label='flux')
+            plt.plot(np.arange(len(flux))[~mask], flux[~mask], label='unmasked flux')
+            plt.plot(self.continuum, ls='--', lw=4, alpha=1, label='true continuum')
+            plt.plot(best_fit(np.arange(len(flux))), label='best fit continuum model')
+            plt.title(f'max error {np.max(np.abs(best_fit(x) - self.continuum))}')
+            plt.legend(loc='best')
+            plt.show()
         return np.allclose(best_fit(x), self.continuum, atol=atol)
+
+    @staticmethod
+    def fraction_lines_masked(mask, locations):
+        return np.count_nonzero(np.isclose(mask[locations], 1)) / len(locations)
 
     def test_null_reject(self, random_seed):
         flux, sharp_lines, broad_lines, locs = self.make_spectrum(random_seed)
         mask = self.run_masking_procedure(flux)
-        import matplotlib.pyplot as plt
-        plt.plot(np.arange(len(flux)), flux)
-        plt.plot(np.arange(len(flux))[~mask], flux[~mask])
-        plt.show()
         # check that the masking was good enough for the continuum fit to recover the continuum.
         assert self.fit_passes(flux, mask, atol=1)
 
@@ -56,25 +64,17 @@ class TestContinuumFitting:
         flux, sharp_lines, broad_lines, locs = self.make_spectrum(random_seed)
         flux = flux + sharp_lines
         mask = self.run_masking_procedure(flux)
-        import matplotlib.pyplot as plt
-        plt.plot(np.arange(len(flux)), flux)
-        plt.plot(np.arange(len(flux))[~mask], flux[~mask])
-        plt.show()
-        # check that all the absorption lines have been marked by the mask
-        assert np.allclose(mask[locs['sharp']], 1)
+        # check that most the absorption lines have been marked by the mask
+        assert self.fraction_lines_masked(mask, locs['sharp']) > .95
         # check that the masking was good enough for the continuum fit to recover the continuum.
-        assert self.fit_passes(flux, mask, atol=1)
+        assert self.fit_passes(flux, mask, atol=5)
 
     def test_rejecting_broad_lines(self, random_seed):
         flux, sharp_lines, broad_lines, locs = self.make_spectrum(random_seed)
         flux = flux + broad_lines
         mask = self.run_masking_procedure(flux)
-        import matplotlib.pyplot as plt
-        plt.plot(np.arange(len(flux)), flux)
-        plt.plot(np.arange(len(flux))[~mask], flux[~mask])
-        plt.show()
         # check that all the absorption lines have been marked by the mask
-        assert np.allclose(mask[locs['broad']], 1)
+        assert self.fraction_lines_masked(mask, locs['broad']) == 1
         # check that the masking was good enough for the continuum fit to recover the continuum.
         assert self.fit_passes(flux, mask, atol=1)
 
@@ -82,27 +82,19 @@ class TestContinuumFitting:
         flux, sharp_lines, broad_lines, locs = self.make_spectrum(random_seed)
         flux = flux + sharp_lines + broad_lines
         mask = self.run_masking_procedure(flux)
-        import matplotlib.pyplot as plt
-        plt.plot(np.arange(len(flux)), flux)
-        plt.plot(np.arange(len(flux))[~mask], flux[~mask])
-        plt.show()
-        # check that all the absorption lines have been marked by the mask
-        assert np.allclose(mask[locs['broad']], 1)
-        assert np.allclose(mask[locs['sharp']], 1)
+
+        assert self.fraction_lines_masked(mask, locs['broad']) == 1
+        assert self.fraction_lines_masked(mask, locs['broad']) > 0.95
         # check that the masking was good enough for the continuum fit to recover the continuum.
-        assert self.fit_passes(flux, mask, atol=1)
+        assert self.fit_passes(flux, mask, atol=5)
 
     def test_rejecting_narrow_broad_lines(self, random_seed):
         # In this test, the algorithm thinks the broad lines are much broader than they actually are in the spectrum.
         flux, sharp_lines, broad_lines, locs = self.make_spectrum(random_seed, broad_line_width=15)
         flux = flux + broad_lines
         mask = self.run_masking_procedure(flux)
-        import matplotlib.pyplot as plt
-        plt.plot(np.arange(len(flux)), flux)
-        plt.plot(np.arange(len(flux))[~mask], flux[~mask])
-        plt.show()
         # check that all the absorption lines have been marked by the mask
-        assert np.allclose(mask[locs['broad']], 1)
+        assert self.fraction_lines_masked(mask, locs['broad']) == 1
         # check that the masking was good enough for the continuum fit to recover the continuum.
         assert self.fit_passes(flux, mask, atol=1)
 

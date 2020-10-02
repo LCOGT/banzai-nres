@@ -3,7 +3,7 @@ from banzai.stages import Stage
 from banzai_nres.fitting import fit_polynomial
 import numpy as np
 
-from banzai_nres.utils.continuum_utils import mark_absorption_or_emission_features
+from banzai_nres.utils.continuum_utils import mark_features
 
 # Wavelength regions where there are strong Balmer or other absorption lines. This is from CERES :
 # https://ui.adsabs.harvard.edu/link_gateway/2017PASP..129c4002B/doi:10.1088/1538-3873/aa5455
@@ -20,7 +20,9 @@ class ContinuumNormalizer(Stage):
                 blaze_corrected_flux = spectrum['flux'] / spectrum['blaze']
                 blaze_corrected_error = blaze_corrected_flux * np.sqrt((spectrum['uncertainty'] / spectrum['flux']) ** 2.0 + (spectrum['blaze_error'] / spectrum['blaze']) ** 2.0)
                 detector_resolution = 4  # pixels
-                mask = mark_absorption_or_emission_features(blaze_corrected_flux, int(detector_resolution))
+                mask = mark_features(blaze_corrected_flux, [detector_resolution, 10], profile='gaussian', type='absorption')
+                broad_line_mask = mark_features(blaze_corrected_flux, [20, 40], profile='lorentzian', type='absorption')
+                mask = np.logical_or(mask, broad_line_mask)
                 # Mask the prohibited wavelength regions. Consider masking before mark_absorption_or_emission_features
                 for mask_region in WAVELENGTHS_TO_MASK:
                     mask[np.logical_and(spectrum['wavelength'] >= min(mask_region), spectrum['wavelength'] <= max(mask_region))] = 1

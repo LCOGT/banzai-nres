@@ -11,7 +11,7 @@ from banzai.utils import stats
 import logging
 from banzai_nres.fitting import fit_polynomial
 from banzai_nres import phoenix
-from banzai_nres.utils.continuum_utils import mark_absorption_or_emission_features
+from banzai_nres.utils.continuum_utils import mark_features
 
 logger = logging.getLogger('banzai')
 
@@ -87,7 +87,9 @@ def cross_correlate_over_traces(image, orders_to_use, velocities, template):
         # Set the model S/N = 1000 -- from looking by eye at
         # scatter in the model and from systematic uncertainties in the model
         template_error = 1e-3 * template_to_fit['flux']
-        mask = mark_absorption_or_emission_features(template_to_fit['flux'], 10)
+        mask = mark_features(template['flux'], [10, 20], profile='gaussian', type='absorption')
+        broad_line_mask = mark_features(template['flux'], [100, 200], profile='lorentzian', type='absorption')
+        mask = np.logical_or(mask, broad_line_mask)
         # Mask the prohibited wavelength regions.
         for mask_region in PHOENIX_WAVELENGTHS_TO_MASK:
             mask[np.logical_and(template_to_fit['wavelength'] >= min(mask_region),
