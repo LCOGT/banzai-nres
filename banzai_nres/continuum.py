@@ -31,4 +31,3 @@ class ContinuumNormalizer(Stage):
                 # adds is complicated enough to track that we do not attempt that here.
                 image.spectrum[fiber, order, 'normuncertainty'] = blaze_corrected_error / best_fit(spectrum['wavelength'])
         return image
-
