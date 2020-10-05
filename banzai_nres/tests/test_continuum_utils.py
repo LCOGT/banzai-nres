@@ -28,8 +28,9 @@ class TestContinuumFitting:
         return flux, sharp_lines, broad_lines, {'sharp': line_locs.astype(int), 'broad': [int(self.broad_line_center)]}
 
     def run_masking_procedure(self, flux):
-        mask = cu.mark_features(flux, [4, 10], min_snr_at_line_center=2, profile='gaussian', type='absorption')
-        broad_line_mask = cu.mark_features(flux, [20, 40], min_snr_at_line_center=5, profile='lorentzian', type='absorption')
+        mask = cu.mark_features(flux, sigma=3, detector_resolution=4)
+        #broad_line_mask = cu.mark_features(flux, sigma=7, detector_resolution=4, binary_dilations=30)
+        broad_line_mask = np.zeros_like(mask)
         mask = np.logical_or(mask, broad_line_mask)
         return mask
 
@@ -43,8 +44,20 @@ class TestContinuumFitting:
             import matplotlib.pyplot as plt
             plt.plot(flux, label='flux')
             plt.plot(np.arange(len(flux))[~mask], flux[~mask], label='unmasked flux')
-            plt.plot(self.continuum, ls='--', lw=4, alpha=1, label='true continuum')
+            #plt.plot(self.continuum, ls='--', lw=4, alpha=1, label='true continuum')
             plt.plot(best_fit(np.arange(len(flux))), label='best fit continuum model')
+            plt.title(f'max error {np.max(np.abs(best_fit(x) - self.continuum))}')
+            plt.legend(loc='best')
+            plt.show()
+        if True:
+            import matplotlib.pyplot as plt
+            fig, axes = plt.subplots(1, 2, figsize=(15, 7))
+            axes[0].plot(np.arange(len(flux))[mask], flux[mask], label='masked flux')
+            axes[0].plot(np.arange(len(flux))[mask], self.continuum[mask], ls='--', lw=4, alpha=1, label='true continuum')
+            axes[0].plot(np.arange(len(flux))[mask], best_fit(np.arange(len(flux)))[mask], label='best fit continuum model')
+            axes[1].plot(np.arange(len(flux))[~mask], flux[~mask], label='masked flux')
+            axes[1].plot(np.arange(len(flux))[~mask], self.continuum[~mask], ls='--', lw=4, alpha=1, label='true continuum')
+            axes[1].plot(np.arange(len(flux))[~mask], best_fit(np.arange(len(flux)))[~mask], label='best fit continuum model')
             plt.title(f'max error {np.max(np.abs(best_fit(x) - self.continuum))}')
             plt.legend(loc='best')
             plt.show()

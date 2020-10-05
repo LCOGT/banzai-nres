@@ -87,8 +87,8 @@ def cross_correlate_over_traces(image, orders_to_use, velocities, template):
         # Set the model S/N = 1000 -- from looking by eye at
         # scatter in the model and from systematic uncertainties in the model
         template_error = 1e-3 * template_to_fit['flux']
-        mask = mark_features(template['flux'], [10, 20], profile='gaussian', type='absorption')
-        broad_line_mask = mark_features(template['flux'], [100, 200], profile='lorentzian', type='absorption')
+        mask = mark_features(template_to_fit['flux'], [10, 20], profile='gaussian', type='absorption', min_snr_at_line_center=10)
+        broad_line_mask = mark_features(template_to_fit['flux'], [100, 200], profile='lorentzian', type='absorption', min_snr_at_line_center=50)
         mask = np.logical_or(mask, broad_line_mask)
         # Mask the prohibited wavelength regions.
         for mask_region in PHOENIX_WAVELENGTHS_TO_MASK:
