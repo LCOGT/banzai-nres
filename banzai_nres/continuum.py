@@ -19,9 +19,7 @@ class ContinuumNormalizer(Stage):
                 spectrum = image.spectrum[fiber, order]
                 blaze_corrected_flux = spectrum['flux'] / spectrum['blaze']
                 blaze_corrected_error = blaze_corrected_flux * np.sqrt((spectrum['uncertainty'] / spectrum['flux']) ** 2.0 + (spectrum['blaze_error'] / spectrum['blaze']) ** 2.0)
-                mask = mark_features(blaze_corrected_flux, [5, 10], profile='gaussian', type='absorption', detector_resolution=4)
-                broad_line_mask = mark_features(blaze_corrected_flux, [20, 40], profile='lorentzian', type='absorption', detector_resolution=4)
-                mask = np.logical_or(mask, broad_line_mask)
+                mask = mark_features(blaze_corrected_flux, sigma=3, detector_resolution=4)
                 # Mask the prohibited wavelength regions. Consider masking before mark_absorption_or_emission_features
                 for mask_region in WAVELENGTHS_TO_MASK:
                     mask[np.logical_and(spectrum['wavelength'] >= min(mask_region), spectrum['wavelength'] <= max(mask_region))] = 1
