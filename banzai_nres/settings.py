@@ -21,8 +21,8 @@ ORDERED_STAGES = [
                   'banzai_nres.extract.GetOptimalExtractionWeights',
                   'banzai_nres.extract.WeightedExtract',
                   'banzai_nres.continuum.ContinuumNormalizer',
-                  'banzai_nres.classify.StellarClassifier',
-                  'banzai_nres.rv.RVCalculator'
+#                  'banzai_nres.classify.StellarClassifier',
+#                  'banzai_nres.rv.RVCalculator'
                   ]
 
 CALIBRATION_MIN_FRAMES = {'BIAS': 5,

@@ -26,4 +26,6 @@ class FlatLoader(CalibrationUser):
         image.profile = master_calibration_image.profile
         image.blaze = master_calibration_image.blaze
         image.meta['L1IDFLAT'] = master_calibration_image.filename, 'ID of Flat frame'
+        if image.obstype != 'DOUBLE':
+            image /= master_calibration_image
         return image
