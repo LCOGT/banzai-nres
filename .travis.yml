@@ -71,7 +71,7 @@ before_install:
 
 install:
   - if [[ "$INSTALL_DEPS" == 1 ]]; then pip install numpy==$NUMPY_VERSION coverage pycodestyle; fi
-  - pip install git+https://github.com/lcogt/banzai@0.20.1-40-g7902cb9
+  - pip install git+https://github.com/lcogt/banzai.git
   - $PYTHON_INSTALL_COMMAND
 
 script:

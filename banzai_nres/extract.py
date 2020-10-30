@@ -1,8 +1,7 @@
 import numpy as np
-from astropy.table import Table
 
 from banzai.stages import Stage
-from banzai_nres.frames import EchelleSpectralCCDData
+from banzai_nres.frames import EchelleSpectralCCDData, Spectrum1D
 from banzai_nres.utils.trace_utils import get_trace_region
 import logging
 
@@ -12,19 +11,35 @@ logger = logging.getLogger('banzai')
 class WeightedExtract(Stage):
     def do_stage(self, image: EchelleSpectralCCDData):
         if image.weights is None:
-            logger.error('Extraction weights missing. Rejecting image.', image=image)
+            logger.error('Extraction weights are missing. Rejecting image.', image=image)
             return None
+        if image.wavelengths is None:
+            logger.error('Wavelengths are missing. Rejecting image.', image=image)
+            return None
+        # consider adding a method to image, i.e. image.extracted_spectrum_shape.
         flux = np.zeros((image.num_traces, image.data.shape[1]), dtype=float)
+        wavelength = np.zeros_like(flux, dtype=float)
         variance = np.zeros_like(flux, dtype=float)
+        mask = np.zeros_like(flux, dtype=np.uint8)
 
         trace_ids = np.arange(1, image.num_traces + 1)
         for i, trace_id in enumerate(trace_ids):
-            yx = get_trace_region(np.isclose(image.traces, trace_id))
-            x_extent = slice(np.min(yx[1]), np.max(yx[1]) + 1)  # get the horizontal (x) extent of the trace.
-            flux[i, x_extent] = self.extract_order(image.data[yx], image.weights[yx])
-            variance[i, x_extent] = self.extract_order(image.uncertainty[yx] ** 2, image.weights[yx] ** 2)
+            this_trace = get_trace_region(np.isclose(image.traces, trace_id))
+            # get the horizontal (x) extent of the trace. Consider making this a get_extent function.
+            x_extent = slice(np.min(this_trace[1]), np.max(this_trace[1]) + 1)
+            flux[i, x_extent] = self.extract_order(image.data[this_trace], image.weights[this_trace])
+            variance[i, x_extent] = self.extract_order(image.uncertainty[this_trace] ** 2, image.weights[this_trace] ** 2)
+            # get the average wavelength: Sum wavelengths weighted by 1 over the vertical width of the trace (e.g. 1/10)
+            wavelength[i, x_extent] = self.extract_order(image.wavelengths[this_trace], weights=1/image.wavelengths[this_trace].shape[0])
+            mask[i, x_extent] = image.weights[this_trace].sum(axis=0) == 0.0
 
-        image.spectrum = Table({'id': trace_ids, 'flux': flux, 'uncertainty': np.sqrt(variance)})
+        image.spectrum = Spectrum1D({'id': trace_ids, 'order': image.fibers['order'],
+                                     'fiber': image.fibers['fiber'], 'wavelength': wavelength,
+                                     'flux': flux, 'uncertainty': np.sqrt(variance), 'blaze': image.blaze['blaze'],
+                                     'blaze_error': image.blaze['blaze_error'], 'mask': mask})
+        # Remove the fibers and the blaze extensions now that the info is stored in the extracted spectrum
+        image.fibers = None
+        image.blaze = None
         return image
 
     @staticmethod

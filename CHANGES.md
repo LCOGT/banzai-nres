@@ -1,3 +1,8 @@
+0.5.1 (2020-05-07)
+------------------
+- Extracted spectra now have wavelengths attached.
+- The line list is stored as package data instead of in an sqlite database.
+
 0.4.0 (2019-02-25)
 ------------------
 - Blind master tracing on lampflats

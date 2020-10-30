@@ -110,3 +110,8 @@ venv.bak/
 .vscode
 
 test_data/
+
+requirements.lock
+
+# Locally downloaded helm charts
+helm-chart/banzai-nres/charts/

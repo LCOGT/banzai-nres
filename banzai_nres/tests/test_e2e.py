@@ -3,21 +3,27 @@ from banzai.tests.utils import FakeResponse, get_min_and_max_dates
 from banzai_nres import settings
 import os
 import mock
+import numpy as np
 from banzai.utils import file_utils
 import time
 from glob import glob
-from astropy.utils.data import get_pkg_data_filename
+import pkg_resources
 from banzai.celery import app, schedule_calibration_stacking
-import argparse
+from banzai.dbs import get_session
 from banzai import dbs
 from types import ModuleType
 from datetime import datetime
 from dateutil.parser import parse
 from astropy.io import fits
+from astropy.table import Table
+from banzai.utils import fits_utils
+import banzai_nres.dbs
+import json
+import banzai_nres.dbs
 
 import logging
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('banzai')
 
 TEST_PACKAGE = 'banzai_nres.tests'
 
@@ -31,26 +37,36 @@ DAYS_OBS = [os.path.join(instrument, os.path.basename(dayobs_path)) for instrume
             for dayobs_path in glob(os.path.join(DATA_ROOT, instrument, '201*'))]
 
 TEST_PACKAGE = 'banzai_nres.tests'
-CONFIGDB_FILENAME = get_pkg_data_filename('data/configdb_example.json', TEST_PACKAGE)
+CONFIGDB_FILENAME = pkg_resources.resource_filename('banzai_nres.tests', 'data/configdb_example.json')
+PHOENIX_FILENAME = pkg_resources.resource_filename('banzai_nres.tests', 'data/phoenix.json')
 
 
 def observation_portal_side_effect(*args, **kwargs):
     site = kwargs['params']['site']
     start = datetime.strftime(parse(kwargs['params']['start_after']).replace(tzinfo=None).date(), '%Y%m%d')
     filename = 'test_obs_portal_response_{site}_{start}.json'.format(site=site, start=start)
-    filename = get_pkg_data_filename('data/{filename}'.format(filename=filename), TEST_PACKAGE)
+    filename = pkg_resources.resource_filename('banzai_nres.tests', f'data/{filename}')
     return FakeResponse(filename)
+
+
+def get_instrument_ids(db_address, names):
+    with get_session(db_address) as db_session:
+        instruments = []
+        for name in names:
+            criteria = dbs.Instrument.name == name
+            instruments.extend(db_session.query(dbs.Instrument).filter(criteria).all())
+    return [instrument.id for instrument in instruments]
 
 
 def celery_join():
     celery_inspector = app.control.inspect()
     log_counter = 0
     while True:
-        queues = [celery_inspector.active(), celery_inspector.scheduled(), celery_inspector.reserved()]
         time.sleep(1)
         log_counter += 1
         if log_counter % 5 == 0:
             logger.info('Processing: ' + '. ' * (log_counter // 5))
+        queues = [celery_inspector.active(), celery_inspector.scheduled(), celery_inspector.reserved()]
         if any([queue is None or 'celery@banzai-celery-worker' not in queue for queue in queues]):
             logger.warning('No valid celery queues were detected, retrying...', extra_tags={'queues': queues})
             # Reset the celery connection
@@ -58,19 +74,6 @@ def celery_join():
             continue
         if all([len(queue['celery@banzai-celery-worker']) == 0 for queue in queues]):
             break
-
-
-def run_end_to_end_tests():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--marker', dest='marker', help='PyTest marker to run')
-    parser.add_argument('--junit-file', dest='junit_file', help='Path to junit xml file with results')
-    parser.add_argument('--code-path', dest='code_path', help='Path to directory with setup.py')
-    args = parser.parse_args()
-    os.chdir(args.code_path)
-    command = 'python setup.py test -a "--durations=0 --junitxml={junit_file} -m {marker}"'
-
-    # Bitshift by 8 because Python encodes exit status in the leftmost 8 bits
-    return os.system(command.format(junit_file=args.junit_file, marker=args.marker)) >> 8
 
 
 def run_reduce_individual_frames(raw_filenames):
@@ -119,13 +122,13 @@ def get_expected_number_of_calibrations(raw_filenames, calibration_type):
     number_of_stacks_that_should_have_been_created = 0
     for day_obs in DAYS_OBS:
         raw_filenames_for_this_dayobs = glob(os.path.join(DATA_ROOT, day_obs, 'raw', raw_filenames))
-        if calibration_type.lower() == 'lampflat':
-            # Group by fibers lit
+        if calibration_type.lower() == 'lampflat' or calibration_type.lower() == 'double':
+            # Group by fibers lit if we are stacking lampflats or doubles (arc frames)
             observed_fibers = []
             for raw_filename in raw_filenames_for_this_dayobs:
-                lampflat_hdu = fits.open(raw_filename)
-                observed_fibers.append(lampflat_hdu[1].header.get('OBJECTS'))
-                lampflat_hdu.close()
+                cal_hdu = fits.open(raw_filename)
+                observed_fibers.append(cal_hdu[1].header.get('OBJECTS'))
+                cal_hdu.close()
             observed_fibers = set(observed_fibers)
             number_of_stacks_that_should_have_been_created += len(observed_fibers)
         else:
@@ -152,6 +155,33 @@ def run_check_if_stacked_calibrations_were_created(raw_filenames, calibration_ty
     assert len(created_stacked_calibrations) == number_of_stacks_that_should_have_been_created
 
 
+def run_check_if_stacked_calibrations_have_extensions(calibration_type, extensions_to_check):
+    created_stacked_calibrations = []
+    for day_obs in DAYS_OBS:
+        created_stacked_calibrations += glob(os.path.join(DATA_ROOT, day_obs, 'processed',
+                                                          '*' + calibration_type.lower() + '*.fits*'))
+    for cal in created_stacked_calibrations:
+        hdulist = fits.open(cal)
+        extnames = [hdulist[i].header.get('extname', None) for i in range(len(hdulist))]
+        for ext in extensions_to_check:
+            logger.info(f'checking if {ext} is in the saved extensions of {cal}')
+            assert ext in extnames
+
+
+def check_extracted_spectra(raw_filename, spec_extname, columns):
+    created_images = []
+    for day_obs in DAYS_OBS:
+        created_images += glob(os.path.join(DATA_ROOT, day_obs, 'processed', raw_filename))
+    for filename in created_images:
+        with fits.open(filename) as f:
+            hdu = fits_utils.unpack(f)
+        spectrum = Table(hdu[spec_extname].data)
+        for colname in columns:
+            assert colname in spectrum.colnames
+            assert not np.allclose(spectrum[colname], 0)
+        assert 'RV' in hdu[0].header
+
+
 def run_check_if_stacked_calibrations_are_in_db(raw_filenames, calibration_type):
     number_of_stacks_that_should_have_been_created = get_expected_number_of_calibrations(raw_filenames, calibration_type)
     with dbs.get_session(os.environ['DB_ADDRESS']) as db_session:
@@ -161,18 +191,32 @@ def run_check_if_stacked_calibrations_are_in_db(raw_filenames, calibration_type)
     assert len(calibrations_in_db) == number_of_stacks_that_should_have_been_created
 
 
+def mock_phoenix_models_in_db(db_address):
+    with open(PHOENIX_FILENAME) as f:
+        phoenix_data = json.load(f)
+    with dbs.get_session(db_address) as db_session:
+        db_session.bulk_insert_mappings(banzai_nres.dbs.PhoenixModel, phoenix_data)
+        dbs.add_or_update_record(db_session, banzai_nres.dbs.ResourceFile, {'key': 'phoenix_wavelengths'},
+                                 {'filename': 'phoenix_wavelength.fits',
+                                  'location': 's3://banzai-nres-phoenix-models-lco-global',
+                                  'key': 'phoenix_wavelengths'})
+
 @pytest.mark.e2e
 @pytest.fixture(scope='module')
 @mock.patch('banzai.dbs.requests.get', return_value=FakeResponse(CONFIGDB_FILENAME))
 def init(configdb):
-    os.system(f'banzai_create_db --db-address={os.environ["DB_ADDRESS"]}')
+    os.system(f'banzai_nres_create_db --db-address={os.environ["DB_ADDRESS"]}')
     dbs.populate_instrument_tables(db_address=os.environ["DB_ADDRESS"], configdb_address='http://fakeconfigdb')
-    os.system(f'banzai_add_instrument --site lsc --camera fl09 --name nres01 --camera-type 1m0-NRES-SciCam --db-address={os.environ["DB_ADDRESS"]}')
-    os.system(f'banzai_add_instrument --site elp --camera fl17 --name nres02 --camera-type 1m0-NRES-SciCam --db-address={os.environ["DB_ADDRESS"]}')
+    os.system(f'banzai_add_site --site elp --latitude 30.67986944 --longitude -104.015175 --elevation 2027 --timezone -6 --db-address={os.environ["DB_ADDRESS"]}')
+    os.system(f'banzai_add_site --site lsc --latitude -30.1673833333 --longitude -70.8047888889 --elevation 2198 --timezone -4 --db-address={os.environ["DB_ADDRESS"]}')
+    os.system(f'banzai_add_instrument --site lsc --camera fl09 --name nres01 --instrument-type 1m0-NRES-SciCam --db-address={os.environ["DB_ADDRESS"]}')
+    os.system(f'banzai_add_instrument --site elp --camera fl17 --name nres02 --instrument-type 1m0-NRES-SciCam --db-address={os.environ["DB_ADDRESS"]}')
+
+    mock_phoenix_models_in_db(os.environ["DB_ADDRESS"])
     for instrument in INSTRUMENTS:
         for bpm_filename in glob(os.path.join(DATA_ROOT, instrument, 'bpm/*bpm*')):
+            logger.info(f'adding bpm {bpm_filename} to the database')
             os.system(f'banzai_nres_add_bpm --filename {bpm_filename} --db-address={os.environ["DB_ADDRESS"]}')
-
 
 
 @pytest.mark.e2e
@@ -220,15 +264,51 @@ class TestMasterFlatCreation:
     def test_if_stacked_flat_frame_was_created(self):
         check_if_individual_frames_exist('*w00*')
         run_check_if_stacked_calibrations_were_created('*w00.fits*', 'lampflat')
+        run_check_if_stacked_calibrations_have_extensions('lampflat', ['TRACES', 'PROFILE', 'BLAZE'])
         run_check_if_stacked_calibrations_are_in_db('*w00.fits*', 'LAMPFLAT')
+
+
+@pytest.mark.e2e
+@pytest.mark.master_arc
+class TestMasterArcCreation:
+    @pytest.fixture(autouse=True)
+    @mock.patch('banzai.utils.observation_utils.requests.get', side_effect=observation_portal_side_effect)
+    def stack_arc_frames(self, mock_lake):
+        run_reduce_individual_frames('*a00.fits*')
+        mark_frames_as_good('*a91.fits*')
+        stack_calibrations('double')
+
+    def test_if_stacked_arc_frame_was_created(self):
+        check_if_individual_frames_exist('*a00*')
+        run_check_if_stacked_calibrations_were_created('*a00.fits*', 'double')
+        run_check_if_stacked_calibrations_have_extensions('double', ['WAVELENGTH', 'FEATURES'])
+        run_check_if_stacked_calibrations_are_in_db('*a00.fits*', 'DOUBLE')
+
+
+mock_simbad_response = [{'RA': '07 39 18.1195',
+                         'DEC': '+05 13 29.955',
+                         'PMRA': -714.59,
+                         'PMDEC': -1036.8,
+                         'Fe_H_Teff': 6654,
+                         'Fe_H_log_g': 3.950000047683716},
+                        {'RA': '07 39 17.8800',
+                         'DEC': '+05 13 26.800',
+                         'PMRA': -709.0,
+                         'PMDEC': -1024.0,
+                         'Fe_H_Teff': 7870,
+                         'Fe_H_log_g': 8.079999923706055}]
 
 
 @pytest.mark.e2e
 @pytest.mark.science_frames
 class TestScienceFrameProcessing:
     @pytest.fixture(autouse=True)
+    # Note this requires the GAIA and SIMBAD services to be up. It's a little scary to depend on outside data source
+    # for our tests. To mock this, we would have to write a control command and use broadcast() to get it to the workers
+    # See https://stackoverflow.com/questions/30450468/mocking-out-a-call-within-a-celery-task
     def process_frames(self):
         run_reduce_individual_frames('*e00.fits*')
 
     def test_if_science_frames_were_created(self):
         check_if_individual_frames_exist('*e00.fits*')
+        check_extracted_spectra('*e91.fits*', '1DSPEC', ['wavelength', 'flux', 'uncertainty'])
