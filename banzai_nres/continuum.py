@@ -18,8 +18,8 @@ class ContinuumNormalizer(Stage):
         for fiber, order in zip(*image.spectrum.fibers_and_orders):
             if np.isclose(fiber, image.science_fiber):
                 spectrum = image.spectrum[fiber, order]
-                blaze_corrected_flux = spectrum['flux'] / spectrum['blaze']
-                blaze_corrected_error = blaze_corrected_flux * np.sqrt((spectrum['uncertainty'] / spectrum['flux']) ** 2.0 + (spectrum['blaze_error'] / spectrum['blaze']) ** 2.0)
+                blaze_corrected_flux = spectrum['flux'] #/ spectrum['blaze']
+                blaze_corrected_error = spectrum['uncertainty'] #blaze_corrected_flux * np.sqrt((spectrum['uncertainty'] / spectrum['flux']) ** 2.0 + (spectrum['blaze_error'] / spectrum['blaze']) ** 2.0)
                 detector_resolution = 4  # pixels
                 mask = np.zeros_like(blaze_corrected_flux, dtype=int)
                 mask = mark_absorption_or_emission_features(mask, blaze_corrected_flux, int(detector_resolution))
