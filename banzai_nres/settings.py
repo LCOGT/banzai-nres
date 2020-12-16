@@ -154,3 +154,6 @@ REDUCED_DATA_EXTENSION_TYPES = {'ERR': 'float32',
                                 }
 
 PHOENIX_MODEL_LOCATION = os.getenv('PHOENIX_FILE_LOCATION', 's3://banzai-nres-phoenix-models-lco-global')
+
+MIN_ORDER_TO_CORRELATE = 75
+MAX_ORDER_TO_CORRELATE = 101

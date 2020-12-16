@@ -107,10 +107,25 @@ def cross_correlate_over_traces(image, orders_to_use, velocities, template):
     return Table(ccfs)
 
 
-class RVCalculator(Stage):
-    MIN_ORDER_TO_CORRELATE = 75
-    MAX_ORDER_TO_CORRELATE = 101
+def calculate_rv(image, orders_to_use, template):
+    # for steps in 1 km/s from -2000 to +2000 km/s
+    coarse_velocities = np.arange(-2000, 2001, 1)
 
+    coarse_ccfs = cross_correlate_over_traces(image, orders_to_use, coarse_velocities, template)
+
+    # take the peak
+    velocity_peaks = np.array([coarse_velocities[np.argmax(ccf['xcor'])] for ccf in coarse_ccfs])
+    best_v = stats.sigma_clipped_mean(velocity_peaks, 3.0)
+    velocities = np.arange(best_v - 2, best_v + 2 + 1e-4, 1e-3)
+
+    ccfs = cross_correlate_over_traces(image, orders_to_use, velocities, template)
+
+    rvs_per_order = np.array([ccf['v'][np.argmax(ccf['xcor'])] for ccf in ccfs])
+    # Calculate the peak v (converting to m/s) in the spectrograph frame
+    return stats.sigma_clipped_mean(rvs_per_order, 3.0) * 1000
+
+
+class RVCalculator(Stage):
     def do_stage(self, image) -> ObservationFrame:
         if image.classification is None:
             logger.warning('No classification to use for an RV template', image=image)
@@ -118,23 +133,10 @@ class RVCalculator(Stage):
         phoenix_loader = phoenix.PhoenixModelLoader(self.runtime_context.db_address)
         template = phoenix_loader.load(image.classification)
         # Pick orders near the center of the detector that have a high Signal to noise and are free of tellurics.
-        orders_to_use = np.arange(self.MIN_ORDER_TO_CORRELATE, self.MAX_ORDER_TO_CORRELATE, 1)
+        orders_to_use = np.arange(self.runtime_context.MIN_ORDER_TO_CORRELATE,
+                                  self.runtime_context.MAX_ORDER_TO_CORRELATE, 1)
 
-        # for steps in 1 km/s from -2000 to +2000 km/s
-        coarse_velocities = np.arange(-2000, 2001, 1)
-
-        coarse_ccfs = cross_correlate_over_traces(image, orders_to_use, coarse_velocities, template)
-
-        # take the peak
-        velocity_peaks = np.array([coarse_velocities[np.argmax(ccf['xcor'])] for ccf in coarse_ccfs])
-        best_v = stats.sigma_clipped_mean(velocity_peaks, 3.0)
-        velocities = np.arange(best_v - 2, best_v + 2 + 1e-4, 1e-3)
-
-        ccfs = cross_correlate_over_traces(image, orders_to_use, velocities, template)
-
-        rvs_per_order = np.array([ccf['v'][np.argmax(ccf['xcor'])] for ccf in ccfs])
-        # Calculate the peak v (converting to m/s) in the spectrograph frame
-        rv_measured = stats.sigma_clipped_mean(rvs_per_order, 3.0) * 1000
+        rv_measured = calculate_rv(image, orders_to_use, template)
 
         # Compute the barycentric RV and observing time corrections
         rv_correction, bjd_tdb = barycentric_correction(image.dateobs, image.exptime,

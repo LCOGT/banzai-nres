@@ -176,7 +176,7 @@ def populate_phoenix_models(model_location, db_address):
             db_session.commit()
 
 
-def get_closest_phoenix_models(db_address, T_effective, log_g, metallicity=0.0, alpha=0.0, fixed=None):
+def get_closest_phoenix_models(db_address, T_effective, log_g, metallicity=0.0, alpha=0.0, fixed=None, n=1):
     if fixed is None:
         fixed = []
     with banzai.dbs.get_session(db_address=db_address) as db_session:
@@ -185,7 +185,7 @@ def get_closest_phoenix_models(db_address, T_effective, log_g, metallicity=0.0, 
             query.append(getattr(PhoenixModel, param) == eval(param))
         order = [PhoenixModel.diff_T(T_effective), PhoenixModel.diff_log_g(log_g),
                  PhoenixModel.diff_metallicity(metallicity), PhoenixModel.diff_alpha(alpha)]
-        model = db_session.query(PhoenixModel).filter(*query).order_by(*order).first()
+        model = db_session.query(PhoenixModel).filter(*query).order_by(*order).limit(n).all()
         if model is None:
             logger.error('Phoenix model does not exist for these parameters',
                          extra_tags={'T_effective': T_effective, 'log_g': log_g,
