@@ -106,4 +106,9 @@ class StellarClassifier(Stage):
         else:
             image.meta['CLASSIFY'] = 1, 'Was this spectrum classified'
             dbs.save_classification(self.runtime_context.db_address, image)
+        image.meta['TEFF'] = image.classification.T_effective
+        image.meta['LOG_G'] = image.classification.log_g
+        image.meta['FEH'] = image.classification.metalicity
+        image.meta['ALPHA'] = image.classification.alpha
+
         return image
