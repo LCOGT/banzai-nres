@@ -37,6 +37,8 @@ def find_y_center(y, indices, weights=None):
 
 def refine_traces(traces, image, weights=None):
     x2d, y2d = np.meshgrid(np.arange(traces.shape[1]), np.arange(traces.shape[0]))
+    #Ensure that the weights are positive
+    weights[weights<0]=0
     # For each label
     for i in range(1, np.max(traces) + 1):
         # TODO: Debug divide by zero in weights
