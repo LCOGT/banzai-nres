@@ -122,7 +122,9 @@ def calculate_rv(image, orders_to_use, template):
 
     rvs_per_order = np.array([ccf['v'][np.argmax(ccf['xcor'])] for ccf in ccfs])
     # Calculate the peak v (converting to m/s) in the spectrograph frame
-    return stats.sigma_clipped_mean(rvs_per_order, 3.0) * 1000
+    rv = stats.sigma_clipped_mean(rvs_per_order, 3.0) * 1000
+    rv_err = stats.robust_standard_deviation(rvs_per_order) * 1000
+    return rv, rv_err, coarse_ccfs, ccfs
 
 
 class RVCalculator(Stage):
@@ -136,7 +138,7 @@ class RVCalculator(Stage):
         orders_to_use = np.arange(self.runtime_context.MIN_ORDER_TO_CORRELATE,
                                   self.runtime_context.MAX_ORDER_TO_CORRELATE, 1)
 
-        rv_measured = calculate_rv(image, orders_to_use, template)
+        rv_measured, rv_err, coarse_ccfs, ccfs = calculate_rv(image, orders_to_use, template)
 
         # Compute the barycentric RV and observing time corrections
         rv_correction, bjd_tdb = barycentric_correction(image.dateobs, image.exptime,
@@ -147,7 +149,7 @@ class RVCalculator(Stage):
         image.meta['RV'] = rv, 'Radial Velocity in Barycentric Frame [m/s]'
         # The following assumes that the uncertainty on the barycentric correction is negligible w.r.t. that
         # on the RV measured from the CCF, which should generally be true
-        image.meta['RVERR'] = stats.robust_standard_deviation(rvs_per_order) * 1000, 'Radial Velocity Uncertainty [m/s]'
+        image.meta['RVERR'] = rv_err, 'Radial Velocity Uncertainty [m/s]'
         image.meta['BARYCORR'] = rv_correction, 'Barycentric Correction Applied to the RV [m/s]'
         image.meta['TCORR'] = bjd_tdb, 'Exposure Mid-Time (Barycentric Julian Date)'
         image.meta['TCORVERN'] = 'astropy.time.light_travel_time', 'Time correction code version'
