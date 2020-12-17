@@ -83,7 +83,7 @@ class StellarClassifier(Stage):
         phoenix_loader = phoenix.PhoenixModelLoader(self.runtime_context.db_address)
         template = phoenix_loader.load(image.classification)
         rv = calculate_rv(image, orders_to_use, template)[0]
-        best_metric = cross_correlate_over_traces(image, orders_to_use, [rv], template)
+        best_metric = np.sum(cross_correlate_over_traces(image, orders_to_use, [rv], template)['xcor'])
         # For each param: Fix the other params, get the N closest models and save the results
         physical_parameters = ['Teff', 'log_g', 'metallicity', 'alpha']
         n_steps = [10, 4, 4, 4]
@@ -97,8 +97,8 @@ class StellarClassifier(Stage):
                                                             n=n)
             for model_to_test in models_to_test:
                 template = phoenix_loader.load(model_to_test)
-                metric = cross_correlate_over_traces(image, orders_to_use, [rv], template)
-                if metric[0] > best_metric:
+                metric = np.sum(cross_correlate_over_traces(image, orders_to_use, [rv], template)['xcor'])
+                if metric > best_metric:
                     image.classification = model_to_test
                     best_metric = metric[0]
         if image.classification is None:
