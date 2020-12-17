@@ -100,7 +100,7 @@ class StellarClassifier(Stage):
                 metric = np.sum(cross_correlate_over_traces(image, orders_to_use, [rv], template)['xcor'])
                 if metric > best_metric:
                     image.classification = model_to_test
-                    best_metric = metric[0]
+                    best_metric = metric
         if image.classification is None:
             image.meta['CLASSIFY'] = 0, 'Was this spectrum classified'
         else:
