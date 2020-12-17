@@ -85,7 +85,7 @@ class StellarClassifier(Stage):
         rv = calculate_rv(image, orders_to_use, template)[0]
         best_metric = cross_correlate_over_traces(image, orders_to_use, [rv], template)
         # For each param: Fix the other params, get the N closest models and save the results
-        physical_parameters = ['Teff', 'log_g', 'metalicity', 'alpha']
+        physical_parameters = ['Teff', 'log_g', 'metallicity', 'alpha']
         n_steps = [10, 4, 4, 4]
         for parameter, n in zip(physical_parameters, n_steps):
             models_to_test = dbs.get_closest_phoenix_models(self.runtime_context.db_address,
