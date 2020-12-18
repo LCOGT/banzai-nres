@@ -7,6 +7,9 @@ from astropy.time import Time
 from astropy.coordinates import SkyCoord
 from astroquery import gaia, simbad
 from astropy import constants
+from banzai_nres.rv import cross_correlate_over_traces, calculate_rv
+from banzai_nres import phoenix
+import numpy as np
 
 
 def find_object_in_catalog(image, db_address):
@@ -48,7 +51,7 @@ def find_object_in_catalog(image, db_address):
         results = simbad_connection.query_region(coordinate, radius='0d0m10s')
         if results:
             image.classification = dbs.get_closest_phoenix_models(db_address, results[0]['Fe_H_Teff'],
-                                                                  results[0]['Fe_H_log_g'])
+                                                                  results[0]['Fe_H_log_g'])[0]
             # Update the ra and dec to the catalog coordinates as those are basically always better than a user enters
             # manually.
             image.ra, image.dec = results[0]['RA'], results[0]['DEC']
@@ -76,11 +79,36 @@ class StellarClassifier(Stage):
 
         find_object_in_catalog(image, self.runtime_context.db_address)
 
-        # TODO: For each param: Fix the other params, get the N closest models and save the results
-
+        orders_to_use = np.arange(self.runtime_context.MIN_ORDER_TO_CORRELATE, self.runtime_context.MAX_ORDER_TO_CORRELATE, 1)
+        phoenix_loader = phoenix.PhoenixModelLoader(self.runtime_context.db_address)
+        template = phoenix_loader.load(image.classification)
+        rv = calculate_rv(image, orders_to_use, template)[0]
+        best_metric = np.sum(cross_correlate_over_traces(image, orders_to_use, [rv], template)['xcor'])
+        # For each param: Fix the other params, get the N closest models and save the results
+        physical_parameters = ['T_effective', 'log_g', 'metallicity', 'alpha']
+        n_steps = [11, 5, 5, 5]
+        for parameter, n in zip(physical_parameters, n_steps):
+            models_to_test = dbs.get_closest_phoenix_models(self.runtime_context.db_address,
+                                                            image.classification.T_effective,
+                                                            image.classification.log_g,
+                                                            image.classification.metallicity,
+                                                            image.classification.alpha,
+                                                            fixed=[i for i in physical_parameters if i != parameter],
+                                                            n=n)
+            for model_to_test in models_to_test:
+                template = phoenix_loader.load(model_to_test)
+                metric = np.sum(cross_correlate_over_traces(image, orders_to_use, [rv], template)['xcor'])
+                if metric > best_metric:
+                    image.classification = model_to_test
+                    best_metric = metric
         if image.classification is None:
             image.meta['CLASSIFY'] = 0, 'Was this spectrum classified'
         else:
             image.meta['CLASSIFY'] = 1, 'Was this spectrum classified'
             dbs.save_classification(self.runtime_context.db_address, image)
+        image.meta['TEFF'] = image.classification.T_effective
+        image.meta['LOG_G'] = image.classification.log_g
+        image.meta['FEH'] = image.classification.metallicity
+        image.meta['ALPHA'] = image.classification.alpha
+
         return image
