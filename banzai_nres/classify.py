@@ -86,7 +86,7 @@ class StellarClassifier(Stage):
         best_metric = np.sum(cross_correlate_over_traces(image, orders_to_use, [rv], template)['xcor'])
         # For each param: Fix the other params, get the N closest models and save the results
         physical_parameters = ['T_effective', 'log_g', 'metallicity', 'alpha']
-        n_steps = [10, 4, 4, 4]
+        n_steps = [11, 5, 5, 5]
         for parameter, n in zip(physical_parameters, n_steps):
             models_to_test = dbs.get_closest_phoenix_models(self.runtime_context.db_address,
                                                             image.classification.T_effective,
