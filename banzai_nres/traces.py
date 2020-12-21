@@ -31,7 +31,7 @@ def find_y_center(y, indices, weights=None):
         weights = np.ones(y.shape, dtype=y.dtype)
     centers = (y * indices * weights).sum(axis=0) / (indices * weights).sum(axis=0)
     # Errors are sqrt sum of the weights
-    errors = np.sqrt((indices * weights).sum(axis=0))
+    errors = 1./np.sqrt((indices * weights).sum(axis=0))
     return centers, errors
 
 
