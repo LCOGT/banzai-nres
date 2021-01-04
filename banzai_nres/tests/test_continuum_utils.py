@@ -40,7 +40,7 @@ class TestContinuumFitting:
         best_fit = fit_polynomial(flux, flux_error, x=x, order=3, sigma=3, mask=mask)
         #best_fit2 = fit_stiff_polynomial(flux, flux_error, x=x, order=3, sigma=3, mask=mask, derivative_stiffness=[0, 1E2, 1E10])
         # because the continuum is 100, an atol of 1 represents continuum normalization within 1%
-        if True:
+        if False:
             # debug
             import matplotlib.pyplot as plt
             plt.plot(flux, label='flux')
