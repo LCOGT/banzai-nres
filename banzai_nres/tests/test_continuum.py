@@ -9,6 +9,7 @@ from astropy.table import Table
 
 @mock.patch('banzai_nres.continuum.ContinuumNormalizer.normalize')
 def test_do_stage(mock_normalize):
+    # tests that the normalized spectrum are assigned correctly.
     expected = 1
     # make a single order spectrum
     flux = np.arange(1, 101) * expected
@@ -18,7 +19,7 @@ def test_do_stage(mock_normalize):
     image = NRESObservationFrame([EchelleSpectralCCDData(np.zeros((1, 1)), meta={'OBJECTS': 'tung&tung&none'},
                                                          spectrum=Spectrum1D(spectrum))],
                                  'test.fits')
-    # make it so that the continuum fitter just returns 1, so that the divided spectrum will be unchanged
+    # make it so that ContinuumNormalizer.normalize just returns ones.
     mock_normalize.return_value = (expected * np.ones_like(flux), expected * np.ones_like(flux), 0)
 
     # Run the normalizer code
