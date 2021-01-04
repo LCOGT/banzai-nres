@@ -240,6 +240,24 @@ class NRESObservationFrame(LCOObservationFrame):
             # Proper motion is stored in arcseconds/year but we always use it in mas/year
             self.primary_hdu.meta['PM-DEC'] = value / 1000.0
 
+    @property
+    def classification(self):
+        return self._classification
+
+    @classification.setter
+    def classification(self, value):
+        self._classification = value
+        if value is not None:
+            self.meta['TEFF'] = value.T_effective
+            self.meta['LOG_G'] = value.log_g
+            self.meta['FE_H'] = value.metallicity
+            self.meta['ALPHA'] = value.alpha
+        else:
+            self.meta['TEFF'] = ''
+            self.meta['LOG_G'] = ''
+            self.meta['FE_H'] = ''
+            self.meta['ALPHA'] = ''
+
 
 class NRESCalibrationFrame(LCOCalibrationFrame, NRESObservationFrame):
     def __init__(self, hdu_list: list, file_path: str, frame_id: int = None, grouping_criteria: list = None,
