@@ -30,8 +30,8 @@ class TestContinuumFitting:
     def run_masking_procedure(self, flux):
         flux_error = np.sqrt(np.ones_like(flux) ** 2 + np.sqrt(flux) ** 2)  # read plus poisson
         mask = cu.mark_features(flux, sigma=3, detector_resolution=4)
-        broad_line_mask = cu.mark_broad_features(flux, flux_error, mask, self.broad_line_width/2, level_to_mask=1E-2)
-        mask = np.logical_or(mask, broad_line_mask)
+        #broad_line_mask = cu.mark_broad_features(flux, flux_error, mask, self.broad_line_width/2, level_to_mask=1E-2)
+        #mask = np.logical_or(mask, broad_line_mask)
         return mask
 
     def fit_passes(self, flux, mask, atol=1):
