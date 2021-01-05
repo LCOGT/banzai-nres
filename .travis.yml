@@ -23,7 +23,7 @@ services:
 
 env:
     global:
-        - NUMPY_VERSION=1.15.1
+        - NUMPY_VERSION=1.17.4
         - PYTHON_INSTALL_COMMAND='python setup.py install'
         - SETUP_CMD = ''
         - RUN_TESTS=1
@@ -57,9 +57,7 @@ matrix:
         # versions of Python, we can vary Python and Numpy versions at the same
         # time.
         - os: linux
-          env: NUMPY_VERSION=1.14
-        - os: linux
-          env: NUMPY_VERSION=1.15
+          env: NUMPY_VERSION=1.16
 
         # Do a PEP8 test with pycodestyle
         - os: linux
