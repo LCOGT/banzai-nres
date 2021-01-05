@@ -65,7 +65,7 @@ matrix:
 
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then security set-key-partition-list -S 'apple-tool:,apple:' -s -k keychainPass keychainName; fi
-
+  - pip uninstall -y numpy
 
 install:
   - if [[ "$INSTALL_DEPS" == 1 ]]; then pip install numpy==$NUMPY_VERSION coverage pycodestyle; fi
