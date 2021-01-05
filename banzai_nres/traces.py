@@ -23,7 +23,7 @@ SIGNAL_TO_NOISE_TRACING_CUTOFF = 50
 MIN_TRACE_HALF_WIDTH = 50
 
 # The final trace will be +- this from the center in the y-direction
-TRACE_HALF_HEIGHT = 6
+TRACE_HALF_HEIGHT = 7
 
 
 def find_y_center(y, indices, weights=None):
@@ -31,18 +31,18 @@ def find_y_center(y, indices, weights=None):
         weights = np.ones(y.shape, dtype=y.dtype)
     centers = (y * indices * weights).sum(axis=0) / (indices * weights).sum(axis=0)
     # Errors are sqrt sum of the weights
-    errors = np.sqrt((indices * weights).sum(axis=0))
+    errors = 1.0 / np.sqrt((indices * weights).sum(axis=0))
     return centers, errors
 
 
-def refine_traces(traces, image, weights=None):
-    x2d, y2d = np.meshgrid(np.arange(traces.shape[1]), np.arange(traces.shape[0]))
+def refine_traces(image, weights=None):
+    x2d, y2d = np.meshgrid(np.arange(image.traces.shape[1]), np.arange(image.traces.shape[0]))
     # For each label
-    for i in range(1, np.max(traces) + 1):
+    for i in range(1, np.max(image.traces) + 1):
         # TODO: Debug divide by zero in weights
-        y_center, y_center_errors = find_y_center(y2d, traces == i, weights=weights)
+        y_center, y_center_errors = find_y_center(y2d, image.traces == i, weights=weights)
         # Refit the centroids to reject cosmic rays etc, but only evaluate where the S/N is good
-        x_center = np.arange(min(x2d[traces == i]), max(x2d[traces == i]) + 1, dtype=np.float)
+        x_center = np.arange(min(x2d[image.traces == i]), max(x2d[image.traces == i]) + 1, dtype=np.float)
         logger.info(f'Fitting a polynomial to order {i}', image=image)
         # we chose order 5 based on visually inspecting the residuals between the trace centers and the model fit centers
         # TODO we need to verify that an order 5 polynomial fit is the best thing to do.
@@ -50,21 +50,22 @@ def refine_traces(traces, image, weights=None):
         # TODO: extrapolate fit and go out to pixels that have a cumulative S/N = 10
         y_center = best_fit(x_center)
 
+        y_center = np.round(y_center).astype(int)
         # Pad y_center with zeros so that it has the same dimension as y2d
         padded_y_center = np.zeros(y2d.shape[1])
         padded_y_center[int(min(x_center)):int(max(x_center) + 1)] = y_center[:]
         pixels_to_label = np.logical_and(np.logical_and(x2d >= min(x_center), x2d <= max(x_center)),
                                          np.abs(y2d - padded_y_center) <= TRACE_HALF_HEIGHT)
         # Reset the previously marked traces to 0. Then mark the newly measured traces.
-        traces[traces == i] = 0
-        traces[pixels_to_label] = i
-    return traces
+        image.traces[image.traces == i] = 0
+        image.traces[pixels_to_label] = i
 
 
 class TraceInitializer(Stage):
     def do_stage(self, image):
         if image.traces is None:
             image.traces = self.blind_solve(image)
+            refine_traces(image, weights=image.traces > 0)
         return image
 
     def blind_solve(self, image):
@@ -93,7 +94,7 @@ class TraceInitializer(Stage):
         # Reindex the labels to start at 1
         for i, label in enumerate(true_labels):
             labeled_image[labeled_image == label] = i + 1
-        return refine_traces(labeled_image, image, weights=labeled_image > 0)
+        return labeled_image
 
 
 # TODO do flux weighted mean residuals across 10, 11, 20,21 30,31,.. 40, ..., 130
@@ -102,5 +103,5 @@ class TraceInitializer(Stage):
 
 class TraceRefiner(Stage):
     def do_stage(self, image):
-        image.traces = refine_traces(image.traces, image, weights=image.data)
+        refine_traces(image, weights=image.data)
         return image
