@@ -39,8 +39,10 @@ def refine_traces(image, weights=None):
     x2d, y2d = np.meshgrid(np.arange(image.traces.shape[1]), np.arange(image.traces.shape[0]))
     # For each label
     for i in range(1, np.max(image.traces) + 1):
-        # TODO: Debug divide by zero in weights
-        y_center, y_center_errors = find_y_center(y2d, image.traces == i, weights=weights)
+        x_stamp = slice(min(x2d[image.traces == i]), max(x2d[image.traces == i]) + 1, 1)
+        y_stamp = slice(min(y2d[image.traces == i]), max(y2d[image.traces == i]) + 1, 1)
+        y_center, y_center_errors = find_y_center(y2d[y_stamp, x_stamp], (image.traces == i)[y_stamp, x_stamp],
+                                                  weights=weights[y_stamp, x_stamp])
         # Refit the centroids to reject cosmic rays etc, but only evaluate where the S/N is good
         x_center = np.arange(min(x2d[image.traces == i]), max(x2d[image.traces == i]) + 1, dtype=np.float)
         logger.info(f'Fitting a polynomial to order {i}', image=image)
