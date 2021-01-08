@@ -5,14 +5,14 @@ import warnings
 from astropy import units
 from astropy.time import Time
 from astropy.coordinates import SkyCoord
-from astroquery import gaia, simbad
 from astropy import constants
 from banzai_nres.rv import cross_correlate_over_traces, calculate_rv
 from banzai_nres import phoenix
 import numpy as np
+from banzai.utils import import_utils
 
 
-def find_object_in_catalog(image, db_address):
+def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
     """
     Find the object in external catalogs. Update the ra and dec if found. Also add an initial classification if found.
     :return:
@@ -29,7 +29,8 @@ def find_object_in_catalog(image, db_address):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         # 10 arcseconds should be a large enough radius to capture bright objects.
-        gaia_connection = gaia.GaiaClass()
+        gaia = import_utils.import_attribute(gaia_class)
+        gaia_connection = gaia()
         gaia_connection.ROW_LIMIT = 200
         results = gaia_connection.query_object(coordinate=transformed_coordinate, radius=10.0 * units.arcsec)
 
@@ -46,7 +47,8 @@ def find_object_in_catalog(image, db_address):
         image.pm_ra, image.pm_dec = results[0]['pmra'], results[0]['pmdec']
     # If nothing in Gaia fall back to simbad. This should only be for stars that are brighter than mag = 3
     else:
-        simbad_connection = simbad.Simbad()
+        simbad = import_utils.import_attribute(gaia_class)
+        simbad_connection = simbad()
         simbad_connection.add_votable_fields('pmra', 'pmdec', 'fe_h')
         results = simbad_connection.query_region(coordinate, radius='0d0m10s')
         if results:
@@ -77,7 +79,8 @@ class StellarClassifier(Stage):
                 image.meta['CLASSIFY'] = 0, 'Was this spectrum classified'
                 return image
 
-        find_object_in_catalog(image, self.runtime_context.db_address)
+        find_object_in_catalog(image, self.runtime_context.db_address,
+                               self.runtime_context.GAIA_CLASS, self.runtime_context.SIMBAD_CLASS)
 
         orders_to_use = np.arange(self.runtime_context.MIN_ORDER_TO_CORRELATE, self.runtime_context.MAX_ORDER_TO_CORRELATE, 1)
         phoenix_loader = phoenix.PhoenixModelLoader(self.runtime_context.db_address)

@@ -101,6 +101,10 @@ spec:
               value: "fits_files"
             - name: OPENTSDB_PYTHON_METRICS_TEST_MODE
               value: "1"
+            - name: BANZAI_GAIA_CLASS
+              value: "banzai_nres.tests.test_e2e.MockGaiaCatalog"
+            - name: BANZAI_SIMBAD
+              value: "banzai_nres.tests.test_e2e.MockSimbad"
             - name: AWS_ACCESS_KEY_ID
               valueFrom:
                 secretKeyRef:
@@ -151,6 +155,10 @@ spec:
               value: "fits_files"
             - name: OPENTSDB_PYTHON_METRICS_TEST_MODE
               value: "1"
+            - name: BANZAI_GAIA_CLASS
+              value: "banzai_nres.tests.test_e2e.MockGaiaCatalog"
+            - name: BANZAI_SIMBAD
+              value: "banzai_nres.tests.test_e2e.MockSimbad"
             - name: AWS_ACCESS_KEY_ID
               valueFrom:
                 secretKeyRef:

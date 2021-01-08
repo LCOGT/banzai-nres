@@ -82,6 +82,8 @@ services:
       FITS_BROKER: broker
       OPENTSDB_PYTHON_METRICS_TEST_MODE: "1"
       OBSERVATION_PORTAL_URL: "http://lake-old.lco.gtn/blocks/"
+      BANZAI_GAIA_CLASS: "banzai_nres.tests.test_e2e.MockGaiaCatalog"
+      BANZAI_SIMBAD: "banzai_nres.tests.test_e2e.MockSimbad"
     volumes_from:
     - nres-e2e-data
     labels:

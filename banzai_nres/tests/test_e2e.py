@@ -41,6 +41,14 @@ CONFIGDB_FILENAME = pkg_resources.resource_filename('banzai_nres.tests', 'data/c
 PHOENIX_FILENAME = pkg_resources.resource_filename('banzai_nres.tests', 'data/phoenix.json')
 
 
+class MockGaiaCatalog:
+    pass
+
+
+class MockSimbad:
+    pass
+
+
 def observation_portal_side_effect(*args, **kwargs):
     site = kwargs['params']['site']
     start = datetime.strftime(parse(kwargs['params']['start_after']).replace(tzinfo=None).date(), '%Y%m%d')
