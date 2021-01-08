@@ -17,13 +17,10 @@ logger = logging.getLogger('banzai')
 MIN_TRACE_SEPARATION = 10
 
 # Cutoff in signal-to-noise to stop following a trace
-SIGNAL_TO_NOISE_TRACING_CUTOFF = 50
+SIGNAL_TO_NOISE_TRACING_CUTOFF = 10
 
 # Minimum half width of a feature to be considered a trace
 MIN_TRACE_HALF_WIDTH = 50
-
-# The final trace will be +- this from the center in the y-direction
-TRACE_HALF_HEIGHT = 7
 
 
 def find_y_center(y, indices, weights=None):
@@ -35,7 +32,7 @@ def find_y_center(y, indices, weights=None):
     return centers, errors
 
 
-def refine_traces(image, weights=None):
+def refine_traces(image, weights=None, trace_half_height=5):
     x2d, y2d = np.meshgrid(np.arange(image.traces.shape[1]), np.arange(image.traces.shape[0]))
     # For each label
     for i in range(1, np.max(image.traces) + 1):
@@ -49,7 +46,6 @@ def refine_traces(image, weights=None):
         # we chose order 5 based on visually inspecting the residuals between the trace centers and the model fit centers
         # TODO we need to verify that an order 5 polynomial fit is the best thing to do.
         best_fit = fit_polynomial(y_center, y_center_errors, x=x_center, order=5)
-        # TODO: extrapolate fit and go out to pixels that have a cumulative S/N = 10
         y_center = best_fit(x_center)
 
         y_center = np.round(y_center).astype(int)
@@ -57,7 +53,7 @@ def refine_traces(image, weights=None):
         padded_y_center = np.zeros(y2d.shape[1])
         padded_y_center[int(min(x_center)):int(max(x_center) + 1)] = y_center[:]
         pixels_to_label = np.logical_and(np.logical_and(x2d >= min(x_center), x2d <= max(x_center)),
-                                         np.abs(y2d - padded_y_center) <= TRACE_HALF_HEIGHT)
+                                         np.abs(y2d - padded_y_center) <= trace_half_height)
         # Reset the previously marked traces to 0. Then mark the newly measured traces.
         image.traces[image.traces == i] = 0
         image.traces[pixels_to_label] = i
@@ -67,10 +63,12 @@ class TraceInitializer(Stage):
     def do_stage(self, image):
         if image.traces is None:
             image.traces = self.blind_solve(image)
-            refine_traces(image, weights=image.traces > 0)
+            refine_traces(image, weights=image.traces > 0,
+                          trace_half_height=self.runtime_context.TRACE_HALF_HEIGHT)
         return image
 
-    def blind_solve(self, image):
+    @staticmethod
+    def blind_solve(image):
         # Find the peaks of each of the traces using a max filter
         peaks = ndimage.maximum_filter1d(image.data.data,
                                          size=MIN_TRACE_SEPARATION, axis=0)
@@ -105,5 +103,6 @@ class TraceInitializer(Stage):
 
 class TraceRefiner(Stage):
     def do_stage(self, image):
-        refine_traces(image, weights=image.data)
+        refine_traces(image, weights=image.data,
+                      trace_half_height=self.runtime_context.TRACE_HALF_HEIGHT)
         return image

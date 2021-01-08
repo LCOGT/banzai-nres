@@ -186,12 +186,12 @@ def make_simple_traces(nx=401, ny=403, trace_half_width=6, blaze=True):
 def test_refine_traces_curved_trace():
     nx, ny = 1001, 1003
     expected_trace = np.zeros((ny, nx), dtype=int)
-
+    trace_half_height = 5
     x0 = 498
     input_y_center = 2e-4 * (np.arange(nx) - x0) ** 2.0 + 0.01 * (np.arange(nx) - x0) + 502.0
     trace = np.round(input_y_center).astype(int)
     for i in np.arange(nx, dtype=int):
-        for j in range(-7, 8):
+        for j in range(-trace_half_height, trace_half_height + 1):
             expected_trace[trace[i] + j, i] = 1
     x2d, y2d = np.meshgrid(np.arange(nx, dtype=int), np.arange(ny, dtype=int))
     sigma = 1.5
@@ -201,6 +201,6 @@ def test_refine_traces_curved_trace():
     test_image = NRESObservationFrame([EchelleSpectralCCDData(data=test_data, uncertainty=np.zeros_like(test_data),
                                                               meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
     test_image.traces = np.ones_like(expected_trace)
-    refine_traces(test_image, weights=test_image.data)
+    refine_traces(test_image, weights=test_image.data, trace_half_height=trace_half_height)
 
     np.testing.assert_equal(test_image.traces, expected_trace)
