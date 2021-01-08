@@ -4,7 +4,7 @@ import numpy as np
 
 class MockGaiaCatalog:
     def query_object(self, *args, **kwargs):
-        return []
+        return Table({'phot_rp_mean_mag': [21.0]})
 
 
 class MockSimbad:
