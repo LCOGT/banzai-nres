@@ -40,26 +40,6 @@ CONFIGDB_FILENAME = pkg_resources.resource_filename('banzai_nres.tests', 'data/c
 PHOENIX_FILENAME = pkg_resources.resource_filename('banzai_nres.tests', 'data/phoenix.json')
 
 
-class MockGaiaCatalog:
-    def query_object(self, *args, **kwargs):
-        return []
-
-
-class MockSimbad:
-    def add_votable_fields(self, *args, **kwargs):
-        pass
-
-    def query_region(self, *args, **kwarg):
-        data = {'RA': ['07 39 18.1195', '07 39 17.8800'],
-                'DEC': ['+05 13 29.955', '+05 13 26.800'],
-                'PMRA': [-714.59,  -709.],
-                'PMDEC': [-1036.8, -1024.],
-                'Fe_H_Teff': [6474, 7870],
-                'Fe_H_log_g': [3.9642, 8.08],
-                'Fe_H_Fe_H': [0.01, np.nan]}
-        return Table(data)
-
-
 def observation_portal_side_effect(*args, **kwargs):
     site = kwargs['params']['site']
     start = datetime.strftime(parse(kwargs['params']['start_after']).replace(tzinfo=None).date(), '%Y%m%d')
