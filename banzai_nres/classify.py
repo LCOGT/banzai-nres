@@ -47,7 +47,7 @@ def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
         image.pm_ra, image.pm_dec = results[0]['pmra'], results[0]['pmdec']
     # If nothing in Gaia fall back to simbad. This should only be for stars that are brighter than mag = 3
     else:
-        simbad = import_utils.import_attribute(gaia_class)
+        simbad = import_utils.import_attribute(simbad_class)
         simbad_connection = simbad()
         simbad_connection.add_votable_fields('pmra', 'pmdec', 'fe_h')
         results = simbad_connection.query_region(coordinate, radius='0d0m10s')
