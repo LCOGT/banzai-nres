@@ -23,16 +23,17 @@ class AssessWavelengthSolution(Stage):
         super(AssessWavelengthSolution, self).__init__(runtime_context)
 
     def do_stage(self, image):
-        Dlambda_match_threshold = 0.1
+        Dlambda_match_threshold = 0.1  # Angstroms
         lab_lines = find_nearest(image.features['wavelength'], np.sort(image.line_list))
         Dlambda = self.calculate_delta_lambda(image, lab_lines)
-        result = self.calculate_1d_metrics(image, Dlambda, Dlambda_match_threshold, lab_lines)
-        sigma_Dlambda, matched_sigma_Dlambda, chi2, matched_chi2, num_matched_lines, velocity_sigma_of_matched = result
+        result = self.calculate_1d_metrics(image, Dlambda, lab_lines, Dlambda_match_threshold)
+        sigma_Dlambda, matched_sigma_Dlambda, chi2, matched_chi2, num_matched_lines, velocity_precision = result
         #x_diff_Dlambda, order_diff_Dlambda = self.calculate_2d_metrics(image, Dlambda)
         # TODO add the number of overlaps matched during wavelength calibration to this metric.
+        #  the number of fit overlaps may be saved in the features header, check this.
         qc_results = {'sigma_Dlambda': sigma_Dlambda,
                       'matched_sigma_Dlambda': matched_sigma_Dlambda,
-                      'wavecal_precision(m/s)': velocity_sigma_of_matched.to(units.meter/units.second).value,
+                      'wavecal_precision(m/s)': velocity_precision.to(units.meter/units.second).value,
                       'chi_squared': chi2,
                       'matched_chi_squared': matched_chi2,
                       'num_matched_lines': num_matched_lines}
@@ -40,9 +41,12 @@ class AssessWavelengthSolution(Stage):
                                            'lab minus measured wavelength residuals',
                           'matched_sigma_Dlambda': 'Wavecal statistic. sigma_Dlambda but only using lines that agree with a '
                                                    f'lab line to within {Dlambda_match_threshold} Angstroms.',
-                          'wavecal_precision(m/s)': 'matched_sigma_Dlambda but in velocity space '
-                                                    '(i.e. standard deviation of delta lambda/lambda * c) '
-                                                    'for matched lines. Units of meter per second.',
+                          'wavecal_precision(m/s)': 'matched_sigma_Dlambda/sqrt(N) in velocity space '
+                                                    '(i.e. standard deviation of delta lambda/lambda * c divided by '
+                                                    'the square root of the number of matched lines) '
+                                                    'for matched lines only. I.e. this is the formal error on the mean '
+                                                    'of the residuals distribution (in velocity units). '
+                                                    'Units of meter per second.',
                           'chi_squared': 'Wavecal statistic. Formal chi-squared statistic of the wavelength residuals '
                                          'using their formal errors.',
                           'matched_chi_squared': 'Wavecal statistic. chi_squared but only using lines that agree with a '
@@ -53,11 +57,13 @@ class AssessWavelengthSolution(Stage):
         # saving the results to the image header
         for key in qc_results.keys():
             image.meta[key] = (qc_results[key], qc_description[key])
+
         # print the most easily understood metric to the log
+        logger.info(f'wavecal precision (m/s) = {qc_results["wavecal_precision(m/s)"]}', image=image)
         if qc_results['wavecal_precision(m/s)'] > 15 or qc_results['wavecal_precision(m/s)'] < 3:
-            logger.warning(f'wavecal precision (m/s) = {qc_results["wavecal_precision(m/s)"]}', image=image)
-        else:
-            logger.info(f'wavecal precision (m/s) = {qc_results["wavecal_precision(m/s)"]}', image)
+            logger.warning(f' Final calibration precision is too large or small. '
+                           f'wavecal precision (m/s) = '
+                           f'{qc_results["wavecal_precision(m/s)"]}', image=image)
         return image
 
     def calculate_delta_lambda(self, image, lab_lines):
@@ -79,9 +85,12 @@ class AssessWavelengthSolution(Stage):
         feature_centroid_uncertainty = image.features['centroid_err']
         chi2 = np.sum((Delta_lambda/feature_centroid_uncertainty)**2)/len(Delta_lambda)
         matched_chi2 = np.sum((Delta_lambda[low_scatter_lines]/feature_centroid_uncertainty[low_scatter_lines])**2)/len(Delta_lambda[low_scatter_lines])
-        # calculating metrics in velocity space (easily understood by users)
-        velocity_sigma_of_matched = np.std((Delta_lambda / lab_lines * const.c)[low_scatter_lines])  # del lambda/ lambda * c = delta v
-        return sigma_Dlambda, matched_sigma_Dlambda, chi2, matched_chi2, num_matched_lines, velocity_sigma_of_matched
+        # calculating metrics in velocity space (easily understood by users) del lambda/ lambda * c = delta v.
+        # then divide delta v by square root of the number of lines, giving the error on the mean of the residuals.
+        velocity_precision = np.std((Delta_lambda / lab_lines * const.c)[low_scatter_lines]) / np.sqrt(num_matched_lines)
+        if num_matched_lines == 0:  # get rid of nans in the matched statistics if we have zero matched lines.
+            matched_sigma_Dlambda, matched_chi2, velocity_precision = 0, 0, 0 * units.meter/units.second
+        return sigma_Dlambda, matched_sigma_Dlambda, chi2, matched_chi2, num_matched_lines, velocity_precision
 
     def calculate_2d_metrics(self, image, Delta_lambda):
         """
