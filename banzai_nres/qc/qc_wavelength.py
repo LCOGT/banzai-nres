@@ -5,13 +5,17 @@ from banzai.utils import qc
 from astropy import constants as const
 from astropy import units
 from xwavecal.utils.wavelength_utils import find_nearest
+import logging
 
 from scipy.stats import binned_statistic
 
 
+logger = logging.getLogger('banzai')
+
+
 class AssessWavelengthSolution(Stage):
     """
-    Calculate the dispersion in the wavelength solution and assess whether it is photon-limited or not
+    Calculate the dispersion in the wavelength solution
     @author:mjohnson
     """
 
@@ -49,6 +53,11 @@ class AssessWavelengthSolution(Stage):
         # saving the results to the image header
         for key in qc_results.keys():
             image.meta[key] = (qc_results[key], qc_description[key])
+        # print the most easily understood metric to the log
+        if qc_results['wavecal_precision(m/s)'] > 15 or qc_results['wavecal_precision(m/s)'] < 3:
+            logger.warning(f'wavecal precision (m/s) = {qc_results["wavecal_precision(m/s)"]}', image=image)
+        else:
+            logger.info(f'wavecal precision (m/s) = {qc_results["wavecal_precision(m/s)"]}', image)
         return image
 
     def calculate_delta_lambda(self, image, lab_lines):
@@ -71,7 +80,7 @@ class AssessWavelengthSolution(Stage):
         chi2 = np.sum((Delta_lambda/feature_centroid_uncertainty)**2)/len(Delta_lambda)
         matched_chi2 = np.sum((Delta_lambda[low_scatter_lines]/feature_centroid_uncertainty[low_scatter_lines])**2)/len(Delta_lambda[low_scatter_lines])
         # calculating metrics in velocity space (easily understood by users)
-        velocity_sigma_of_matched = np.std(Delta_lambda[low_scatter_lines] / lab_lines * const.c)  # del lambda/ lambda * c = delta v
+        velocity_sigma_of_matched = np.std((Delta_lambda / lab_lines * const.c)[low_scatter_lines])  # del lambda/ lambda * c = delta v
         return sigma_Dlambda, matched_sigma_Dlambda, chi2, matched_chi2, num_matched_lines, velocity_sigma_of_matched
 
     def calculate_2d_metrics(self, image, Delta_lambda):
