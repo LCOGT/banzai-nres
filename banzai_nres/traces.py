@@ -23,29 +23,32 @@ SIGNAL_TO_NOISE_TRACING_CUTOFF = 10
 MIN_TRACE_HALF_WIDTH = 50
 
 
-def find_y_center(y, indices, weights=None):
-    if weights is None:
-        weights = np.ones(y.shape, dtype=y.dtype)
-    centers = (y * indices * weights).sum(axis=0) / (indices * weights).sum(axis=0)
-    # Errors are sqrt sum of the weights
-    errors = 1.0 / np.sqrt((indices * weights).sum(axis=0))
+def find_y_center(y, mask, weights):
+    centers = (y * mask * weights).sum(axis=0) / (mask * weights).sum(axis=0)
+    # Errors are inv sqrt sum of the weights
+    inverse_variance = (mask * weights).sum(axis=0)
+    errors = np.zeros_like(centers)
+    errors[inverse_variance > 0] = 1.0 / np.sqrt(inverse_variance[inverse_variance > 0])
     return centers, errors
 
 
 def refine_traces(image, weights=None, trace_half_height=5):
     x2d, y2d = np.meshgrid(np.arange(image.traces.shape[1]), np.arange(image.traces.shape[0]))
+    if weights is None:
+        weights = np.ones_like(image.data.shape)
     # For each label
     for i in range(1, np.max(image.traces) + 1):
         x_stamp = slice(min(x2d[image.traces == i]), max(x2d[image.traces == i]) + 1, 1)
         y_stamp = slice(min(y2d[image.traces == i]), max(y2d[image.traces == i]) + 1, 1)
+        stamp_weights = weights[y_stamp, x_stamp] * (image.mask[y_stamp, x_stamp] == 0)
         y_center, y_center_errors = find_y_center(y2d[y_stamp, x_stamp], (image.traces == i)[y_stamp, x_stamp],
-                                                  weights=weights[y_stamp, x_stamp])
+                                                  weights=stamp_weights)
         # Refit the centroids to reject cosmic rays etc, but only evaluate where the S/N is good
         x_center = np.arange(min(x2d[image.traces == i]), max(x2d[image.traces == i]) + 1, dtype=np.float)
         logger.info(f'Fitting a polynomial to order {i}', image=image)
         # we chose order 5 based on visually inspecting the residuals between the trace centers and the model fit centers
         # TODO we need to verify that an order 5 polynomial fit is the best thing to do.
-        best_fit = fit_polynomial(y_center, y_center_errors, x=x_center, order=5)
+        best_fit = fit_polynomial(y_center, y_center_errors, mask=y_center_errors == 0, x=x_center, order=5)
         y_center = best_fit(x_center)
 
         y_center = np.round(y_center).astype(int)
@@ -72,8 +75,8 @@ class TraceInitializer(Stage):
         # Find the peaks of each of the traces using a max filter
         peaks = ndimage.maximum_filter1d(image.data.data,
                                          size=MIN_TRACE_SEPARATION, axis=0)
-        signal_to_noise = image.data.data / image.uncertainty > SIGNAL_TO_NOISE_TRACING_CUTOFF
-        binary_map = np.logical_and(peaks == image.data.data, signal_to_noise)
+        significant = image.data.data / image.uncertainty > SIGNAL_TO_NOISE_TRACING_CUTOFF
+        binary_map = np.logical_and(peaks == image.data.data, significant)
 
         # Dilate the label map to make sure all traces are connected
         binary_map = ndimage.morphology.binary_dilation(binary_map)
