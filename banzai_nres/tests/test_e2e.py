@@ -291,8 +291,8 @@ class TestMasterArcCreation:
         for cal in created_stacked_calibrations:
             hdulist = fits.open(cal)
             quality_metrics = hdulist[primaryextension].header
-            assert quality_metrics['wavecal_precision(m/s)'] < 12
-            assert quality_metrics['wavecal_precision(m/s)'] > 3
+            assert quality_metrics['wavecal_precision(m/s)'] < 30
+            assert quality_metrics['wavecal_precision(m/s)'] > 1
 
 
 mock_simbad_response = [{'RA': '07 39 18.1195',
