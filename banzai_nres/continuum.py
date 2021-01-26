@@ -47,3 +47,12 @@ class ContinuumNormalizer(Stage):
         # MCMC but the covariance it adds is complicated enough to track that we do not attempt that here.
         norm_uncertainty /= best_fit(wavelength)
         return norm_flux, norm_uncertainty, mask
+
+
+class MaskBlueHookRegion(Stage):
+    def do_stage(self, image) -> NRESObservationFrame:
+        mask = image.spectrum.mask
+        mask[:, :1000] = 1  # mask the first pixels of every 1d spectrum to remove the blue hook.
+        mask[:, -300:] = 1  # mask the last pixels of every 1d spectrum to remove any red edge effects
+        image.spectrum.mask = mask
+        return image
