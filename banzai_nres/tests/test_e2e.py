@@ -19,7 +19,6 @@ from astropy.table import Table
 from banzai.utils import fits_utils
 import banzai_nres.dbs
 import json
-import banzai_nres.dbs
 
 import logging
 

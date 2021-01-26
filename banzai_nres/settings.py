@@ -157,3 +157,10 @@ PHOENIX_MODEL_LOCATION = os.getenv('PHOENIX_FILE_LOCATION', 's3://banzai-nres-ph
 
 MIN_ORDER_TO_CORRELATE = 75
 MAX_ORDER_TO_CORRELATE = 101
+
+GAIA_CLASS = os.getenv('BANZAI_GAIA_CLASS', 'astroquery.gaia.GaiaClass')
+
+SIMBAD_CLASS = os.getenv('BANZAI_SIMBAD', 'astroquery.simbad.Simbad')
+
+# The final trace will be +- this from the center in the y-direction
+TRACE_HALF_HEIGHT = 5
