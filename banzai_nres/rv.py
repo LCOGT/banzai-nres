@@ -8,6 +8,7 @@ from astropy.time import Time
 from astropy.coordinates import SkyCoord, EarthLocation, solar_system_ephemeris
 from astropy import units
 from banzai.utils import stats
+from astropy.stats import sigma_clip, median_absolute_deviation
 import logging
 from banzai_nres.fitting import fit_polynomial
 from banzai_nres import phoenix
@@ -119,12 +120,17 @@ def calculate_rv(image, orders_to_use, template):
     velocities = np.arange(best_v - 2, best_v + 2 + 1e-4, 1e-3)
 
     ccfs = cross_correlate_over_traces(image, orders_to_use, velocities, template)
-
+    # Calculate the peak velocity
     rvs_per_order = np.array([ccf['v'][np.argmax(ccf['xcor'])] for ccf in ccfs])
-    # Calculate the peak v (converting to m/s) in the spectrograph frame
-    rv = stats.sigma_clipped_mean(rvs_per_order, 3.0) * 1000
-    rv_err = stats.robust_standard_deviation(rvs_per_order) * 1000
-    return rv, rv_err, coarse_ccfs, ccfs
+    # iterative sigma clipping using median_absolute_deviation to reject outliers and centering on the median.
+    marray_rvs_per_order = sigma_clip(rvs_per_order, sigma=3, maxiters=5, cenfunc='median',
+                           stdfunc=median_absolute_deviation, axis=None,
+                           masked=True, return_bounds=False, copy=True)
+    # marray_rvs_per_order is a np.ma.MaskedArray of the velocities. marray_rvs_per_order.compressed()
+    # returns only the non-masked elements as a 1d array.
+    # marray_rvs_per_order.mean() calculates the mean of only the unmasked elements.
+    rv, rv_err = marray_rvs_per_order.mean(), np.std(marray_rvs_per_order.compressed())/np.sqrt(marray_rvs_per_order.count())
+    return rv * 1000, rv_err * 1000, coarse_ccfs, ccfs
 
 
 class RVCalculator(Stage):
