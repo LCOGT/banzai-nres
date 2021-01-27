@@ -123,13 +123,10 @@ def calculate_rv(image, orders_to_use, template):
     # Calculate the peak velocity
     rvs_per_order = np.array([ccf['v'][np.argmax(ccf['xcor'])] for ccf in ccfs])
     # iterative sigma clipping using median_absolute_deviation to reject outliers and centering on the median.
-    marray_rvs_per_order = sigma_clip(rvs_per_order, sigma=3, maxiters=5, cenfunc='median',
-                           stdfunc=median_absolute_deviation, axis=None,
-                           masked=True, return_bounds=False, copy=True)
-    # marray_rvs_per_order is a np.ma.MaskedArray of the velocities. marray_rvs_per_order.compressed()
-    # returns only the non-masked elements as a 1d array.
-    # marray_rvs_per_order.mean() calculates the mean of only the unmasked elements.
-    rv, rv_err = marray_rvs_per_order.mean(), np.std(marray_rvs_per_order.compressed())/np.sqrt(marray_rvs_per_order.count())
+    rvs_per_order = sigma_clip(rvs_per_order, sigma=3, cenfunc='median',
+                               stdfunc=stats.robust_standard_deviation, axis=None,
+                               masked=True, return_bounds=False, copy=True)
+    rv, rv_err = np.ma.mean(rvs_per_order), np.ma.std(rvs_per_order) / np.sqrt(np.ma.count(rvs_per_order))
     return rv * 1000, rv_err * 1000, coarse_ccfs, ccfs
 
 
