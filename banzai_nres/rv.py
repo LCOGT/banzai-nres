@@ -122,7 +122,7 @@ def calculate_rv(image, orders_to_use, template):
     ccfs = cross_correlate_over_traces(image, orders_to_use, velocities, template)
     # Calculate the peak velocity
     rvs_per_order = np.array([ccf['v'][np.argmax(ccf['xcor'])] for ccf in ccfs])
-    # iterative sigma clipping using median_absolute_deviation to reject outliers and centering on the median.
+    # iterative sigma clipping using robust_standard_deviation to reject outliers and centering on the median.
     rvs_per_order = sigma_clip(rvs_per_order, sigma=3, cenfunc='median',
                                stdfunc=stats.robust_standard_deviation, axis=None,
                                masked=True, return_bounds=False, copy=True)
