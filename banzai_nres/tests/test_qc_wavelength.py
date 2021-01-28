@@ -28,15 +28,15 @@ class TestAssessWavelengthSolution:
         fake_post.side_effect = save_qc_results_locally
         # run the stage
         AssessWavelengthSolution(self.input_context).do_stage(self.test_image)
-        assert len(self.test_qc_results) == 6
-        assert np.isfinite(self.test_qc_results['wavecal_precision(m/s)'])
+        assert len(self.test_qc_results) == 7
+        assert np.isfinite(self.test_qc_results['PRECISN'])
 
     @mock.patch('banzai_nres.qc.qc_wavelength.qc.save_qc_results')
     def test_do_stage_savesqc_toheader(self, fake_post):
         # for now we just test that one of the results (the most important one) was saved to the header.
         image = AssessWavelengthSolution(self.input_context).do_stage(self.test_image)
-        assert np.isfinite(image.meta['wavecal_precision(m/s)'][0])  # check the calculated wavelength precision
-        assert len(image.meta['wavecal_precision(m/s)'][1]) > 0  # description string is not empty
+        assert np.isfinite(image.meta['PRECISN'][0])  # check the calculated wavelength precision
+        assert len(image.meta['PRECISN'][1]) > 0  # description string is not empty
 
     def test_quality_metrics(self):
         lab_lines = self.test_image.features['wavelength']

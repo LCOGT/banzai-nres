@@ -29,41 +29,32 @@ class AssessWavelengthSolution(Stage):
         result = self.calculate_1d_metrics(image, Dlambda, lab_lines, Dlambda_match_threshold)
         sigma_Dlambda, matched_sigma_Dlambda, chi2, matched_chi2, num_matched_lines, velocity_precision = result
         #x_diff_Dlambda, order_diff_Dlambda = self.calculate_2d_metrics(image, Dlambda)
-        # TODO add the number of overlaps matched during wavelength calibration to this metric.
-        #  the number of fit overlaps may be saved in the features header, check this.
-        qc_results = {'sigma_Dlambda': sigma_Dlambda,
-                      'matched_sigma_Dlambda': matched_sigma_Dlambda,
-                      'wavecal_precision(m/s)': velocity_precision.to(units.meter/units.second).value,
-                      'chi_squared': chi2,
-                      'matched_chi_squared': matched_chi2,
-                      'num_matched_lines': num_matched_lines}
-        qc_description = {'sigma_Dlambda': 'Wavecal statistic. Standard deviation of the distribution of '
-                                           'lab minus measured wavelength residuals',
-                          'matched_sigma_Dlambda': 'Wavecal statistic. sigma_Dlambda but only using lines that agree with a '
-                                                   f'lab line to within {Dlambda_match_threshold} Angstroms.',
-                          'wavecal_precision(m/s)': 'matched_sigma_Dlambda/sqrt(N) in velocity space '
-                                                    '(i.e. standard deviation of delta lambda/lambda * c divided by '
-                                                    'the square root of the number of matched lines) '
-                                                    'for matched lines only. I.e. this is the formal error on the mean '
-                                                    'of the residuals distribution (in velocity units). '
-                                                    'Units of meter per second.',
-                          'chi_squared': 'Wavecal statistic. Formal chi-squared statistic of the wavelength residuals '
-                                         'using their formal errors.',
-                          'matched_chi_squared': 'Wavecal statistic. chi_squared but only using lines that agree with a '
-                                                 f'lab line to within {Dlambda_match_threshold} Angstroms.',
-                          'num_matched_lines': f'Wavecal statistic. Number of measured lines that agree with a '
-                          f'lab line to within {Dlambda_match_threshold} Angstroms.'}
+        # TODO need to update xwavecal to pipe out the number of fit overlaps so that we can save it here.
+        qc_results = {'SIGLAM': np.round(sigma_Dlambda, 4),
+                      'MSIGLAM': np.round(matched_sigma_Dlambda, 4),
+                      'PRECISN': np.round(velocity_precision.to(units.meter/units.second).value, 4),
+                      'CHISQ': np.round(chi2, 4),
+                      'MCHISQ': np.round(matched_chi2, 4),
+                      'LINENUM': len(image.features['wavelength']),
+                      'MLINENUM': num_matched_lines}
+        qc_description = {'SIGLAM': 'wavecal residuals Angstroms',
+                          'MSIGLAM': 'wavecal residuals Angstroms, matched lines',
+                          'PRECISN': 'm/s wavecal precision',
+                          'CHISQ': 'chisquared goodness of fit',
+                          'MCHISQ': 'chisquared goodness of fit, matched lines',
+                          'LINENUM': 'Number of lines found on detector',
+                          'MLINENUM': 'Number of matched lines'}
         qc.save_qc_results(self.runtime_context, qc_results, image)
         # saving the results to the image header
         for key in qc_results.keys():
             image.meta[key] = (qc_results[key], qc_description[key])
 
         # print the most easily understood metric to the log
-        logger.info(f'wavecal precision (m/s) = {qc_results["wavecal_precision(m/s)"]}', image=image)
-        if qc_results['wavecal_precision(m/s)'] > 15 or qc_results['wavecal_precision(m/s)'] < 3:
-            logger.warning(f' Final calibration precision is too large or small. '
+        logger.info(f'wavecal precision (m/s) = {qc_results["PRECISN"]}', image=image)
+        if qc_results['PRECISN'] > 15 or qc_results['PRECISN'] < 3:
+            logger.warning(f' Final calibration precision is outside the expected range '
                            f'wavecal precision (m/s) = '
-                           f'{qc_results["wavecal_precision(m/s)"]}', image=image)
+                           f'{qc_results["PRECISN"]}', image=image)
         return image
 
     def calculate_delta_lambda(self, image, lab_lines):
