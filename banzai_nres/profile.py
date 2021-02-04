@@ -32,6 +32,9 @@ class ProfileFitter(Stage):
             image.profile[this_trace] = fluxes / blaze
             image.profile[this_trace] /= image.profile[this_trace].sum(axis=0)
 
+            image.profile[this_trace][fluxes < 0.0] = 0.0
+            # Use the 4 bit to represent negative values in the profile
+            image.mask[this_trace][fluxes < 0.0] |= 4
             # Divide the original image by best fit spline (Pixel-to-pixel sensitivity)
             # TODO: propagate the division of blaze and profile to the uncertainties of the image!!!
             image.data[this_trace] /= blaze
