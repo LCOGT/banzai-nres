@@ -128,16 +128,7 @@ class TestWavelengthCalibrate:
         assert np.allclose(features['order'], [0, 0, 1, 1, 1, 2, 2])
 
 
-@mock.patch('banzai_nres.wavelength.WavelengthSolution.solve', side_effect=lambda x, y, z: (x, y, z))
-def test_recalibrate(mock_solve):
-    features = {'wavelength': [10, 11, 50], 'pixel': [1, 2, 3], 'order': [0, 0, 1]}
-    line_list = np.array([10.05, 11.05, 60, 11.5])
-    wavelength_solution = WavelengthCalibrate(context.Context({})).fit_wavelength_model(features, line_list, 30)
-    # the mock patch populated wavelength_solution.model_coefficients with the arguments fed to WavelengthSolution.solve
-    # could use mock_solve.assert_called_with here, but it is not as straightforward because measured_lines changes.
-    measured_lines, wavelengths_to_fit, weights = wavelength_solution.model_coefficients
-    assert np.allclose(wavelengths_to_fit, line_list[:3])
-    assert np.allclose(weights, [1, 1, 0])
+# TODO test fit_wavelength_model
 
 
 def test_group_features_by_trace():

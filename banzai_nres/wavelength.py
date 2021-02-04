@@ -2,11 +2,14 @@ import numpy as np
 
 from banzai.stages import Stage
 from banzai.calibrations import CalibrationStacker, CalibrationUser
+from astropy import table
 
 from banzai_nres.frames import NRESObservationFrame
+from banzai.utils.stats import robust_standard_deviation
 from banzai_nres.utils.wavelength_utils import identify_features, group_features_by_trace, get_principle_order_number
 from xwavecal.wavelength import find_feature_wavelengths, WavelengthSolution
 from xwavecal.utils.wavelength_utils import find_nearest
+from xwavecal.wavelength import refine_wcs, SolutionRefineOnce
 
 import sep
 import logging
@@ -184,6 +187,12 @@ class WavelengthCalibrate(Stage):
         # reject lines who have residuals with the line list in excess of 0.1 angstroms (e.g. reject outliers)
         weights[~np.isclose(wavelengths_to_fit, wcs.measured_lines['wavelength'], atol=0.1)] = 0
         wcs.model_coefficients = wcs.solve(wcs.measured_lines, wavelengths_to_fit, weights)
+        """
+        wcs, residuals = refine_wcs(wcs, wcs.measured_lines, np.sort(line_list), SolutionRefineOnce._converged,
+                                    SolutionRefineOnce._clip, max_iter=2,
+                                    kwargs={'sigma': 4, 'stdfunc': robust_standard_deviation})
+        logger.info(f'{robust_standard_deviation(residuals)}')
+        """
         return wcs
 
 
@@ -191,11 +200,12 @@ class IdentifyFeatures(Stage):
     """
     Stage to identify all sharp emission-like features on an Arc lamp frame.
     """
-    nsigma = 15.0  # minimum signal to noise for the feature (sum of flux / sqrt(sum of error^2) within the aperture)
+    nsigma = 10.0  # minimum signal to noise for the feature (sum of flux / sqrt(sum of error^2) within the aperture)
     # where the aperture is a circular aperture of radius fwhm.
     fwhm = 6.0  # fwhm estimate of the elliptical gaussian PSF for each feature
-    num_features_max = 4000  # maximum number of features to keep. Will keep the num_features_max highest S/N features.
-
+    num_features_max = 2000  # maximum number of features to keep from the the center 1/3 of the chip.
+    # Will keep the num_features_max highest S/N features. The edges of the chip (where xwavecal fits overlaps)
+    # will keep all features with a signal to noise > nsigma.
     def do_stage(self, image):
         # identify emission feature (pixel, order) positions.
         features = identify_features(image.data, image.uncertainty, image.mask, nsigma=self.nsigma/2, fwhm=self.fwhm)
@@ -214,12 +224,16 @@ class IdentifyFeatures(Stage):
         # cutting which lines to keep:
         # calculate the error in the centroids provided by identify_features()
         features['centroid_err'] = self.fwhm / np.sqrt(features['flux'])
-        # Keep features that pass the signal to noise check.
+        # Filter features that pass the signal to noise check.
         valid_features = features['flux']/features['fluxerr'] > self.nsigma
         features = features[valid_features]
-        # Keep the highest S/N features
+        # sort by signal to noise
         features = features[np.argsort(features['flux']/features['fluxerr'])[::-1]]
-        features = features[:int(self.num_features_max)]
+        # From the center of the chip, keep only the highest signal to noise lines.
+        center_chip = np.logical_and(features['xcentroid'] < 3000, features['xcentroid'] > 1500)
+        center_chip_features_to_keep = features[center_chip][:int(self.num_features_max)]
+        features = features[~center_chip]
+        features = table.vstack([features, center_chip_features_to_keep])
 
         # report statistics
         logger.info('{0} emission features on this image will be used'.format(len(features)), image=image)
