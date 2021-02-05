@@ -30,6 +30,7 @@ class AssessWavelengthSolution(Stage):
         sigma_Dlambda, matched_sigma_Dlambda, chi2, matched_chi2, num_matched_lines, velocity_precision = result
         #x_diff_Dlambda, order_diff_Dlambda = self.calculate_2d_metrics(image, Dlambda)
         # TODO need to update xwavecal to pipe out the number of fit overlaps so that we can save it here.
+        #  and need to guard against nans here since they will cause a fits header crash.
         qc_results = {'SIGLAM': np.round(sigma_Dlambda, 4),
                       'MSIGLAM': np.round(matched_sigma_Dlambda, 4),
                       'PRECISN': np.round(velocity_precision.to(units.meter/units.second).value, 4),
