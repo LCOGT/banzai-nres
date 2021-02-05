@@ -215,6 +215,7 @@ class IdentifyFeatures(Stage):
     fwhm = 4.0  # fwhm estimate of the elliptical gaussian PSF for each feature
     num_features_max = 3000  # maximum number of features to keep per fiber. Will keep highest S/N features up to
     # num_features_max.
+
     def do_stage(self, image):
         # identify emission feature (pixel, order) positions.
         features = identify_features(image.data, image.uncertainty, image.mask, nsigma=self.nsigma - 1,
