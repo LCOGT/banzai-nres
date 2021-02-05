@@ -128,9 +128,6 @@ class TestWavelengthCalibrate:
         assert np.allclose(features['order'], [0, 0, 1, 1, 1, 2, 2])
 
 
-# TODO test fit_wavelength_model
-
-
 def test_group_features_by_trace():
     traces = np.array([[0, 0, 1, 1], [2, 2, 0, 0]])
     features = {'xcentroid': [0, 2, 0, 2], 'ycentroid': [0, 0, 1, 1]}

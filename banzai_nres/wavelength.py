@@ -202,16 +202,15 @@ class IdentifyFeatures(Stage):
     """
     nsigma = 10.0  # minimum signal to noise for the feature (sum of flux / sqrt(sum of error^2) within the aperture)
     # where the aperture is a circular aperture of radius fwhm.
-    fwhm = 6.0  # fwhm estimate of the elliptical gaussian PSF for each feature
-    num_features_max = 2000  # maximum number of features to keep from the the center 1/3 of the chip.
-    # Will keep the num_features_max highest S/N features. The edges of the chip (where xwavecal fits overlaps)
-    # will keep all features with a signal to noise > nsigma.
+    fwhm = 4.0  # fwhm estimate of the elliptical gaussian PSF for each feature
+    num_features_max = 3000  # maximum number of features to keep per fiber. Will keep highest S/N features up to
+    # num_features_max.
     def do_stage(self, image):
         # identify emission feature (pixel, order) positions.
-        features = identify_features(image.data, image.uncertainty, image.mask, nsigma=self.nsigma/2, fwhm=self.fwhm)
+        features = identify_features(image.data, image.uncertainty, image.mask, nsigma=self.nsigma - 1,
+                                     fwhm=self.fwhm, sigma_radius=4)
         features = group_features_by_trace(features, image.traces)
         features = features[features['id'] != 0]  # throw out features that are outside of any trace.
-        logger.info('{0} emission features found on this image'.format(len(features)), image=image)
         # get total flux in each emission feature. For now just sum_circle, although we should use sum_ellipse.
         features['flux'], features['fluxerr'], _ = sep.sum_circle(image.data, features['xcentroid'], features['ycentroid'],
                                                                   self.fwhm, gain=1.0, err=image.uncertainty, mask=image.mask)
@@ -227,22 +226,26 @@ class IdentifyFeatures(Stage):
         # Filter features that pass the signal to noise check.
         valid_features = features['flux']/features['fluxerr'] > self.nsigma
         features = features[valid_features]
-        # sort by signal to noise
-        features = features[np.argsort(features['flux']/features['fluxerr'])[::-1]]
-        # From the center of the chip, keep only the highest signal to noise lines.
-        center_chip = np.logical_and(features['xcentroid'] < 3000, features['xcentroid'] > 1500)
-        center_chip_features_to_keep = features[center_chip][:int(self.num_features_max)]
-        features = features[~center_chip]
-        features = table.vstack([features, center_chip_features_to_keep])
-
+        logger.info('{0} valid emission features found on this image'.format(len(features)), image=image)
+        features = self.limit_features_per_fiber(features, self.num_features_max)
         # report statistics
         logger.info('{0} emission features on this image will be used'.format(len(features)), image=image)
         if len(features) == 0:
             logger.error('No emission features found on this image!', image=image)
-
+        # save the features to the image.
         image.features = features
         return image
 
+    @staticmethod
+    def limit_features_per_fiber(features, num_features_max):
+        # sort the features by signal to noise (per fiber since one fiber is often brighter than the other!)
+        # then save only self.num_features_max per fiber.
+        features_fiberA, features_fiberB = features[features['id'] % 2 != 0], features[features['id'] % 2 == 0]
+        features_split = {'a': features_fiberA, 'b': features_fiberB}
+        for key, features in features_split.items():
+            features_split[key] = features[np.argsort(features['flux']/features['fluxerr'])[::-1]][:num_features_max]
+        features = table.vstack([features_split['a'], features_split['b']])
+        return features
 
 def get_ref_ids_and_fibers(num_traces):
     # this function always assumes two fibers are lit.
