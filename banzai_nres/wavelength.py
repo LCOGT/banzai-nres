@@ -182,16 +182,26 @@ class WavelengthCalibrate(Stage):
                                  min_pixel=0, max_pixel=np.max(features['pixel']),
                                  reference_lines=line_list, m0=m0)
         wavelengths_to_fit = find_nearest(features['wavelength'], np.sort(line_list))
+        residuals = wavelengths_to_fit - features['wavelength']
+        logger.info(f'Robust standard deviation of residuals prior to'
+                    f' refining: {robust_standard_deviation(residuals)} Angstrom')
         weights = np.ones_like(wavelengths_to_fit, dtype=float)
         # consider weights = features['flux']/features['flux_err'] or 1/features['flux_err']**2
         # reject lines who have residuals with the line list in excess of 0.1 angstroms (e.g. reject outliers)
+        # establish an initial solution:
         weights[~np.isclose(wavelengths_to_fit, wcs.measured_lines['wavelength'], atol=0.1)] = 0
         wcs.model_coefficients = wcs.solve(wcs.measured_lines, wavelengths_to_fit, weights)
+        # iteratively refine the wavelength solution:
+
         """
+        # call xwavecals internal routine for iteratively refining the wavelength solution.
+        # wcs.measured_lines['weight'] = 1 # uncomment and set to weights, could do any weighting scheme.
         wcs, residuals = refine_wcs(wcs, wcs.measured_lines, np.sort(line_list), SolutionRefineOnce._converged,
-                                    SolutionRefineOnce._clip, max_iter=2,
+                                    SolutionRefineOnce._clip, max_iter=20,
                                     kwargs={'sigma': 4, 'stdfunc': robust_standard_deviation})
-        logger.info(f'{robust_standard_deviation(residuals)}')
+
+        logger.info(f'Final robust standard deviation after'
+                    f' refining: {robust_standard_deviation(residuals)} Angstrom')
         """
         return wcs
 
