@@ -5,7 +5,6 @@ from banzai_nres.wavelength import IdentifyFeatures, WavelengthCalibrate, get_re
 from banzai_nres.wavelength import ArcLoader, LineListLoader, ArcStacker
 from scipy.ndimage import gaussian_filter
 from banzai_nres.frames import EchelleSpectralCCDData, NRESObservationFrame
-from banzai_nres.qc.qc_wavelength import AssessWavelengthSolution
 from banzai import context
 from astropy.table import Table
 import sep
@@ -129,18 +128,6 @@ class TestWavelengthCalibrate:
         assert np.allclose(features['order'], [0, 0, 1, 1, 1, 2, 2])
 
 
-@mock.patch('banzai_nres.wavelength.WavelengthSolution.solve', side_effect=lambda x, y, z: (x, y, z))
-def test_recalibrate(mock_solve):
-    features = {'wavelength': [10, 11, 50], 'pixel': [1, 2, 3], 'order': [0, 0, 1]}
-    line_list = np.array([10.05, 11.05, 60, 11.5])
-    wavelength_solution = WavelengthCalibrate(context.Context({})).fit_wavelength_model(features, line_list, 30)
-    # the mock patch populated wavelength_solution.model_coefficients with the arguments fed to WavelengthSolution.solve
-    # could use mock_solve.assert_called_with here, but it is not as straightforward because measured_lines changes.
-    measured_lines, wavelengths_to_fit, weights = wavelength_solution.model_coefficients
-    assert np.allclose(wavelengths_to_fit, line_list[:3])
-    assert np.allclose(weights, [1, 1, 0])
-
-
 def test_group_features_by_trace():
     traces = np.array([[0, 0, 1, 1], [2, 2, 0, 0]])
     features = {'xcentroid': [0, 2, 0, 2], 'ycentroid': [0, 0, 1, 1]}
@@ -224,21 +211,3 @@ class TestArcLoader:
         assert np.allclose(self.stage.apply_master_calibration(test_image, master_cal).wavelengths, [1, 2])
         assert self.stage.calibration_type == 'DOUBLE'
         assert test_image.meta['L1IDARC'][0] == 'foo.fits'
-
-
-class TestQCChecks:
-    test_image = TestWavelengthCalibrate().generate_image()
-    input_context = context.Context({})
-
-    def test_qc_do_stage(self):
-        image = AssessWavelengthSolution(self.input_context).do_stage(self.test_image)
-        assert image is not None
-
-    def test_qc_checks(self):
-        Delta_lambda = AssessWavelengthSolution(self.input_context).calculate_delta_lambda(self.test_image,self.test_image.features['wavelength'])
-        sigma_Dlambda, good_sigma_Dlambda, raw_chi_squared, good_chi_squared = AssessWavelengthSolution(self.input_context).calculate_1d_metrics(self.test_image,Delta_lambda)
-        assert sigma_Dlambda >= good_sigma_Dlambda
-        assert raw_chi_squared >= good_chi_squared
-        x_diff_Dlambda, order_diff_Dlambda = AssessWavelengthSolution(self.input_context).calculate_2d_metrics(self.test_image,Delta_lambda)
-        assert np.any(np.isfinite(x_diff_Dlambda))
-        assert np.any(np.isfinite(order_diff_Dlambda))

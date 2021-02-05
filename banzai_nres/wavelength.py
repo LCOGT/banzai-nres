@@ -2,11 +2,14 @@ import numpy as np
 
 from banzai.stages import Stage
 from banzai.calibrations import CalibrationStacker, CalibrationUser
+from astropy import table
 
 from banzai_nres.frames import NRESObservationFrame
+from banzai.utils.stats import robust_standard_deviation
 from banzai_nres.utils.wavelength_utils import identify_features, group_features_by_trace, get_principle_order_number
 from xwavecal.wavelength import find_feature_wavelengths, WavelengthSolution
 from xwavecal.utils.wavelength_utils import find_nearest
+from xwavecal.wavelength import refine_wcs, SolutionRefineOnce
 
 import sep
 import logging
@@ -180,11 +183,27 @@ class WavelengthCalibrate(Stage):
                                  min_pixel=0, max_pixel=np.max(features['pixel']),
                                  reference_lines=line_list, m0=m0)
         wavelengths_to_fit = find_nearest(features['wavelength'], np.sort(line_list))
+        residuals = wavelengths_to_fit - features['wavelength']
+        logger.info(f'Robust standard deviation of residuals prior to'
+                    f' refining: {robust_standard_deviation(residuals)} Angstrom')
         weights = np.ones_like(wavelengths_to_fit, dtype=float)
         # consider weights = features['flux']/features['flux_err'] or 1/features['flux_err']**2
         # reject lines who have residuals with the line list in excess of 0.1 angstroms (e.g. reject outliers)
+        # establish an initial solution:
         weights[~np.isclose(wavelengths_to_fit, wcs.measured_lines['wavelength'], atol=0.1)] = 0
         wcs.model_coefficients = wcs.solve(wcs.measured_lines, wavelengths_to_fit, weights)
+        # iteratively refine the wavelength solution:
+
+        """
+        # call xwavecals internal routine for iteratively refining the wavelength solution.
+        # wcs.measured_lines['weight'] = 1 # uncomment and set to weights, could do any weighting scheme.
+        wcs, residuals = refine_wcs(wcs, wcs.measured_lines, np.sort(line_list), SolutionRefineOnce._converged,
+                                    SolutionRefineOnce._clip, max_iter=20,
+                                    kwargs={'sigma': 4, 'stdfunc': robust_standard_deviation})
+
+        logger.info(f'Final robust standard deviation after'
+                    f' refining: {robust_standard_deviation(residuals)} Angstrom')
+        """
         return wcs
 
 
@@ -192,17 +211,18 @@ class IdentifyFeatures(Stage):
     """
     Stage to identify all sharp emission-like features on an Arc lamp frame.
     """
-    nsigma = 15.0  # minimum signal to noise for the feature (sum of flux / sqrt(sum of error^2) within the aperture)
+    nsigma = 10.0  # minimum signal to noise for the feature (sum of flux / sqrt(sum of error^2) within the aperture)
     # where the aperture is a circular aperture of radius fwhm.
-    fwhm = 6.0  # fwhm estimate of the elliptical gaussian PSF for each feature
-    num_features_max = 4000  # maximum number of features to keep. Will keep the num_features_max highest S/N features.
+    fwhm = 4.0  # fwhm estimate of the elliptical gaussian PSF for each feature
+    num_features_max = 3000  # maximum number of features to keep per fiber. Will keep highest S/N features up to
+    # num_features_max.
 
     def do_stage(self, image):
         # identify emission feature (pixel, order) positions.
-        features = identify_features(image.data, image.uncertainty, image.mask, nsigma=self.nsigma/2, fwhm=self.fwhm)
+        features = identify_features(image.data, image.uncertainty, image.mask, nsigma=self.nsigma - 1,
+                                     fwhm=self.fwhm, sigma_radius=4)
         features = group_features_by_trace(features, image.traces)
         features = features[features['id'] != 0]  # throw out features that are outside of any trace.
-        logger.info('{0} emission features found on this image'.format(len(features)), image=image)
         # get total flux in each emission feature. For now just sum_circle, although we should use sum_ellipse.
         features['flux'], features['fluxerr'], _ = sep.sum_circle(image.data, features['xcentroid'], features['ycentroid'],
                                                                   self.fwhm, gain=1.0, err=image.uncertainty, mask=image.mask)
@@ -215,21 +235,29 @@ class IdentifyFeatures(Stage):
         # cutting which lines to keep:
         # calculate the error in the centroids provided by identify_features()
         features['centroid_err'] = self.fwhm / np.sqrt(features['flux'])
-        # Keep features that pass the signal to noise check.
+        # Filter features that pass the signal to noise check.
         valid_features = features['flux']/features['fluxerr'] > self.nsigma
         features = features[valid_features]
-        # Keep the highest S/N features
-        features = features[np.argsort(features['flux']/features['fluxerr'])[::-1]]
-        features = features[:int(self.num_features_max)]
-
+        logger.info('{0} valid emission features found on this image'.format(len(features)), image=image)
+        features = self.limit_features_per_fiber(features, self.num_features_max)
         # report statistics
         logger.info('{0} emission features on this image will be used'.format(len(features)), image=image)
         if len(features) == 0:
             logger.error('No emission features found on this image!', image=image)
-
+        # save the features to the image.
         image.features = features
         return image
 
+    @staticmethod
+    def limit_features_per_fiber(features, num_features_max):
+        # sort the features by signal to noise (per fiber since one fiber is often brighter than the other!)
+        # then save only self.num_features_max per fiber.
+        features_fiberA, features_fiberB = features[features['id'] % 2 != 0], features[features['id'] % 2 == 0]
+        features_split = {'a': features_fiberA, 'b': features_fiberB}
+        for key, features in features_split.items():
+            features_split[key] = features[np.argsort(features['flux']/features['fluxerr'])[::-1]][:num_features_max]
+        features = table.vstack([features_split['a'], features_split['b']])
+        return features
 
 def get_ref_ids_and_fibers(num_traces):
     # this function always assumes two fibers are lit.

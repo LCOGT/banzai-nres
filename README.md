@@ -29,9 +29,6 @@ DOI 10.1111/j.1365-2966.2007.11768.x, see Table 1) , and further described at ht
 We have added a new column (lambda_vac) to the thar_MM201006.dat which is vacuum wavelength. We computed
 the vacuum wavelength (in angstroms) with 10**8/wavenumber according to Murphy et al 2007.
 
-
-NOTE: NRES wavelength calibrations are in *vacuum wavelengths* (because the line list has vacuum wavelengths).
-
 ## License
 
 ## Support

@@ -27,6 +27,7 @@ def main():
 
     for model_file in model_files:
         hdu = fits.open(model_file)
+        # TODO: Normalize out the continuum here in the templates
         # take the data to only be the optical region
         hdu[0].data = hdu[0].data[optical]
         # Save the model file to the output directory
