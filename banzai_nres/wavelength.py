@@ -183,8 +183,6 @@ class WavelengthCalibrate(Stage):
                                  reference_lines=line_list, m0=m0)
         wavelengths_to_fit = find_nearest(features['wavelength'], np.sort(line_list))
         residuals = wavelengths_to_fit - features['wavelength']
-        logger.info(f'Robust standard deviation of residuals prior to'
-                    f' refining: {robust_standard_deviation(residuals)} Angstrom')
         weights = np.ones_like(wavelengths_to_fit, dtype=float)
         # consider weights = features['flux']/features['flux_err'] or 1/features['flux_err']**2
         # reject lines who have residuals with the line list in excess of 0.1 angstroms (e.g. reject outliers)
