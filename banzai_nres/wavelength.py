@@ -213,8 +213,13 @@ class IdentifyFeatures(Stage):
     nsigma = 10.0  # minimum signal to noise for the feature (sum of flux / sqrt(sum of error^2) within the aperture)
     # where the aperture is a circular aperture of radius fwhm.
     fwhm = 4.0  # fwhm estimate of the elliptical gaussian PSF for each feature
-    num_features_max = 3000  # maximum number of features to keep per fiber. Will keep highest S/N features up to
+    num_features_max = 2500  # maximum number of features to keep per fiber. Will keep highest S/N features up to
     # num_features_max.
+
+    # Note that the number of lines can affect the quality of the wavelength solution. I.e. num_features_max = 4000
+    # may let too many lines into the wavelength solving procesds that are NOT in the line list and are therefore essentially
+    # spurious features. One should take great care when changing num_features_max to make sure that the wavelength solution
+    # quality is not reduced.
 
     def do_stage(self, image):
         # identify emission feature (pixel, order) positions.
@@ -257,6 +262,7 @@ class IdentifyFeatures(Stage):
             features_split[key] = features[np.argsort(features['flux']/features['fluxerr'])[::-1]][:num_features_max]
         features = table.vstack([features_split['a'], features_split['b']])
         return features
+
 
 def get_ref_ids_and_fibers(num_traces):
     # this function always assumes two fibers are lit.
