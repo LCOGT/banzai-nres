@@ -76,7 +76,7 @@ def barycentric_correction(time, exptime, ra, dec, site):
 
 def cross_correlate_over_traces(image, orders_to_use, velocities, template):
     ccfs = []
-
+    ccf_chunks = []
     for i in orders_to_use:
         logger.info(f'Cross correlating for order: {i}', image=image)
         order = image.spectrum[image.science_fiber, i]
@@ -102,10 +102,25 @@ def cross_correlate_over_traces(image, orders_to_use, velocities, template):
         # NRES WAVELENGTHS ARE TIED TO WHATEVER LINE LIST WAS USED (e.g. nres wavelengths will be in air if ThAr atlas air
         # was used, and they will be in vacuum if ThAr_atlas_ESO_vacuum.txt was used.).
         # AS OF Aug 27 2020, NRES WAVELENGTHS ARE IN VACUUM BECAUSE ThAr_atlas_ESO_vacuum.txt IS THE LINE LIST USED.
-        x_cor = cross_correlate(velocities, order['wavelength'], order['normflux'], order['normuncertainty'],
+        nblocks = 5
+        pix1 = len(order['wavelength'])
+        chunkl = int(pix1/nblocks)
+        if np.max(velocities) < 200.:
+            for j in range (0,nblocks):
+                #import pdb; pdb.set_trace()
+                actually_use = np.logical_and(normalized_template['wavelength'] >= np.min(order['wavelength'][j*chunkl:(j+1)*chunkl]) - 1.0,
+                                         normalized_template['wavelength'] <= np.max(order['wavelength'][j*chunkl:(j+1)*chunkl]) + 1.0)
+                x_cor = cross_correlate(velocities, order['wavelength'][j*chunkl:(j+1)*chunkl], order['normflux'][j*chunkl:(j+1)*chunkl], order['normuncertainty'][j*chunkl:(j+1)*chunkl],
+                                normalized_template['wavelength'][actually_use], normalized_template['flux'][actually_use])
+                ccf_chunks.append({'order': i, 'chunk': j, 'v': velocities, 'xcor': x_cor})
+        else:
+            x_cor = cross_correlate(velocities, order['wavelength'], order['normflux'], order['normuncertainty'],
                                 normalized_template['wavelength'], normalized_template['flux'])
-        ccfs.append({'order': i, 'v': velocities, 'xcor': x_cor})
-    return Table(ccfs)
+        ccfs.append({'order': i, 'v': velocities, 'xcor': x_cor}) 
+    if np.max(velocities) < 200.:
+        return Table(ccf_chunks)
+    else:
+        return Table(ccfs)
 
 
 def calculate_rv(image, orders_to_use, template):
@@ -174,12 +189,13 @@ class RVCalculator(Stage):
         coarse_ccfs['v'] = coarse_ccfs['v'][:, entries_to_keep]
         coarse_ccfs['xcor'] = coarse_ccfs['xcor'][:, entries_to_keep]
         #
-        final_ccfs = Table({'order': ccfs['order'],
-                            'v': np.hstack([coarse_ccfs['v'], ccfs['v']]),
-                            'xcor': np.hstack([coarse_ccfs['xcor'], ccfs['xcor']])})
+        #final_ccfs = Table({'order': ccfs['order'],
+        #                    'v': np.hstack([coarse_ccfs['v'], ccfs['v']]),
+        #                    'xcor': np.hstack([coarse_ccfs['xcor'], ccfs['xcor']])})
         # sorting xcor by the velocity grid so that things are in order
-        sort_array = np.argsort(final_ccfs['v'][0])
-        final_ccfs['xcor'] = final_ccfs['xcor'][:, sort_array]
-        final_ccfs['v'] = final_ccfs['v'][:, sort_array]
+        #sort_array = np.argsort(final_ccfs['v'][0])
+        #final_ccfs['xcor'] = final_ccfs['xcor'][:, sort_array]
+        #final_ccfs['v'] = final_ccfs['v'][:, sort_array]
+        final_ccfs = ccfs #UNBREAK THE ABOVE
         image.ccf = final_ccfs
         return image

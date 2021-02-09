@@ -17,7 +17,7 @@ logger = logging.getLogger('banzai')
 MIN_TRACE_SEPARATION = 10
 
 # Cutoff in signal-to-noise to stop following a trace
-SIGNAL_TO_NOISE_TRACING_CUTOFF = 10
+SIGNAL_TO_NOISE_TRACING_CUTOFF = 50
 
 # Minimum half width of a feature to be considered a trace
 MIN_TRACE_HALF_WIDTH = 50
