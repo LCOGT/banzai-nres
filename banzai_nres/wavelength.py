@@ -5,10 +5,10 @@ from banzai.calibrations import CalibrationStacker, CalibrationUser
 from astropy import table
 
 from banzai_nres.frames import NRESObservationFrame
-from banzai.utils.stats import robust_standard_deviation
 from banzai_nres.utils.wavelength_utils import identify_features, group_features_by_trace, get_principle_order_number
 from xwavecal.wavelength import find_feature_wavelengths, WavelengthSolution
 from xwavecal.utils.wavelength_utils import find_nearest
+from xwavecal.fibers import IdentifyFibers
 from xwavecal.wavelength import refine_wcs, SolutionRefineOnce
 
 import sep
@@ -56,6 +56,7 @@ class ArcLoader(CalibrationUser):
             super(ArcLoader, self).on_missing_master_calibration(image)
 
     def apply_master_calibration(self, image: NRESObservationFrame, master_calibration_image):
+        # TODO should not load a master arc calibration if it is older than ~a week.
         image.wavelengths = master_calibration_image.wavelengths
         image.fibers = master_calibration_image.fibers
         image.meta['L1IDARC'] = master_calibration_image.filename, 'ID of ARC/DOUBLE frame'
@@ -98,9 +99,12 @@ class WavelengthCalibrate(Stage):
 
     def do_stage(self, image):
         image.features = self.init_feature_labels(image.num_traces, image.features)
-        if image.wavelengths is None:
+        do_fresh_wavelength_calibration = image.wavelengths is None
+        if do_fresh_wavelength_calibration:
             image.features['wavelength'] = np.zeros_like(image.features['pixel'], dtype=float)  # init wavelengths
             for fiber in list(set(image.features['fiber'])):
+                # TODO note that image.features['fiber'] might always be only 0 and 1 even on 1, 2 lit images...
+                #  should fix this.
                 logger.info('Blind solving for the wavelengths for fiber {0} (arbitrary label).'.format(fiber), image=image)
                 this_fiber = image.features['fiber'] == fiber
                 image.features['wavelength'][this_fiber] = find_feature_wavelengths(dict(image.features[this_fiber]), image.line_list,
@@ -117,6 +121,7 @@ class WavelengthCalibrate(Stage):
 
     def refine_wavelengths(self, image):
         ref_ids, fiber_ids, trace_ids = get_ref_ids_and_fibers(image.num_traces)
+        # get_ref_ids_and_fibers this is also called in init_feature_labels, so everything should be consistent
         image.wavelengths = np.zeros_like(image.data, dtype=float)
         for fiber in list(set(fiber_ids)):
             this_fiber = image.features['fiber'] == fiber
@@ -127,6 +132,9 @@ class WavelengthCalibrate(Stage):
                 continue
 
             m0 = get_principle_order_number(np.arange(*self.M0_RANGE), image.features[this_fiber])
+            if m0 is None:
+                image.is_bad = True
+                continue
             logger.info('Principle order number is {0} for fiber {1}'.format(m0, fiber), image=image)
             wavelength_model = self.fit_wavelength_model(image.features[this_fiber], image.line_list, m0)
 
@@ -140,21 +148,18 @@ class WavelengthCalibrate(Stage):
                 image.wavelengths[this_trace] = wavelength_model(x2d[this_trace], ref_id * np.ones_like(x2d[this_trace]))
             # Set the true physical order number
             ref_ids[fiber_ids == fiber] += m0
-        # Calculate which fiber is which.
-        # the first ref_id = 80 (arbitrary, but somewhere about the middle of the detector)
-        # is largest fiber number that is lit.
-        largest_fiber_index = fiber_ids[ref_ids.tolist().index(80)]
+        # previously, we just arbitrarily set alternating traces to fiber 0 and 1. Now we need to actually find
+        # which traces belong to fiber 0 and which to fiber 1:
+        anchor_ref_id = 80  # pick order 80, arbitrary choice just in the center of the detector.
+        matched_ids = np.where(ref_ids == anchor_ref_id)[0]
         if image.fiber2_lit:
-            largest_fiber_number = 2
-            smaller_fiber_number = 1
+            lit_fibers = np.array([1, 2])
         else:
-            largest_fiber_number = 1
-            smaller_fiber_number = 0
-
-        true_fibers = [largest_fiber_number if fiber_id == largest_fiber_index else smaller_fiber_number
-                       for fiber_id in fiber_ids]
+            lit_fibers = np.array([0, 1])
+        fiber_ids = IdentifyFibers.build_fiber_column(matched_ids, lit_fibers, lit_fibers, image.num_traces, low_fiber_first=False)
+        ref_ids = IdentifyFibers.build_ref_id_column(matched_ids, fiber_ids, anchor_ref_id, low_fiber_first=False)
         # set fibers attribute on image
-        image.fibers = Table({'order': ref_ids, 'fiber': true_fibers})
+        image.fibers = Table({'trace_id': trace_ids, 'order': ref_ids, 'fiber': fiber_ids})
 
     @staticmethod
     def init_feature_labels(num_traces, features):

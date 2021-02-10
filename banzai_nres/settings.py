@@ -16,13 +16,13 @@ ORDERED_STAGES = [
                   'banzai.uncertainty.PoissonInitializer',
                   'banzai.dark.DarkSubtractor',
                   'banzai_nres.flats.FlatLoader',
-                  'banzai_nres.background.BackgroundSubtractor',
+                  #'banzai_nres.background.BackgroundSubtractor',
                   'banzai_nres.wavelength.ArcLoader',
                   'banzai_nres.extract.GetOptimalExtractionWeights',
                   'banzai_nres.extract.WeightedExtract',
                   'banzai_nres.continuum.ContinuumNormalizer',
-                  'banzai_nres.classify.StellarClassifier',
-                  'banzai_nres.rv.RVCalculator'
+                  #'banzai_nres.classify.StellarClassifier',
+                  #'banzai_nres.rv.RVCalculator'
                   ]
 
 CALIBRATION_MIN_FRAMES = {'BIAS': 5,
