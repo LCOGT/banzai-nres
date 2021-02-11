@@ -47,3 +47,12 @@ def mark_absorption_or_emission_features(mask, flux, line_width):
     # we binary dilate up to the width of the absorption lines so that we cover their wings as well.
     mask = binary_dilation(mask, iterations=line_width)
     return mask
+
+
+class MaskBlueHookRegion(Stage):
+    def do_stage(self, image) -> NRESObservationFrame:
+        mask = image.spectrum.mask
+        mask[:, :500] = 1  # mask the first pixels of every 1d spectrum to remove the blue hook.
+        mask[:, -50:] = 1  # mask the last pixels of every 1d spectrum to remove any red edge effects
+        image.spectrum.mask = mask
+        return image
