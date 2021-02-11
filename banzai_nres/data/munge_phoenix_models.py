@@ -2,6 +2,8 @@ from astropy.io import fits
 import numpy as np
 import os
 import argparse
+from scipy import interpolate
+from scipy.signal import medfilt
 from banzai_nres.utils import phoenix_utils
 
 
@@ -24,12 +26,16 @@ def main():
     # NOTE PHOENIX WAVELENGTHS ARE IN VACUUM
     wavelength_hdu = fits.open(wavelength_filename)
     optical = np.logical_and(wavelength_hdu[0].data >= 3000.0, wavelength_hdu[0].data <= 10000.0)
+    # Restrict the wavelengths to the optical regime
+    wavelength_hdu[0].data = wavelength_hdu[0].data[optical]
 
     for model_file in model_files:
         hdu = fits.open(model_file)
-        # TODO: Normalize out the continuum here in the templates
         # take the data to only be the optical region
         hdu[0].data = hdu[0].data[optical]
+        # continuum normalize the model
+        continuum = interpolate.interp1d(wavelength_hdu[0].data[::50], medfilt(hdu[0].data[::50], 441), bounds_error=False)
+        hdu[0].data /= continuum(wavelength_hdu[0].data)
         # Save the model file to the output directory
         Teff = hdu[0].header['PHXTEFF']
         logg = hdu[0].header['PHXLOGG']
@@ -38,7 +44,5 @@ def main():
         output_filename = phoenix_utils.parameters_to_filename(Teff, logg, metallicity, alpha)
         hdu.writeto(os.path.join(args.output_dir, output_filename))
 
-    # Restrict the wavelengths to the optical regime
-    wavelength_hdu[0].data = wavelength_hdu[0].data[optical]
     # save the wavelengths as a separate file
     wavelength_hdu.writeto(os.path.join(args.output_dir, 'phoenix_wavelength.fits'))

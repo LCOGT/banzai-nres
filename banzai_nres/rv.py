@@ -84,27 +84,13 @@ def cross_correlate_over_traces(image, orders_to_use, velocities, template):
         # Only pass in the given wavelength range +- 1 Angstrom to boost performance
         relevant_region = np.logical_and(template['wavelength'] >= np.min(order['wavelength']) - 1.0,
                                          template['wavelength'] <= np.max(order['wavelength']) + 1.0)
-        template_to_fit = {'wavelength': template['wavelength'][relevant_region], 'flux': template['flux'][relevant_region]}
-        # Set the model S/N = 1000 -- from looking by eye at
-        # scatter in the model and from systematic uncertainties in the model
-        template_error = 1e-3 * template_to_fit['flux']
-        """
-        mask = np.zeros_like(template_to_fit['flux'])
-        mask = mark_absorption_or_emission_features(mask, template_to_fit['flux'], 10)
-        # Mask the prohibited wavelength regions.
-        for mask_region in PHOENIX_WAVELENGTHS_TO_MASK:
-            mask[np.logical_and(template_to_fit['wavelength'] >= min(mask_region),
-                                template_to_fit['wavelength'] <= max(mask_region))] = 1
-        continuum_model = fit_polynomial(template_to_fit['flux'], template_error, x=template_to_fit['wavelength'], order=3, mask=mask)
-        """
-        normalized_template = {'wavelength': template_to_fit['wavelength'],
-                               'flux': template_to_fit['flux'] / np.median(template_to_fit['flux'])}
+        template_to_correlate = {'wavelength': template['wavelength'][relevant_region], 'flux': template['flux'][relevant_region]}
         # NOTE PHOENIX WAVELENGTHS ARE IN VACUUM
         # NRES WAVELENGTHS ARE TIED TO WHATEVER LINE LIST WAS USED (e.g. nres wavelengths will be in air if ThAr atlas air
         # was used, and they will be in vacuum if ThAr_atlas_ESO_vacuum.txt was used.).
         # AS OF Aug 27 2020, NRES WAVELENGTHS ARE IN VACUUM BECAUSE ThAr_atlas_ESO_vacuum.txt IS THE LINE LIST USED.
         x_cor = cross_correlate(velocities, order['wavelength'], order['normflux'], order['normuncertainty'],
-                                normalized_template['wavelength'], normalized_template['flux'])
+                                template_to_correlate['wavelength'], template_to_correlate['flux'])
         ccfs.append({'order': i, 'v': velocities, 'xcor': x_cor})
     return Table(ccfs)
 
