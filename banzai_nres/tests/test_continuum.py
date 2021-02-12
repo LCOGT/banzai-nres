@@ -20,7 +20,7 @@ def test_do_stage(mock_normalize):
                                                          spectrum=Spectrum1D(spectrum))],
                                  'test.fits')
     # make it so that ContinuumNormalizer.normalize just returns ones.
-    mock_normalize.return_value = (expected * np.ones_like(flux), expected * np.ones_like(flux), 0)
+    mock_normalize.return_value = (expected * np.ones_like(flux), expected * np.ones_like(flux))
 
     # Run the normalizer code
     stage = ContinuumNormalizer(SimpleNamespace(db_address='foo'))

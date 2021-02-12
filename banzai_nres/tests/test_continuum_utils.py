@@ -25,12 +25,11 @@ class TestContinuumFittingUtilities:
         line_locs = np.random.randint(0, len(sharp_lines), size=self.n_lines)
         sharp_lines[line_locs] = 60
         sharp_lines = -gaussian_filter1d(sharp_lines, sigma=self.line_sigma)
-        broad_lines = -cu.lorentz_profile(np.arange(len(flux)), self.broad_line_center, broad_line_width) * 3000
+        broad_lines = -lorentz_profile(np.arange(len(flux)), self.broad_line_center, broad_line_width) * 3000
         return flux, sharp_lines, broad_lines, {'sharp': line_locs.astype(int), 'broad': [int(self.broad_line_center)]}
 
     def run_masking_procedure(self, flux):
         # testing the basic single iteration masking procedure, utilities that are used in ContinuumNormalizer
-        flux_error = np.sqrt(np.ones_like(flux) ** 2 + np.sqrt(flux) ** 2)  # read plus poisson
         mask = cu.mark_features(flux, sigma=3, detector_resolution=4)
         return mask
 
@@ -39,7 +38,6 @@ class TestContinuumFittingUtilities:
         flux_error = np.sqrt(np.ones_like(flux) ** 2 + np.sqrt(flux) ** 2)  # read plus poisson
         x = np.arange(len(flux))
         best_fit = fit_polynomial(flux, flux_error, x=x, order=3, sigma=3, mask=mask)
-        #best_fit2 = fit_stiff_polynomial(flux, flux_error, x=x, order=3, sigma=3, mask=mask, derivative_stiffness=[0, 1E2, 1E10])
         # because the continuum is 100, an atol of 1 represents continuum normalization within 1%
         if False:
             # debug
@@ -83,26 +81,6 @@ class TestContinuumFittingUtilities:
         # check that the masking was good enough for the continuum fit to recover the continuum.
         assert self.fit_passes(flux, mask, atol=5)
 
-    """
-    # we may not want to check rejecting broad lines because it may just be handled by continuum fitting.
-    def test_rejecting_broad_lines(self, random_seed):
-        flux, sharp_lines, broad_lines, locs = self.make_spectrum(random_seed)
-        flux = flux + broad_lines
-        mask = self.run_masking_procedure(flux)
-        # check that all the absorption lines have been marked by the mask
-        assert self.fraction_lines_masked(mask, locs['broad']) == 1
-        # check that the masking was good enough for the continuum fit to recover the continuum.
-        assert self.fit_passes(flux, mask, atol=5)
-
-    def test_rejecting_sharp_and_broad_lines(self, random_seed):
-        flux, sharp_lines, broad_lines, locs = self.make_spectrum(random_seed)
-        flux = flux + sharp_lines + broad_lines
-        mask = self.run_masking_procedure(flux)
-
-        assert self.fraction_lines_masked(mask, locs['broad']) == 1
-        # check that the masking was good enough for the continuum fit to recover the continuum.
-        assert self.fit_passes(flux, mask, atol=5)
-    """
 
 @pytest.mark.parametrize('random_seed', [2131209899, 21311222, 6913219, 75322, 50981234, 9942111])
 class TestContinuumFitting:
@@ -125,19 +103,18 @@ class TestContinuumFitting:
         line_locs = np.random.randint(0, len(sharp_lines), size=self.n_lines)
         sharp_lines[line_locs] = 60
         sharp_lines = -gaussian_filter1d(sharp_lines, sigma=self.line_sigma)
-        broad_lines = -cu.lorentz_profile(np.arange(len(flux)), self.broad_line_center, broad_line_width) * 3000
+        broad_lines = -lorentz_profile(np.arange(len(flux)), self.broad_line_center, broad_line_width) * 3000
         return flux, sharp_lines, broad_lines, {'sharp': line_locs.astype(int), 'broad': [int(self.broad_line_center)]}
 
     def fit_passes(self, flux, atol=1):
         # testing the basic single iteration fitting procedure, utilities that are used in ContinuumNormalizer
         flux_error = np.sqrt(np.ones_like(flux) ** 2 + np.sqrt(flux) ** 2)  # read plus poisson
-        norm_flux, norm_uncertainty, mask = ContinuumNormalizer.normalize(flux, flux_error, np.arange(len(flux)))
+        norm_flux, norm_uncertainty = ContinuumNormalizer.normalize(flux, flux_error, np.arange(len(flux)))
         if False:
             # debug
             import matplotlib.pyplot as plt
             plt.figure()
             plt.plot(flux, label='flux')
-            plt.plot(np.arange(len(flux))[~mask], flux[~mask], label='unmasked flux')
             plt.plot(self.continuum, ls='--', lw=4, alpha=1, label='true continuum')
             plt.plot(flux/norm_flux, label='best fit continuum model')
             #plt.plot(best_fit2(np.arange(len(flux))), label='best fit stiff model')
@@ -150,14 +127,6 @@ class TestContinuumFitting:
             plt.show()
         return np.allclose(flux/norm_flux, self.continuum, atol=atol)
 
-    def test_fitting_broad_lines(self, random_seed):
-        flux, sharp_lines, broad_lines, locs = self.make_spectrum(random_seed)
-        flux = flux + broad_lines
-        # check that the masking was good enough for the continuum fit to recover the continuum.
-        assert self.fit_passes(flux, atol=5)
 
-    def test_fitting_sharp_and_broad_lines(self, random_seed):
-        flux, sharp_lines, broad_lines, locs = self.make_spectrum(random_seed)
-        flux = flux + sharp_lines + broad_lines
-        # check that the masking was good enough for the continuum fit to recover the continuum.
-        assert self.fit_passes(flux, atol=5)
+def lorentz_profile(x, center, width, amplitude=1):
+    return amplitude / np.pi * 1 / 2 * width / ((x - center) ** 2 + 1 / 4 * width ** 2)
