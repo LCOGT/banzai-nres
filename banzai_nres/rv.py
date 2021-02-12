@@ -8,11 +8,9 @@ from astropy.time import Time
 from astropy.coordinates import SkyCoord, EarthLocation, solar_system_ephemeris
 from astropy import units
 from banzai.utils import stats
-from astropy.stats import sigma_clip, median_absolute_deviation
+from astropy.stats import sigma_clip
 import logging
-from banzai_nres.fitting import fit_polynomial
 from banzai_nres import phoenix
-from banzai_nres.continuum import mark_absorption_or_emission_features
 
 logger = logging.getLogger('banzai')
 
@@ -110,7 +108,7 @@ def calculate_rv(image, orders_to_use, template):
     # Calculate the peak velocity
     rvs_per_order = np.array([ccf['v'][np.argmax(ccf['xcor'])] for ccf in ccfs])
     # iterative sigma clipping using robust_standard_deviation to reject outliers and centering on the median.
-    rvs_per_order = sigma_clip(rvs_per_order, sigma=3, cenfunc='median', maxiters=1,
+    rvs_per_order = sigma_clip(rvs_per_order, sigma=4, cenfunc='median', maxiters=5,
                                stdfunc=stats.robust_standard_deviation, axis=None,
                                masked=True, return_bounds=False, copy=True)
     rv, rv_err = np.ma.mean(rvs_per_order), np.ma.std(rvs_per_order) / np.sqrt(np.ma.count(rvs_per_order))

@@ -23,6 +23,7 @@ ORDERED_STAGES = [
                   'banzai_nres.extract.WeightedExtract',
                   'banzai_nres.continuum.MaskBlueHookRegion',
                   'banzai_nres.continuum.ContinuumNormalizer',
+                  'banzai_nres.continuum.MaskBlueHookRegionMore',
                   'banzai_nres.classify.StellarClassifier',
                   'banzai_nres.rv.RVCalculator'
                   ]
@@ -157,8 +158,8 @@ REDUCED_DATA_EXTENSION_TYPES = {'ERR': 'float32',
 
 PHOENIX_MODEL_LOCATION = os.getenv('PHOENIX_FILE_LOCATION', 's3://banzai-nres-phoenix-models-lco-global')
 
-MIN_ORDER_TO_CORRELATE = 75
-MAX_ORDER_TO_CORRELATE = 101
+MIN_ORDER_TO_CORRELATE = 77
+MAX_ORDER_TO_CORRELATE = 102
 
 GAIA_CLASS = os.getenv('BANZAI_GAIA_CLASS', 'astroquery.gaia.GaiaClass')
 

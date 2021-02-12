@@ -15,15 +15,16 @@ def fit_polynomial(y, error, mask=None, n_iter=5, x=None, sigma=5, order=3, doma
     x_to_fit = x[np.logical_not(mask)]
     # start with inverse variance weights
     weights = error_to_fit ** -2.0
+    weight_class = HuberT(t=sigma)
+    #weight_class = TukeyBiweight(c=sigma)
     # instantiate fitter
-    huber_t = HuberT(t=sigma)
-
     fitter = fitting.LinearLSQFitter()
     model = polynomial.Legendre1D(order, domain=domain)
-
     for i in range(n_iter):
         best_fit = fitter(model, x_to_fit, y_to_fit, weights=weights)
-
         # Iteratively reweight to reject outliers
-        weights = huber_t.weights(np.abs(y_to_fit - best_fit(x_to_fit)) / error_to_fit) / error_to_fit ** 2.0
+        # (residual/error) < sigma then weight is the weight_class given weight * 1/error^2
+        # (residual/error) > sigma then weight is: 0 if weight_class is TukeyBiweight, and some fall off if HuberT
+        weights = weight_class.weights(np.abs(y_to_fit - best_fit(x_to_fit)) / error_to_fit) / error_to_fit ** 2.0
     return best_fit
+
