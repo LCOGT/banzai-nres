@@ -22,6 +22,7 @@ ORDERED_STAGES = [
                   #'banzai_nres.extract.BoxExtractionWeights',
                   'banzai_nres.extract.WeightedExtract',
                   'banzai_nres.continuum.MaskBlueHookRegion',
+                  #'banzai_nres.telluric.MaskTellurics',
                   'banzai_nres.continuum.ContinuumNormalizer',
                   'banzai_nres.continuum.MaskBlueHookRegionMore',
                   'banzai_nres.classify.StellarClassifier',

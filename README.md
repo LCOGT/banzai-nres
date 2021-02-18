@@ -52,7 +52,12 @@ is n(vac), then a better way to get the vacuum wavelengths from air is to evalua
     wavelengths to vacuum wavelengths. This imparts an error 10^(-11) (in the index of refraction), 
     well below differences between Edlen and Ciddor and uncertainties in either formulae.
 
-
+## The flag mask
+1: bad pixel
+2: ..
+4: ..
+8 : rejected because of potential spectrum edge effects
+16: rejected because this wavelength coincides with a telluric line.
 
 
 ## License
