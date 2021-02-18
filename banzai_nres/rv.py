@@ -126,7 +126,7 @@ class RVCalculator(Stage):
         template = phoenix_loader.load(image.classification)
         # Pick orders near the center of the detector that have a high Signal to noise and are free of tellurics.
         orders_to_use = np.arange(self.runtime_context.MIN_ORDER_TO_CORRELATE,
-                                  self.runtime_context.MAX_ORDER_TO_CORRELATE, 1)
+                                  self.runtime_context.MAX_ORDER_TO_CORRELATE + 1, 1)
 
         rv_measured, rv_err, coarse_ccfs, ccfs = calculate_rv(image, orders_to_use, template)
 

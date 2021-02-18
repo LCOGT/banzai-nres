@@ -80,7 +80,9 @@ class MaskBlueHookRegion(Stage):
 
 class MaskTellurics(Stage):
     # NOTE: This stage should come after continuum normalizer so that this does not create gaps
-    # in the spectrum that we try to fit with a smooth model in continuum normalizer.
+    # in the spectrum that we try to fit with a smooth model in continuum normalizer. Also regions affected by
+    # tellurics still tell us about the continuum -- we don't want to liberally cut those regions out when
+    # fitting the continuum. So I think we always want MaskTellurics to come after continuum fitting.
     TELLURIC_FILENAME = pkg_resources.resource_filename('banzai_nres', 'data/telluric_spectrum_50percent_humidity.dat')
 
     def do_stage(self, image) -> NRESObservationFrame:
