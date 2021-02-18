@@ -53,11 +53,14 @@ is n(vac), then a better way to get the vacuum wavelengths from air is to evalua
     well below differences between Edlen and Ciddor and uncertainties in either formulae.
 
 ## The flag mask
-1: bad pixel
+For 1 dimensional extracted spectrum, the 'mask' extension gives pixels that were masked out. These masked
+pixels were NOT used in the cross correlation.
+0: Good spectral point.
+1: Bad spectral point.
 2: ..
 4: ..
-8 : rejected because of potential spectrum edge effects
-16: rejected because this wavelength coincides with a telluric line.
+8 : Rejected because of potential spectrum edge effects
+16: This Rejected because this wavelength coincides with a telluric line.
 
 
 ## License

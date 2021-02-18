@@ -65,8 +65,8 @@ class ContinuumNormalizer(Stage):
 class MaskBlueHookRegion(Stage):
     def do_stage(self, image) -> NRESObservationFrame:
         mask = image.spectrum.mask
-        mask[:, :400] = 1  # mask the first pixels of every 1d spectrum to remove the blue hook.
-        mask[:, -20:] = 1  # mask the last pixels of every 1d spectrum to remove any red edge effects
+        mask[:, :400] = 8  # mask the first pixels of every 1d spectrum to remove the blue hook.
+        mask[:, -20:] = 8  # mask the last pixels of every 1d spectrum to remove any red edge effects
         image.spectrum.mask = mask
         return image
 
@@ -74,7 +74,7 @@ class MaskBlueHookRegion(Stage):
 class MaskBlueHookRegionMore(Stage):
     def do_stage(self, image) -> NRESObservationFrame:
         mask = image.spectrum.mask
-        mask[:, :500] = 1  # mask the first pixels of every 1d spectrum to remove the blue hook.
-        mask[:, -50:] = 1  # mask the last pixels of every 1d spectrum to remove any red edge effects
+        mask[:, :500] = 8  # mask the first pixels of every 1d spectrum to remove the blue hook.
+        mask[:, -50:] = 8  # mask the last pixels of every 1d spectrum to remove any red edge effects
         image.spectrum.mask = mask
         return image
