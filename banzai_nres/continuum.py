@@ -37,12 +37,6 @@ class ContinuumNormalizer(Stage):
         continuum_model = self.get_continuum_model(flux, uncertainty, wavelength)
         norm_flux = flux / continuum_model
         norm_uncertainty = uncertainty / continuum_model
-
-        ignore = norm_flux > 1.1
-        norm_flux[ignore] = 1  # really should mask these values out. But whatever, lets set them to 1 and blow up
-        # their errors so that they are not used in the RV computation
-        norm_uncertainty[ignore] *= 10000
-
         return norm_flux, norm_uncertainty
 
     @staticmethod
