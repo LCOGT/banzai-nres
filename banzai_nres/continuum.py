@@ -2,8 +2,10 @@ from banzai_nres.frames import NRESObservationFrame
 from banzai.stages import Stage
 from scipy.signal import medfilt
 from scipy import interpolate
+import pkg_resources
 import numpy as np
 from banzai_nres.utils.continuum_utils import mark_features
+from banzai_nres.utils.tellurics import generate_telluric_mask
 
 # Wavelength regions where there are strong Balmer or other absorption lines. This is from CERES :
 # https://ui.adsabs.harvard.edu/link_gateway/2017PASP..129c4002B/doi:10.1088/1538-3873/aa5455
@@ -16,6 +18,9 @@ class ContinuumNormalizer(Stage):
     def do_stage(self, image) -> NRESObservationFrame:
         for fiber, order in zip(*image.spectrum.fibers_and_orders):
             if np.isclose(fiber, image.science_fiber):
+                # TODO, because masked parts of the spectrum are thrown out, any masked regions
+                #  in the middle of the spectrum will cause steps in the spectrum according to the continuum fitter.
+                #   the continuum fitter here should be able to know that. See Note B below.
                 spectrum = image.spectrum[fiber, order]
                 blaze_corrected_flux = spectrum['flux'] / spectrum['blaze']
                 blaze_corrected_uncertainty = blaze_corrected_flux * np.sqrt(
@@ -57,6 +62,8 @@ class ContinuumNormalizer(Stage):
         continuum_model[mask] = interpolate.interp1d(x[np.logical_not(mask)], norm_flux[np.logical_not(mask)],
                                                      kind='nearest', bounds_error=False, fill_value='extrapolate')(
             x[mask])
+        # TODO NOTE B: x[..] here I think should be wavelength, so that masked portions are automatically skipped over
+        #  and not interpreted as a step in the spectrum.
         # smooth the model
         continuum_model = medfilt(continuum_model, 201)
         return continuum_model
@@ -65,16 +72,19 @@ class ContinuumNormalizer(Stage):
 class MaskBlueHookRegion(Stage):
     def do_stage(self, image) -> NRESObservationFrame:
         mask = image.spectrum.mask
-        mask[:, :400] = 8  # mask the first pixels of every 1d spectrum to remove the blue hook.
-        mask[:, -20:] = 8  # mask the last pixels of every 1d spectrum to remove any red edge effects
+        mask[:, :500] += 8  # mask the first pixels of every 1d spectrum to remove the blue hook.
+        mask[:, -50:] += 8  # mask the last pixels of every 1d spectrum to remove any red edge effects
         image.spectrum.mask = mask
         return image
 
 
-class MaskBlueHookRegionMore(Stage):
+class MaskTellurics(Stage):
+    # NOTE: This stage should come after continuum normalizer so that this does not create gaps
+    # in the spectrum that we try to fit with a smooth model in continuum normalizer.
+    TELLURIC_FILENAME = pkg_resources.resource_filename('banzai_nres', 'data/telluric_spectrum_50percent_humidity.dat')
+
     def do_stage(self, image) -> NRESObservationFrame:
-        mask = image.spectrum.mask
-        mask[:, :500] = 8  # mask the first pixels of every 1d spectrum to remove the blue hook.
-        mask[:, -50:] = 8  # mask the last pixels of every 1d spectrum to remove any red edge effects
-        image.spectrum.mask = mask
+        telluric_spectrum = np.genfromtxt(self.TELLURIC_FILENAME)
+        mask = generate_telluric_mask(image.spectrum.table, telluric_spectrum)
+        image.spectrum.mask = image.spectrum.mask.astype(np.int64) + (mask * 16).astype(np.int64)
         return image
