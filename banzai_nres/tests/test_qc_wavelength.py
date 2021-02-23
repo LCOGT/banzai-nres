@@ -28,7 +28,7 @@ class TestAssessWavelengthSolution:
         fake_post.side_effect = save_qc_results_locally
         # run the stage
         AssessWavelengthSolution(self.input_context).do_stage(self.test_image)
-        assert len(self.test_qc_results) == 7
+        assert len(self.test_qc_results) == 5
         assert np.isfinite(self.test_qc_results['PRECISN'])
 
     @mock.patch('banzai_nres.qc.qc_wavelength.qc.save_qc_results')
@@ -45,7 +45,3 @@ class TestAssessWavelengthSolution:
         sigma_Dlambda, good_sigma_Dlambda, raw_chi_squared, good_chi_squared, num_matched_lines, velocity_precision = result
         assert sigma_Dlambda >= good_sigma_Dlambda
         assert raw_chi_squared >= good_chi_squared
-        x_diff_Dlambda, order_diff_Dlambda = AssessWavelengthSolution(self.input_context).calculate_2d_metrics(self.test_image,Delta_lambda)
-        assert np.any(np.isfinite(x_diff_Dlambda))
-        assert np.any(np.isfinite(order_diff_Dlambda))
-        assert np.isfinite(velocity_precision)
