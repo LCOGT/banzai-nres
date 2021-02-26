@@ -16,9 +16,6 @@ from banzai_nres.continuum import mark_absorption_or_emission_features
 
 logger = logging.getLogger('banzai')
 
-# Speed of light in km/s
-c = constants.c.to('km / s').value
-
 
 # wavelength regions selected by eye by Mirek on 09 16 2020 wherever there are large (H alpha like, i.e. broad wings)
 # absorption features in the G2V pheonix template (banzai nres name phoenix-05700-p4.5-p0.0-p0.0.fits).
@@ -47,8 +44,6 @@ def cross_correlate(velocities, wavelength, flux, flux_uncertainty, template_wav
     variance = flux_uncertainty * flux_uncertainty
 
     for v in velocities:
-        #import pdb; pdb.set_trace()
-        #print(v)
         doppler = 1.0 * units.dimensionless_unscaled / (1.0 * units.dimensionless_unscaled + v / constants.c)
         kernel = np.interp(doppler * wavelength, template_wavelength, template_flux)
         correlation = kernel * flux
@@ -117,7 +112,6 @@ def calculate_rv(image, orders_to_use, template):
     coarse_ccfs = cross_correlate_over_traces(image, orders_to_use, coarse_velocities, template)
 
     # take the peak
-    #import pdb; pdb.set_trace()
     velocity_peaks = np.array([coarse_velocities[np.argmax(ccf['xcor'])].to('km / s').value for ccf in coarse_ccfs])
     best_v = stats.sigma_clipped_mean(velocity_peaks, 3.0)
     velocities = np.arange(best_v - 2, best_v + 2 + 1e-4, 1e-3) * units.km / units.s
@@ -130,7 +124,6 @@ def calculate_rv(image, orders_to_use, template):
                                stdfunc=stats.robust_standard_deviation, axis=None,
                                masked=True, return_bounds=False, copy=True)
     rv, rv_err = np.ma.mean(rvs_per_order)  * units.km / units.s, np.ma.std(rvs_per_order) / np.sqrt(np.ma.count(rvs_per_order))  * units.km / units.s
-    # multiply by a factor of 1000 to convert from km/s rv's to m/s.
     return rv, rv_err, coarse_ccfs, ccfs
 
 
