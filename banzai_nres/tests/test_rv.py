@@ -1,11 +1,12 @@
-from banzai_nres.rv import cross_correlate, c, RVCalculator, barycentric_correction
+from banzai_nres.rv import cross_correlate, RVCalculator, barycentric_correction
 import numpy as np
 import mock
 from astropy.io import fits
 from banzai_nres.frames import NRESObservationFrame
 from banzai_nres.frames import EchelleSpectralCCDData, Spectrum1D
 from types import SimpleNamespace
-
+from astropy import units
+from astropy import constants
 
 def gaussian(x, mu, sigma):
     return (2.0 * np.pi) ** -0.5 / sigma * np.exp(-0.5 * (x - mu) ** 2 / sigma ** 2)
@@ -23,15 +24,15 @@ def test_cross_correlate():
         sigma = width / 2 / np.sqrt(2.0 * np.log(2.0))
         flux += gaussian(test_wavelengths, central_wavelength, sigma) * 10000.0 * np.random.uniform()
 
-    true_v = 1.0
+    true_v = 1.0  * units.km / units.s
     noisy_flux = np.random.poisson(flux).astype(float)
     noisy_flux += np.random.normal(0.0, read_noise, size=len(flux))
 
     uncertainty = np.sqrt(flux + read_noise**2.0)
 
     # in km/s
-    velocity_steps = np.arange(-5.0, 5.0, 0.1)
-    ccf = cross_correlate(velocity_steps, test_wavelengths * (1.0 + true_v / c), noisy_flux,
+    velocity_steps = np.arange(-5.0, 5.0, 0.1)  * units.km / units.s
+    ccf = cross_correlate(velocity_steps, test_wavelengths * (1.0 + true_v / constants.c), noisy_flux,
                           uncertainty, test_wavelengths, flux)
     assert np.argmax(ccf) == np.argmin(np.abs(velocity_steps - true_v))
 
@@ -63,7 +64,7 @@ def test_rv(mock_loader, mock_db):
         def load(self, *args):
             return {'wavelength': test_wavelengths, 'flux': flux}
     mock_loader.return_value = MockLoader()
-    true_v = 1.205  # km / s
+    true_v = 1.205 * units.km / units.s
 
     # Make the fake image
     # Set the site to the north pole, and the ra and dec to the ecliptic pole. The time we chose is just
@@ -92,7 +93,7 @@ def test_rv(mock_loader, mock_db):
     stage = RVCalculator(SimpleNamespace(db_address='foo', MIN_ORDER_TO_CORRELATE=0, MAX_ORDER_TO_CORRELATE=num_orders-1))
     image = stage.do_stage(image)
     # Assert that the true_v + rv_correction is what is in the header within 5 m/s
-    assert np.abs(true_v * 1000.0 + image.meta['BARYCORR'] - image.meta['RV']) < 5.0
+    assert np.abs(true_v.to('m / s').value + image.meta['BARYCORR'].to('m / s').value - image.meta['RV'].to('m / s').value) < 5.0
 
 
 def test_bc_correction():
@@ -102,4 +103,4 @@ def test_bc_correction():
     site_info = {'longitude': 0.0, 'latitude': 90.0, 'elevation': 0.0}
     time, exptime = '2020-09-12T00:00:00.000000', 0.0
     bc_rv, bjd_tdb = barycentric_correction(time, exptime, ra, dec, SimpleNamespace(**site_info))
-    assert np.abs(bc_rv) < 10.0  # Check RV correction is within 10 m/s of 0
+    assert np.abs(bc_rv.to('m / s').value) < 10.0  # Check RV correction is within 10 m/s of 0
