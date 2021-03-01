@@ -78,7 +78,7 @@ def test_rv(mock_loader, mock_db):
     dx = int(lam_per_order/res)
     for i in range(5):
         order = slice(i * dx, (i + 1) * dx, 1)
-        row = {'wavelength': test_wavelengths[order] * (1.0 + true_v / c),
+        row = {'wavelength': test_wavelengths[order] * (1.0 + true_v / constants.c),
                'normflux': noisy_flux[order], 'normuncertainty': uncertainty[order], 'fiber': 0, 'order': i}
         spectrum.append(row)
     image = NRESObservationFrame([EchelleSpectralCCDData(np.zeros((1, 1)), meta=header, spectrum=Spectrum1D(spectrum))],
@@ -93,7 +93,7 @@ def test_rv(mock_loader, mock_db):
     stage = RVCalculator(SimpleNamespace(db_address='foo', MIN_ORDER_TO_CORRELATE=0, MAX_ORDER_TO_CORRELATE=num_orders-1))
     image = stage.do_stage(image)
     # Assert that the true_v + rv_correction is what is in the header within 5 m/s
-    assert np.abs(true_v.to('m / s').value + image.meta['BARYCORR'].to('m / s').value - image.meta['RV'].to('m / s').value) < 5.0
+    assert np.abs(true_v.to('m / s').value + image.meta['BARYCORR'] - image.meta['RV']) < 5.0
 
 
 def test_bc_correction():
