@@ -6,7 +6,3 @@ requires = ["setuptools",
             "extension_helpers"]
 
 build-backend = "setuptools.build_meta"
-
-[project.dependencies]
-banzai = { git = "ssh://git@github.com/lcogt/banzai.git" }
-sep = { git = "ssh://git@github.com/kbarbary/sep.git" }
