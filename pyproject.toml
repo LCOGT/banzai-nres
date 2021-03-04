@@ -1,0 +1,12 @@
+[build-system]
+
+requires = ["setuptools",
+            "setuptools_scm",
+            "wheel",
+            "extension_helpers"]
+
+build-backend = "setuptools.build_meta"
+
+[project.dependencies]
+banzai = { git = "ssh://git@github.com/lcogt/banzai.git" }
+sep = { git = "ssh://git@github.com/kbarbary/sep.git" }
