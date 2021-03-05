@@ -51,7 +51,7 @@ spec:
           command:
             - "banzai_update_db"
             - "--db-address=$(DB_ADDRESS)"
-            - "--configdb-address={{ .Values.configdb_url }}"
+            - "--configdb-address=$(CONFIGDB_URL)"
           env:
             {{- include "banzai-nres.Env" . | nindent 12 }}
           resources:
