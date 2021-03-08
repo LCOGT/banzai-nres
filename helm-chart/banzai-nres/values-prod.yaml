@@ -1,4 +1,4 @@
-# Production deployment values for banzai.
+# Production deployment values for BANZAI-NRES.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
@@ -15,7 +15,7 @@ image:
   tag: ""
   pullPolicy: IfNotPresent
 
-# Values for the OCS Ingester library, used by BANZAI.
+# Values for the OCS Ingester library, used by BANZAI-NRES.
 ingester:
   apiRoot: http://archiveapi-internal.prod/
   s3Bucket: archive-lco-global
@@ -25,7 +25,7 @@ ingester:
   postProcessFiles: false
   noMetrics: false
 
-# Values specific to the BANZAI pipeline
+# Values specific to the BANZAI-NRES pipeline
 banzaiNres:
   astrometryServiceUrl: http://astrometry.lco.gtn/catalog
   configdbUrl: http://configdb.lco.gtn/sites/
