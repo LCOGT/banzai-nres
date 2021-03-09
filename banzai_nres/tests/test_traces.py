@@ -1,5 +1,5 @@
 import numpy as np
-from banzai_nres.traces import find_y_center, TraceInitializer, TraceRefiner
+from banzai_nres.traces import find_y_center, TraceInitializer, TraceRefiner, refine_traces
 from banzai_nres.frames import NRESObservationFrame
 from banzai_nres.frames import EchelleSpectralCCDData
 from banzai import context
@@ -44,7 +44,7 @@ def test_blind_solve():
 
     test_image = NRESObservationFrame([EchelleSpectralCCDData(data=test_data, uncertainty=1e-5*np.ones((ny, nx)),
                                        meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
-    input_context = context.Context({})
+    input_context = context.Context({'TRACE_HALF_HEIGHT': 5})
     stage = TraceInitializer(input_context)
     output_image = stage.do_stage(test_image)
 
@@ -70,7 +70,7 @@ def test_refining_on_noisy_data():
     uncertainty = np.sqrt(test_data + read_noise ** 2.0)
     test_image = NRESObservationFrame([EchelleSpectralCCDData(data=test_data, uncertainty=uncertainty,
                                                               meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
-    input_context = context.Context({})
+    input_context = context.Context({'TRACE_HALF_HEIGHT': 5})
     stage = TraceInitializer(input_context)
     output_image = stage.do_stage(test_image)
 
@@ -99,7 +99,7 @@ def test_blind_solve_realistic_data():
     uncertainty = np.sqrt(test_data + read_noise ** 2.0)
     test_image = NRESObservationFrame([EchelleSpectralCCDData(data=test_data, uncertainty=uncertainty,
                                                               meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
-    input_context = context.Context({})
+    input_context = context.Context({'TRACE_HALF_HEIGHT': 5})
     stage = TraceInitializer(input_context)
     output_image = stage.do_stage(test_image)
 
@@ -133,7 +133,7 @@ def test_refine_traces_with_previous_trace():
     test_image = NRESObservationFrame([EchelleSpectralCCDData(data=test_data, uncertainty=uncertainty,
                                                               meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
     test_image.traces = input_traces
-    input_context = context.Context({})
+    input_context = context.Context({'TRACE_HALF_HEIGHT': 5})
 
     stage = TraceRefiner(input_context)
     output_image = stage.do_stage(test_image)
@@ -158,7 +158,7 @@ def test_refine_traces_offset_centroid():
     test_image = NRESObservationFrame([EchelleSpectralCCDData(data=test_data, uncertainty=uncertainty,
                                                               meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
     test_image.traces = input_traces
-    input_context = context.Context({})
+    input_context = context.Context({'TRACE_HALF_HEIGHT': 5})
 
     stage = TraceRefiner(input_context)
     output_image = stage.do_stage(test_image)
@@ -181,3 +181,26 @@ def make_simple_traces(nx=401, ny=403, trace_half_width=6, blaze=True):
         test_data += gaussian(y2d, trace_centers[i], 3, a=10000.0) * blaze_function
         input_traces[np.abs(y2d - trace_centers[i]) <= trace_half_width] = i + 1
     return test_data, trace_centers, input_traces
+
+
+def test_refine_traces_curved_trace():
+    nx, ny = 1001, 1003
+    expected_trace = np.zeros((ny, nx), dtype=int)
+    trace_half_height = 5
+    x0 = 498
+    input_y_center = 2e-4 * (np.arange(nx) - x0) ** 2.0 + 0.01 * (np.arange(nx) - x0) + 502.0
+    trace = np.round(input_y_center).astype(int)
+    for i in np.arange(nx, dtype=int):
+        for j in range(-trace_half_height, trace_half_height + 1):
+            expected_trace[trace[i] + j, i] = 1
+    x2d, y2d = np.meshgrid(np.arange(nx, dtype=int), np.arange(ny, dtype=int))
+    sigma = 1.5
+    y_center = np.array([input_y_center.copy() for i in range(ny)])
+    test_data = 1 / sigma / (2.0 * np.pi) * np.exp(-0.5 * (y2d - y_center) ** 2.0 / sigma ** 2)
+
+    test_image = NRESObservationFrame([EchelleSpectralCCDData(data=test_data, uncertainty=np.zeros_like(test_data),
+                                                              meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
+    test_image.traces = np.ones_like(expected_trace)
+    refine_traces(test_image, weights=test_image.data, trace_half_height=trace_half_height)
+
+    np.testing.assert_equal(test_image.traces, expected_trace)

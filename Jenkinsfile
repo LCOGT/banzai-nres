@@ -71,9 +71,9 @@ pipeline {
 	            script {
                     withKubeConfig([credentialsId: "build-kube-config"]) {
                         if (env.BRANCH_NAME == "dev") {
-                            dataTag = '1.0.3'
+                            dataTag = '1.0.4'
                         } else {
-                            dataTag = '1.0.3-slim'
+                            dataTag = '1.0.4-slim'
                         }
                         sh('helm repo update')
                         final cmd = " helm delete --purge banzai-nres-e2e &> cleanup.txt"

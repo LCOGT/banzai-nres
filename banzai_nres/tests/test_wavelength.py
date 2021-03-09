@@ -21,7 +21,7 @@ class TestIdentifyFeatures:
     ycoords = np.array(xcoords) + 5  # 4 features
     data[ycoords, xcoords] = 1
     data = gaussian_filter(data, sigma=sigma)
-    data /= np.max(data) # make features have peak fluxes of 1
+    data /= np.max(data)  # make features have peak fluxes of 1
 
     def test_finds_features(self):
         features = identify_features(self.data, self.err, nsigma=0.5, fwhm=self.sigma)
@@ -44,10 +44,10 @@ class TestIdentifyFeatures:
     def test_do_stage(self):
         blaze_factor = 0.5
         input_context = context.Context({})
-        image = NRESObservationFrame([EchelleSpectralCCDData(data=self.data, uncertainty=self.err,
-                                                             meta={'OBJECTS': 'tung&tung&none'},
-                                       traces=np.ones_like(self.data, dtype=int),
-                                       blaze={'blaze': blaze_factor * np.ones((1, self.data.shape[1]), dtype=int)})], 'foo.fits')
+        ccd_data = EchelleSpectralCCDData(data=self.data, uncertainty=self.err, meta={'OBJECTS': 'tung&tung&none'},
+                                          traces=np.ones_like(self.data, dtype=int),
+                                          blaze={'blaze': blaze_factor * np.ones((1, self.data.shape[1]), dtype=int)})
+        image = NRESObservationFrame([ccd_data], 'foo.fits')
         stage = IdentifyFeatures(input_context)
         stage.fwhm, stage.nsigma = self.sigma, 0.5
         image = stage.do_stage(image)
@@ -60,9 +60,9 @@ class TestIdentifyFeatures:
     @pytest.mark.integration
     def test_do_stage_no_blaze(self):
         input_context = context.Context({})
-        image = NRESObservationFrame([EchelleSpectralCCDData(data=self.data, uncertainty=self.err,
-                                                             meta={'OBJECTS': 'tung&tung&none'},
-                                       traces=np.ones_like(self.data, dtype=int))], 'foo.fits')
+        ccd_data = EchelleSpectralCCDData(data=self.data, uncertainty=self.err, meta={'OBJECTS': 'tung&tung&none'},
+                                          traces=np.ones_like(self.data, dtype=int))
+        image = NRESObservationFrame([ccd_data], 'foo.fits')
         stage = IdentifyFeatures(input_context)
         stage.fwhm, stage.nsigma = self.sigma, 0.5
         image = stage.do_stage(image)
@@ -189,6 +189,7 @@ def test_stage_caltypes():
 
 class TestLineListLoader:
     stage = LineListLoader(context.Context({}))
+
     @mock.patch('banzai_nres.wavelength.LineListLoader.on_missing_master_calibration', return_value=None)
     def test_do_stage_aborts(self, fake_miss):
         stage = LineListLoader(context.Context({}))
@@ -235,10 +236,14 @@ class TestQCChecks:
         assert image is not None
 
     def test_qc_checks(self):
-        Delta_lambda = AssessWavelengthSolution(self.input_context).calculate_delta_lambda(self.test_image,self.test_image.features['wavelength'])
-        sigma_Dlambda, good_sigma_Dlambda, raw_chi_squared, good_chi_squared = AssessWavelengthSolution(self.input_context).calculate_1d_metrics(self.test_image,Delta_lambda)
+        Delta_lambda = AssessWavelengthSolution(self.input_context).calculate_delta_lambda(self.test_image,
+                                                                                           self.test_image.features[
+                                                                                               'wavelength'])
+        sigma_Dlambda, good_sigma_Dlambda, raw_chi_squared, good_chi_squared = AssessWavelengthSolution(
+            self.input_context).calculate_1d_metrics(self.test_image, Delta_lambda)
         assert sigma_Dlambda >= good_sigma_Dlambda
         assert raw_chi_squared >= good_chi_squared
-        x_diff_Dlambda, order_diff_Dlambda = AssessWavelengthSolution(self.input_context).calculate_2d_metrics(self.test_image,Delta_lambda)
+        x_diff_Dlambda, order_diff_Dlambda = AssessWavelengthSolution(self.input_context).calculate_2d_metrics(
+            self.test_image, Delta_lambda)
         assert np.any(np.isfinite(x_diff_Dlambda))
         assert np.any(np.isfinite(order_diff_Dlambda))

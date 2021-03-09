@@ -10,7 +10,7 @@ banzaiNRES:
 
 dataImage:
   repository: docker.lco.global/nres-pipeline-e2e-data
-  tag: 1.0.3
+  tag: 1.0.4-slim
   pullPolicy: IfNotPresent
 
 storage:

@@ -1,7 +1,7 @@
 version: '2'
 services:
   nres-e2e-data:
-    image: docker.lco.global/nres-pipeline-e2e-data:1.0.3-slim
+    image: docker.lco.global/nres-pipeline-e2e-data:1.0.4-slim
     container_name: nres-e2e-data
     network_mode: "bridge"
     entrypoint:
@@ -82,6 +82,8 @@ services:
       FITS_BROKER: broker
       OPENTSDB_PYTHON_METRICS_TEST_MODE: "1"
       OBSERVATION_PORTAL_URL: "http://lake-old.lco.gtn/blocks/"
+      BANZAI_GAIA_CLASS: "banzai_nres.tests.utils.MockGaiaCatalog"
+      BANZAI_SIMBAD: "banzai_nres.tests.utils.MockSimbad"
     volumes_from:
     - nres-e2e-data
     labels:

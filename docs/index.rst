@@ -1,20 +1,14 @@
-.. banzai-nres documentation master file, created by
-   sphinx-quickstart on Thu Sep 13 23:10:29 2018.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+Documentation
+=============
 
-Welcome to banzai-nres's documentation!
-=======================================
+This is the documentation for banzai-nres.
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+  :maxdepth: 2
 
+  banzai_nres/index.rst
 
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+.. note:: The layout of this directory is simply a suggestion.  To follow
+          traditional practice, do *not* edit this page, but instead place
+          all documentation for the package inside ``banzai_nres/``.
+          You can follow this practice or choose your own layout.

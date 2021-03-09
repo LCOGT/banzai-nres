@@ -5,11 +5,14 @@ import warnings
 from astropy import units
 from astropy.time import Time
 from astropy.coordinates import SkyCoord
-from astroquery import gaia, simbad
 from astropy import constants
+from banzai_nres.rv import cross_correlate_over_traces, calculate_rv
+from banzai_nres import phoenix
+import numpy as np
+from banzai.utils import import_utils
 
 
-def find_object_in_catalog(image, db_address):
+def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
     """
     Find the object in external catalogs. Update the ra and dec if found. Also add an initial classification if found.
     :return:
@@ -26,14 +29,15 @@ def find_object_in_catalog(image, db_address):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         # 10 arcseconds should be a large enough radius to capture bright objects.
-        gaia_connection = gaia.GaiaClass()
+        gaia = import_utils.import_attribute(gaia_class)
+        gaia_connection = gaia()
         gaia_connection.ROW_LIMIT = 200
         results = gaia_connection.query_object(coordinate=transformed_coordinate, radius=10.0 * units.arcsec)
 
     # Filter out objects fainter than r=12
     results = results[results['phot_rp_mean_mag'] < 12.0]
     if len(results) > 0:
-        #convert the luminosity from the LSun units that Gaia provides to cgs units
+        # convert the luminosity from the LSun units that Gaia provides to cgs units
         results[0]['lum_val'] *= constants.L_sun.to('erg / s').value
         image.classification = dbs.get_closest_HR_phoenix_models(db_address, results[0]['teff_val'],
                                                                  results[0]['lum_val'])
@@ -43,12 +47,13 @@ def find_object_in_catalog(image, db_address):
         image.pm_ra, image.pm_dec = results[0]['pmra'], results[0]['pmdec']
     # If nothing in Gaia fall back to simbad. This should only be for stars that are brighter than mag = 3
     else:
-        simbad_connection = simbad.Simbad()
+        simbad = import_utils.import_attribute(simbad_class)
+        simbad_connection = simbad()
         simbad_connection.add_votable_fields('pmra', 'pmdec', 'fe_h')
         results = simbad_connection.query_region(coordinate, radius='0d0m10s')
         if results:
             image.classification = dbs.get_closest_phoenix_models(db_address, results[0]['Fe_H_Teff'],
-                                                                  results[0]['Fe_H_log_g'])
+                                                                  results[0]['Fe_H_log_g'])[0]
             # Update the ra and dec to the catalog coordinates as those are basically always better than a user enters
             # manually.
             image.ra, image.dec = results[0]['RA'], results[0]['DEC']
@@ -74,13 +79,40 @@ class StellarClassifier(Stage):
                 image.meta['CLASSIFY'] = 0, 'Was this spectrum classified'
                 return image
 
-        find_object_in_catalog(image, self.runtime_context.db_address)
+        find_object_in_catalog(image, self.runtime_context.db_address,
+                               self.runtime_context.GAIA_CLASS, self.runtime_context.SIMBAD_CLASS)
 
-        # TODO: For each param: Fix the other params, get the N closest models and save the results
-
+        orders_to_use = np.arange(self.runtime_context.MIN_ORDER_TO_CORRELATE,
+                                  self.runtime_context.MAX_ORDER_TO_CORRELATE, 1)
+        phoenix_loader = phoenix.PhoenixModelLoader(self.runtime_context.db_address)
+        template = phoenix_loader.load(image.classification)
+        rv = calculate_rv(image, orders_to_use, template)[0]
+        best_metric = np.sum(cross_correlate_over_traces(image, orders_to_use, [rv], template)['xcor'])
+        # For each param: Fix the other params, get the N closest models and save the results
+        physical_parameters = ['T_effective', 'log_g', 'metallicity', 'alpha']
+        n_steps = [11, 5, 5, 5]
+        for parameter, n in zip(physical_parameters, n_steps):
+            models_to_test = dbs.get_closest_phoenix_models(self.runtime_context.db_address,
+                                                            image.classification.T_effective,
+                                                            image.classification.log_g,
+                                                            image.classification.metallicity,
+                                                            image.classification.alpha,
+                                                            fixed=[i for i in physical_parameters if i != parameter],
+                                                            n=n)
+            for model_to_test in models_to_test:
+                template = phoenix_loader.load(model_to_test)
+                metric = np.sum(cross_correlate_over_traces(image, orders_to_use, [rv], template)['xcor'])
+                if metric > best_metric:
+                    image.classification = model_to_test
+                    best_metric = metric
         if image.classification is None:
             image.meta['CLASSIFY'] = 0, 'Was this spectrum classified'
         else:
             image.meta['CLASSIFY'] = 1, 'Was this spectrum classified'
             dbs.save_classification(self.runtime_context.db_address, image)
+        image.meta['TEFF'] = image.classification.T_effective
+        image.meta['LOG_G'] = image.classification.log_g
+        image.meta['FEH'] = image.classification.metallicity
+        image.meta['ALPHA'] = image.classification.alpha
+
         return image

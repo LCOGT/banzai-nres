@@ -447,7 +447,7 @@ class NRESFrameFactory(LCOFrameFactory):
             else:
                 telescope_num = 2
 
-            if 'nan' in  str(image[f'TELESCOPE_{telescope_num}'].meta['CAT-RA']).lower() or \
+            if 'nan' in str(image[f'TELESCOPE_{telescope_num}'].meta['CAT-RA']).lower() or \
                     'n/a' in str(image[f'TELESCOPE_{telescope_num}'].meta['CAT-RA']).lower():
                 ra_dec_keyword = ''
             else:
