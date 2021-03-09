@@ -27,7 +27,7 @@ E.g. lscnrs01-fa09-20190521-lampflat-bin1x1-110.fits.fz for an observation taken
 
 
 Wavelength calibration metrics
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In each master wavelength calibration file, the primary hdu header holds four wavelength metrics. The keys for
 these are:
@@ -69,7 +69,7 @@ standard error (in wavelength) of the line centroid position (in wavelength).
 
 
 What is a good wavelength solution?
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 There are a variety of checks to make sure your wavelength solution is good. Most of them involve simply checking
 the numbers from the above section.
@@ -77,16 +77,17 @@ the numbers from the above section.
 A good wavelength solution for any NRES unit will have those quantities in the following ranges:
 
 
-* 'SIGLAM' This should be between 0.003 and 0.01 Angstroms. It should be roughly equal to
-'PRECISN' / speed of light * sqrt('MLINENUM') * (mean wavelength). mean wavelength = 5000 Angstroms is fine.
-* 'PRECISN' This should be between 4 and 10 m/s . High m/s values above 20 might indicate a failure of the wavelength
-solution, or extremely low S/N on the frame.
-* 'CHISQ' between 0.2 and 5. An extremely high number here might mean errors are massively underestimated and vice-versa.
-* 'LINENUM' between 3500 and 5000 (i.e. 1750 and 2500 lines per fiber). The code as is limits this value to 2500
-features per fiber.
-* 'MLINENUM' should be roughly 50-80% of LINENUM, usually 70%. E.g. 3500 for 5000 total lines, or 2450 for 3500 total lines.
-If 'MLINENUM' is below 1000, your wavelength solution is probably overconstrained in the center of the detector and
-the edges are missed. This frame is probably too low of signal to noise.
+* | 'SIGLAM' This should be between 0.003 and 0.01 Angstroms. It should be roughly equal to
+  | 'PRECISN' / speed of light * sqrt('MLINENUM') * (mean wavelength). mean wavelength = 5000 Angstroms is fine.
+* | 'PRECISN' This should be between 4 and 10 m/s . High m/s values above 20 might indicate a failure of the wavelength
+  | solution, or extremely low S/N on the frame.
+* | 'CHISQ' between 0.2 and 5. An extremely high number here might mean errors are massively underestimated and
+  | vice-versa.
+* | 'LINENUM' between 3500 and 5000 (i.e. 1750 and 2500 lines per fiber). The code as is limits this value to 2500
+  | features per fiber.
+* | 'MLINENUM' should be roughly 50-80% of LINENUM, usually 70%. E.g. 3500 for 5000 total lines, or 2450 for 3500 total
+  | lines. If 'MLINENUM' is below 1000, your wavelength solution is probably overconstrained in the center of the
+  | detector and the edges are missed. This frame is probably too low of signal to noise.
 
 
 If all the above checks pass, you most likely have a very good wavelength solution. If any fail, you may want to dig
@@ -97,7 +98,7 @@ without a doubt.
 
 
 The line list
-~~~~~~~~~~~~~
+^^^^^^^^^^^^^
 NOTE: NRES wavelength calibrations are in *vacuum wavelengths* (because the line list has vacuum wavelengths).
 
 Included in banzai_nres/data is the ThAr_atlas_ESO_original_air.txt which was fetched from
@@ -105,20 +106,25 @@ http://www.eso.org/sci/facilities/paranal/instruments/uves/tools/tharatlas.html 
 that we use is banzai_nres/data/ThAr_atlas_ESO_vacuum.txt, which is the same list but converted to vacuum wavelengths.
 We generated ThAr_atlas_ESO_vacuum.txt as follows:
 
-We converted every line from ThAr_atlas_ESO_original_air.txt to vacuum using the original 1966 Edlen Equation (Bengt Edlén 1966 Metrologia 2 71,
+We converted every line from ThAr_atlas_ESO_original_air.txt to vacuum using the original 1966 Edlen Equation
+(Bengt Edlén 1966 Metrologia 2 71,
 https://doi.org/10.1088/0026-1394/2/2/002) for the index of refraction of air.
-We use this equation because the ThAr atlas contains wavelengths that were originally vacuum wavelengths, which were then
+We use this equation because the ThAr atlas contains wavelengths that were originally vacuum wavelengths, which
+were then
 converted to air wavelengths using the original 1966 Edlen Equation (Murphy et al. 2007,
-DOI 10.1111/j.1365-2966.2007.11768.x, see Table 1, not exactly the same line list -- but air wavelengths match therefore Edlen
+DOI 10.1111/j.1365-2966.2007.11768.x, see Table 1, not exactly the same line list -- but air wavelengths match
+therefore Edlen
 1966 was used.). See the note below for more details.
 
 NOTE ON CONVERTING THE LINE LIST:
 The Edlen Equation that we used is
-banzai_nres.utils.wavelength_utils.index_of_refraction_Edlen . One can roughly convert to vacuum by multiplying all the wavelengths in
+banzai_nres.utils.wavelength_utils.index_of_refraction_Edlen . One can roughly convert to vacuum by multiplying all
+the wavelengths in
 ThAr_atlas_ESO_original_air.txt by the index of refraction at each line's AIR wavelength. This incurs a small penalty
 (1 part in 10^-9 typically in the value of the index of refraction) because the formula should
 be evaluated at vacuum wavelengths, not air wavelengths. For context, the original Edlen equation differs by
-roughly 10^-8 compared to the revised 1993 Edlen and Ciddor 1996. If the index of refraction as function of vacuum wavelength
+roughly 10^-8 compared to the revised 1993 Edlen and Ciddor 1996. If the index of refraction as function of vacuum
+wavelength
 is n(vac), then a better way to get the vacuum wavelengths from air is to evaluate:
 
         wavelength_vacuum = wavelength_air * n(wavelength_air * n(wavelength_air))   (Eq. 1)

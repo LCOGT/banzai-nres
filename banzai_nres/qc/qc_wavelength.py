@@ -67,13 +67,15 @@ class AssessWavelengthSolution(Stage):
         sigma_Dlambda = np.std(Delta_lambda)
         low_scatter_lines = np.isclose(Delta_lambda, 0, atol=Dlambda_match_threshold)
         num_matched_lines = np.count_nonzero(low_scatter_lines)
-        matched_sigma_Dlambda = robust_standard_deviation(Delta_lambda[low_scatter_lines])
+        matched_sigma_Dlambda = oh (Delta_lambda[low_scatter_lines])
         feature_centroid_uncertainty = image.features['centroid_err']
         chi2 = np.sum((Delta_lambda/feature_centroid_uncertainty)**2)/len(Delta_lambda)
-        matched_chi2 = np.sum((Delta_lambda[low_scatter_lines]/feature_centroid_uncertainty[low_scatter_lines])**2)/len(Delta_lambda[low_scatter_lines])
+        matched_chi2 = np.sum((Delta_lambda[low_scatter_lines]/feature_centroid_uncertainty[low_scatter_lines])**2)\
+                       /len(Delta_lambda[low_scatter_lines])
         # calculating metrics in velocity space (easily understood by users) del lambda/ lambda * c = delta v.
         # then divide delta v by square root of the number of lines, giving the error on the mean of the residuals.
-        velocity_precision = robust_standard_deviation((Delta_lambda / lab_lines)[low_scatter_lines]) / np.sqrt(num_matched_lines) * const.c
+        velocity_precision = robust_standard_deviation((Delta_lambda / lab_lines)[low_scatter_lines]) / \
+                             np.sqrt(num_matched_lines) * const.c
         if num_matched_lines == 0:  # get rid of nans in the matched statistics if we have zero matched lines.
             matched_sigma_Dlambda, matched_chi2, velocity_precision = 0, 0, 0 * units.meter/units.second
         return sigma_Dlambda, matched_sigma_Dlambda, chi2, matched_chi2, num_matched_lines, velocity_precision
