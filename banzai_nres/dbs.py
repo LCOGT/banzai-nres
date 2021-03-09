@@ -34,40 +34,40 @@ class PhoenixModel(Base):
         return abs(self.T_effective - value)
 
     @diff_T.expression
-    def diff_T(cls, value):
-        return func.abs(cls.T_effective - value)
+    def diff_T(self, value):
+        return func.abs(self.T_effective - value)
 
     @hybrid_method
     def diff_log_g(self, value):
         return abs(self.log_g - value)
 
     @diff_log_g.expression
-    def diff_log_g(cls, value):
-        return func.abs(cls.log_g - value)
+    def diff_log_g(self, value):
+        return func.abs(self.log_g - value)
 
     @hybrid_method
     def diff_alpha(self, value):
         return abs(self.alpha - value)
 
     @diff_alpha.expression
-    def diff_alpha(cls, value):
-        return func.abs(cls.alpha - value)
+    def diff_alpha(self, value):
+        return func.abs(self.alpha - value)
 
     @hybrid_method
     def diff_metallicity(self, value):
         return abs(self.metallicity - value)
 
     @diff_metallicity.expression
-    def diff_metallicity(cls, value):
-        return func.abs(cls.metallicity - value)
+    def diff_metallicity(self, value):
+        return func.abs(self.metallicity - value)
 
     @hybrid_method
     def diff_luminosity(self, value):
         return abs(self.luminosity - value)
 
     @diff_metallicity.expression
-    def diff_luminosity(cls, value):
-        return func.abs(cls.luminosity - value)
+    def diff_luminosity(self, value):
+        return func.abs(self.luminosity - value)
 
 
 # We define the great circle distance here instead of using astropy because we need it to work inside the db.
@@ -85,7 +85,8 @@ def cos_great_circle_distance(sin_ra1, cos_ra1, sin_dec1, cos_dec1, sin_ra2, cos
     :return: cos(D) where D is the great circle distance
 
     This is the standard great circle distance from e.g. https://mathworld.wolfram.com/GreatCircle.html
-    The only difference is we also use the identity for cos(x1 - x2) (e.g. https://mathworld.wolfram.com/TrigonometricAdditionFormulas.html)
+    The only difference is we also use the identity for cos(x1 - x2)
+    (e.g. https://mathworld.wolfram.com/TrigonometricAdditionFormulas.html)
     so that we can calculate the sin and cos terms ahead of time.
     """
     cos_distance = sin_dec1 * sin_dec2 + cos_dec1 * cos_dec2 * (cos_ra1 * cos_ra2 + sin_ra1 * sin_ra2)
@@ -110,11 +111,13 @@ class Classification(Base):
 
     @hybrid_method
     def cos_distance(self, sin_ra, cos_ra, sin_dec, cos_dec):
-        return cos_great_circle_distance(sin_ra, cos_ra, sin_dec, cos_dec, self.sin_ra, self.cos_ra, self.sin_dec, self.cos_dec)
+        return cos_great_circle_distance(sin_ra, cos_ra, sin_dec, cos_dec,
+                                         self.sin_ra, self.cos_ra, self.sin_dec, self.cos_dec)
 
     @cos_distance.expression
     def cos_distance(cls, sin_ra, cos_ra, sin_dec, cos_dec):
-        return cos_great_circle_distance(sin_ra, cos_ra, sin_dec, cos_dec, cls.sin_ra, cls.cos_ra, cls.sin_dec, cls.cos_dec)
+        return cos_great_circle_distance(sin_ra, cos_ra, sin_dec, cos_dec,
+                                         cls.sin_ra, cls.cos_ra, cls.sin_dec, cls.cos_dec)
 
 
 class ResourceFile(Base):
@@ -149,7 +152,8 @@ def populate_phoenix_models(model_location, db_address):
 
             if 'wave' in filename.lower():
                 banzai.dbs.add_or_update_record(db_session, ResourceFile, {'key': 'phoenix_wavelengths'},
-                                                {'filename': filename, 'location': location, 'key': 'phoenix_wavelengths'})
+                                                {'filename': filename, 'location': location,
+                                                 'key': 'phoenix_wavelengths'})
                 continue
 
             # Note that there are 25 header keyword value pairs in a standard phoenix model file all in cgs units
