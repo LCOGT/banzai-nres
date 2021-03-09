@@ -80,11 +80,13 @@ class GetOptimalExtractionWeights(WeightedExtract):
 
         Note: Our conventions differ slightly with that of Horne 1986.
         The weights by which the spectrum is extracted in Equation 8 of Horne are:
-        .. math:: W_{x, \lambda} = \frac{M_{x, \lambda}  P_{x, \lambda} / V_{x, \lambda}, \sum_x M_{x, \lambda} P^2_{x, \lambda} / V_{x, \lambda} }
+        .. math::
+            W_{x, \\lambda} = \frac{M_{x, \\lambda}  P_{x, \\lambda} / V_{x, \\lambda},
+            \\sum_x M_{x, \\lambda} P^2_{x, \\lambda} / V_{x, \\lambda} }
         These quantities are labelled here as:
-        .. math:: profile_im = P_{x, \lambda}
-        .. math:: var_im = V_{x, \lambda}
-        .. math:: mask = M_{x, \lambda}
+        .. math:: profile_im = P_{x, \\lambda}
+        .. math:: var_im = V_{x, \\lambda}
+        .. math:: mask = M_{x, \\lambda}
 
         Note that in Horne, x is the cross-dispersed direction, which for us is the
         vertical (y) pixels.

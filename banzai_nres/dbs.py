@@ -65,7 +65,7 @@ class PhoenixModel(Base):
     def diff_luminosity(self, value):
         return abs(self.luminosity - value)
 
-    @diff_metallicity.expression
+    @diff_luminosity.expression
     def diff_luminosity(self, value):
         return func.abs(self.luminosity - value)
 
