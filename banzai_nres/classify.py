@@ -37,7 +37,7 @@ def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
     # Filter out objects fainter than r=12
     results = results[results['phot_rp_mean_mag'] < 12.0]
     if len(results) > 0:
-        #convert the luminosity from the LSun units that Gaia provides to cgs units
+        # convert the luminosity from the LSun units that Gaia provides to cgs units
         results[0]['lum_val'] *= constants.L_sun.to('erg / s').value
         image.classification = dbs.get_closest_HR_phoenix_models(db_address, results[0]['teff_val'],
                                                                  results[0]['lum_val'])
@@ -82,7 +82,8 @@ class StellarClassifier(Stage):
         find_object_in_catalog(image, self.runtime_context.db_address,
                                self.runtime_context.GAIA_CLASS, self.runtime_context.SIMBAD_CLASS)
 
-        orders_to_use = np.arange(self.runtime_context.MIN_ORDER_TO_CORRELATE, self.runtime_context.MAX_ORDER_TO_CORRELATE, 1)
+        orders_to_use = np.arange(self.runtime_context.MIN_ORDER_TO_CORRELATE,
+                                  self.runtime_context.MAX_ORDER_TO_CORRELATE, 1)
         phoenix_loader = phoenix.PhoenixModelLoader(self.runtime_context.db_address)
         template = phoenix_loader.load(image.classification)
         rv = calculate_rv(image, orders_to_use, template)[0]
