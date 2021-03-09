@@ -67,7 +67,7 @@ class AssessWavelengthSolution(Stage):
         sigma_Dlambda = np.std(Delta_lambda)
         low_scatter_lines = np.isclose(Delta_lambda, 0, atol=Dlambda_match_threshold)
         num_matched_lines = np.count_nonzero(low_scatter_lines)
-        matched_sigma_Dlambda = oh (Delta_lambda[low_scatter_lines])
+        matched_sigma_Dlambda = robust_standard_deviation(Delta_lambda[low_scatter_lines])
         feature_centroid_uncertainty = image.features['centroid_err']
         chi2 = np.sum((Delta_lambda/feature_centroid_uncertainty)**2)/len(Delta_lambda)
         matched_chi2 = np.sum((Delta_lambda[low_scatter_lines]/feature_centroid_uncertainty[low_scatter_lines])**2)\
