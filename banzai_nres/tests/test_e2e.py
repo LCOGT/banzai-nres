@@ -146,7 +146,8 @@ def check_if_individual_frames_exist(filenames):
 
 def run_check_if_stacked_calibrations_were_created(raw_filenames, calibration_type):
     created_stacked_calibrations = []
-    number_of_stacks_that_should_have_been_created = get_expected_number_of_calibrations(raw_filenames, calibration_type)
+    number_of_stacks_that_should_have_been_created = get_expected_number_of_calibrations(raw_filenames,
+                                                                                         calibration_type)
     for day_obs in DAYS_OBS:
         created_stacked_calibrations += glob(os.path.join(DATA_ROOT, day_obs, 'processed',
                                                           '*' + calibration_type.lower() + '*.fits*'))
@@ -182,9 +183,11 @@ def check_extracted_spectra(raw_filename, spec_extname, columns):
 
 
 def run_check_if_stacked_calibrations_are_in_db(raw_filenames, calibration_type):
-    number_of_stacks_that_should_have_been_created = get_expected_number_of_calibrations(raw_filenames, calibration_type)
+    number_of_stacks_that_should_have_been_created = get_expected_number_of_calibrations(raw_filenames,
+                                                                                         calibration_type)
     with dbs.get_session(os.environ['DB_ADDRESS']) as db_session:
-        calibrations_in_db = db_session.query(dbs.CalibrationImage).filter(dbs.CalibrationImage.type == calibration_type)
+        calibrations_in_db = db_session.query(dbs.CalibrationImage).filter(
+            dbs.CalibrationImage.type == calibration_type)
         calibrations_in_db = calibrations_in_db.filter(dbs.CalibrationImage.is_master).all()
     assert number_of_stacks_that_should_have_been_created > 0
     assert len(calibrations_in_db) == number_of_stacks_that_should_have_been_created
@@ -200,16 +203,21 @@ def mock_phoenix_models_in_db(db_address):
                                   'location': 's3://banzai-nres-phoenix-models-lco-global',
                                   'key': 'phoenix_wavelengths'})
 
+
 @pytest.mark.e2e
 @pytest.fixture(scope='module')
 @mock.patch('banzai.dbs.requests.get', return_value=FakeResponse(CONFIGDB_FILENAME))
 def init(configdb):
     os.system(f'banzai_nres_create_db --db-address={os.environ["DB_ADDRESS"]}')
     dbs.populate_instrument_tables(db_address=os.environ["DB_ADDRESS"], configdb_address='http://fakeconfigdb')
-    os.system(f'banzai_add_site --site elp --latitude 30.67986944 --longitude -104.015175 --elevation 2027 --timezone -6 --db-address={os.environ["DB_ADDRESS"]}')
-    os.system(f'banzai_add_site --site lsc --latitude -30.1673833333 --longitude -70.8047888889 --elevation 2198 --timezone -4 --db-address={os.environ["DB_ADDRESS"]}')
-    os.system(f'banzai_add_instrument --site lsc --camera fl09 --name nres01 --instrument-type 1m0-NRES-SciCam --db-address={os.environ["DB_ADDRESS"]}')
-    os.system(f'banzai_add_instrument --site elp --camera fl17 --name nres02 --instrument-type 1m0-NRES-SciCam --db-address={os.environ["DB_ADDRESS"]}')
+    os.system((f'banzai_add_site --site elp --latitude 30.67986944 --longitude -104.015175'
+              f' --elevation 2027 --timezone -6 --db-address={os.environ["DB_ADDRESS"]}'))
+    os.system((f'banzai_add_site --site lsc --latitude -30.1673833333 --longitude -70.8047888889'
+              f' --elevation 2198 --timezone -4 --db-address={os.environ["DB_ADDRESS"]}'))
+    os.system((f'banzai_add_instrument --site lsc --camera fl09 --name nres01'
+              f' --instrument-type 1m0-NRES-SciCam --db-address={os.environ["DB_ADDRESS"]}'))
+    os.system((f'banzai_add_instrument --site elp --camera fl17 --name nres02'
+              f' --instrument-type 1m0-NRES-SciCam --db-address={os.environ["DB_ADDRESS"]}'))
 
     mock_phoenix_models_in_db(os.environ["DB_ADDRESS"])
     for instrument in INSTRUMENTS:

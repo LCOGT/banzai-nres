@@ -11,10 +11,10 @@ def phoenix_fits_bytes_to_header(header_lines):
         value = header_line[9:comment_start].strip()
         try:
             value = int(value)
-        except:
+        except ValueError:
             try:
                 value = float(value)
-            except:
+            except ValueError:
                 pass
         if value == b'T':
             value = True
