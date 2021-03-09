@@ -16,7 +16,6 @@ class TestAssessWavelengthSolution:
         image = AssessWavelengthSolution(self.input_context).do_stage(self.test_image)
         assert image is not None
 
-
     @pytest.mark.integration
     @mock.patch('banzai_nres.qc.qc_wavelength.qc.save_qc_results')
     def test_do_stage_posts_to_elastic_search(self, fake_post):

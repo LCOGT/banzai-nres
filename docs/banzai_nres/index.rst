@@ -11,6 +11,13 @@ Reference/API
 
 
 
+Running Code Tests Locally
+==========================
+
+To test code style: "tox -e codestyle"
+To test documentation: "tox -e build_docs"
+To test the functionality of the code itself (on python 3.8): "tox -e py38-test-alldeps"
+
 Output Data Products
 ====================
 
