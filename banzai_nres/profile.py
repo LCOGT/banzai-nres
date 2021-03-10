@@ -22,23 +22,29 @@ class ProfileFitter(Stage):
             # Uncertainty propagation is a bear
             blaze_errors = np.sqrt(np.sum((np.sqrt(2.0) * fluxes * flux_errors) ** 2.0, axis=0))
             flux_sum_error = np.sqrt((flux_errors * flux_errors).sum(axis=0))
-            blaze_errors = blaze * np.sqrt((blaze_errors / (fluxes * fluxes).sum(axis=0)) ** 2.0 + (flux_sum_error / fluxes.sum(axis=0)) ** 2.0)
+            blaze_errors = blaze * np.sqrt(
+                (blaze_errors / (fluxes * fluxes).sum(axis=0)) ** 2.0 + (flux_sum_error / fluxes.sum(axis=0)) ** 2.0)
             # Normalize so the sum of the blaze is 1
             blaze_sum = blaze.sum()
             blaze_sum_error = np.sqrt((blaze * blaze).sum())
             blaze /= blaze_sum
-            blaze_errors = blaze * np.sqrt((blaze_errors / (blaze * blaze_sum)) ** 2 + (blaze_sum_error / blaze_sum) ** 2.0)
+            blaze_errors = blaze * np.sqrt(
+                (blaze_errors / (blaze * blaze_sum)) ** 2 + (blaze_sum_error / blaze_sum) ** 2.0)
             # Evaluate the best fit spline/BLAZE save in an empty array, normalize (PROFILE extension)
             image.profile[this_trace] = fluxes / blaze
             image.profile[this_trace] /= image.profile[this_trace].sum(axis=0)
 
+            image.profile[this_trace][fluxes < 0.0] = 0.0
+            # Use the 4 bit to represent negative values in the profile
+            image.mask[this_trace][fluxes < 0.0] |= 4
             # Divide the original image by best fit spline (Pixel-to-pixel sensitivity)
             # TODO: propagate the division of blaze and profile to the uncertainties of the image!!!
             image.data[this_trace] /= blaze
             image.data[this_trace] /= image.profile[this_trace]
             # Normalize the pixel-to-pixel sensitivity by the median
             image.data[this_trace] /= np.median(this_trace)
-            x_extent = slice(np.min(this_trace[1]), np.max(this_trace[1]) + 1)  # get the horizontal (x) extent of the trace.
+            # get the horizontal (x) extent of the trace.
+            x_extent = slice(np.min(this_trace[1]), np.max(this_trace[1]) + 1)
             blazes[i, x_extent] = blaze
             blazes_errors[i, x_extent] = blaze_errors
         image.blaze = Table({'id': trace_ids, 'blaze': blazes, 'blaze_error': blazes_errors})

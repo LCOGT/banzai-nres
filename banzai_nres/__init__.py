@@ -1,11 +1,8 @@
-from pkg_resources import get_distribution, DistributionNotFound
+# ----------------------------------------------------------------------------
+from ._astropy_init import *   # noqa
+# ----------------------------------------------------------------------------
+
 import logging
 from banzai.logs import BanzaiLogger
-
-try:
-    __version__ = get_distribution('lco-banzai-nres-e2e').version
-except DistributionNotFound:
-    # package is not installed
-    pass
 
 logging.setLoggerClass(BanzaiLogger)

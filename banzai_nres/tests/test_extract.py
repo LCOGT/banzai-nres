@@ -1,17 +1,9 @@
 import numpy as np
 
-from banzai_nres.utils.trace_utils import get_trace_region
 from banzai_nres.frames import NRESObservationFrame, EchelleSpectralCCDData
 from banzai_nres.extract import WeightedExtract, GetOptimalExtractionWeights
 from banzai import context
 import pytest
-
-
-def test_get_region():
-    traces = np.zeros((4, 4))
-    traces[[2, 3], :] = 1
-    trace_yx_pos = get_trace_region(traces == 1)
-    assert np.allclose(traces[trace_yx_pos], 1)
 
 
 class TestExtract:
@@ -69,7 +61,8 @@ class TestExtract:
         for i in range(1, number_traces + 1):
             assert np.allclose(optimal_image.spectrum[i, i]['flux'], box_image.spectrum[i, i]['flux'], rtol=0.05)
             assert np.allclose(optimal_image.spectrum[i, i]['wavelength'], expected_extracted_wavelength)
-            assert np.allclose(optimal_image.spectrum[i, i]['uncertainty'], box_image.spectrum[i, i]['uncertainty'], rtol=0.05)
+            assert np.allclose(optimal_image.spectrum[i, i]['uncertainty'], box_image.spectrum[i, i]['uncertainty'],
+                               rtol=0.05)
 
     @pytest.mark.integration
     def test_extract_in_readnoise_regime(self):
@@ -87,7 +80,8 @@ class TestExtract:
         optimal_image = stage2.do_stage(image)
         box_image = stage2.do_stage(image2)
         for i in range(1, number_traces + 1):
-            optimal_median_sn = np.median(optimal_image.spectrum[i, i]['flux'] / optimal_image.spectrum[i,i]['uncertainty'])
+            optimal_median_sn = np.median(
+                optimal_image.spectrum[i, i]['flux'] / optimal_image.spectrum[i, i]['uncertainty'])
             box_median_sn = np.median(box_image.spectrum[i, i]['flux'] / box_image.spectrum[i, i]['uncertainty'])
             assert optimal_median_sn > 1.45 * box_median_sn
 
@@ -113,21 +107,21 @@ class TestGetWeights:
 
         stage = GetOptimalExtractionWeights(input_context)
         output_image = stage.do_stage(image)
-        assert np.allclose(output_image.weights[~np.isclose(image.traces, 0)], 1/3)
+        assert np.allclose(output_image.weights[~np.isclose(image.traces, 0)], 1 / 3)
 
     def test_optimal_weights_on_box_profile(self):
-        profile = np.zeros((5,5))
+        profile = np.zeros((5, 5))
         variance = np.ones_like(profile, dtype=float)
         mask = np.zeros_like(profile, dtype=float)
-        profile[1:4,:], variance[1:4,:] = 1., 1.
+        profile[1:4, :], variance[1:4, :] = 1., 1.
         input_context = context.Context({})
 
         stage = GetOptimalExtractionWeights(input_context)
-        weights = stage.weights(profile,variance,mask)
+        weights = stage.weights(profile, variance, mask)
         # check that the weights in the order are 1/width of the order:
-        assert np.allclose(weights[np.isclose(profile,1)],1./3.)
+        assert np.allclose(weights[np.isclose(profile, 1)], 1. / 3.)
         # check that the weights of the area with zero profile are zero:
-        assert np.allclose(weights[np.isclose(profile,0)],0)
+        assert np.allclose(weights[np.isclose(profile, 0)], 0)
 
 
 def two_order_image():
@@ -144,7 +138,8 @@ def two_order_image():
     image = NRESObservationFrame([EchelleSpectralCCDData(data=data, uncertainty=uncertainty,
                                                          wavelengths=wavelengths, traces=traces,
                                                          fibers={'fiber': np.arange(2), 'order': np.arange(2)},
-                                                         blaze={'id': np.arange(2), 'blaze': [np.arange(20), np.arange(20)],
+                                                         blaze={'id': np.arange(2),
+                                                                'blaze': [np.arange(20), np.arange(20)],
                                                                 'blaze_error': [np.arange(20), np.arange(20)]},
                                                          meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
     return image
@@ -158,7 +153,7 @@ def five_hundred_square_image(maxflux, number_traces, trace_width, read_noise=10
     for i in range(1, number_traces + 1):
         traces[40 * i:40 * i + trace_width, :] = i
         for j in range(0, trace_width):
-            data[40 * i + j, :] += maxflux * np.exp((-1.) * (ix[j]-trace_width/2.) ** 2/(trace_width/6.)**2)
+            data[40 * i + j, :] += maxflux * np.exp((-1.) * (ix[j] - trace_width / 2.) ** 2 / (trace_width / 6.) ** 2)
         for j in range(0, trace_width):
             profile[40 * i + j, :] = data[40 * i + j, :] / np.sum(data[40 * i: 40 * i + trace_width, 0])
     np.random.seed(seed=seed)
@@ -170,8 +165,10 @@ def five_hundred_square_image(maxflux, number_traces, trace_width, read_noise=10
                                                          profile=profile, wavelengths=wavelengths,
                                                          meta={'OBJECTS': 'tung&tung&none'},
                                                          blaze={'id': np.arange(number_traces) + 1,
-                                                                'blaze': [np.ones(traces.shape[1]) for i in range(number_traces)],
-                                                                'blaze_error': [np.ones(traces.shape[1]) for i in range(number_traces)]},
+                                                                'blaze': [np.ones(traces.shape[1]) for i in
+                                                                          range(number_traces)],
+                                                                'blaze_error': [np.ones(traces.shape[1]) for i in
+                                                                                range(number_traces)]},
                                                          fibers={'fiber': np.arange(number_traces) + 1,
                                                                  'order': np.arange(number_traces) + 1})], 'foo.fits')
     return image
