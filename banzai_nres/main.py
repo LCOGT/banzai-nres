@@ -111,7 +111,7 @@ def add_bpms_from_archive():
         bpm_image = frame_factory.open(frame, args)
         if bpm_image is not None:
             bpm_image.is_master = True
-            dbs.save_calibration_info(frame['filename'], bpm_image, args.db_address)
+            banzai.dbs.save_calibration_info(frame['filename'], bpm_image, args.db_address)
 
 
 def create_db():
