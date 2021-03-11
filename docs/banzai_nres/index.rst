@@ -10,14 +10,6 @@ Reference/API
 .. automodapi:: banzai_nres
 
 
-
-Running Code Tests Locally
-==========================
-
-To test code style: "tox -e codestyle"
-To test documentation: "tox -e build_docs"
-To test the functionality of the code itself (on python 3.8): "tox -e py38-test-alldeps"
-
 Output Data Products
 ====================
 
@@ -45,8 +37,6 @@ these are:
 
 Before we launch into detail in each, we have to define what a 'matched line' is. Matched lines are any detected
 features that have a corresponding line in the atlas within 0.1 Angstroms.
-
-Now some more detail on each.
 
 'NLINESMC' is the number of matched lines.
 
