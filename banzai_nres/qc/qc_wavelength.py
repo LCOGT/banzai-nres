@@ -19,18 +19,16 @@ class AssessWavelengthSolution(Stage):
     def do_stage(self, image):
         dlambda_match_threshold = 0.1  # Angstroms
         lab_lines = find_nearest(image.features['wavelength'], np.sort(image.line_list))
-        delta_lambda = image.features['wavelength'] - lab_lines
-        sigma_dlambda = np.std(delta_lambda)
+        delta_lambda, sigma_delta_lambda = calculate_delta_lambda(image.features['wavelength'], lab_lines)
 
-        low_scatter_lines = np.isclose(delta_lambda, 0, atol=dlambda_match_threshold)
+        low_scatter_lines = get_matched_lines(delta_lambda, dlambda_match_threshold)
         num_matched_lines = np.count_nonzero(low_scatter_lines)
 
-        matched_sigma_delta_lambda = robust_standard_deviation(delta_lambda[low_scatter_lines])
+        matched_delta_lambda, matched_sigma_delta_lambda = calculate_delta_lambda(image.features['wavelength'][low_scatter_lines], lab_lines[low_scatter_lines])
         feature_centroid_uncertainty = image.features['centroid_err']
 
-        chi2 = np.sum((delta_lambda / feature_centroid_uncertainty) ** 2) / len(delta_lambda)
-        sdlam = np.sum((delta_lambda[low_scatter_lines] / feature_centroid_uncertainty[low_scatter_lines]) ** 2)
-        matched_chi2 = sdlam / len(delta_lambda[low_scatter_lines])
+        chi2 = calculate_chi_squared(delta_lambda, feature_centroid_uncertainty)
+        matched_chi2 = calculate_chi_squared(delta_lambda[low_scatter_lines], feature_centroid_uncertainty[low_scatter_lines])
         # calculating metrics in velocity space (easily understood by users) del lambda/ lambda * c = delta v.
         # then divide delta v by square root of the number of lines, giving the error on the mean of the residuals.
         dlam_overlam = (delta_lambda / lab_lines)[low_scatter_lines]
@@ -60,3 +58,15 @@ class AssessWavelengthSolution(Stage):
                            f'wavecal precision (m/s) = '
                            f'{qc_results["PRECISN"]}', image=image)
         return image
+
+
+    def calculate_delta_lambda(image_lines, lab_lines):
+        delta_lambda = image_lines - lab_lines
+        sigma_delta_lambda = robust_standard_deviation(delta_lambda)
+        return delta_lambda, sigma_delta_lambda
+    
+    def calculate_chi_squared(values, uncertainty):
+        return np.sum((values / uncertainty)**2) / len(values)
+
+    def get_matched_lines(delta_lambda, threshold):
+        return np.isclose(delta_lambda, 0, atol=threshold)

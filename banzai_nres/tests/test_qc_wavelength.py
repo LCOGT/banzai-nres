@@ -1,7 +1,7 @@
 import numpy as np
 import mock
 
-from banzai_nres.qc.qc_wavelength import AssessWavelengthSolution
+from banzai_nres.qc.qc_wavelength import calculate_delta_lambda, calculate_chi_squared
 from banzai_nres.tests.test_wavelength import TestWavelengthCalibrate
 from banzai import context
 
@@ -37,7 +37,7 @@ class TestAssessWavelengthSolution:
 
     def test_quality_metrics(self):
         lab_lines = self.test_image.features['wavelength']
-        Delta_lambda = AssessWavelengthSolution(self.input_context).calculate_delta_lambda(self.test_image, lab_lines)
+        delta_lambda, sigma_delta_lambda = calculate_delta_lambda(image.features['wavelength'], lab_lines)
         result = AssessWavelengthSolution(self.input_context).calculate_1d_metrics(self.test_image, Delta_lambda,
                                                                                    lab_lines)
         sigma_Dlambda, good_sigma_Dlambda, raw_chi_squared, good_chi_squared, num_matched_lines, _ = result
