@@ -1,7 +1,7 @@
 import numpy as np
 from banzai.stages import Stage
 from banzai.utils import qc
-from astropy import constants as const
+from astropy import constants
 from astropy import units
 from xwavecal.utils.wavelength_utils import find_nearest
 from banzai.utils.stats import robust_standard_deviation
@@ -12,10 +12,6 @@ logger = logging.getLogger('banzai')
 
 
 class AssessWavelengthSolution(Stage):
-    """
-    Calculate the dispersion in the wavelength solution
-    @author: mjohnson
-    """
 
     def __init__(self, runtime_context):
         super(AssessWavelengthSolution, self).__init__(runtime_context)
@@ -23,10 +19,26 @@ class AssessWavelengthSolution(Stage):
     def do_stage(self, image):
         dlambda_match_threshold = 0.1  # Angstroms
         lab_lines = find_nearest(image.features['wavelength'], np.sort(image.line_list))
-        dlambda = self.calculate_delta_lambda(image, lab_lines)
-        result = self.calculate_1d_metrics(image, dlambda, lab_lines, dlambda_match_threshold)
-        sigma_dlambda, matched_sigma_dlambda, chi2, matched_chi2, num_matched_lines, velocity_precision = result
-        qc_results = {'SIGLAM': np.round(matched_sigma_dlambda, 4),
+        delta_lambda = image.features['wavelength'] - lab_lines
+        sigma_dlambda = np.std(delta_lambda)
+
+        low_scatter_lines = np.isclose(delta_lambda, 0, atol=dlambda_match_threshold)
+        num_matched_lines = np.count_nonzero(low_scatter_lines)
+
+        matched_sigma_delta_lambda = robust_standard_deviation(delta_lambda[low_scatter_lines])
+        feature_centroid_uncertainty = image.features['centroid_err']
+
+        chi2 = np.sum((delta_lambda / feature_centroid_uncertainty) ** 2) / len(delta_lambda)
+        sdlam = np.sum((delta_lambda[low_scatter_lines] / feature_centroid_uncertainty[low_scatter_lines]) ** 2)
+        matched_chi2 = sdlam / len(delta_lambda[low_scatter_lines])
+        # calculating metrics in velocity space (easily understood by users) del lambda/ lambda * c = delta v.
+        # then divide delta v by square root of the number of lines, giving the error on the mean of the residuals.
+        dlam_overlam = (delta_lambda / lab_lines)[low_scatter_lines]
+        velocity_precision = robust_standard_deviation(dlam_overlam) / np.sqrt(num_matched_lines) * constants.c
+        if num_matched_lines == 0:  # get rid of nans in the matched statistics if we have zero matched lines.
+            matched_sigma_dlambda, matched_chi2, velocity_precision = 0, 0, 0 * units.meter/units.second
+
+        qc_results = {'SIGLAM': np.round(matched_sigma_delta_lambda, 4),
                       'PRECISN': np.round(velocity_precision.to(units.meter/units.second).value, 4),
                       'WAVECHI2': np.round(matched_chi2, 4),
                       'NLINES': len(image.features['wavelength']),
@@ -48,31 +60,3 @@ class AssessWavelengthSolution(Stage):
                            f'wavecal precision (m/s) = '
                            f'{qc_results["PRECISN"]}', image=image)
         return image
-
-    def calculate_delta_lambda(self, image, lab_lines):
-        """
-        :param image:
-        :param lab_lines: list of laboratory wavelengths
-        :return: Dlambda: ndarray. The residual between the measured wavelength and the laboratory wavelength
-
-        """
-        measured_wavelengths = image.features['wavelength']
-        Dlambda = measured_wavelengths - lab_lines
-        return Dlambda
-
-    def calculate_1d_metrics(self, image, delta_lambda, lab_lines, dlambda_match_threshold=0.1):
-        sigma_dlambda = np.std(delta_lambda)
-        low_scatter_lines = np.isclose(delta_lambda, 0, atol=dlambda_match_threshold)
-        num_matched_lines = np.count_nonzero(low_scatter_lines)
-        matched_sigma_dlambda = robust_standard_deviation(delta_lambda[low_scatter_lines])
-        feature_centroid_uncertainty = image.features['centroid_err']
-        chi2 = np.sum((delta_lambda / feature_centroid_uncertainty) ** 2) / len(delta_lambda)
-        sdlam = np.sum((delta_lambda[low_scatter_lines] / feature_centroid_uncertainty[low_scatter_lines]) ** 2)
-        matched_chi2 = sdlam / len(delta_lambda[low_scatter_lines])
-        # calculating metrics in velocity space (easily understood by users) del lambda/ lambda * c = delta v.
-        # then divide delta v by square root of the number of lines, giving the error on the mean of the residuals.
-        dlam_overlam = (delta_lambda / lab_lines)[low_scatter_lines]
-        velocity_precision = robust_standard_deviation(dlam_overlam) / np.sqrt(num_matched_lines) * const.c
-        if num_matched_lines == 0:  # get rid of nans in the matched statistics if we have zero matched lines.
-            matched_sigma_dlambda, matched_chi2, velocity_precision = 0, 0, 0 * units.meter/units.second
-        return sigma_dlambda, matched_sigma_dlambda, chi2, matched_chi2, num_matched_lines, velocity_precision
