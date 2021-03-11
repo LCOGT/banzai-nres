@@ -8,7 +8,6 @@ from banzai_nres.frames import EchelleSpectralCCDData, NRESObservationFrame
 from banzai import context
 from astropy.table import Table
 import sep
-import pytest
 import mock
 
 
@@ -39,7 +38,6 @@ class TestIdentifyFeatures:
         # assert the summed flux is the expected flux for a 2d (unnormalized) gaussian.
         assert np.allclose(fluxes, 2 * np.pi * self.sigma**2, rtol=1E-4)
 
-    @pytest.mark.integration
     def test_do_stage(self):
         blaze_factor = 0.5
         input_context = context.Context({})
@@ -56,7 +54,6 @@ class TestIdentifyFeatures:
         assert np.allclose(image.features['ycentroid'], self.ycoords, atol=0.001)
         assert np.allclose(image.features['id'], 1)
 
-    @pytest.mark.integration
     def test_do_stage_no_blaze(self):
         input_context = context.Context({})
         ccd_data = EchelleSpectralCCDData(data=self.data, uncertainty=self.err, meta={'OBJECTS': 'tung&tung&none'},
@@ -70,7 +67,6 @@ class TestIdentifyFeatures:
         assert np.allclose(image.features['ycentroid'], self.ycoords, atol=0.001)
         assert np.allclose(image.features['id'], 1)
 
-    @pytest.mark.integration
     def test_do_stage_on_empty_features(self):
         input_context = context.Context({})
         image = NRESObservationFrame([EchelleSpectralCCDData(data=self.data, uncertainty=self.err,
