@@ -28,32 +28,29 @@ Master wavelength calibration files
 -----------------------------------
 
 Master wavelength calibrations are stacked arc (double) exposures, wavelength calibrated primarily
-with xwavecal routines. These file names follow the convention `site-camera-date-double-binmode-litfibers.fits.fz`
-E.g. lscnrs01-fa09-20190521-lampflat-bin1x1-110.fits.fz for an observation taken at lsc using the Archon camera on
-2019/05/21 in 1x1 binning mode with fibers 0 and 1 lit.
+with xwavecal routines.
 
 
 Wavelength calibration metrics
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In each master wavelength calibration file, the primary hdu header holds four wavelength metrics. The keys for
+In each master wavelength calibration file, the primary hdu header holds five wavelength metrics. The keys for
 these are:
 
 * 'SIGLAM'
 * 'PRECISN'
-* 'CHISQ'
-* 'LINENUM'
-* 'MLINENUM'
+* 'WAVECHI2'
+* 'NLINES'
+* 'NLINESMC'
 
-Before we launch into detail in each, we have to define what a 'matched line' is. A matched line is a feature on the
-detector, whose calculated wavelength under our wavelength solution model is close (in wavelength) to a known laboratory
-line. Close is currently defined as 0.1 Angstroms.
+Before we launch into detail in each, we have to define what a 'matched line' is. Matched lines are any detected
+features that have a corresponding line in the atlas within 0.1 Angstroms.
 
 Now some more detail on each.
 
-'MLINENUM' is the number of matched lines.
+'NLINESMC' is the number of matched lines.
 
-'LINENUM' is the total number of lines observed on the detector.
+'NLINES' is the total number of lines observed on the detector.
 
 The last three quantities are calculated from a single distribution, after applying various transformations to it.
 This distribution is calculated as follows: for the wavelength
@@ -64,14 +61,14 @@ distribution, which we will refer to as the distribution of residuals. Again, no
 to matched lines only.
 
 
-'SIGLAM' is the standard deviation of the distribution of residuals.
+'SIGLAM' is the standard deviation of the distribution of wavelength residuals.
 
 'PRECISN' is slightly more complicated. It is the error on the estimate of the mean of the distribution of residuals,
 converted
 into velocity via delta lambda / lambda = v/c . I.e. it is how well you know zero-point of the wavelength residuals
 (in velocity space). This naively sets the maximum precision you can attain on the instrument.
 
-'CHISQ' this is the formal chisquared statistic of the distribution of residuals, i.e. each residual divided by the
+'WAVECHI2' this is the formal chisquared statistic of the distribution of wavelength residuals, i.e. each residual divided by the
 standard error (in wavelength) of the line centroid position (in wavelength).
 
 

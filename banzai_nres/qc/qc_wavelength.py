@@ -28,14 +28,14 @@ class AssessWavelengthSolution(Stage):
         sigma_dlambda, matched_sigma_dlambda, chi2, matched_chi2, num_matched_lines, velocity_precision = result
         qc_results = {'SIGLAM': np.round(matched_sigma_dlambda, 4),
                       'PRECISN': np.round(velocity_precision.to(units.meter/units.second).value, 4),
-                      'CHISQ': np.round(matched_chi2, 4),
-                      'LINENUM': len(image.features['wavelength']),
-                      'MLINENUM': num_matched_lines}
+                      'WAVECHI2': np.round(matched_chi2, 4),
+                      'NLINES': len(image.features['wavelength']),
+                      'NLINESMC': num_matched_lines}
         qc_description = {'SIGLAM': 'wavecal residuals Angstroms',
                           'PRECISN': 'm/s wavecal precision',
-                          'CHISQ': 'chisquared goodness of wavecal fit',
-                          'LINENUM': 'Number of lines found on detector',
-                          'MLINENUM': 'Number of matched lines'}
+                          'WAVECHI2': 'chisquared goodness of wavecal fit',
+                          'NLINES': 'Number of lines found on detector',
+                          'NLINESMC': 'Number of matched lines'}
         qc.save_qc_results(self.runtime_context, qc_results, image)
         # saving the results to the image header
         for key in qc_results.keys():
