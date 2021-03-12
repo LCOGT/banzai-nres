@@ -222,7 +222,7 @@ class NRESObservationFrame(LCOObservationFrame):
             # Proper motion is stored in arcseconds/year but we always use it in mas/year
             # Note that the RA proper motion has the cos dec term included both in the header and when we use it
             self.primary_hdu.meta['PM-RA'] = value / 1000.0
-        self.primary_hdu.meta['PM-RA'].comments = 'Right ascension proper motion from Gaia [mas/yr]'
+        self.primary_hdu.meta.comments['PM-RA'] = 'RA proper motion from Gaia [mas/yr]'
 
     @property
     def pm_dec(self):
@@ -240,7 +240,7 @@ class NRESObservationFrame(LCOObservationFrame):
         else:
             # Proper motion is stored in arcseconds/year but we always use it in mas/year
             self.primary_hdu.meta['PM-DEC'] = value / 1000.0
-        self.primary_hdu.meta['PM-DEC'].comments = 'Declination proper motion from Gaia [mas/yr]'
+        self.primary_hdu.meta.comments['PM-DEC'] = 'Dec proper motion from Gaia [mas/yr]'
 
     @property
     def classification(self):
