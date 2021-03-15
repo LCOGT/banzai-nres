@@ -20,7 +20,6 @@ class AssessWavelengthSolution(Stage):
         dlambda_match_threshold = 0.1  # Angstroms
         lab_lines = find_nearest(image.features['wavelength'], np.sort(image.line_list))
         delta_lambda = image.features['wavelength'] - lab_lines
-        sigma_dlambda = np.std(delta_lambda)
 
         low_scatter_lines = np.isclose(delta_lambda, 0, atol=dlambda_match_threshold)
         num_matched_lines = np.count_nonzero(low_scatter_lines)
@@ -28,7 +27,6 @@ class AssessWavelengthSolution(Stage):
         matched_sigma_delta_lambda = robust_standard_deviation(delta_lambda[low_scatter_lines])
         feature_centroid_uncertainty = image.features['centroid_err']
 
-        chi2 = np.sum((delta_lambda / feature_centroid_uncertainty) ** 2) / len(delta_lambda)
         sdlam = np.sum((delta_lambda[low_scatter_lines] / feature_centroid_uncertainty[low_scatter_lines]) ** 2)
         matched_chi2 = sdlam / len(delta_lambda[low_scatter_lines])
         # calculating metrics in velocity space (easily understood by users) del lambda/ lambda * c = delta v.
