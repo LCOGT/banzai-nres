@@ -6,7 +6,7 @@ This chart installs the following applications into a Kubernetes cluster.
 
 ## Installing the Chart
 
-To install the chart with the release name `banzai`:
+To install the chart with the release name `banzai-nres`:
 
 ```
 $ helm install --name banzai-nres banzai-nres/ -f /path/to/values.yaml
@@ -191,5 +191,5 @@ that namespace. This is the namespace you intend to deploy the application.
 Once all required values have been set, create the secret in your namespace by:
 
 ```bash
-kubectl apply -f banzai-secrets.yaml
+kubectl apply -f banzai-nres-secrets.yaml
 ```
