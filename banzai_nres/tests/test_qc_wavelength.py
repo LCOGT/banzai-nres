@@ -34,12 +34,3 @@ class TestAssessWavelengthSolution:
         image = AssessWavelengthSolution(self.input_context).do_stage(self.test_image)
         assert np.isfinite(image.meta['PRECISN'][0])  # check the calculated wavelength precision
         assert len(image.meta['PRECISN'][1]) > 0  # description string is not empty
-
-    def test_quality_metrics(self):
-        lab_lines = self.test_image.features['wavelength']
-        delta_lambda, sigma_delta_lambda = calculate_delta_lambda(image.features['wavelength'], lab_lines)
-        result = AssessWavelengthSolution(self.input_context).calculate_1d_metrics(self.test_image, Delta_lambda,
-                                                                                   lab_lines)
-        sigma_Dlambda, good_sigma_Dlambda, raw_chi_squared, good_chi_squared, num_matched_lines, _ = result
-        assert sigma_Dlambda >= good_sigma_Dlambda
-        assert raw_chi_squared >= good_chi_squared

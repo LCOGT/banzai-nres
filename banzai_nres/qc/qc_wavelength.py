@@ -17,56 +17,51 @@ class AssessWavelengthSolution(Stage):
         super(AssessWavelengthSolution, self).__init__(runtime_context)
 
     def do_stage(self, image):
-        dlambda_match_threshold = 0.1  # Angstroms
         lab_lines = find_nearest(image.features['wavelength'], np.sort(image.line_list))
-        delta_lambda, sigma_delta_lambda = calculate_delta_lambda(image.features['wavelength'], lab_lines)
+        delta_lambda = image_lines - lab_lines
+        sigma_delta_lambda = robust_standard_deviation(delta_lambda)
+        low_scatter_lines = delta_lambda < 3. * sigma_delta_lambda
 
-        low_scatter_lines = get_matched_lines(delta_lambda, dlambda_match_threshold)
+        num_detected_lines = len(image.features['wavelength'])
         num_matched_lines = np.count_nonzero(low_scatter_lines)
 
-        matched_delta_lambda, matched_sigma_delta_lambda = calculate_delta_lambda(image.features['wavelength'][low_scatter_lines], lab_lines[low_scatter_lines])
         feature_centroid_uncertainty = image.features['centroid_err']
 
-        chi2 = calculate_chi_squared(delta_lambda, feature_centroid_uncertainty)
-        matched_chi2 = calculate_chi_squared(delta_lambda[low_scatter_lines], feature_centroid_uncertainty[low_scatter_lines])
-        # calculating metrics in velocity space (easily understood by users) del lambda/ lambda * c = delta v.
-        # then divide delta v by square root of the number of lines, giving the error on the mean of the residuals.
-        dlam_overlam = (delta_lambda / lab_lines)[low_scatter_lines]
-        velocity_precision = robust_standard_deviation(dlam_overlam) / np.sqrt(num_matched_lines) * constants.c
+        reduced_chi2 = get_reduced_chi_squared(delta_lambda[low_scatter_lines], feature_centroid_uncertainty[low_scatter_lines])
+        velocity_precision = get_velocity_precision(delta_lambda[low_scatter_lines], lab_lines[low_scatter_lines], num_matched_lines)
+
         if num_matched_lines == 0:  # get rid of nans in the matched statistics if we have zero matched lines.
             matched_sigma_dlambda, matched_chi2, velocity_precision = 0, 0, 0 * units.meter/units.second
 
+        #elastic search keys don't have to be the same as the fits headers
         qc_results = {'SIGLAM': np.round(matched_sigma_delta_lambda, 4),
-                      'PRECISN': np.round(velocity_precision.to(units.meter/units.second).value, 4),
-                      'WAVECHI2': np.round(matched_chi2, 4),
-                      'NLINES': len(image.features['wavelength']),
-                      'NLINESMC': num_matched_lines}
-        qc_description = {'SIGLAM': 'wavecal residuals Angstroms',
-                          'PRECISN': 'm/s wavecal precision',
-                          'WAVECHI2': 'chisquared goodness of wavecal fit',
-                          'NLINES': 'Number of lines found on detector',
-                          'NLINESMC': 'Number of matched lines'}
+                      'RVPRECSN': np.round(velocity_precision.to(units.meter/units.second).value, 4),
+                      'WAVRCHI2': np.round(reduced_chi2, 4),
+                      'NLINEDET': num_detected_lines,
+                      'NLINEUSE': num_matched_lines}
+        qc_description = {'SIGLAM': 'wavecal residuals [Angstroms]',
+                          'RVPRECSN': 'wavecal precision [m/s]',
+                          'WAVRCHI2': 'reduced chisquared goodness of wavecal fit',
+                          'NLINEDET': 'Number of lines found on detector',
+                          'NLINEUSE': 'Number of matched lines'}
         qc.save_qc_results(self.runtime_context, qc_results, image)
         # saving the results to the image header
         for key in qc_results.keys():
             image.meta[key] = (qc_results[key], qc_description[key])
 
-        # print the most easily understood metric to the log
         logger.info(f'wavecal precision (m/s) = {qc_results["PRECISN"]}', image=image)
         if qc_results['PRECISN'] > 10 or qc_results['PRECISN'] < 3:
             logger.warning(f' Final calibration precision is outside the expected range '
                            f'wavecal precision (m/s) = '
                            f'{qc_results["PRECISN"]}', image=image)
         return image
-
-
-    def calculate_delta_lambda(image_lines, lab_lines):
-        delta_lambda = image_lines - lab_lines
-        sigma_delta_lambda = robust_standard_deviation(delta_lambda)
-        return delta_lambda, sigma_delta_lambda
     
-    def calculate_chi_squared(values, uncertainty):
+    def get_reduced_chi_squared(values, uncertainty):
         return np.sum((values / uncertainty)**2) / len(values)
 
-    def get_matched_lines(delta_lambda, threshold):
-        return np.isclose(delta_lambda, 0, atol=threshold)
+    def get_velocity_precision(delta_lambda, lab_lines, num_matched_lines):
+        # calculating metrics in velocity space (easily understood by users) del lambda/ lambda * c = delta v.
+        # then divide delta v by square root of the number of lines, giving the error on the mean of the residuals.
+        dlam_overlam = delta_lambda / lab_lines
+        velocity_precision = robust_standard_deviation(dlam_overlam) / np.sqrt(num_matched_lines) * constants.c
+        return velocity_precision
