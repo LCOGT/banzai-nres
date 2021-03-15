@@ -251,12 +251,12 @@ class NRESObservationFrame(LCOObservationFrame):
         self._classification = value
         if value is not None:
             self.meta['TEFF'] = value.T_effective
-            self.meta['LOG_G'] = value.log_g
+            self.meta['LOGG'] = value.log_g
             self.meta['FEH'] = value.metallicity
             self.meta['ALPHA'] = value.alpha
         else:
             self.meta['TEFF'] = ''
-            self.meta['LOG_G'] = ''
+            self.meta['LOGG'] = ''
             self.meta['FEH'] = ''
             self.meta['ALPHA'] = ''
 

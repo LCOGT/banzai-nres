@@ -110,7 +110,7 @@ class StellarClassifier(Stage):
             image.meta['CLASSIFY'] = 1, 'Was this spectrum classified'
             dbs.save_classification(self.runtime_context.db_address, image)
         image.meta['TEFF'] = image.classification.T_effective, 'Estimated stellar effective temperature [K]'
-        image.meta['LOG_G'] = image.classification.log_g, 'Estimated stellar surface gravity [cgs]'
+        image.meta['LOGG'] = image.classification.log_g, 'Estimated stellar surface gravity [cgs]'
         image.meta['FEH'] = image.classification.metallicity, 'Estimated stellar metallicity [dex]'
         image.meta['ALPHA'] = image.classification.alpha, 'Estimated stellar alpha abundance [dex]'
 
