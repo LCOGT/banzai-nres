@@ -19,8 +19,10 @@ class AssessWavelengthSolution(Stage):
     def do_stage(self, image):
         lab_lines = find_nearest(image.features['wavelength'], np.sort(image.line_list))
         delta_lambda = image.features['wavelength'] - lab_lines
+
         sigma_delta_lambda = robust_standard_deviation(delta_lambda)
         low_scatter_lines = delta_lambda < 3. * sigma_delta_lambda
+
 
         matched_sigma_delta_lambda = robust_standard_deviation(delta_lambda[low_scatter_lines])
         num_detected_lines = len(image.features['wavelength'])
