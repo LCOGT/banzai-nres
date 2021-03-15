@@ -1,9 +1,14 @@
 import numpy as np
 import mock
 
-from banzai_nres.qc.qc_wavelength import calculate_delta_lambda, calculate_chi_squared
+from banzai_nres.qc.qc_wavelength import get_reduced_chi_squared, get_velocity_precision
+from banzai_nres.qc.qc_wavelength import AssessWavelengthSolution
 from banzai_nres.tests.test_wavelength import TestWavelengthCalibrate
 from banzai import context
+from xwavecal.utils.wavelength_utils import find_nearest
+from banzai.utils.stats import robust_standard_deviation
+from astropy import constants
+from astropy import units
 
 
 class TestAssessWavelengthSolution:
@@ -26,11 +31,28 @@ class TestAssessWavelengthSolution:
         # run the stage
         AssessWavelengthSolution(self.input_context).do_stage(self.test_image)
         assert len(self.test_qc_results) == 5
-        assert np.isfinite(self.test_qc_results['PRECISN'])
+        assert np.isfinite(self.test_qc_results['RVPRECSN'])
 
     @mock.patch('banzai_nres.qc.qc_wavelength.qc.save_qc_results')
     def test_do_stage_savesqc_toheader(self, fake_post):
         # for now we just test that one of the results (the most important one) was saved to the header.
         image = AssessWavelengthSolution(self.input_context).do_stage(self.test_image)
-        assert np.isfinite(image.meta['PRECISN'][0])  # check the calculated wavelength precision
-        assert len(image.meta['PRECISN'][1]) > 0  # description string is not empty
+        assert np.isfinite(image.meta['RVPRECSN'][0])  # check the calculated wavelength precision
+        assert len(image.meta['RVPRECSN'][1]) > 0  # description string is not empty
+
+    def test_velocity_precision(self):
+        #make a mock line list
+        nlines, target_precision = 100, 10 * units.m / units.s
+        lab_lines = np.linspace(4000, 5000, nlines)
+        features = lab_lines + np.random.randn(nlines) * target_precision / constants.c * lab_lines * np.sqrt(nlines)
+        velocity_precision = get_velocity_precision(features.value, lab_lines, nlines)
+        assert np.isclose(velocity_precision, target_precision, rtol=5.e-2)
+
+    def test_line_matching(self):
+        nlines, wavelength_scatter = 100, 0.1
+        mock_lines = np.linspace(4000, 5000, nlines)
+        line_list = np.random.permutation(mock_lines)
+        features = mock_lines + np.random.randn(nlines) * wavelength_scatter
+        lab_lines = find_nearest(features, np.sort(line_list))
+        sigma_delta_lambda = robust_standard_deviation(features - lab_lines)
+        assert np.isclose(sigma_delta_lambda, wavelength_scatter, rtol=5.e-2)
