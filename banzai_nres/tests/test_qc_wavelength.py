@@ -1,7 +1,7 @@
 import numpy as np
 import mock
 
-from banzai_nres.qc.qc_wavelength import get_reduced_chi_squared, get_velocity_precision
+from banzai_nres.qc.qc_wavelength import get_velocity_precision
 from banzai_nres.qc.qc_wavelength import AssessWavelengthSolution
 from banzai_nres.tests.test_wavelength import TestWavelengthCalibrate
 from banzai import context
@@ -41,7 +41,7 @@ class TestAssessWavelengthSolution:
         assert len(image.meta['RVPRECSN'][1]) > 0  # description string is not empty
 
     def test_velocity_precision(self):
-        #make a mock line list
+        # make a mock line list
         nlines, target_precision = 100, 10 * units.m / units.s
         lab_lines = np.linspace(4000, 5000, nlines)
         features = lab_lines + np.random.randn(nlines) * target_precision / constants.c * lab_lines * np.sqrt(nlines)

@@ -30,17 +30,17 @@ In each master wavelength calibration file, the primary hdu header holds five wa
 these are:
 
 * 'SIGLAM'
-* 'PRECISN'
-* 'WAVECHI2'
+* 'RVPRECSN'
+* 'WAVRCHI2'
+* 'NLINEDET'
 * 'NLINES'
-* 'NLINESMC'
 
 Before we launch into detail in each, we have to define what a 'matched line' is. Matched lines are any detected
 features that have a nearby line in the atlas (list of reference lab wavelengths) within 0.1 Angstroms.
 
-'NLINESMC' is the number of matched lines.
+'NLINES' is the number of matched lines.
 
-'NLINES' is the total number of lines observed on the detector.
+'NLINEDET' is the total number of lines observed on the detector.
 
 The last three quantities are calculated from the distribution of the wavelength residuals. This distribution is
 calculated as follows: for each matched line, calculate the difference between its wavelength and that of
@@ -48,12 +48,12 @@ its corresponding line in the atlas.
 
 'SIGLAM' is the standard deviation of the distribution of wavelength residuals.
 
-'PRECISN' is slightly more complicated. It is the error on the estimate of the mean of the distribution of residuals,
+'RVPRECSN' is slightly more complicated. It is the error on the estimate of the mean of the distribution of residuals,
 converted
 into velocity via delta lambda / lambda = v/c . I.e. it is how well you know zero-point of the wavelength residuals
 (in velocity space). This naively sets the maximum precision you can attain on the instrument.
 
-'WAVECHI2' this is the formal chisquared statistic of the distribution of wavelength residuals, i.e. each residual divided by the
+'WAVRCHI2' this is the formal chisquared statistic of the distribution of wavelength residuals, i.e. each residual divided by the
 standard error (in wavelength) of the line centroid position (in wavelength).
 
 
