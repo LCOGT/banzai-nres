@@ -16,7 +16,7 @@ ORDERED_STAGES = [
                   'banzai.uncertainty.PoissonInitializer',
                   'banzai.dark.DarkSubtractor',
                   'banzai_nres.flats.FlatLoader',
-                  #'banzai_nres.background.BackgroundSubtractor',
+                  'banzai_nres.background.BackgroundSubtractor',
                   'banzai_nres.wavelength.ArcLoader',
                   'banzai_nres.extract.GetOptimalExtractionWeights',
                   #'banzai_nres.extract.BoxExtractionWeights',
@@ -82,7 +82,7 @@ CALIBRATION_STACKER_STAGES = {'BIAS': ['banzai.bias.BiasMaker'],
                                          'banzai_nres.flats.FlatLoader',  # load traces
                                          'banzai_nres.wavelength.ArcLoader',  # load wavelengths, ref_ids, etc...
                                          'banzai_nres.wavelength.LineListLoader',  # load reference laboratory wavelengths
-                                         'banzai_nres.background.BackgroundSubtractor',
+                                         #'banzai_nres.background.BackgroundSubtractor',
                                          'banzai_nres.wavelength.IdentifyFeatures',
                                          'banzai_nres.wavelength.WavelengthCalibrate',
                                          'banzai_nres.qc.qc_wavelength.AssessWavelengthSolution'
