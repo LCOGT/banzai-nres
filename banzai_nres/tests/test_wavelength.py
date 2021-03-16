@@ -5,11 +5,9 @@ from banzai_nres.wavelength import IdentifyFeatures, WavelengthCalibrate, get_re
 from banzai_nres.wavelength import ArcLoader, LineListLoader, ArcStacker
 from scipy.ndimage import gaussian_filter
 from banzai_nres.frames import EchelleSpectralCCDData, NRESObservationFrame
-from banzai_nres.qc.qc_wavelength import AssessWavelengthSolution
 from banzai import context
 from astropy.table import Table
 import sep
-import pytest
 import mock
 
 
@@ -40,7 +38,6 @@ class TestIdentifyFeatures:
         # assert the summed flux is the expected flux for a 2d (unnormalized) gaussian.
         assert np.allclose(fluxes, 2 * np.pi * self.sigma**2, rtol=1E-4)
 
-    @pytest.mark.integration
     def test_do_stage(self):
         blaze_factor = 0.5
         input_context = context.Context({})
@@ -57,7 +54,6 @@ class TestIdentifyFeatures:
         assert np.allclose(image.features['ycentroid'], self.ycoords, atol=0.001)
         assert np.allclose(image.features['id'], 1)
 
-    @pytest.mark.integration
     def test_do_stage_no_blaze(self):
         input_context = context.Context({})
         ccd_data = EchelleSpectralCCDData(data=self.data, uncertainty=self.err, meta={'OBJECTS': 'tung&tung&none'},
@@ -71,7 +67,6 @@ class TestIdentifyFeatures:
         assert np.allclose(image.features['ycentroid'], self.ycoords, atol=0.001)
         assert np.allclose(image.features['id'], 1)
 
-    @pytest.mark.integration
     def test_do_stage_on_empty_features(self):
         input_context = context.Context({})
         image = NRESObservationFrame([EchelleSpectralCCDData(data=self.data, uncertainty=self.err,
@@ -225,25 +220,3 @@ class TestArcLoader:
         assert np.allclose(self.stage.apply_master_calibration(test_image, master_cal).wavelengths, [1, 2])
         assert self.stage.calibration_type == 'DOUBLE'
         assert test_image.meta['L1IDARC'][0] == 'foo.fits'
-
-
-class TestQCChecks:
-    test_image = TestWavelengthCalibrate().generate_image()
-    input_context = context.Context({})
-
-    def test_qc_do_stage(self):
-        image = AssessWavelengthSolution(self.input_context).do_stage(self.test_image)
-        assert image is not None
-
-    def test_qc_checks(self):
-        Delta_lambda = AssessWavelengthSolution(self.input_context).calculate_delta_lambda(self.test_image,
-                                                                                           self.test_image.features[
-                                                                                               'wavelength'])
-        sigma_Dlambda, good_sigma_Dlambda, raw_chi_squared, good_chi_squared = AssessWavelengthSolution(
-            self.input_context).calculate_1d_metrics(self.test_image, Delta_lambda)
-        assert sigma_Dlambda >= good_sigma_Dlambda
-        assert raw_chi_squared >= good_chi_squared
-        x_diff_Dlambda, order_diff_Dlambda = AssessWavelengthSolution(self.input_context).calculate_2d_metrics(
-            self.test_image, Delta_lambda)
-        assert np.any(np.isfinite(x_diff_Dlambda))
-        assert np.any(np.isfinite(order_diff_Dlambda))

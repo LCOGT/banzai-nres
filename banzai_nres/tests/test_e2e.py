@@ -291,6 +291,17 @@ class TestMasterArcCreation:
         run_check_if_stacked_calibrations_have_extensions('double', ['WAVELENGTH', 'FEATURES'])
         run_check_if_stacked_calibrations_are_in_db('*a00.fits*', 'DOUBLE')
 
+    def test_quality_of_wavelength_calibration(self, calibration_type='double', primaryextension=1):
+        created_stacked_calibrations = []
+        for day_obs in DAYS_OBS:
+            created_stacked_calibrations += glob(os.path.join(DATA_ROOT, day_obs, 'processed',
+                                                              '*' + calibration_type.lower() + '*.fits*'))
+        for cal in created_stacked_calibrations:
+            hdulist = fits.open(cal)
+            quality_metrics = hdulist[primaryextension].header
+            assert quality_metrics['RVPRECSN'] < 30
+            assert quality_metrics['RVPRECSN'] > 1
+
 
 mock_simbad_response = [{'RA': '07 39 18.1195',
                          'DEC': '+05 13 29.955',
