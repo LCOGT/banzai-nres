@@ -74,7 +74,7 @@ CALIBRATION_STACKER_STAGES = {'BIAS': ['banzai.bias.BiasMaker'],
                               'LAMPFLAT': ['banzai_nres.flats.FlatStacker',
                                            'banzai_nres.flats.FlatLoader',
                                            'banzai_nres.traces.TraceInitializer',
-                                           #'banzai_nres.background.BackgroundSubtractor',
+                                           'banzai_nres.background.BackgroundSubtractor',
                                            'banzai_nres.traces.TraceRefiner',
                                            'banzai_nres.profile.ProfileFitter'
                                            ],
@@ -82,7 +82,7 @@ CALIBRATION_STACKER_STAGES = {'BIAS': ['banzai.bias.BiasMaker'],
                                          'banzai_nres.flats.FlatLoader',  # load traces
                                          'banzai_nres.wavelength.ArcLoader',  # load wavelengths, ref_ids, etc...
                                          'banzai_nres.wavelength.LineListLoader',  # load reference laboratory wavelengths
-                                         #'banzai_nres.background.BackgroundSubtractor',
+                                         'banzai_nres.background.BackgroundSubtractor',
                                          'banzai_nres.wavelength.IdentifyFeatures',
                                          'banzai_nres.wavelength.WavelengthCalibrate',
                                          'banzai_nres.qc.qc_wavelength.AssessWavelengthSolution'
