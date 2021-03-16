@@ -19,7 +19,6 @@ ORDERED_STAGES = [
                   # 'banzai_nres.background.BackgroundSubtractor',
                   'banzai_nres.wavelength.ArcLoader',
                   'banzai_nres.extract.GetOptimalExtractionWeights',
-                  # 'banzai_nres.extract.BoxExtractionWeights',
                   'banzai_nres.extract.WeightedExtract',
                   'banzai_nres.continuum.ContinuumNormalizer',
                   'banzai_nres.classify.StellarClassifier',

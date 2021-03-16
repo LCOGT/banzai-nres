@@ -233,6 +233,9 @@ class IdentifyFeatures(Stage):
 
     def do_stage(self, image):
         # identify emission feature (pixel, order) positions.
+        # we use daofind (which is inside of identify_features) to get every feature with S/N > min_S/N - 1
+        # Then later on in this do_stage, we will rigorously cut every feature with S/N < min_S/N (using
+        # sep.sum_circle to rigorously estimate the Signal contained in the 2d feature.
         features = identify_features(image.data, image.uncertainty, image.mask, nsigma=self.nsigma - 1,
                                      fwhm=self.fwhm, sigma_radius=4)
         features = group_features_by_trace(features, image.traces)
@@ -252,6 +255,7 @@ class IdentifyFeatures(Stage):
         # calculate the error in the centroids provided by identify_features()
         features['centroid_err'] = self.fwhm / np.sqrt(features['flux'])
         # Filter features that pass the signal to noise check.
+        # only keep features with S/N > min S/N.
         valid_features = features['flux']/features['fluxerr'] > self.nsigma
         features = features[valid_features]
         logger.info('{0} valid emission features found on this image'.format(len(features)), image=image)
