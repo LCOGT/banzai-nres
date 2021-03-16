@@ -128,7 +128,6 @@ def calculate_rv(image, orders_to_use, template):
                                masked=True, return_bounds=False, copy=True)
     rv, rv_err = np.ma.mean(rvs_per_order), np.ma.std(rvs_per_order) / np.sqrt(np.ma.count(rvs_per_order))
     # multiply by a factor of 1000 to convert from km/s rv's to m/s.
-    temp=1
     return rv * 1000, rv_err * 1000, coarse_ccfs, ccfs
 
 
