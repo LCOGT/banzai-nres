@@ -48,7 +48,6 @@ def refine_traces(image, weights=None, trace_half_height=5):
         logger.info(f'Fitting a polynomial to order {i}', image=image)
         # order 5 chosen based on visually inspecting the residuals between the trace centers and the model fit centers
         # TODO we need to verify that an order 5 polynomial fit is the best thing to do.
-        # import pdb; pdb.set_trace()
         best_fit = fit_polynomial(y_center, y_center_errors, mask=y_center_errors == 0, x=x_center, order=5)
         y_center = best_fit(x_center)
 
