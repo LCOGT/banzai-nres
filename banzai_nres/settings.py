@@ -74,7 +74,7 @@ CALIBRATION_STACKER_STAGES = {'BIAS': ['banzai.bias.BiasMaker'],
                               'LAMPFLAT': ['banzai_nres.flats.FlatStacker',
                                            'banzai_nres.flats.FlatLoader',
                                            'banzai_nres.traces.TraceInitializer',
-                                           # 'banzai_nres.background.BackgroundSubtractor',
+                                           'banzai_nres.background.BackgroundSubtractor',
                                            'banzai_nres.traces.TraceRefiner',
                                            'banzai_nres.profile.ProfileFitter'
                                            ],
