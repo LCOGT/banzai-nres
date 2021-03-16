@@ -9,7 +9,6 @@ from banzai_nres.utils.wavelength_utils import identify_features, group_features
 from xwavecal.wavelength import find_feature_wavelengths, WavelengthSolution
 from xwavecal.utils.wavelength_utils import find_nearest
 from xwavecal.fibers import IdentifyFibers
-from xwavecal.wavelength import refine_wcs, SolutionRefineOnce
 
 import sep
 import logging
@@ -163,7 +162,8 @@ class WavelengthCalibrate(Stage):
             lit_fibers = np.array([1, 2])
         else:
             lit_fibers = np.array([0, 1])
-        fiber_ids = IdentifyFibers.build_fiber_column(matched_ids, lit_fibers, lit_fibers, image.num_traces, low_fiber_first=False)
+        fiber_ids = IdentifyFibers.build_fiber_column(matched_ids, lit_fibers, lit_fibers, image.num_traces,
+                                                      low_fiber_first=False)
         ref_ids = IdentifyFibers.build_ref_id_column(matched_ids, fiber_ids, anchor_ref_id, low_fiber_first=False)
         # set fibers attribute on image
         image.fibers = Table({'trace_id': trace_ids, 'order': ref_ids, 'fiber': fiber_ids})
@@ -194,7 +194,7 @@ class WavelengthCalibrate(Stage):
                                  min_pixel=0, max_pixel=np.max(features['pixel']),
                                  reference_lines=line_list, m0=m0)
         wavelengths_to_fit = find_nearest(features['wavelength'], np.sort(line_list))
-        residuals = wavelengths_to_fit - features['wavelength']
+        # residuals = wavelengths_to_fit - features['wavelength']
         weights = np.ones_like(wavelengths_to_fit, dtype=float)
         # consider weights = features['flux']/features['flux_err'] or 1/features['flux_err']**2
         # reject lines who have residuals with the line list in excess of 0.1 angstroms (e.g. reject outliers)
@@ -227,9 +227,9 @@ class IdentifyFeatures(Stage):
     # num_features_max.
 
     # Note that the number of lines can affect the quality of the wavelength solution. I.e. num_features_max = 4000
-    # may let too many lines into the wavelength solving procesds that are NOT in the line list and are therefore essentially
-    # spurious features. One should take great care when changing num_features_max to make sure that the wavelength solution
-    # quality is not reduced.
+    # may let too many lines into the wavelength solving procesds that are NOT in the line list and are therefore
+    # essentially spurious features. One should take great care when changing num_features_max to make sure that
+    # the wavelength solution quality is not reduced.
 
     def do_stage(self, image):
         # identify emission feature (pixel, order) positions.

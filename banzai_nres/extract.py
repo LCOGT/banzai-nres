@@ -106,4 +106,3 @@ class GetOptimalExtractionWeights(WeightedExtract):
 class BoxExtractionWeights(GetOptimalExtractionWeights):
     def weights(self, profile_im, var_im, mask):
         return 1.0
-
