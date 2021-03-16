@@ -46,7 +46,7 @@ def refine_traces(image, weights=None, trace_half_height=5):
         # Refit the centroids to reject cosmic rays etc, but only evaluate where the S/N is good
         x_center = np.arange(min(x2d[image.traces == i]), max(x2d[image.traces == i]) + 1, dtype=np.float)
         logger.info(f'Fitting a polynomial to order {i}', image=image)
-        # we chose order 5 based on visually inspecting the residuals between the trace centers and the model fit centers
+        # order 5 chosen based on visually inspecting the residuals between the trace centers and the model fit centers
         # TODO we need to verify that an order 5 polynomial fit is the best thing to do.
         #import pdb; pdb.set_trace()
         best_fit = fit_polynomial(y_center, y_center_errors, mask=y_center_errors == 0, x=x_center, order=5)

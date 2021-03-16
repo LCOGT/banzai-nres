@@ -81,8 +81,8 @@ CALIBRATION_STACKER_STAGES = {'BIAS': ['banzai.bias.BiasMaker'],
                               'DOUBLE': ['banzai_nres.wavelength.ArcStacker',  # stack
                                          'banzai_nres.flats.FlatLoader',  # load traces
                                          'banzai_nres.wavelength.ArcLoader',  # load wavelengths, ref_ids, etc...
-                                         'banzai_nres.wavelength.LineListLoader',  # load reference laboratory wavelengths
-                                         #'banzai_nres.background.BackgroundSubtractor',
+                                         'banzai_nres.wavelength.LineListLoader',  # load reference lab wavelengths
+                                         # 'banzai_nres.background.BackgroundSubtractor',
                                          'banzai_nres.wavelength.IdentifyFeatures',
                                          'banzai_nres.wavelength.WavelengthCalibrate',
                                          'banzai_nres.qc.qc_wavelength.AssessWavelengthSolution'
@@ -144,7 +144,8 @@ REDUCED_DATA_EXTENSION_ORDERING = {'BIAS': ['SPECTRUM', 'BPM', 'ERR'],
 MASTER_CALIBRATION_EXTENSION_ORDER = {'BIAS': ['SPECTRUM', 'BPM', 'ERR'],
                                       'DARK': ['SPECTRUM', 'BPM', 'ERR'],
                                       'LAMPFLAT': ['SPECTRUM', 'BPM', 'ERR', 'TRACES', 'PROFILE', 'BLAZE'],
-                                      'DOUBLE': ['SPECTRUM', 'BPM', 'ERR', 'TRACES', 'PROFILE', 'BLAZE', 'WAVELENGTH', 'FEATURES']}
+                                      'DOUBLE': ['SPECTRUM', 'BPM', 'ERR', 'TRACES', 'PROFILE', 'BLAZE', 'WAVELENGTH',
+                                                 'FEATURES']}
 
 REDUCED_DATA_EXTENSION_TYPES = {'ERR': 'float32',
                                 'BPM': 'uint8',

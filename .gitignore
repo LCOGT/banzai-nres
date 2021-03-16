@@ -115,3 +115,8 @@ requirements.lock
 
 # Locally downloaded helm charts
 helm-chart/banzai-nres/charts/
+
+banzai_nres/version.py
+
+pip-wheel-metadata/
+
