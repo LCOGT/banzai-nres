@@ -27,7 +27,8 @@ class ContinuumNormalizer(Stage):
                     (spectrum['uncertainty'] / spectrum['flux']) ** 2.0 + (
                                 spectrum['blaze_error'] / spectrum['blaze']) ** 2.0)
                 # normalize away any remaining residuals from the blaze division.
-                norm_flux, norm_uncertainty = self.normalize(blaze_corrected_flux, blaze_corrected_uncertainty, spectrum['wavelength'])
+                norm_flux, norm_uncertainty = self.normalize(blaze_corrected_flux, blaze_corrected_uncertainty,
+                                                             spectrum['wavelength'])
 
                 image.spectrum[fiber, order, 'normflux'] = norm_flux
                 image.spectrum[fiber, order, 'normuncertainty'] = norm_uncertainty
@@ -44,7 +45,6 @@ class ContinuumNormalizer(Stage):
         # first guess at the normalized flux is just the input (e.g. the blaze corrected flux)
         norm_flux = 1. * norm_flux_init
         x = np.arange(len(norm_flux))
-        norm_uncertainty = 1. * norm_uncertainty_init
 
         mask = np.zeros_like(norm_flux, dtype=bool)
         # Mask the prohibited wavelength regions. Consider masking before mark_absorption_or_emission_features

@@ -9,7 +9,6 @@ from banzai_nres.utils.wavelength_utils import identify_features, group_features
 from xwavecal.wavelength import find_feature_wavelengths, WavelengthSolution
 from xwavecal.utils.wavelength_utils import find_nearest
 from xwavecal.fibers import IdentifyFibers
-from xwavecal.wavelength import refine_wcs, SolutionRefineOnce
 
 import sep
 import logging
@@ -27,7 +26,8 @@ WAVELENGTH_SOLUTION_MODEL = {0: [0, 1, 2, 3, 4, 5],
                              4: [0]}
 
 # TODO refactor xwavecal so that we dont need this. We only need to set flux_tol to 0.5
-OVERLAP_SETTINGS = {'min_num_overlaps': 5, 'overlap_linear_scale_range': (0.5, 2), 'flux_tol': 0.4, 'max_red_overlap': 1000, 'max_blue_overlap': 2000}
+OVERLAP_SETTINGS = {'min_num_overlaps': 5, 'overlap_linear_scale_range': (0.5, 2), 'flux_tol': 0.4,
+                    'max_red_overlap': 1000, 'max_blue_overlap': 2000}
 
 
 class ArcStacker(CalibrationStacker):
@@ -68,6 +68,7 @@ class LineListLoader(CalibrationUser):
     Loads the reference line list for wavelength calibration
     """
     LINE_LIST_FILENAME = pkg_resources.resource_filename('banzai_nres', 'data/ThAr_atlas_ESO_vacuum.txt')
+
     @property
     def calibration_type(self):
         return 'LINELIST'
@@ -105,10 +106,13 @@ class WavelengthCalibrate(Stage):
             for fiber in list(set(image.features['fiber'])):
                 # TODO note that image.features['fiber'] might always be only 0 and 1 even on 1, 2 lit images...
                 #  should fix this.
-                logger.info('Blind solving for the wavelengths for fiber {0} (arbitrary label).'.format(fiber), image=image)
+                logger.info('Blind solving for the wavelengths for fiber {0} (arbitrary label).'.format(fiber),
+                            image=image)
                 this_fiber = image.features['fiber'] == fiber
-                image.features['wavelength'][this_fiber] = find_feature_wavelengths(dict(image.features[this_fiber]), image.line_list,
-                                                                                    max_pixel=image.data.shape[1] - 1, min_pixel=0,
+                image.features['wavelength'][this_fiber] = find_feature_wavelengths(dict(image.features[this_fiber]),
+                                                                                    image.line_list,
+                                                                                    max_pixel=image.data.shape[1] - 1,
+                                                                                    min_pixel=0,
                                                                                     m0_range=self.M0_RANGE,
                                                                                     overlap_settings=OVERLAP_SETTINGS)
         else:
@@ -125,7 +129,8 @@ class WavelengthCalibrate(Stage):
         image.wavelengths = np.zeros_like(image.data, dtype=float)
         for fiber in list(set(fiber_ids)):
             this_fiber = image.features['fiber'] == fiber
-            if np.all(np.isnan(image.features['wavelength'][this_fiber])) or np.all(np.isclose(image.features['wavelength'][this_fiber], 0)):
+            if np.all(np.isnan(image.features['wavelength'][this_fiber])) or np.all(
+                    np.isclose(image.features['wavelength'][this_fiber], 0)):
                 logger.error('All zeros for image.wavelengths for fiber {0}. Will not refine '
                              'wavelengths and marking image as bad.'.format(fiber), image=image)
                 image.is_bad = True
@@ -145,7 +150,8 @@ class WavelengthCalibrate(Stage):
             x2d, y2d = np.meshgrid(np.arange(image.shape[1]), np.arange(image.shape[0]))
             for trace_id, ref_id in zip(trace_ids[fiber_ids == fiber], ref_ids[fiber_ids == fiber]):
                 this_trace = np.isclose(image.traces, trace_id)
-                image.wavelengths[this_trace] = wavelength_model(x2d[this_trace], ref_id * np.ones_like(x2d[this_trace]))
+                image.wavelengths[this_trace] = wavelength_model(x2d[this_trace],
+                                                                 ref_id * np.ones_like(x2d[this_trace]))
             # Set the true physical order number
             ref_ids[fiber_ids == fiber] += m0
         # previously, we just arbitrarily set alternating traces to fiber 0 and 1. Now we need to actually find
@@ -156,7 +162,8 @@ class WavelengthCalibrate(Stage):
             lit_fibers = np.array([1, 2])
         else:
             lit_fibers = np.array([0, 1])
-        fiber_ids = IdentifyFibers.build_fiber_column(matched_ids, lit_fibers, lit_fibers, image.num_traces, low_fiber_first=False)
+        fiber_ids = IdentifyFibers.build_fiber_column(matched_ids, lit_fibers, lit_fibers, image.num_traces,
+                                                      low_fiber_first=False)
         ref_ids = IdentifyFibers.build_ref_id_column(matched_ids, fiber_ids, anchor_ref_id, low_fiber_first=False)
         # set fibers attribute on image
         image.fibers = Table({'trace_id': trace_ids, 'order': ref_ids, 'fiber': fiber_ids})
@@ -187,7 +194,7 @@ class WavelengthCalibrate(Stage):
                                  min_pixel=0, max_pixel=np.max(features['pixel']),
                                  reference_lines=line_list, m0=m0)
         wavelengths_to_fit = find_nearest(features['wavelength'], np.sort(line_list))
-        residuals = wavelengths_to_fit - features['wavelength']
+        # residuals = wavelengths_to_fit - features['wavelength']
         weights = np.ones_like(wavelengths_to_fit, dtype=float)
         # consider weights = features['flux']/features['flux_err'] or 1/features['flux_err']**2
         # reject lines who have residuals with the line list in excess of 0.1 angstroms (e.g. reject outliers)
@@ -220,29 +227,35 @@ class IdentifyFeatures(Stage):
     # num_features_max.
 
     # Note that the number of lines can affect the quality of the wavelength solution. I.e. num_features_max = 4000
-    # may let too many lines into the wavelength solving procesds that are NOT in the line list and are therefore essentially
-    # spurious features. One should take great care when changing num_features_max to make sure that the wavelength solution
-    # quality is not reduced.
+    # may let too many lines into the wavelength solving procesds that are NOT in the line list and are therefore
+    # essentially spurious features. One should take great care when changing num_features_max to make sure that
+    # the wavelength solution quality is not reduced.
 
     def do_stage(self, image):
         # identify emission feature (pixel, order) positions.
+        # we use daofind (which is inside of identify_features) to get every feature with S/N > min_S/N - 1
+        # Then later on in this do_stage, we will rigorously cut every feature with S/N < min_S/N (using
+        # sep.sum_circle to rigorously estimate the Signal contained in the 2d feature.
         features = identify_features(image.data, image.uncertainty, image.mask, nsigma=self.nsigma - 1,
                                      fwhm=self.fwhm, sigma_radius=4)
         features = group_features_by_trace(features, image.traces)
         features = features[features['id'] != 0]  # throw out features that are outside of any trace.
         # get total flux in each emission feature. For now just sum_circle, although we should use sum_ellipse.
-        features['flux'], features['fluxerr'], _ = sep.sum_circle(image.data, features['xcentroid'], features['ycentroid'],
-                                                                  self.fwhm, gain=1.0, err=image.uncertainty, mask=image.mask)
+        features['flux'], features['fluxerr'], _ = sep.sum_circle(image.data, features['xcentroid'],
+                                                                  features['ycentroid'], self.fwhm, gain=1.0,
+                                                                  err=image.uncertainty, mask=image.mask)
         if image.blaze is not None:
             logger.info('Blaze correcting emission feature fluxes', image=image)
             # blaze correct the emission features fluxes. This speeds up and improves overlap fitting in xwavecal.
             features['corrected_flux'] = features['flux'] / image.blaze['blaze'][features['id'] - 1,
-                                                                                 np.array(features['xcentroid'], dtype=int)]
+                                                                                 np.array(features['xcentroid'],
+                                                                                          dtype=int)]
 
         # cutting which lines to keep:
         # calculate the error in the centroids provided by identify_features()
         features['centroid_err'] = self.fwhm / np.sqrt(features['flux'])
         # Filter features that pass the signal to noise check.
+        # only keep features with S/N > min S/N.
         valid_features = features['flux']/features['fluxerr'] > self.nsigma
         features = features[valid_features]
         logger.info('{0} valid emission features found on this image'.format(len(features)), image=image)

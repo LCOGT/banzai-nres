@@ -6,6 +6,9 @@ from scipy.ndimage import gaussian_filter1d
 from banzai_nres.fitting import fit_polynomial
 
 
+SHOW_CONTINUUM_FITTING_ON_TEST_CASES = False
+
+
 @pytest.mark.parametrize('random_seed', [2131209899, 21311222, 6913219, 75322, 50981234, 9942111])
 class TestContinuumFittingUtilities:
     n_lines = 30
@@ -39,14 +42,12 @@ class TestContinuumFittingUtilities:
         x = np.arange(len(flux))
         best_fit = fit_polynomial(flux, flux_error, x=x, order=3, sigma=3, mask=mask)
         # because the continuum is 100, an atol of 1 represents continuum normalization within 1%
-        if False:
+        if SHOW_CONTINUUM_FITTING_ON_TEST_CASES:
             # debug
             import matplotlib.pyplot as plt
             plt.plot(flux, label='flux')
             plt.plot(np.arange(len(flux))[~mask], flux[~mask], label='unmasked flux')
-            #plt.plot(self.continuum, ls='--', lw=4, alpha=1, label='true continuum')
             plt.plot(best_fit(np.arange(len(flux))), label='best fit continuum model')
-            #plt.plot(best_fit2(np.arange(len(flux))), label='best fit stiff model')
             plt.title(f'max error {np.max(np.abs(best_fit(x) - self.continuum))}')
             plt.legend(loc='best')
             plt.show()
@@ -110,14 +111,13 @@ class TestContinuumFitting:
         # testing the basic single iteration fitting procedure, utilities that are used in ContinuumNormalizer
         flux_error = np.sqrt(np.ones_like(flux) ** 2 + np.sqrt(flux) ** 2)  # read plus poisson
         norm_flux, norm_uncertainty = ContinuumNormalizer.normalize(flux, flux_error, np.arange(len(flux)))
-        if False:
+        if SHOW_CONTINUUM_FITTING_ON_TEST_CASES:
             # debug
             import matplotlib.pyplot as plt
             plt.figure()
             plt.plot(flux, label='flux')
             plt.plot(self.continuum, ls='--', lw=4, alpha=1, label='true continuum')
             plt.plot(flux/norm_flux, label='best fit continuum model')
-            #plt.plot(best_fit2(np.arange(len(flux))), label='best fit stiff model')
             plt.title(f'max error {np.max(np.abs(flux/norm_flux - self.continuum))}')
             plt.legend(loc='best')
 

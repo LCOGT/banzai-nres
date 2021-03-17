@@ -3,7 +3,6 @@ from banzai.data import CCDData
 import numpy as np
 from banzai_nres.background import BackgroundSubtractor
 from banzai import context
-from scipy.stats import anderson
 import pytest
 
 

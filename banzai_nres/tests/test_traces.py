@@ -196,7 +196,7 @@ def test_refine_traces_curved_trace():
     x2d, y2d = np.meshgrid(np.arange(nx, dtype=int), np.arange(ny, dtype=int))
     sigma = 1.5
     y_center = np.array([input_y_center.copy() for i in range(ny)])
-    test_data = 1 / sigma / ( 2.0 * np.pi) * np.exp(-0.5 * (y2d - y_center) ** 2.0 / sigma ** 2)
+    test_data = 1 / sigma / (2.0 * np.pi) * np.exp(-0.5 * (y2d - y_center) ** 2.0 / sigma ** 2)
 
     test_image = NRESObservationFrame([EchelleSpectralCCDData(data=test_data, uncertainty=np.zeros_like(test_data),
                                                               meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')

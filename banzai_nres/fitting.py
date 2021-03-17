@@ -16,7 +16,6 @@ def fit_polynomial(y, error, mask=None, n_iter=5, x=None, sigma=5, order=3, doma
     # start with inverse variance weights
     weights = error_to_fit ** -2.0
     weight_class = HuberT(t=sigma)
-    #weight_class = TukeyBiweight(c=sigma)
     # instantiate fitter
     fitter = fitting.LinearLSQFitter()
     model = polynomial.Legendre1D(order, domain=domain)
@@ -27,4 +26,3 @@ def fit_polynomial(y, error, mask=None, n_iter=5, x=None, sigma=5, order=3, doma
         # (residual/error) > sigma then weight is: 0 if weight_class is TukeyBiweight, and some fall off if HuberT
         weights = weight_class.weights(np.abs(y_to_fit - best_fit(x_to_fit)) / error_to_fit) / error_to_fit ** 2.0
     return best_fit
-

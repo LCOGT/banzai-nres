@@ -3,7 +3,6 @@ import mock
 import numpy as np
 from banzai_nres.frames import NRESObservationFrame, EchelleSpectralCCDData, Spectrum1D
 from types import SimpleNamespace
-from scipy.interpolate import UnivariateSpline
 from astropy.table import Table
 
 

@@ -34,7 +34,8 @@ def main():
         # take the data to only be the optical region
         hdu[0].data = hdu[0].data[optical]
         # continuum normalize the model
-        continuum = interpolate.interp1d(wavelength_hdu[0].data[::50], medfilt(hdu[0].data[::50], 441), bounds_error=False)
+        continuum = interpolate.interp1d(wavelength_hdu[0].data[::50], medfilt(hdu[0].data[::50], 441),
+                                         bounds_error=False)
         hdu[0].data /= continuum(wavelength_hdu[0].data)
         # Save the model file to the output directory
         Teff = hdu[0].header['PHXTEFF']
