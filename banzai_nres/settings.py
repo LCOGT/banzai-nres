@@ -16,6 +16,7 @@ ORDERED_STAGES = [
                   'banzai.uncertainty.PoissonInitializer',
                   'banzai.dark.DarkSubtractor',
                   'banzai_nres.flats.FlatLoader',
+                  # this is turned off because it yields negative fluxes and causes crashing on tracing. See issue #60
                   # 'banzai_nres.background.BackgroundSubtractor',
                   'banzai_nres.wavelength.ArcLoader',
                   'banzai_nres.extract.GetOptimalExtractionWeights',
