@@ -16,7 +16,8 @@ ORDERED_STAGES = [
                   'banzai.uncertainty.PoissonInitializer',
                   'banzai.dark.DarkSubtractor',
                   'banzai_nres.flats.FlatLoader',
-                  'banzai_nres.background.BackgroundSubtractor',
+                  # this is turned off because it yields negative fluxes and causes crashing on tracing. See issue #60
+                  # 'banzai_nres.background.BackgroundSubtractor',
                   'banzai_nres.wavelength.ArcLoader',
                   'banzai_nres.extract.GetOptimalExtractionWeights',
                   'banzai_nres.extract.WeightedExtract',
@@ -157,7 +158,7 @@ REDUCED_DATA_EXTENSION_TYPES = {'ERR': 'float32',
 PHOENIX_MODEL_LOCATION = os.getenv('PHOENIX_FILE_LOCATION', 's3://banzai-nres-phoenix-models-lco-global')
 
 MIN_ORDER_TO_CORRELATE = 75
-MAX_ORDER_TO_CORRELATE = 101
+MAX_ORDER_TO_CORRELATE = 90
 
 GAIA_CLASS = os.getenv('BANZAI_GAIA_CLASS', 'astroquery.gaia.GaiaClass')
 

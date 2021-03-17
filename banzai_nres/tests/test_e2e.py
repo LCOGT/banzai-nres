@@ -299,7 +299,7 @@ class TestMasterArcCreation:
         for cal in created_stacked_calibrations:
             hdulist = fits.open(cal)
             quality_metrics = hdulist[primaryextension].header
-            assert quality_metrics['RVPRECSN'] < 30
+            assert quality_metrics['RVPRECSN'] < 10
             assert quality_metrics['RVPRECSN'] > 1
 
 
