@@ -45,8 +45,9 @@ def cross_correlate(velocities, wavelength, flux, flux_uncertainty, template_wav
     # calculate the variance ahead of time
     variance = flux_uncertainty * flux_uncertainty
 
-    for v in velocities:
-        doppler = 1.0 * units.dimensionless_unscaled / (1.0 * units.dimensionless_unscaled + v / constants.c)
+    c_kms = constants.c.to(units.km/units.s).value
+    for v in velocities.to(units.km/units.s).value:
+        doppler = 1.0 / (1.0 + v / c_kms)
         kernel = np.interp(doppler * wavelength, template_wavelength, template_flux)
         correlation = kernel * flux
         correlation /= variance
