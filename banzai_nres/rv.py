@@ -8,7 +8,7 @@ from astropy.time import Time
 from astropy.coordinates import SkyCoord, EarthLocation, solar_system_ephemeris
 from astropy import units
 from banzai.utils import stats
-from astropy.stats import sigma_clip, median_absolute_deviation
+from astropy.stats import sigma_clip
 import logging
 from banzai_nres.fitting import fit_polynomial
 from banzai_nres import phoenix
@@ -20,9 +20,11 @@ logger = logging.getLogger('banzai')
 # wavelength regions selected by eye by Mirek on 09 16 2020 wherever there are large (H alpha like, i.e. broad wings)
 # absorption features in the G2V pheonix template (banzai nres name phoenix-05700-p4.5-p0.0-p0.0.fits).
 # This shares many regions with the region masks in banzai_nres.continuum.WAVELENGTHS_TO_MASK
-PHOENIX_WAVELENGTHS_TO_MASK = np.array([[9215, 9250], [9000, 9035], [8725, 8760], [8800, 8815], [8855, 8875], [8525, 8560], [8650, 8675],
-                                        [8480, 8510], [6530, 6600], [5880, 5910], [5260, 5280], [5320, 5340], [5160, 5190], [4880, 4840],
-                                        [4380, 4390], [4310, 4360], [4090, 4115], [4040, 4055], [4060, 4070], [3950, 3980], [3925, 3945]])
+PHOENIX_WAVELENGTHS_TO_MASK = np.array([[9215, 9250], [9000, 9035], [8725, 8760], [8800, 8815], [8855, 8875],
+                                        [8525, 8560], [8650, 8675], [8480, 8510], [6530, 6600], [5880, 5910],
+                                        [5260, 5280], [5320, 5340], [5160, 5190], [4880, 4840], [4380, 4390],
+                                        [4310, 4360], [4090, 4115], [4040, 4055], [4060, 4070], [3950, 3980],
+                                        [3925, 3945]])
 
 
 def cross_correlate(velocities, wavelength, flux, flux_uncertainty, template_wavelength, template_flux):
@@ -81,7 +83,8 @@ def cross_correlate_over_traces(image, orders_to_use, velocities, template):
         # Only pass in the given wavelength range +- 1 Angstrom to boost performance
         relevant_region = np.logical_and(template['wavelength'] >= np.min(order['wavelength']) - 1.0,
                                          template['wavelength'] <= np.max(order['wavelength']) + 1.0)
-        template_to_fit = {'wavelength': template['wavelength'][relevant_region], 'flux': template['flux'][relevant_region]}
+        template_to_fit = {'wavelength': template['wavelength'][relevant_region],
+                           'flux': template['flux'][relevant_region]}
         # Set the model S/N = 1000 -- from looking by eye at
         # scatter in the model and from systematic uncertainties in the model
         template_error = 1e-3 * template_to_fit['flux']
@@ -96,8 +99,8 @@ def cross_correlate_over_traces(image, orders_to_use, velocities, template):
         normalized_template = {'wavelength': template_to_fit['wavelength'],
                                'flux': template_to_fit['flux'] / continuum_model(template_to_fit['wavelength'])}
         # NOTE PHOENIX WAVELENGTHS ARE IN VACUUM
-        # NRES WAVELENGTHS ARE TIED TO WHATEVER LINE LIST WAS USED (e.g. nres wavelengths will be in air if ThAr atlas air
-        # was used, and they will be in vacuum if ThAr_atlas_ESO_vacuum.txt was used.).
+        # NRES WAVELENGTHS ARE TIED TO WHATEVER LINE LIST WAS USED (e.g. nres wavelengths will be in air if ThAr atlas
+        # air was used, and they will be in vacuum if ThAr_atlas_ESO_vacuum.txt was used.).
         # AS OF Aug 27 2020, NRES WAVELENGTHS ARE IN VACUUM BECAUSE ThAr_atlas_ESO_vacuum.txt IS THE LINE LIST USED.
         x_cor = cross_correlate(velocities, order['wavelength'], order['normflux'], order['normuncertainty'],
                                 normalized_template['wavelength'], normalized_template['flux'])
@@ -143,7 +146,8 @@ class RVCalculator(Stage):
         # Compute the barycentric RV and observing time corrections
         rv_correction, bjd_tdb = barycentric_correction(image.dateobs, image.exptime,
                                                         image.ra, image.dec,
-                                                        dbs.get_site(image.instrument.site, self.runtime_context.db_address))
+                                                        dbs.get_site(image.instrument.site,
+                                                                     self.runtime_context.db_address))
         # Correct the RV per Wright & Eastman (2014) and save in the header
         rv = rv_measured + rv_correction + rv_measured * rv_correction / constants.c
         image.meta['RV'] = rv.to('m / s').value, 'Radial Velocity in Barycentric Frame [m/s]'
