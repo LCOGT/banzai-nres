@@ -126,7 +126,8 @@ def calculate_rv(image, orders_to_use, template):
     rvs_per_order = sigma_clip(rvs_per_order, sigma=3, cenfunc='median', maxiters=1,
                                stdfunc=stats.robust_standard_deviation, axis=None,
                                masked=True, return_bounds=False, copy=True)
-    rv, rv_err = np.ma.mean(rvs_per_order)  * units.km / units.s, np.ma.std(rvs_per_order) / np.sqrt(np.ma.count(rvs_per_order))  * units.km / units.s
+    rv = np.ma.mean(rvs_per_order) * units.km / units.s,
+    rv_err = np.ma.std(rvs_per_order) / np.sqrt(np.ma.count(rvs_per_order)) * units.km / units.s
     return rv, rv_err, coarse_ccfs, ccfs
 
 

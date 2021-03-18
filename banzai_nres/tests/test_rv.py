@@ -8,6 +8,7 @@ from types import SimpleNamespace
 from astropy import units
 from astropy import constants
 
+
 def gaussian(x, mu, sigma):
     return (2.0 * np.pi) ** -0.5 / sigma * np.exp(-0.5 * (x - mu) ** 2 / sigma ** 2)
 
@@ -24,14 +25,14 @@ def test_cross_correlate():
         sigma = width / 2 / np.sqrt(2.0 * np.log(2.0))
         flux += gaussian(test_wavelengths, central_wavelength, sigma) * 10000.0 * np.random.uniform()
 
-    true_v = 1.0  * units.km / units.s
+    true_v = 1.0 * units.km / units.s
     noisy_flux = np.random.poisson(flux).astype(float)
     noisy_flux += np.random.normal(0.0, read_noise, size=len(flux))
 
     uncertainty = np.sqrt(flux + read_noise**2.0)
 
     # in km/s
-    velocity_steps = np.arange(-5.0, 5.0, 0.1)  * units.km / units.s
+    velocity_steps = np.arange(-5.0, 5.0, 0.1) * units.km / units.s
     ccf = cross_correlate(velocity_steps, test_wavelengths * (1.0 + true_v / constants.c), noisy_flux,
                           uncertainty, test_wavelengths, flux)
     assert np.argmax(ccf) == np.argmin(np.abs(velocity_steps - true_v))
