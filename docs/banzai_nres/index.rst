@@ -10,6 +10,12 @@ Reference/API
 .. automodapi:: banzai_nres
 
 
+Telluric Lines
+==============
+Our telluric spectrum was generated with https://github.com/kgullikson88/Telluric-Fitter .
+We exclude regions of the spectrum with strong telluric absorption.
+
+
 Output Data Products
 ====================
 
