@@ -48,7 +48,8 @@ def cross_correlate(velocities, wavelength, flux, flux_uncertainty, template_wav
     # we evaluate c in km/s here because using astropy units in the loop results in a factor of
     # ~1000 drop in speed, making this function unacceptably slow.
     c_kms = constants.c.to(units.km/units.s).value
-    for v in velocities.to(units.km/units.s).value:
+    v_kms = velocities.to(units.km/units.s).value
+    for v in v_kms:
         doppler = 1.0 / (1.0 + v / c_kms)
         kernel = np.interp(doppler * wavelength, template_wavelength, template_flux)
         correlation = kernel * flux
