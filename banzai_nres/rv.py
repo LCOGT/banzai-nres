@@ -45,6 +45,8 @@ def cross_correlate(velocities, wavelength, flux, flux_uncertainty, template_wav
     # calculate the variance ahead of time
     variance = flux_uncertainty * flux_uncertainty
 
+    # we evaluate c in km/s here because using astropy units in the loop results in a factor of
+    # ~1000 drop in speed, making this function unacceptably slow.
     c_kms = constants.c.to(units.km/units.s).value
     for v in velocities.to(units.km/units.s).value:
         doppler = 1.0 / (1.0 + v / c_kms)
