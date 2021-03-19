@@ -67,6 +67,9 @@ class StellarClassifier(Stage):
         closest_previous_classification = dbs.get_closest_existing_classification(self.runtime_context.db_address,
                                                                                   image.ra, image.dec)
 
+        find_object_in_catalog(image, self.runtime_context.db_address,
+                               self.runtime_context.GAIA_CLASS, self.runtime_context.SIMBAD_CLASS)
+        
         if closest_previous_classification is not None:
             previous_coordinate = SkyCoord(closest_previous_classification.ra, closest_previous_classification.dec,
                                            unit=(units.deg, units.deg))
@@ -79,8 +82,6 @@ class StellarClassifier(Stage):
                 image.meta['CLASSIFY'] = 0, 'Was this spectrum classified'
                 return image
 
-        find_object_in_catalog(image, self.runtime_context.db_address,
-                               self.runtime_context.GAIA_CLASS, self.runtime_context.SIMBAD_CLASS)
 
         orders_to_use = np.arange(self.runtime_context.MIN_ORDER_TO_CORRELATE,
                                   self.runtime_context.MAX_ORDER_TO_CORRELATE, 1)
