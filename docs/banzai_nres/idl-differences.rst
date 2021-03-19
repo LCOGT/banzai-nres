@@ -32,6 +32,8 @@ estimates the stellar classification by cross-correlating with the PHOENIX stell
 Husser et al. 2013, DOI: 10.1051/0004-6361/201219058.
 
 BANZAI-NRES propagates an estimate of the formal uncertainties from all of the data processing stages and
-include these in the output data products.
+include these in the output data products. These are used as weights in the cross correlation function to
+measure the radial velocity. We adopt an optical weighting scheme based on Zackay & Ofek 2017
+DOI: 10.3847/1538-4357/836/2/187.
 
 .. include:: idl-differences-data-products.rst
