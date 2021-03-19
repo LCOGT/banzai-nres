@@ -3,8 +3,8 @@ import numpy as np
 import os
 import argparse
 from scipy import interpolate
-from scipy.signal import medfilt
 from banzai_nres.utils import phoenix_utils
+from banzai_nres.continuum import ContinuumNormalizer
 
 
 def main():
@@ -33,10 +33,12 @@ def main():
         hdu = fits.open(model_file)
         # take the data to only be the optical region
         hdu[0].data = hdu[0].data[optical]
-        # continuum normalize the model
-        continuum = interpolate.interp1d(wavelength_hdu[0].data[::50], medfilt(hdu[0].data[::50], 441),
-                                         bounds_error=False)
-        hdu[0].data /= continuum(wavelength_hdu[0].data)
+        wavelength, flux = wavelength_hdu[0].data, hdu[0].data
+        # thin the spectrum by a factor of 25 so that this finishes in a few seconds instead of a few minutes.
+        continuum = interpolate.interp1d(wavelength[::25],
+                                         ContinuumNormalizer.get_continuum_model(flux[::25], wavelength[::25], 881),
+                                         bounds_error=False)(wavelength)
+        hdu[0].data /= continuum
         # Save the model file to the output directory
         Teff = hdu[0].header['PHXTEFF']
         logg = hdu[0].header['PHXLOGG']

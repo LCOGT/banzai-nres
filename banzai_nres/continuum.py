@@ -35,13 +35,13 @@ class ContinuumNormalizer(Stage):
         return image
 
     def normalize(self, flux, uncertainty, wavelength):
-        continuum_model = self.get_continuum_model(flux, uncertainty, wavelength)
+        continuum_model = self.get_continuum_model(flux, wavelength)
         norm_flux = flux / continuum_model
         norm_uncertainty = uncertainty / continuum_model
         return norm_flux, norm_uncertainty
 
     @staticmethod
-    def get_continuum_model(norm_flux_init, norm_uncertainty_init, wavelength):
+    def get_continuum_model(norm_flux_init, wavelength, window=201):
         # first guess at the normalized flux is just the input (e.g. the blaze corrected flux)
         norm_flux = 1. * norm_flux_init
         x = np.arange(len(norm_flux))
@@ -59,7 +59,7 @@ class ContinuumNormalizer(Stage):
         # TODO NOTE B: x[..] here I think should be wavelength, so that masked portions are automatically skipped over
         #  and not interpreted as a step in the spectrum.
         # smooth the model
-        continuum_model = medfilt(continuum_model, 201)
+        continuum_model = medfilt(continuum_model, window)
         return continuum_model
 
 
