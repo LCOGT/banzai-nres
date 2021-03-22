@@ -86,19 +86,19 @@ The rest of the data necessary for NRES data processing are stored in super-cali
 to process this data and are described below.
 
 Calibration files
------------------
+~~~~~~~~~~~~~~~~~
 Stacked bias and dark frames are available via the LCO archive.
 
 Bad pixels masks
-~~~~~~~~~~~~~~~~
+----------------
 Masks with known bad pixels are available in the archive under OBSTYPE=BPM. Non-zero values are bad pixels.
 
 Line List
-~~~~~~~~~
+---------
 The line list we use for wavelength calibration is available via the LCO archive as OBSTYPE=LINELIST.
 
 Lamp Flats
-~~~~~~~~~~
+----------
 We take a series of quartz lamp flat fields to measure the positions of the traces on the CCD and to
 estimate the profile. These files have the following extensions:
 
@@ -123,7 +123,7 @@ estimate the profile. These files have the following extensions:
   :code:`get_trace_region` method can be used to easily reapply these weights and sum to produce an extraction.
 
 ThAr Arc Lamps
-~~~~~~~~~~~~~~
+--------------
 - 'SPECTRUM': 2-D stacked frame of the ThAr arc lamp spectrum after bias and dark subtraction,
   used for the wavelength solution.
 
