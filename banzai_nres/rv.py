@@ -139,7 +139,8 @@ class RVCalculator(Stage):
                                                         dbs.get_site(image.instrument.site,
                                                                      self.runtime_context.db_address))
         # Correct the RV per Wright & Eastman (2014) and save in the header
-        rv = rv_measured + rv_correction + rv_measured * rv_correction / constants.c
+        rv_correction += rv_measured * rv_correction / constants.c
+        rv = rv_measured + rv_correction
         image.meta['RV'] = rv.to('m / s').value, 'Radial Velocity in Barycentric Frame [m/s]'
         # The following assumes that the uncertainty on the barycentric correction is negligible w.r.t. that
         # on the RV measured from the CCF, which should generally be true
