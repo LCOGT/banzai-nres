@@ -14,15 +14,15 @@ Line List
 NOTE: NRES wavelength calibrations are in *vacuum wavelengths*.
 
 Our line list is the ThAr atlas from ESO which was fetched from
-http://www.eso.org/sci/facilities/paranal/instruments/uves/tools/tharatlas.html on August 27 2020. We converted
+http://www.eso.org/sci/facilities/paranal/instruments/uves/tools/tharatlas.html on 27 August 2020. We converted
 the air wavelengths to vacuum wavelengths using the original 1966
 Edlen Equation (Murphy et al. 2007, DOI 10.1111/j.1365-2966.2007.11768.x).
 
 Wavelength calibration metrics
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Metrics characterizing the quality of the wavelength solution. The metrics are only calculated on features that are
+BANZAI-NRES calculates metrics characterizing the quality of the wavelength solution. The metrics are only calculated on features that are
 matched to lines in the catalog. Features are matched to the closest feature in the line list and then outliers/non-matches
-are rejected using sigma clipping. The header keywords with that contain the metrics and rule-of-thumb values for
+are rejected using sigma clipping. The header keywords that contain the metrics and rule-of-thumb values for
 good wavelength calibrations are included in the list below.
 
 - 'SIGLAM': Standard deviation of measured wavelengths - line list wavelengths in Angstroms.
