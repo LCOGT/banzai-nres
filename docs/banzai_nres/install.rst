@@ -1,7 +1,7 @@
 Install
 =======
 
-BANZAI-NRES is being developed on `github
+BANZAI-NRES is being developed on `GitHub
 <https://github.com/lcogt/banzai-nres>`_.  To install the latest version of BANZAI-NRES::
 
     git clone git://github.com/lcogt/banzai-nres.git
