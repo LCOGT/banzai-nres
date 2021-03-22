@@ -1,4 +1,4 @@
-BANZAI-NRES is designed to process all the data from the Network of Robotic Echelle Spectrographs (NRES) on the 
+BANZAI-NRES is designed to process all the data from the Network of Robotic Echelle Spectrographs (`NRES <https://lco.global/observatory/instruments/nres/>`_) on the 
 Las Cumbres Observatory network. These instruments have a of resolution of 50,000 and cover the optical 380-860 nm range.
 This pipeline provides extracted, wavelength calibrated spectra. If the target is a star, we provide stellar
 classification parameters (e.g. effective temperature and surface gravity) and a radial velocity measurement.
