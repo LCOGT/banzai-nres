@@ -15,7 +15,7 @@ by cross-correlating with the PHOENIX stellar atmosphere models from
 Husser et al. 2013, DOI: 10.1051/0004-6361/201219058. BANZAI-NRES propagates an estimate of the formal
 uncertainties from all of the data processing stages and includes these in the output data products.
 These are used as weights in the cross correlation function to measure the radial velocity.
-We adopt an optimal weighting scheme based on Zackay & Ofek 2017 DOI: 10.3847/1538-4357/836/2/187.
+We adopt an optimal weighting scheme for the cross correlation based on Zackay & Ofek 2017 DOI: 10.3847/1538-4357/836/2/187.
 
 License
 ~~~~~~~

@@ -26,7 +26,7 @@ quality. An example of the pages are below.
 
 Extracted Spectra
 ~~~~~~~~~~~~~~~~~
-The primary data products we provide are the 1-D extracted spectra. These spectra are stored in a FITS
+The primary data products we provide are the 1-D extracted wavelength-calibrated spectra. These spectra are stored in a FITS
 binary table. As such they are in extension 1 of the FITS file. The extension is also named SPECTRUM for
 easy access. The columns included in the table are below:
 
@@ -35,10 +35,10 @@ easy access. The columns included in the table are below:
 
 - 'order': Physical dispersion order of this trace.
 
-- 'fiber': Fiber id. The calibration fiber is always 1. The science fiber is either 0 or 2. The science fiber on the
+- 'fiber': Fiber ID. The calibration fiber is always 1. The science fiber is either 0 or 2. The science fiber on the
   target can be determined from the 'OBJECTS' keyword in the header.
 
--'wavelength': Wavelength per pixel for this trace (Angstroms).
+- 'wavelength': Wavelength per pixel for this trace (Angstroms).
 
 - 'flux': Extracted flux (counts). No blaze correction or continuum normalization is performed on this data.
 
@@ -49,31 +49,31 @@ easy access. The columns included in the table are below:
 
 - 'blaze_error': Formal uncertainties on the blaze due to the Poisson statistics in the quartz lamp flat field.
 
-- 'mask': Bad pixels have values greater than zero
+- 'mask': Bad pixels have values greater than zero.
 
-- 'normflux': Extracted flux after the blaze and continuum have been divided out (counts).
+- 'normflux': Extracted flux after the blaze and continuum have been divided out.
 
 - 'normuncertainty': Formal uncertainty of the extracted pixels after scaling by the blaze and continuum.
 
 
-Results from the cross correlation are stored in the 'CCF' FITS binary table extension. The columns are
+Results from the cross correlation are stored in the 'CCF' FITS binary table extension. The columns are:
 
 - 'order': Physical dispersion order of this trace. This maps to the 'order' column in the 'SPECTRUM' extension.
 
-- 'v': Velocity (km / s)
+- 'v': Velocity (km / s).
 
-- 'xcor': Cross correlation value
+- 'xcor': Cross correlation value.
 
 2-D Spectroscopic Frames
 ~~~~~~~~~~~~~~~~~~~~~~~~
 We provide the full 2-D frames that have not been extracted for users who wish to perform advanced analysis
-on their data. These files are much larger than the extracted spectra so are split into separate FITS files.
+on their data. These files are much larger than the extracted spectra so are provided as a separate FITS file.
 Each extension is named, so we recommend accessing the data by name so that any analysis code is insensitive
 to order changes in the FITS files. A list of extension names and a description of their contents are below.
 
 - 'SPECTRUM': 2-D non-extracted image after subtracting the bias and dark frames
 
-- 'ERR': 2-D frame of the of formal uncertainties including the read noise, Poisson contribution, the bias subtraction,
+- 'ERROR': 2-D frame of the of formal uncertainties including the read noise, Poisson contribution, the bias subtraction,
   and the dark subtraction
 
 - 'BPM': Bad pixel mask (unsigned 8-bit integer). BPM = 1 for known bad pixels. BPM = 2 for saturated pixels.
@@ -105,7 +105,7 @@ estimate the profile. These files have the following extensions:
 - 'SPECTRUM': 2-D stacked frame of the lamp flat spectrum after bias and dark subtraction and
   dividing out the profile and blaze.
 
-- 'ERR': Formal uncertainties on the stacked quartz lamp flats after bias and dark subtraction and
+- 'ERROR': Formal uncertainties on the stacked quartz lamp flats after bias and dark subtraction and
   dividing out the profile and blaze.
 
 - 'TRACES': Integer mask with the extraction regions. Each value corresponds to the 'id' column in the extracted
@@ -116,8 +116,8 @@ estimate the profile. These files have the following extensions:
   values correspond to the regions in the 'TRACE' extension.
 
 - 'PROFILE': Profile estimate from the stacked lamp flat. Non-zero only where the 'TRACE' extension is non-zero.
-  Profile is normalized so the sum in each column of each trace is unity. This extension is compressed but it is compressed using the GZip algorithm instead of RICE compression like most
-  of the rest of the image extensions produced by LCO because GZip is lossless.
+  The profile is normalized so the sum in each column of each trace is unity. This extension is compressed, but it is compressed using the GZip algorithm instead of RICE compression like most
+  of the rest of the image extensions produced by LCO, because GZip is lossless.
 
 - 'WEIGHTS': 2-D frame of optimal extraction weights based on the profile extension described above. Using the
   :code:`get_trace_region` method can be used to easily reapply these weights and sum to produce an extraction.
@@ -127,7 +127,7 @@ ThAr Arc Lamps
 - 'SPECTRUM': 2-D stacked frame of the ThAr arc lamp spectrum after bias and dark subtraction,
   used for the wavelength solution.
 
-- 'ERR': Formal uncertainty on the 2-D stacked frame of the ThAr arc lamp spectrum after bias and dark subtraction.
+- 'ERROR': Formal uncertainty on the 2-D stacked frame of the ThAr arc lamp spectrum after bias and dark subtraction.
 
 - 'FEATURES': FITS binary table with the centroids of the detected features in the stacked ThAr arc lamp frames.
   These features are used to fit the wavelength solution. The pixel positions are stored in the 'x' and 'y' columns.
@@ -136,7 +136,7 @@ ThAr Arc Lamps
   stacked quartz lamp flat.
 
 - 'WAVELENGTH': 2-D frame of the wavelength model evaluated at the center of every pixel in Angstroms.
-  This extension is compressed but it is compressed using the GZip algorithm instead of RICE compression like most
-  of the rest of the image extensions produced by LCO because GZip is lossless.
+  This extension is compressed, but it is compressed using the GZip algorithm instead of RICE compression like most
+  of the rest of the image extensions produced by LCO, because GZip is lossless.
 
 .. include:: idl-differences-data-products.rst
