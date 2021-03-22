@@ -1,6 +1,6 @@
 Development
 ===========
-BANZAI-NRES is developed on Github and follows a standard open-source project contribution workflow. We follow a very
+BANZAI-NRES is developed on GitHub and follows a standard open-source project contribution workflow. We follow a very
 similar workflow to Astropy which is documented `here <https://www.astropy.org/contribute.html>`_.
 
 Testing
@@ -23,5 +23,5 @@ documented there.
 
 Testing on Real Data
 --------------------
-Generally, the simplest way to reduce data with BANZAI-NRES is to follow the example reduction below.
+Generally, the simplest way to reduce data with BANZAI-NRES is to follow the example reduction on the next page.
 For more complex setups that use RabbitMQ and celery, see the helm chart of deployment details.
