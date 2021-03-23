@@ -9,7 +9,7 @@ Stellar Classification
 ~~~~~~~~~~~~~~~~~~~~~~
 
 BANZAI-NRES obtains an initial guess for the stellar effective temperature by querying the Gaia catalog
-(Gaia Collaboration et al. 2016, DOI: 10.1051/0004-6361/201629272; Gaia Collaboration et al. 2021) at the coordinates of the observation.
+(Gaia Collaboration et al. 2016, DOI: 10.1051/0004-6361/201629272; Gaia Collaboration et al. 2021, arXiv:2012.01533) at the coordinates of the observation.
 It then cross-correlates the spectra with models from a Phoenix model grid in steps of :math:`T_{eff}`, :math:`\log g`, [Fe/H], and [alpha/Fe] around the initial guess.
 Accounting for the effects of stellar rotation is a potential future development.
 The set of parameters resulting in the highest cross-correlation peak is taken as the stellar parameter estimate and the corresponding Phoenix model
