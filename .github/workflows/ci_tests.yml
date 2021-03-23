@@ -55,6 +55,10 @@ jobs:
             toxenv: build_docs
 
     steps:
+    - name: Install Pandoc
+      if: ${{ matrix.toxenv }} == 'build_docs'
+      run: |
+        sudo apt-get install -y pandoc
     - name: Checkout code
       uses: actions/checkout@v2
       with:
@@ -65,7 +69,6 @@ jobs:
         python-version: ${{ matrix.python }}
     - name: Install base dependencies
       run: |
-        sudo apt-get install -y pandoc
         python -m pip install --upgrade pip
         python -m pip install tox codecov
     - name: Test with tox
