@@ -81,7 +81,6 @@ class StellarClassifier(Stage):
                 image.meta['CLASSIFY'] = 0, 'Was this spectrum classified'
                 return image
 
-
         orders_to_use = np.arange(self.runtime_context.MIN_ORDER_TO_CORRELATE,
                                   self.runtime_context.MAX_ORDER_TO_CORRELATE, 1)
         phoenix_loader = phoenix.PhoenixModelLoader(self.runtime_context.db_address)
