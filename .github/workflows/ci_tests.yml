@@ -65,6 +65,7 @@ jobs:
         python-version: ${{ matrix.python }}
     - name: Install base dependencies
       run: |
+        sudo apt-get install -y pandoc
         python -m pip install --upgrade pip
         python -m pip install tox codecov
     - name: Test with tox
