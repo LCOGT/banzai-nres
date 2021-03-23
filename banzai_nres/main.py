@@ -99,8 +99,8 @@ def add_bpms_from_archive():
     add_settings_to_context(args, banzai_nres.settings)
     # Query the archive for all bpm files
     url = f'{banzai_nres.settings.ARCHIVE_FRAME_URL}/?OBSTYPE=BPM'
-    archive_auth_token = banzai_nres.settings.ARCHIVE_AUTH_TOKEN
-    response = requests.get(url, headers=archive_auth_token)
+    archive_auth_header = banzai_nres.settings.ARCHIVE_AUTH_HEADER
+    response = requests.get(url, headers=archive_auth_header)
     response.raise_for_status()
     results = response.json()['results']
 
@@ -111,7 +111,7 @@ def add_bpms_from_archive():
         bpm_image = frame_factory.open(frame, args)
         if bpm_image is not None:
             bpm_image.is_master = True
-            dbs.save_calibration_info(frame['filename'], bpm_image, args.db_address)
+            banzai.dbs.save_calibration_info(frame['filename'], bpm_image, args.db_address)
 
 
 def create_db():
