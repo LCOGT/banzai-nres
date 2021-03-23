@@ -34,7 +34,7 @@ Radial Velocity Measurement
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 BANZAI-NRES measures the radial velocity of the target by cross-correlating the best Phoenix template found by the stellar classification step
-with the normalized spectra. This cross-correlation is performed on an order-by-order basis across a subset of the spectrum that
+with the normalized spectra. This cross-correlation is performed on an order-by-order basis over 5140-6276 Angstroms, a range that 
 has high signal-to-noise but is not affected by telluric absorption. It first computes the CCFs on a coarse grid with a wide velocity range,
 selects the highest peak, and then uses a fine velocity grid around that peak. The peak of each fine CCF is taken as the per-order velocity.
 The RV measurement is the sigma-clipped mean of the per-order velocities.
