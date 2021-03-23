@@ -7,7 +7,7 @@ wavelength calibration. These are stored in the `archive <https://archive.lco.gl
 
 BANZAI-NRES stacks these frames and calibrates the wavelength solution using
 `xwavecal <https://github.com/gmbrandt/xwavecal>`_ as described in
-Brandt et al. 2020 DOI: 10.3847/1538-3881/ab929c.
+`Brandt et al. 2020 DOI: 10.3847/1538-3881/ab929c <https://ui.adsabs.harvard.edu/abs/2020AJ....160...25B/abstract>`_.
 
 Line List
 ^^^^^^^^^^^^^
@@ -16,7 +16,7 @@ NOTE: NRES wavelength calibrations are in *vacuum wavelengths*.
 Our line list is the ThAr atlas from ESO which was fetched from
 http://www.eso.org/sci/facilities/paranal/instruments/uves/tools/tharatlas.html on 27 August 2020. We converted
 the air wavelengths to vacuum wavelengths using the original 1966
-Edlen Equation (Murphy et al. 2007, DOI 10.1111/j.1365-2966.2007.11768.x).
+Edlen Equation (`Murphy et al. 2007, DOI 10.1111/j.1365-2966.2007.11768.x <https://ui.adsabs.harvard.edu/abs/2007MNRAS.378..221M/abstract>`_).
 
 Wavelength calibration metrics
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -29,11 +29,11 @@ We plan to reexamine this as we continue to improve the radial velocity precisio
 
 Currently, the commissioning pipeline does not estimate the stellar parameters of a given target. BANZAI-NRES
 estimates the stellar classification by cross-correlating with the PHOENIX stellar atmosphere models from
-Husser et al. 2013, DOI: 10.1051/0004-6361/201219058.
+`Husser et al. 2013, DOI: 10.1051/0004-6361/201219058 <https://ui.adsabs.harvard.edu/abs/2013A%26A...553A...6H/abstract>`_.
 
 BANZAI-NRES propagates an estimate of the formal uncertainties from all of the data processing stages and
 include these in the output data products. These are used as weights in the cross correlation function to
-measure the radial velocity. We adopt an optical weighting scheme based on Zackay & Ofek 2017
-DOI: 10.3847/1538-4357/836/2/187.
+measure the radial velocity. We adopt an optical weighting scheme based on `Zackay & Ofek 2017
+DOI: 10.3847/1538-4357/836/2/187 <https://ui.adsabs.harvard.edu/abs/2017ApJ...836..187Z/abstract>`_.
 
 .. include:: idl-differences-data-products.rst
