@@ -58,7 +58,7 @@ jobs:
     - name: Install Pandoc
       if: ${{ matrix.toxenv == 'build_docs' }}
       run: |
-        apt-get install -y pandoc
+        sudo apt-get install -y pandoc
     - name: Checkout code
       uses: actions/checkout@v2
       with:
