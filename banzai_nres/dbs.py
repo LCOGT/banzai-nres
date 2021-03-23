@@ -104,7 +104,6 @@ class Classification(Base):
     sin_dec = Column(Float)
     cos_dec = Column(Float)
     phoenix_id = Column(Integer, ForeignKey('phoenixmodels.id'))
-    phoenix_model = relationship("PhoenixModel", lazy='subquery')
     Index('idx_radec', "ra", "dec")
     Index('idx_radectrig', "sin_ra", "cos_ra", "sin_dec", "cos_dec")
 
@@ -210,6 +209,12 @@ def get_closest_HR_phoenix_models(db_address, T_effective, luminosity, metallici
     return model
 
 
+def get_phoenix_model_by_id(id, db_address):
+    with banzai.dbs.get_session(db_address=db_address) as db_session:
+        phoenix_model = db_session.query(PhoenixModel).filter(PhoenixModel.id == id).first()
+    return phoenix_model
+
+
 def get_resource_file(db_address, key):
     with banzai.dbs.get_session(db_address=db_address) as db_session:
         resource_file = db_session.query(ResourceFile).filter(ResourceFile.key == key).first()
@@ -231,5 +236,5 @@ def save_classification(db_address, frame):
         equivalence_criteria = {'ra': frame.ra, 'dec': frame.dec}
         record_attributes = {'ra': frame.ra, 'dec': frame.dec, 'sin_ra': np.sin(np.deg2rad(frame.ra)),
                              'cos_ra': np.cos(np.deg2rad(frame.ra)), 'sin_dec': np.sin(np.deg2rad(frame.dec)),
-                             'cos_dec': np.cos(np.deg2rad(frame.dec)), 'phoenix_model': frame.classification}
+                             'cos_dec': np.cos(np.deg2rad(frame.dec)), 'phoenix_id': frame.classification.id}
         add_or_update_record(db_session, Classification, equivalence_criteria, record_attributes)

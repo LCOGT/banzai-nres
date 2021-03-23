@@ -77,7 +77,8 @@ class StellarClassifier(Stage):
             # Short circuit if the object is already classified
             # We choose 2.6 arcseconds as the don't reclassify cutoff radius as it is the fiber size
             if this_coordinate.separation(previous_coordinate) < 2.6 * units.arcsec:
-                image.classification = closest_previous_classification.phoenix_model
+                image.classification = dbs.get_phoenix_model_by_id(closest_previous_classification.phoenix_id,
+                                                                   self.runtime_context.db_address,)
                 image.meta['CLASSIFY'] = 0, 'Was this spectrum classified'
                 return image
 
