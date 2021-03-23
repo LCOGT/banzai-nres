@@ -104,7 +104,7 @@ class Classification(Base):
     sin_dec = Column(Float)
     cos_dec = Column(Float)
     phoenix_id = Column(Integer, ForeignKey('phoenixmodels.id'))
-    phoenix_model = relationship("PhoenixModel", lazy='joined')
+    phoenix_model = relationship("PhoenixModel", lazy='subquery')
     Index('idx_radec', "ra", "dec")
     Index('idx_radectrig', "sin_ra", "cos_ra", "sin_dec", "cos_dec")
 
