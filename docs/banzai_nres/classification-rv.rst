@@ -12,7 +12,12 @@ BANZAI-NRES obtains an initial guess for the stellar effective temperature by qu
 It then cross-correlates the spectra with models from a Phoenix model grid in steps of :math:`T_{eff}`, :math:`\log g`, [Fe/H], and [:math:`\alpha' /Fe].
 Accounting for the effects of stellar rotation is a potential future development.
 The set of parameters resulting in the highest cross-correlation peak is taken as the stellar parameter estimate and the corresponding Phoenix model
-is used as the cross-correlation template to generate the RV measurement. The following header keywords store the stellar classification:
+is used as the cross-correlation template to generate the RV measurement. 
+
+The stellar classifications are stored in the BANZAI-NRES database. If the star is observed again, it will not be re-classified and the same
+template will be used for all RV measurements.
+
+The following header keywords store the stellar classification:
 
 - 'TEFF': Stellar effective temperature (K).
 
@@ -22,10 +27,7 @@ is used as the cross-correlation template to generate the RV measurement. The fo
 
 - 'ALPHA': Stellar alpha abundance [:math:`\alpha'/ Fe] (dex).
 
-- 'CLASSIFICATION': Equals 1 if this spectrum was classified, or 0 if the classification was taken from an existing spectrum of this target.
-
-The stellar classifications are stored in the BANZAI-NRES database. If the star is observed again, it will not be re-classified and the same
-template will be used for all RV measurements.
+- 'CLASSIFY': Equals 1 if this spectrum was classified, or 0 if the classification was taken from an existing spectrum of this target.
 
 Radial Velocity Measurement
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
