@@ -1,6 +1,5 @@
 from banzai.dbs import Base, create_db, add_or_update_record
 from sqlalchemy import Column, String, Integer, Float, Index, ForeignKey
-from sqlalchemy.orm import relationship
 import boto3
 import banzai.dbs
 import os
