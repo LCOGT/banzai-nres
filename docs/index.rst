@@ -1,14 +1,19 @@
-Documentation
-=============
+BANZAI-NRES
+===========
 
-This is the documentation for banzai-nres.
+BANZAI-NRES is the data reduction pipeline for NRES high-resolution spectrographs on the Las Cumbres Observatory
+network.
 
 .. toctree::
-  :maxdepth: 2
+  :maxdepth: 1
+  :titlesonly:
 
-  banzai_nres/index.rst
+  banzai_nres/install.rst
+  banzai_nres/data-products.rst
+  banzai_nres/wavelength-solution.rst
+  banzai_nres/classification-rv.rst
+  banzai_nres/development.rst
+  banzai_nres/ExampleReduction.ipynb
+  banzai_nres/idl-differences.rst
 
-.. note:: The layout of this directory is simply a suggestion.  To follow
-          traditional practice, do *not* edit this page, but instead place
-          all documentation for the package inside ``banzai_nres/``.
-          You can follow this practice or choose your own layout.
+.. include:: README.rst
