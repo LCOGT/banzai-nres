@@ -231,5 +231,5 @@ def save_classification(db_address, frame):
         equivalence_criteria = {'ra': frame.ra, 'dec': frame.dec}
         record_attributes = {'ra': frame.ra, 'dec': frame.dec, 'sin_ra': np.sin(np.deg2rad(frame.ra)),
                              'cos_ra': np.cos(np.deg2rad(frame.ra)), 'sin_dec': np.sin(np.deg2rad(frame.dec)),
-                             'cos_dec': np.cos(np.deg2rad(frame.dec)), 'phoenix_model': frame.classifcation}
+                             'cos_dec': np.cos(np.deg2rad(frame.dec)), 'phoenix_model': frame.classification}
         add_or_update_record(db_session, Classification, equivalence_criteria, record_attributes)
