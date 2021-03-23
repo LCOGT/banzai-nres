@@ -63,13 +63,12 @@ def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
 
 class StellarClassifier(Stage):
     def do_stage(self, image) -> NRESObservationFrame:
+        find_object_in_catalog(image, self.runtime_context.db_address,
+                               self.runtime_context.GAIA_CLASS, self.runtime_context.SIMBAD_CLASS)
 
         closest_previous_classification = dbs.get_closest_existing_classification(self.runtime_context.db_address,
                                                                                   image.ra, image.dec)
 
-        find_object_in_catalog(image, self.runtime_context.db_address,
-                               self.runtime_context.GAIA_CLASS, self.runtime_context.SIMBAD_CLASS)
-        
         if closest_previous_classification is not None:
             previous_coordinate = SkyCoord(closest_previous_classification.ra, closest_previous_classification.dec,
                                            unit=(units.deg, units.deg))
@@ -78,7 +77,7 @@ class StellarClassifier(Stage):
             # Short circuit if the object is already classified
             # We choose 2.6 arcseconds as the don't reclassify cutoff radius as it is the fiber size
             if this_coordinate.separation(previous_coordinate) < 2.6 * units.arcsec:
-                image.classification = closest_previous_classification
+                image.classification = closest_previous_classification.phoenix_model
                 image.meta['CLASSIFY'] = 0, 'Was this spectrum classified'
                 return image
 

@@ -1,5 +1,6 @@
 from banzai.dbs import Base, create_db, add_or_update_record
-from sqlalchemy import Column, String, Integer, Float, Index
+from sqlalchemy import Column, String, Integer, Float, Index, ForeignKey
+from sqlalchemy.orm import relationship
 import boto3
 import banzai.dbs
 import os
@@ -102,10 +103,8 @@ class Classification(Base):
     cos_ra = Column(Float)
     sin_dec = Column(Float)
     cos_dec = Column(Float)
-    T_effective = Column(Float)
-    log_g = Column(Float)
-    metallicity = Column(Float)
-    alpha = Column(Float)
+    phoenix_id = Column(Integer, ForeignKey('phoenixmodels.id'))
+    phoenix_model = relationship("PhoenixModel")
     Index('idx_radec', "ra", "dec")
     Index('idx_radectrig', "sin_ra", "cos_ra", "sin_dec", "cos_dec")
 
@@ -232,8 +231,5 @@ def save_classification(db_address, frame):
         equivalence_criteria = {'ra': frame.ra, 'dec': frame.dec}
         record_attributes = {'ra': frame.ra, 'dec': frame.dec, 'sin_ra': np.sin(np.deg2rad(frame.ra)),
                              'cos_ra': np.cos(np.deg2rad(frame.ra)), 'sin_dec': np.sin(np.deg2rad(frame.dec)),
-                             'cos_dec': np.cos(np.deg2rad(frame.dec)),
-                             'T_effective': frame.classification.T_effective,
-                             'log_g': frame.classification.log_g, 'metallicity': frame.classification.metallicity,
-                             'alpha': frame.classification.alpha}
+                             'cos_dec': np.cos(np.deg2rad(frame.dec)), 'phoenix_model': frame.classifcation}
         add_or_update_record(db_session, Classification, equivalence_criteria, record_attributes)
