@@ -101,3 +101,8 @@ class GetOptimalExtractionWeights(WeightedExtract):
         weights = np.divide(invmask * profile_im / var_im, normalization)
         weights[~np.isfinite(weights)] = 0  # remove infinities and nans from division by zero.
         return weights
+
+
+class BoxExtractionWeights(GetOptimalExtractionWeights):
+    def weights(self, profile_im, var_im, mask):
+        return 1.0

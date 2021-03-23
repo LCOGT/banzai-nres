@@ -3,7 +3,6 @@ import numpy as np
 from banzai_nres.frames import NRESObservationFrame, EchelleSpectralCCDData
 from banzai_nres.extract import WeightedExtract, GetOptimalExtractionWeights
 from banzai import context
-import pytest
 
 
 class TestExtract:
@@ -16,7 +15,6 @@ class TestExtract:
         image = type('image', (), {'weights': 'notnone', 'wavelengths': None})
         assert WeightedExtract(con).do_stage(image) is None
 
-    @pytest.mark.integration
     def test_unit_weights_extraction(self):
         image = two_order_image()
         image.weights = np.ones_like(image.data)
@@ -41,7 +39,6 @@ class TestExtract:
         assert len(spectrum[1, 1]['uncertainty']) == image.traces.shape[1] - 2
         assert np.allclose(spectrum[1, 1]['id'], 2)
 
-    @pytest.mark.integration
     def test_extract_in_poisson_regime(self):
         trace_width, number_traces = 20, 10
         seed = 1408235915
@@ -64,7 +61,6 @@ class TestExtract:
             assert np.allclose(optimal_image.spectrum[i, i]['uncertainty'], box_image.spectrum[i, i]['uncertainty'],
                                rtol=0.05)
 
-    @pytest.mark.integration
     def test_extract_in_readnoise_regime(self):
         trace_width, number_traces = 20, 10
         seed = 192074123
