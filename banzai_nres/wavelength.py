@@ -5,11 +5,10 @@ from banzai.calibrations import CalibrationStacker, CalibrationUser
 from astropy import table
 
 from banzai_nres.frames import NRESObservationFrame
-from banzai.utils.stats import robust_standard_deviation
 from banzai_nres.utils.wavelength_utils import identify_features, group_features_by_trace, get_principle_order_number
 from xwavecal.wavelength import find_feature_wavelengths, WavelengthSolution
 from xwavecal.utils.wavelength_utils import find_nearest
-from xwavecal.wavelength import refine_wcs, SolutionRefineOnce
+from xwavecal.fibers import IdentifyFibers
 
 import sep
 import logging
@@ -26,8 +25,9 @@ WAVELENGTH_SOLUTION_MODEL = {0: [0, 1, 2, 3, 4, 5],
                              3: [0, 1, 2, 3, 4, 5],
                              4: [0]}
 
-# TODO refactor xwavecal so that we dont need to feed in the whole dictionary, we give just flux_tol=0.4
-OVERLAP_SETTINGS = {'min_num_overlaps': 5, 'overlap_linear_scale_range': (0.5, 2), 'flux_tol': 0.4, 'max_red_overlap': 1000, 'max_blue_overlap': 2000}
+# TODO refactor xwavecal so that we dont need this. We only need to set flux_tol to 0.5
+OVERLAP_SETTINGS = {'min_num_overlaps': 5, 'overlap_linear_scale_range': (0.5, 2), 'flux_tol': 0.4,
+                    'max_red_overlap': 1000, 'max_blue_overlap': 2000}
 
 
 class ArcStacker(CalibrationStacker):
@@ -56,6 +56,7 @@ class ArcLoader(CalibrationUser):
             super(ArcLoader, self).on_missing_master_calibration(image)
 
     def apply_master_calibration(self, image: NRESObservationFrame, master_calibration_image):
+        # TODO should not load a master arc calibration if it is older than ~a week.
         image.wavelengths = master_calibration_image.wavelengths
         image.fibers = master_calibration_image.fibers
         image.meta['L1IDARC'] = master_calibration_image.filename, 'ID of ARC/DOUBLE frame'
@@ -98,13 +99,19 @@ class WavelengthCalibrate(Stage):
 
     def do_stage(self, image):
         image.features = self.init_feature_labels(image.num_traces, image.features)
-        if image.wavelengths is None:
+        do_fresh_wavelength_calibration = image.wavelengths is None
+        if do_fresh_wavelength_calibration:
             image.features['wavelength'] = np.zeros_like(image.features['pixel'], dtype=float)  # init wavelengths
             for fiber in list(set(image.features['fiber'])):
-                logger.info('Blind solving for the wavelengths for fiber {0} (arbitrary label).'.format(fiber), image=image)
+                # TODO note that image.features['fiber'] might always be only 0 and 1 even on 1, 2 lit images...
+                #  should fix this.
+                logger.info('Blind solving for the wavelengths for fiber {0} (arbitrary label).'.format(fiber),
+                            image=image)
                 this_fiber = image.features['fiber'] == fiber
-                image.features['wavelength'][this_fiber] = find_feature_wavelengths(dict(image.features[this_fiber]), image.line_list,
-                                                                                    max_pixel=image.data.shape[1] - 1, min_pixel=0,
+                image.features['wavelength'][this_fiber] = find_feature_wavelengths(dict(image.features[this_fiber]),
+                                                                                    image.line_list,
+                                                                                    max_pixel=image.data.shape[1] - 1,
+                                                                                    min_pixel=0,
                                                                                     m0_range=self.M0_RANGE,
                                                                                     overlap_settings=OVERLAP_SETTINGS)
         else:
@@ -117,16 +124,21 @@ class WavelengthCalibrate(Stage):
 
     def refine_wavelengths(self, image):
         ref_ids, fiber_ids, trace_ids = get_ref_ids_and_fibers(image.num_traces)
+        # get_ref_ids_and_fibers this is also called in init_feature_labels, so everything should be consistent
         image.wavelengths = np.zeros_like(image.data, dtype=float)
         for fiber in list(set(fiber_ids)):
             this_fiber = image.features['fiber'] == fiber
-            if np.all(np.isnan(image.features['wavelength'][this_fiber])) or np.all(np.isclose(image.features['wavelength'][this_fiber], 0)):
+            if np.all(np.isnan(image.features['wavelength'][this_fiber])) or np.all(
+                    np.isclose(image.features['wavelength'][this_fiber], 0)):
                 logger.error('All zeros for image.wavelengths for fiber {0}. Will not refine '
                              'wavelengths and marking image as bad.'.format(fiber), image=image)
                 image.is_bad = True
                 continue
 
             m0 = get_principle_order_number(np.arange(*self.M0_RANGE), image.features[this_fiber])
+            if m0 is None:
+                image.is_bad = True
+                continue
             logger.info('Principle order number is {0} for fiber {1}'.format(m0, fiber), image=image)
             wavelength_model = self.fit_wavelength_model(image.features[this_fiber], image.line_list, m0)
 
@@ -137,25 +149,23 @@ class WavelengthCalibrate(Stage):
             x2d, y2d = np.meshgrid(np.arange(image.shape[1]), np.arange(image.shape[0]))
             for trace_id, ref_id in zip(trace_ids[fiber_ids == fiber], ref_ids[fiber_ids == fiber]):
                 this_trace = np.isclose(image.traces, trace_id)
-                image.wavelengths[this_trace] = wavelength_model(x2d[this_trace], ref_id * np.ones_like(x2d[this_trace]))
+                image.wavelengths[this_trace] = wavelength_model(x2d[this_trace],
+                                                                 ref_id * np.ones_like(x2d[this_trace]))
             # Set the true physical order number
             ref_ids[fiber_ids == fiber] += m0
-        # Calculate which fiber is which.
-        # the first ref_id = 80 (arbitrary, but somewhere about the middle of the detector)
-        # is largest fiber number that is lit.
-        # TODO IF WAVELENGTH CALIBRATION ABOVE FAILS, THEN LINE 144 BELOW ERRORS OUT BECAUSE INDEX 80 DOES NOT EXIST
-        largest_fiber_index = fiber_ids[ref_ids.tolist().index(80)]
+        # previously, we just arbitrarily set alternating traces to fiber 0 and 1. Now we need to actually find
+        # which traces belong to fiber 0 and which to fiber 1:
+        anchor_ref_id = 80  # pick order 80, arbitrary choice just in the center of the detector.
+        matched_ids = np.where(ref_ids == anchor_ref_id)[0]
         if image.fiber2_lit:
-            largest_fiber_number = 2
-            smaller_fiber_number = 1
+            lit_fibers = np.array([1, 2])
         else:
-            largest_fiber_number = 1
-            smaller_fiber_number = 0
-
-        true_fibers = [largest_fiber_number if fiber_id == largest_fiber_index else smaller_fiber_number
-                       for fiber_id in fiber_ids]
+            lit_fibers = np.array([0, 1])
+        fiber_ids = IdentifyFibers.build_fiber_column(matched_ids, lit_fibers, lit_fibers, image.num_traces,
+                                                      low_fiber_first=False)
+        ref_ids = IdentifyFibers.build_ref_id_column(matched_ids, fiber_ids, anchor_ref_id, low_fiber_first=False)
         # set fibers attribute on image
-        image.fibers = Table({'order': ref_ids, 'fiber': true_fibers})
+        image.fibers = Table({'trace_id': trace_ids, 'order': ref_ids, 'fiber': fiber_ids})
 
     @staticmethod
     def init_feature_labels(num_traces, features):
@@ -183,9 +193,7 @@ class WavelengthCalibrate(Stage):
                                  min_pixel=0, max_pixel=np.max(features['pixel']),
                                  reference_lines=line_list, m0=m0)
         wavelengths_to_fit = find_nearest(features['wavelength'], np.sort(line_list))
-        residuals = wavelengths_to_fit - features['wavelength']
-        logger.info(f'Robust standard deviation of residuals prior to'
-                    f' refining: {robust_standard_deviation(residuals)} Angstrom')
+        # residuals = wavelengths_to_fit - features['wavelength']
         weights = np.ones_like(wavelengths_to_fit, dtype=float)
         # consider weights = features['flux']/features['flux_err'] or 1/features['flux_err']**2
         # reject lines who have residuals with the line list in excess of 0.1 angstroms (e.g. reject outliers)
@@ -214,28 +222,39 @@ class IdentifyFeatures(Stage):
     nsigma = 10.0  # minimum signal to noise for the feature (sum of flux / sqrt(sum of error^2) within the aperture)
     # where the aperture is a circular aperture of radius fwhm.
     fwhm = 4.0  # fwhm estimate of the elliptical gaussian PSF for each feature
-    num_features_max = 3000  # maximum number of features to keep per fiber. Will keep highest S/N features up to
+    num_features_max = 2500  # maximum number of features to keep per fiber. Will keep highest S/N features up to
     # num_features_max.
+
+    # Note that the number of lines can affect the quality of the wavelength solution. I.e. num_features_max = 4000
+    # may let too many lines into the wavelength solving procesds that are NOT in the line list and are therefore
+    # essentially spurious features. One should take great care when changing num_features_max to make sure that
+    # the wavelength solution quality is not reduced.
 
     def do_stage(self, image):
         # identify emission feature (pixel, order) positions.
+        # we use daofind (which is inside of identify_features) to get every feature with S/N > min_S/N - 1
+        # Then later on in this do_stage, we will rigorously cut every feature with S/N < min_S/N (using
+        # sep.sum_circle to rigorously estimate the Signal contained in the 2d feature.
         features = identify_features(image.data, image.uncertainty, image.mask, nsigma=self.nsigma - 1,
                                      fwhm=self.fwhm, sigma_radius=4)
         features = group_features_by_trace(features, image.traces)
         features = features[features['id'] != 0]  # throw out features that are outside of any trace.
         # get total flux in each emission feature. For now just sum_circle, although we should use sum_ellipse.
-        features['flux'], features['fluxerr'], _ = sep.sum_circle(image.data, features['xcentroid'], features['ycentroid'],
-                                                                  self.fwhm, gain=1.0, err=image.uncertainty, mask=image.mask)
+        features['flux'], features['fluxerr'], _ = sep.sum_circle(image.data, features['xcentroid'],
+                                                                  features['ycentroid'], self.fwhm, gain=1.0,
+                                                                  err=image.uncertainty, mask=image.mask)
         if image.blaze is not None:
             logger.info('Blaze correcting emission feature fluxes', image=image)
             # blaze correct the emission features fluxes. This speeds up and improves overlap fitting in xwavecal.
             features['corrected_flux'] = features['flux'] / image.blaze['blaze'][features['id'] - 1,
-                                                                                 np.array(features['xcentroid'], dtype=int)]
+                                                                                 np.array(features['xcentroid'],
+                                                                                          dtype=int)]
 
         # cutting which lines to keep:
         # calculate the error in the centroids provided by identify_features()
         features['centroid_err'] = self.fwhm / np.sqrt(features['flux'])
         # Filter features that pass the signal to noise check.
+        # only keep features with S/N > min S/N.
         valid_features = features['flux']/features['fluxerr'] > self.nsigma
         features = features[valid_features]
         logger.info('{0} valid emission features found on this image'.format(len(features)), image=image)
@@ -258,6 +277,7 @@ class IdentifyFeatures(Stage):
             features_split[key] = features[np.argsort(features['flux']/features['fluxerr'])[::-1]][:num_features_max]
         features = table.vstack([features_split['a'], features_split['b']])
         return features
+
 
 def get_ref_ids_and_fibers(num_traces):
     # this function always assumes two fibers are lit.

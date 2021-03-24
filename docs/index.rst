@@ -1,20 +1,19 @@
-.. banzai-nres documentation master file, created by
-   sphinx-quickstart on Thu Sep 13 23:10:29 2018.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+BANZAI-NRES
+===========
 
-Welcome to banzai-nres's documentation!
-=======================================
+BANZAI-NRES is the data reduction pipeline for NRES high-resolution spectrographs on the Las Cumbres Observatory
+network.
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+  :maxdepth: 1
+  :titlesonly:
 
+  banzai_nres/install.rst
+  banzai_nres/data-products.rst
+  banzai_nres/wavelength-solution.rst
+  banzai_nres/classification-rv.rst
+  banzai_nres/development.rst
+  banzai_nres/ExampleReduction.ipynb
+  banzai_nres/idl-differences.rst
 
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+.. include:: README.rst

@@ -1,37 +1,81 @@
+#!/usr/bin/env python
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
+
+# NOTE: The configuration for the package, including the name, version, and
+# other information are set in the setup.cfg file.
+
+import os
+import sys
+
+from setuptools import setup
+
+from extension_helpers import get_extensions
+
+
+# First provide helpful messages if contributors try and run legacy commands
+# for tests or docs.
+
+TEST_HELP = """
+Note: running tests is no longer done using 'python setup.py test'. Instead
+you will need to run:
+
+    tox -e test
+
+If you don't already have tox installed, you can install it with:
+
+    pip install tox
+
+If you only want to run part of the test suite, you can also use pytest
+directly with::
+
+    pip install -e .[test]
+    pytest
+
+For more information, see:
+
+  http://docs.astropy.org/en/latest/development/testguide.html#running-tests
 """
-banzai_nres - Data reduction pipeline for the LCO NRES instruments using BANZAI
-Author
-    Curtis McCully (cmccully@lco.global)
-    G. Mirek Brandt (gmbrandt@ucsb.edu)
-    Timothy D. Brandt (tbrandt@physics.ucsb.edu)
 
-License
-    GPL v3.0
-July 2018
+if 'test' in sys.argv:
+    print(TEST_HELP)
+    sys.exit(1)
+
+DOCS_HELP = """
+Note: building the documentation is no longer done using
+'python setup.py build_docs'. Instead you will need to run:
+
+    tox -e build_docs
+
+If you don't already have tox installed, you can install it with:
+
+    pip install tox
+
+You can also build the documentation with Sphinx directly using::
+
+    pip install -e .[docs]
+    cd docs
+    make html
+
+For more information, see:
+
+  http://docs.astropy.org/en/latest/install.html#builddocs
 """
-from setuptools import setup, find_packages
 
+if 'build_docs' in sys.argv or 'build_sphinx' in sys.argv:
+    print(DOCS_HELP)
+    sys.exit(1)
 
-setup(name='lco-banzai-nres-e2e',
-      author=['Curtis McCully', 'G. Mirek Brandt', 'Marshall Johnson', 'Timothy D. Brandt'],
-      author_email=['cmccully@lco.global', 'gmbrandt@ucsb.edu', '@lco.global', 'tbrandt@physics.ucsb.edu'],
-      version='0.5.1',
-      python_requires='>=3.6',
-      packages=find_packages(),
-      use_scm_version=True,
-      package_dir={'banzai_nres': 'banzai_nres'},
-      package_data={'banzai_nres': ['data/thar_MM201006.dat', 'data/g2v_template.fits']},
-      setup_requires=['pytest-runner', 'setuptools_scm'],
-      install_requires=['banzai>=1.0.5', 'numpy>=1.13', 'sphinx', 'coveralls', 'sep<=1.10.0', 'astropy>=4.1',
-                        'statsmodels', 'astropy>=4.1rc1', 'xwavecal>=0.1.12', 'scipy==1.3.2', 'photutils==0.7.2', 'boto3',
-                        'astroquery', 'vine==1.3.0', 'pandas==1.1'],
-      tests_require=['pytest>=3.5'],
-      entry_points={'console_scripts': ['banzai_nres_reduce_night=banzai_nres.main:reduce_night',
-                                        'banzai_nres_run_realtime_pipeline=banzai_nres.main:nres_run_realtime_pipeline',
-                                        'banzai_nres_start_stacking_scheduler=banzai_nres.main:nres_start_stacking_scheduler',
-                                        'banzai_nres_make_master_calibrations=banzai_nres.main:nres_make_master_calibrations',
-                                        'banzai_nres_add_bpm=banzai_nres.main:add_bpm',
-                                        'banzai_nres_populate_bpms=banzai_nres.main:add_bpms_from_archive',
-                                        'banzai_nres_munge_phoenix=banzai_nres.data.munge_phoenix_models:main',
-                                        'banzai_nres_create_db=banzai_nres.main:create_db',
-                                        'banzai_nres_populate_phoenix_models=banzai_nres.main:populate_phoenix_models']})
+VERSION_TEMPLATE = """
+# Note that we need to fall back to the hard-coded version if either
+# setuptools_scm can't be imported or setuptools_scm can't determine the
+# version, so we catch the generic 'Exception'.
+try:
+    from setuptools_scm import get_version
+    version = get_version(root='..', relative_to=__file__)
+except Exception:
+    version = '{version}'
+""".lstrip()
+
+setup(use_scm_version={'write_to': os.path.join('banzai_nres', 'version.py'),
+                       'write_to_template': VERSION_TEMPLATE},
+      ext_modules=get_extensions())
