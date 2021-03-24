@@ -263,10 +263,10 @@ class NRESObservationFrame(LCOObservationFrame):
     def classification(self, value):
         self._classification = value
         if value is not None:
-            self.meta['TEFF'] = value.T_effective
-            self.meta['LOGG'] = value.log_g
-            self.meta['FEH'] = value.metallicity
-            self.meta['ALPHA'] = value.alpha
+            self.meta['TEFF'] = value.T_effective, 'Estimated stellar effective temperature [K]'
+            self.meta['LOGG'] = value.log_g, 'Estimated stellar surface gravity [cgs]'
+            self.meta['FEH'] = value.metallicity, 'Estimated stellar metallicity [dex]'
+            self.meta['ALPHA'] = value.alpha, 'Estimated stellar alpha abundance [dex]'
         else:
             self.meta['TEFF'] = ''
             self.meta['LOGG'] = ''
