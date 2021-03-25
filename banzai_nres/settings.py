@@ -16,11 +16,14 @@ ORDERED_STAGES = [
                   'banzai.uncertainty.PoissonInitializer',
                   'banzai.dark.DarkSubtractor',
                   'banzai_nres.flats.FlatLoader',
-                  'banzai_nres.background.BackgroundSubtractor',
+                  # this is turned off because it yields negative fluxes and causes crashing on tracing. See issue #60
+                  # 'banzai_nres.background.BackgroundSubtractor',
                   'banzai_nres.wavelength.ArcLoader',
                   'banzai_nres.extract.GetOptimalExtractionWeights',
                   'banzai_nres.extract.WeightedExtract',
+                  'banzai_nres.continuum.MaskBlueHookRegion',
                   'banzai_nres.continuum.ContinuumNormalizer',
+                  'banzai_nres.continuum.MaskTellurics',
                   'banzai_nres.classify.StellarClassifier',
                   'banzai_nres.rv.RVCalculator'
                   ]
@@ -124,13 +127,18 @@ PUBLIC_PROPOSALS = ['calibrate', 'standard', '*epo*', 'pointing']
 
 SUPPORTED_FRAME_TYPES = ['BPM', 'BIAS', 'DARK', 'LAMPFLAT', 'TARGET', 'DOUBLE']
 
+# Specify different sources of raw and processed data, if needed.
 ARCHIVE_API_ROOT = os.getenv('API_ROOT')
+ARCHIVE_AUTH_TOKEN = os.getenv('AUTH_TOKEN')
 ARCHIVE_FRAME_URL = f'{ARCHIVE_API_ROOT}frames'
-ARCHIVE_AUTH_TOKEN = {'Authorization': f'Token {os.getenv("AUTH_TOKEN")}'}
-FITS_EXCHANGE = os.getenv('FITS_EXCHANGE', 'archived_fits')
+ARCHIVE_AUTH_HEADER = {'Authorization': f'Token {ARCHIVE_AUTH_TOKEN}'}
 
-RAW_DATA_FRAME_URL = os.getenv('RAW_DATA_FRAME_URL', ARCHIVE_API_ROOT)
-RAW_DATA_AUTH_TOKEN = {'Authorization': f'Token {os.getenv("RAW_DATA_AUTH_TOKEN")}'}
+RAW_DATA_AUTH_TOKEN = os.getenv('RAW_DATA_AUTH_TOKEN', ARCHIVE_AUTH_TOKEN)
+RAW_DATA_API_ROOT = os.getenv('RAW_DATA_API_ROOT', ARCHIVE_API_ROOT)
+RAW_DATA_FRAME_URL = f'{RAW_DATA_API_ROOT}frames'
+RAW_DATA_AUTH_HEADER = {'Authorization': f'Token {RAW_DATA_AUTH_TOKEN}'}
+
+FITS_EXCHANGE = os.getenv('FITS_EXCHANGE', 'archived_fits')
 
 LOSSLESS_EXTENSIONS = ['PROFILE', 'WAVELENGTH']
 
@@ -156,8 +164,8 @@ REDUCED_DATA_EXTENSION_TYPES = {'ERR': 'float32',
 
 PHOENIX_MODEL_LOCATION = os.getenv('PHOENIX_FILE_LOCATION', 's3://banzai-nres-phoenix-models-lco-global')
 
-MIN_ORDER_TO_CORRELATE = 75
-MAX_ORDER_TO_CORRELATE = 101
+MIN_ORDER_TO_CORRELATE = 77
+MAX_ORDER_TO_CORRELATE = 97
 
 GAIA_CLASS = os.getenv('BANZAI_GAIA_CLASS', 'astroquery.gaia.GaiaClass')
 

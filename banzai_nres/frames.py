@@ -46,6 +46,19 @@ class Spectrum1D:
         self._table[column_name][correct_row, good_pixels] = value
 
     @property
+    def mask(self):
+        return self._table['mask']
+
+    @mask.setter
+    def mask(self, value):
+        self._table['mask'] = value
+
+    @property
+    def table(self):
+        # return the full spectrum, unmasked.
+        return self._table
+
+    @property
     def fibers_and_orders(self):
         return self._table['fiber'], self._table['order']
 
@@ -222,6 +235,7 @@ class NRESObservationFrame(LCOObservationFrame):
             # Proper motion is stored in arcseconds/year but we always use it in mas/year
             # Note that the RA proper motion has the cos dec term included both in the header and when we use it
             self.primary_hdu.meta['PM-RA'] = value / 1000.0
+        self.primary_hdu.meta.comments['PM-RA'] = 'RA proper motion from Gaia [mas/yr * cos(Dec)]'
 
     @property
     def pm_dec(self):
@@ -239,6 +253,7 @@ class NRESObservationFrame(LCOObservationFrame):
         else:
             # Proper motion is stored in arcseconds/year but we always use it in mas/year
             self.primary_hdu.meta['PM-DEC'] = value / 1000.0
+        self.primary_hdu.meta.comments['PM-DEC'] = 'Dec proper motion from Gaia [mas/yr]'
 
     @property
     def classification(self):
@@ -248,14 +263,14 @@ class NRESObservationFrame(LCOObservationFrame):
     def classification(self, value):
         self._classification = value
         if value is not None:
-            self.meta['TEFF'] = value.T_effective
-            self.meta['LOG_G'] = value.log_g
-            self.meta['FE_H'] = value.metallicity
-            self.meta['ALPHA'] = value.alpha
+            self.meta['TEFF'] = value.T_effective, 'Estimated stellar effective temperature [K]'
+            self.meta['LOGG'] = value.log_g, 'Estimated stellar surface gravity [cgs]'
+            self.meta['FEH'] = value.metallicity, 'Estimated stellar metallicity [dex]'
+            self.meta['ALPHA'] = value.alpha, 'Estimated stellar alpha abundance [dex]'
         else:
             self.meta['TEFF'] = ''
-            self.meta['LOG_G'] = ''
-            self.meta['FE_H'] = ''
+            self.meta['LOGG'] = ''
+            self.meta['FEH'] = ''
             self.meta['ALPHA'] = ''
 
 

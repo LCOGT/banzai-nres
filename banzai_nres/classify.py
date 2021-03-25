@@ -63,6 +63,8 @@ def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
 
 class StellarClassifier(Stage):
     def do_stage(self, image) -> NRESObservationFrame:
+        find_object_in_catalog(image, self.runtime_context.db_address,
+                               self.runtime_context.GAIA_CLASS, self.runtime_context.SIMBAD_CLASS)
 
         closest_previous_classification = dbs.get_closest_existing_classification(self.runtime_context.db_address,
                                                                                   image.ra, image.dec)
@@ -75,19 +77,18 @@ class StellarClassifier(Stage):
             # Short circuit if the object is already classified
             # We choose 2.6 arcseconds as the don't reclassify cutoff radius as it is the fiber size
             if this_coordinate.separation(previous_coordinate) < 2.6 * units.arcsec:
-                image.classification = closest_previous_classification
+                image.classification = dbs.get_phoenix_model_by_id(closest_previous_classification.phoenix_id,
+                                                                   self.runtime_context.db_address,)
                 image.meta['CLASSIFY'] = 0, 'Was this spectrum classified'
                 return image
-
-        find_object_in_catalog(image, self.runtime_context.db_address,
-                               self.runtime_context.GAIA_CLASS, self.runtime_context.SIMBAD_CLASS)
 
         orders_to_use = np.arange(self.runtime_context.MIN_ORDER_TO_CORRELATE,
                                   self.runtime_context.MAX_ORDER_TO_CORRELATE, 1)
         phoenix_loader = phoenix.PhoenixModelLoader(self.runtime_context.db_address)
         template = phoenix_loader.load(image.classification)
         rv = calculate_rv(image, orders_to_use, template)[0]
-        best_metric = np.sum(cross_correlate_over_traces(image, orders_to_use, [rv], template)['xcor'])
+        best_metric = np.sum(cross_correlate_over_traces(image, orders_to_use, np.array([rv.value]) * rv.unit,
+                                                         template)['xcor'])
         # For each param: Fix the other params, get the N closest models and save the results
         physical_parameters = ['T_effective', 'log_g', 'metallicity', 'alpha']
         n_steps = [11, 5, 5, 5]
@@ -101,7 +102,8 @@ class StellarClassifier(Stage):
                                                             n=n)
             for model_to_test in models_to_test:
                 template = phoenix_loader.load(model_to_test)
-                metric = np.sum(cross_correlate_over_traces(image, orders_to_use, [rv], template)['xcor'])
+                metric = np.sum(cross_correlate_over_traces(image, orders_to_use, np.array([rv.value]) * rv.unit,
+                                                            template)['xcor'])
                 if metric > best_metric:
                     image.classification = model_to_test
                     best_metric = metric
@@ -110,9 +112,5 @@ class StellarClassifier(Stage):
         else:
             image.meta['CLASSIFY'] = 1, 'Was this spectrum classified'
             dbs.save_classification(self.runtime_context.db_address, image)
-        image.meta['TEFF'] = image.classification.T_effective
-        image.meta['LOG_G'] = image.classification.log_g
-        image.meta['FEH'] = image.classification.metallicity
-        image.meta['ALPHA'] = image.classification.alpha
 
         return image

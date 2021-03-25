@@ -1,6 +1,7 @@
 import numpy as np
 from photutils import DAOStarFinder
 from astropy.table import Table
+from banzai.utils.stats import robust_standard_deviation
 
 import logging
 
@@ -49,6 +50,8 @@ def group_features_by_trace(features, traces):
 
 def get_center_wavelengths(features):
     ref_ids = np.sort(np.array(list(set(features['order']))))
+    # we would do better here to actually fit a spline to the feature wavelengths as a function of pixel x
+    # then call spline(4096/2) to get the wavelength at the center pixel.
     wavelengths = [np.average(features['wavelength'][features['order'] == o]) for o in ref_ids]
     return wavelengths
 
@@ -78,10 +81,11 @@ def get_principle_order_number(m0_values, features):
     ref_ids = np.sort(np.array(list(set(features['order']))))
     slopes = []
     for m0 in m0_values:
-        # note: replacing np.ptp with some outlier resistant measure of the scatter would be more robust.
-        slopes.append(np.ptp(center_wavelengths * (m0 + ref_ids)))
+        slopes.append(robust_standard_deviation(center_wavelengths * (m0 + ref_ids)))
 
     if np.count_nonzero(np.isclose(slopes, np.min(slopes), rtol=0.01)) > 1:
-        logger.warning('Two or more viable principle order numbers for this fiber! The m0 recovered from the '
-                       'wavelength solution could be wrong!')
+        logger.error('Two or more viable principle order numbers for this fiber! The m0 recovered from the '
+                     'wavelength solution could be wrong. A wrong m0 would mess up fiber identification as'
+                     ' well. Aborting wavelength solution!')
+        return None
     return m0_values[np.argmin(slopes)]
