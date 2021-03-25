@@ -31,3 +31,9 @@ Testing on Real Data
 --------------------
 Generally, the simplest way to reduce data with BANZAI-NRES is to follow the example reduction on the next page.
 For more complex setups that use RabbitMQ and celery, see the helm chart of deployment details.
+
+Notes on settings
+-----------------
+Data reduction settings can be modified within the settings.py file. TRACE_HALF_HEIGHT sets half the height
+of the trace regions (the regions that encompass each spectral order on the detector). It is set to 5 by default. This
+value covers the orders more than sufficiently. Changing this value may break the tracing part of the pipeline.

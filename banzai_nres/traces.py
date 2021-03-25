@@ -65,17 +65,21 @@ def refine_traces(image, weights=None, trace_half_height=5):
 class TraceInitializer(Stage):
     def do_stage(self, image):
         if image.traces is None:
-            image.traces = self.blind_solve(image)
+            image.traces = self.blind_solve(image, self.runtime_context.TRACE_HALF_HEIGHT)
             refine_traces(image, weights=image.traces > 0,
                           trace_half_height=self.runtime_context.TRACE_HALF_HEIGHT)
         return image
 
     @staticmethod
-    def blind_solve(image):
+    def blind_solve(image, trace_half_height=5):
         # Find the peaks of each of the traces using a max filter
         peaks = ndimage.maximum_filter1d(image.data.data,
                                          size=MIN_TRACE_SEPARATION, axis=0)
         significant = image.data.data / image.uncertainty > SIGNAL_TO_NOISE_TRACING_CUTOFF
+        # ignore pixels in the bpm
+        mask = getattr(image, 'mask', np.zeros_like(significant))
+        significant = np.logical_and(significant, mask == 0)
+        # identify the traces.
         binary_map = np.logical_and(peaks == image.data.data, significant)
 
         # Dilate the label map to make sure all traces are connected
@@ -89,8 +93,14 @@ class TraceInitializer(Stage):
         x_mins = ndimage.labeled_comprehension(X, labeled_image, labeled_indices, np.min, float, None)
         # Pick out only features that are wide like traces and span the center
         # Note labeled_indices is one indexed
-        true_labels = labeled_indices[np.logical_and(x_maxes > (image.shape[1] // 2 + MIN_TRACE_HALF_WIDTH),
-                                                     x_mins < (image.shape[1] // 2 - MIN_TRACE_HALF_WIDTH))]
+        trace_xextents_ok = np.logical_and(x_maxes > (image.shape[1] // 2 + MIN_TRACE_HALF_WIDTH),
+                                           x_mins < (image.shape[1] // 2 - MIN_TRACE_HALF_WIDTH))
+        # and remove any traces whose centers are close (by a half width) to the top or bottom of the detector
+        y_maxes = ndimage.labeled_comprehension(Y, labeled_image, labeled_indices, np.max, float, None)
+        y_mins = ndimage.labeled_comprehension(Y, labeled_image, labeled_indices, np.min, float, None)
+        trace_centers_not_near_edge = np.logical_and(y_maxes < (image.shape[0] - trace_half_height),
+                                                     y_mins > trace_half_height)
+        true_labels = labeled_indices[np.logical_and(trace_xextents_ok, trace_centers_not_near_edge)]
         # Reset the values that are not actually in traces
         labeled_image[np.logical_not(np.isin(labeled_image, true_labels))] = 0
 

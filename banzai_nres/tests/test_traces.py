@@ -9,6 +9,17 @@ def gaussian(y, mu, sigma, a=1.0):
     return a * np.exp(-(y - mu)**2 / 2.0 / sigma**2)
 
 
+def make_realistic_trace_image(nx=401, ny=403, y0_centers=[100, 200, 300]):
+    test_data = np.zeros((ny, nx))
+    x2d, y2d = np.meshgrid(np.arange(nx), np.arange(ny))
+
+    trace_centers = []
+    for i in range(len(y0_centers)):
+        trace_centers.append(5e-4 * (np.arange(nx) - nx / 2.) ** 2 + y0_centers[i])
+        test_data += gaussian(y2d, trace_centers[i], 3)
+    return trace_centers, test_data, x2d, y2d
+
+
 def test_centroid_int_weights():
     nx, ny = 103, 107
     fake_data = np.zeros((ny, nx))
@@ -32,25 +43,41 @@ def test_centroid_flux_weights():
 
 
 def test_blind_solve():
-    nx, ny = 401, 403
-    test_data = np.zeros((ny, nx))
-    x2d, y2d = np.meshgrid(np.arange(nx), np.arange(ny))
-
-    trace_centers = []
-    y_0s = [100, 200, 300]
-    for i in range(3):
-        trace_centers.append(5e-4 * (np.arange(nx) - nx / 2.) ** 2 + y_0s[i])
-        test_data += gaussian(y2d, trace_centers[i], 3)
-
-    test_image = NRESObservationFrame([EchelleSpectralCCDData(data=test_data, uncertainty=1e-5*np.ones((ny, nx)),
+    trace_centers, test_data, x2d, y2d = make_realistic_trace_image()
+    test_image = NRESObservationFrame([EchelleSpectralCCDData(data=test_data, uncertainty=1e-5*np.ones_like(test_data),
                                        meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
     input_context = context.Context({'TRACE_HALF_HEIGHT': 5})
     stage = TraceInitializer(input_context)
     output_image = stage.do_stage(test_image)
-
     for trace_center in trace_centers:
         # Make sure that the center +- 4 pixels is in the trace image
         assert all(output_image.traces[np.abs(y2d - trace_center) <= 4])
+
+
+def test_blind_solve_with_bpm():
+    trace_centers, test_data, x2d, y2d = make_realistic_trace_image(y0_centers=[100, 200, 300])
+    bpm_mask = np.ones_like(test_data, dtype=bool)
+    bpm_mask[150:250, :] = 0  # set the pixels around the center trace as good. Leave the other pixels masked.
+    test_image = NRESObservationFrame([EchelleSpectralCCDData(data=test_data, uncertainty=1e-5*np.ones_like(test_data),
+                                       meta={'OBJECTS': 'tung&tung&none'}, mask=bpm_mask)], 'foo.fits')
+    input_context = context.Context({'TRACE_HALF_HEIGHT': 5})
+    stage = TraceInitializer(input_context)
+    output_image = stage.do_stage(test_image)
+    assert np.count_nonzero(list(set(output_image.traces[:, 200]))) == 1
+    # test that the only valid trace is centered correctly
+    assert all(output_image.traces[np.abs(y2d - trace_centers[1]) <= 4])
+
+
+def test_blind_solve_with_edge_clipping_traces():
+    trace_centers, test_data, x2d, y2d = make_realistic_trace_image(nx=401, ny=403, y0_centers=[1, 200, 400])
+    test_image = NRESObservationFrame([EchelleSpectralCCDData(data=test_data, uncertainty=1e-5*np.ones_like(test_data),
+                                       meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
+    input_context = context.Context({'TRACE_HALF_HEIGHT': 5})
+    stage = TraceInitializer(input_context)
+    output_image = stage.do_stage(test_image)
+    assert np.count_nonzero(list(set(output_image.traces[:, 200]))) == 1
+    # test that the only valid trace is centered correctly
+    assert all(output_image.traces[np.abs(y2d - trace_centers[1]) <= 4])
 
 
 def test_refining_on_noisy_data():
