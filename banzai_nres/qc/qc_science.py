@@ -1,5 +1,6 @@
 import numpy as np
 from banzai.stages import Stage
+from banzai.utils import qc
 import logging
 
 logger = logging.getLogger('banzai')
@@ -20,8 +21,8 @@ class CalculateScienceFrameMetrics(Stage):
 
         return image
 
-    def get_snr(image, order):
-        snr_all = image.spectrum[image.science_fiber,order]['flux']/image.spectrum[image.science_fiber,order]['uncertainty']
-        #Take the peak SNR over the middle 1/4 of the chip
-        snr = np.mean(snr_all[image.shape[1]*3./8.:image.shape[1]*5./8.])
-        return snr
+def get_snr(image, order):
+    snr_all = image.spectrum[image.science_fiber,order]['flux']/image.spectrum[image.science_fiber,order]['uncertainty']
+    #Take the peak SNR over the middle 1/4 of the chip
+    snr = np.mean(snr_all[int(image.shape[1]*3/8):int(image.shape[1]*5/8)])
+    return snr
