@@ -3,23 +3,23 @@ import mock
 import numpy as np
 from banzai_nres.frames import NRESObservationFrame, EchelleSpectralCCDData, Spectrum1D
 from types import SimpleNamespace
-from scipy.interpolate import UnivariateSpline
 from astropy.table import Table
 
 
-@mock.patch('banzai_nres.continuum.fit_polynomial')
-def test_do_stage(mock_fit_polynomial):
-    expected = 2
+@mock.patch('banzai_nres.continuum.ContinuumNormalizer.normalize')
+def test_do_stage(mock_normalize):
+    # tests that the normalized spectrum are assigned correctly.
+    expected = 1
     # make a single order spectrum
-    flux = np.arange(1, 101)*2
+    flux = np.arange(1, 101) * expected
     x = np.arange(1, 101)
     spectrum = Table({'wavelength': [x, 2*x], 'flux': [flux, 2 * flux], 'blaze': [flux, 2 * flux],
                       'blaze_error': [flux, 2 * flux], 'uncertainty': [flux, 2*flux], 'fiber': [0, 0], 'order': [1, 2]})
     image = NRESObservationFrame([EchelleSpectralCCDData(np.zeros((1, 1)), meta={'OBJECTS': 'tung&tung&none'},
                                                          spectrum=Spectrum1D(spectrum))],
                                  'test.fits')
-    # make it so that the continuum fitter just returns 0.5, so that the divided spectrum will have value 2 everywhere.
-    mock_fit_polynomial.return_value = UnivariateSpline(x=[0, 1], y=[1/expected, 1/expected], ext=3, k=1)
+    # make it so that ContinuumNormalizer.normalize just returns ones.
+    mock_normalize.return_value = (expected * np.ones_like(flux), expected * np.ones_like(flux))
 
     # Run the normalizer code
     stage = ContinuumNormalizer(SimpleNamespace(db_address='foo'))

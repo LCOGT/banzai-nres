@@ -53,3 +53,9 @@ The following header keywords contain the RV value and associated parameters:
 - 'BARYCORR': Barycentric velocity correction (m / s)
 
 - 'TCORR': Mid-exposure time barycentric Julian date (BJD_TDB)
+
+
+Telluric Lines
+~~~~~~~~~~~~~~
+Our telluric spectrum was generated with https://github.com/kgullikson88/Telluric-Fitter .
+We exclude regions of the spectrum with strong telluric absorption.

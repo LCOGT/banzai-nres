@@ -19,7 +19,13 @@ To test building the documentation run::
 
 The package infrastructure is based on the `Astropy Package Template <https://github.com/astropy/package-template>`_
 so the tox testing infrastructure to test different versions of dependencies is provided by the template and
-documented there.
+documented there. You will need Pandoc: https://pandoc.org/installing.html
+
+If you have issues package update errors with building the documentation, try forcing an update of the
+environment with::
+
+   rm -r .tox
+   tox -e test
 
 Testing on Real Data
 --------------------

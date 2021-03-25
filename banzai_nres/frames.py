@@ -46,6 +46,19 @@ class Spectrum1D:
         self._table[column_name][correct_row, good_pixels] = value
 
     @property
+    def mask(self):
+        return self._table['mask']
+
+    @mask.setter
+    def mask(self, value):
+        self._table['mask'] = value
+
+    @property
+    def table(self):
+        # return the full spectrum, unmasked.
+        return self._table
+
+    @property
     def fibers_and_orders(self):
         return self._table['fiber'], self._table['order']
 
