@@ -22,7 +22,6 @@ class CalculateScienceFrameMetrics(Stage):
         return image
 
 def get_snr(image, order):
-    snr_all = image.spectrum[image.science_fiber,order]['flux']/image.spectrum[image.science_fiber,order]['uncertainty']
-    #Take the peak SNR over the middle 1/4 of the chip
-    snr = np.mean(snr_all[int(image.shape[1]*3/8):int(image.shape[1]*5/8)])
+    snr_all = image.spectrum[image.science_fiber,order]['flux'] / image.spectrum[image.science_fiber,order]['uncertainty']
+    snr = np.percentile(snr_all,90)
     return snr
