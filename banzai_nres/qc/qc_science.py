@@ -22,6 +22,7 @@ class CalculateScienceFrameMetrics(Stage):
 
 
 def get_snr(image, order):
-    snr_all = image.spectrum[image.science_fiber, order]['flux'] / image.spectrum[image.science_fiber, order]['uncertainty']
+    snr_all = image.spectrum[image.science_fiber, order]['flux'] / \
+              image.spectrum[image.science_fiber, order]['uncertainty']
     snr = np.percentile(snr_all, 90)
     return snr

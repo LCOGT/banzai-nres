@@ -18,10 +18,10 @@ class TestCalculateScienceFrameMetrics:
     for i in range(5):
         order = snr_order + i
         row = {'wavelength': test_wavelengths, 'flux': test_flux, 'uncertainty': test_uncertainty,
-                        'fiber': 0, 'order': snr_order}
+               'fiber': 0, 'order': snr_order}
         spectrum.append(row)
     test_image = NRESObservationFrame([EchelleSpectralCCDData(np.zeros((1, 1)), meta=header,
-                                                    spectrum=Spectrum1D(spectrum))], 'test.fits')
+                                                              spectrum=Spectrum1D(spectrum))], 'test.fits')
 
     def test_do_stage_does_not_crash(self):
         image = CalculateScienceFrameMetrics(self.input_context).do_stage(self.test_image)
