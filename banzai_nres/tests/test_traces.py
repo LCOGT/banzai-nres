@@ -55,7 +55,7 @@ def test_blind_solve():
 
 
 def test_blind_solve_with_bpm():
-    trace_centers, test_data, x2d, y2d = make_realistic_trace_image(y0_centers=[100, 200, 300])
+    trace_centers, test_data, x2d, y2d = make_realistic_trace_image()
     bpm_mask = np.ones_like(test_data, dtype=bool)
     bpm_mask[150:250, :] = 0  # set the pixels around the center trace as good. Leave the other pixels masked.
     test_image = NRESObservationFrame([EchelleSpectralCCDData(data=test_data, uncertainty=1e-5*np.ones_like(test_data),
