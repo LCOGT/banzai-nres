@@ -15,7 +15,7 @@ class CalculateScienceFrameMetrics(Stage):
         super(CalculateScienceFrameMetrics, self).__init__(runtime_context)
 
     def do_stage(self, image):
-        snr = get_snr(image, SNR_ORDER)
+        snr, snr_wave = get_snr(image, SNR_ORDER)
         image.meta['SNR'] = snr, 'Signal-to-noise ratio at 5180 Angstroms'
 
         return image
@@ -25,4 +25,5 @@ def get_snr(image, order):
     snr_all = image.spectrum[image.science_fiber, order]['flux'] / \
               image.spectrum[image.science_fiber, order]['uncertainty']
     snr = np.percentile(snr_all, 90)
-    return snr
+    snr_wave = np.mean(image.science_fiber, order]['wave'][snr_all > snr])
+    return snr, snr_wave
