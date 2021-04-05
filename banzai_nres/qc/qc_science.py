@@ -25,5 +25,5 @@ def get_snr(image, order):
     snr_all = image.spectrum[image.science_fiber, order]['flux'] / \
               image.spectrum[image.science_fiber, order]['uncertainty']
     snr = np.percentile(snr_all, 90)
-    snr_wave = np.mean(image.science_fiber, order]['wave'][snr_all > snr])
+    snr_wave = np.mean(image.spectrum[image.science_fiber, order]['wavelength'][snr_all > snr])
     return snr, snr_wave
