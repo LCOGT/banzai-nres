@@ -50,9 +50,11 @@ class MakePDFSummary(Stage):
         snr, snr_wavelength = np.zeros(len(order), dtype=np.float), np.zeros(len(order), dtype=np.float)
         for snr_order in order:
             snr[snr_order-order[0]], snr_wavelength[snr_order-order[0]] = get_snr(image, snr_order)
-        pl.plot(snr_wavelength, snr)
+        pl.plot(snr_wavelength, snr, 'ko')
+        rv_orders = (order >= self.runtime_context.MIN_ORDER_TO_CORRELATE) & (order <= self.runtime_context.MAX_ORDER_TO_CORRELATE)
+        pl.plot(snr_wavelength[rv_orders], snr[rv_orders], 'ro')
         pl.xlabel('wavelength (Angstroms)')
-        pl.ylabel('peak SNR')
+        pl.ylabel('peak SNR in order')
         pl.title('SNR vs wavelength')
 
         ax=pl.subplot(2, 3, 6)
@@ -80,7 +82,7 @@ class MakePDFSummary(Stage):
         fig, axes = pl.subplots(nrows=2,ncols=3)
 
         for ax, line_center, line_name, line_order in zip(axes.flatten(), line_centers, line_names, line_orders):
-            make_line_plot(wavelength, flux, order, ax, line_center, line_name, line_order)
+            ax = make_line_plot(wavelength, flux, order, ax, line_center, line_name, line_order)
         next_page(pp)
 
         #make the plots of the telluric lines
@@ -92,10 +94,12 @@ class MakePDFSummary(Stage):
         fig, axes = pl.subplots(nrows=2,ncols=1)
 
         for ax, line_center, line_name, line_order in zip(axes.flatten(), line_centers, line_names, line_orders):
-            make_line_plot(wavelength, flux, order, ax, line_center, line_name, line_order)
+            ax = make_line_plot(wavelength, flux, order, ax, line_center, line_name, line_order)
         next_page(pp)
 
         pp.close()
+
+        return image
 
 
 
@@ -111,8 +115,10 @@ def make_line_plot(wavelength, flux, order, ax, line_center, line_name, line_ord
     pl.ylabel('normalized flux')
     pl.title(line_name)
     pl.xlim([np.min(line_center)-7.5, np.max(line_center)+7.5])
+    return ax
 
 def next_page(pp):
     pl.tight_layout()
     pl.savefig(pp, format='pdf')
     pl.clf()
+    pl.figure(figsize=(11,8.5)) #inches
