@@ -22,6 +22,11 @@ SIGNAL_TO_NOISE_TRACING_CUTOFF = 10
 # Minimum half width of a feature to be considered a trace
 MIN_TRACE_HALF_WIDTH = 50
 
+# Trace half height in pixels. The final trace will be +- this from the center in the y-direction.
+TRACE_HALF_HEIGHT = 5
+# NOTE: 5 pixels covers the NRES orders more than sufficiently. Changing this value may break
+# the tracing part of the pipeline.
+
 
 def find_y_center(y, mask, weights):
     centers = (y * mask * weights).sum(axis=0) / (mask * weights).sum(axis=0)
@@ -65,9 +70,9 @@ def refine_traces(image, weights=None, trace_half_height=5):
 class TraceInitializer(Stage):
     def do_stage(self, image):
         if image.traces is None:
-            image.traces = self.blind_solve(image, self.runtime_context.TRACE_HALF_HEIGHT)
+            image.traces = self.blind_solve(image, TRACE_HALF_HEIGHT)
             refine_traces(image, weights=image.traces > 0,
-                          trace_half_height=self.runtime_context.TRACE_HALF_HEIGHT)
+                          trace_half_height=TRACE_HALF_HEIGHT)
         return image
 
     @staticmethod
@@ -77,8 +82,7 @@ class TraceInitializer(Stage):
                                          size=MIN_TRACE_SEPARATION, axis=0)
         significant = image.data.data / image.uncertainty > SIGNAL_TO_NOISE_TRACING_CUTOFF
         # ignore pixels in the bpm
-        mask = getattr(image, 'mask', np.zeros_like(significant))
-        significant = np.logical_and(significant, mask == 0)
+        significant = np.logical_and(significant, image.mask == 0)
         # identify the traces.
         binary_map = np.logical_and(peaks == image.data.data, significant)
 
@@ -117,5 +121,5 @@ class TraceInitializer(Stage):
 class TraceRefiner(Stage):
     def do_stage(self, image):
         refine_traces(image, weights=image.data,
-                      trace_half_height=self.runtime_context.TRACE_HALF_HEIGHT)
+                      trace_half_height=TRACE_HALF_HEIGHT)
         return image
