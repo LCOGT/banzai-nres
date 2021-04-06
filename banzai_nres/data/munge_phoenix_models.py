@@ -45,7 +45,7 @@ def main():
         metallicity = hdu[0].header['PHXM_H']
         alpha = hdu[0].header['PHXALPHA']
         output_filename = phoenix_utils.parameters_to_filename(Teff, logg, metallicity, alpha)
-        hdu.writeto(os.path.join(args.output_dir, output_filename))
+        hdu.writeto(os.path.join(args.output_dir, output_filename), overwrite=True)
 
     # save the wavelengths as a separate file
-    wavelength_hdu.writeto(os.path.join(args.output_dir, 'phoenix_wavelength.fits'))
+    wavelength_hdu.writeto(os.path.join(args.output_dir, 'phoenix_wavelength.fits'), overwrite=True)
