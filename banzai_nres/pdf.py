@@ -22,16 +22,17 @@ class MakePDFSummary(Stage):
         pp = PdfPages(pdf_filename)
         fiber = image.spectrum.table['fiber']
         wavelength, flux, order = image.spectrum.table['wavelength'][fiber == image.science_fiber, :], image.spectrum.table['normflux'][fiber == image.science_fiber, :], image.spectrum.table['order'][fiber == image.science_fiber]
-
+        
         phoenix_loader = phoenix.PhoenixModelLoader(self.runtime_context.db_address)
         template = phoenix_loader.load(image.classification)
 
         #make the first page showing the spectrum, template, etc.
         pl.subplot(2, 1, 1)
         primary_order = order == 90
-        pl.plot(wavelength[primary_order,:], flux[primary_order,:], color='blue')
+        pl.plot(np.squeeze(wavelength[primary_order,:]), np.squeeze(flux[primary_order,:]), color='blue')
         pl.plot(template['wavelength'], template['flux'], color='red')
-        pl.xlim([np.min(wavelength[primary_order,:]), np.max(wavelength[primary_order,:])])
+        pl.xlim([5135.,5220.])
+        pl.ylim([0.,np.max(flux[primary_order,:])])
         pl.xlabel('wavelength (Angstroms)')
         pl.ylabel('normalized flux')
         pl.title(image.meta['OBJECT']+', '+image.meta['RAWIMAGE'])
@@ -77,12 +78,12 @@ class MakePDFSummary(Stage):
         #NOTE: the following wavelengths are currently AIR wavelengths, need to convert to VACUUM
         line_centers = np.array([3968.47, 4861.34, [5183.62, 5172.70, 5167.33], [5889.95, 5895.92], 6562.81, [6707.76, 6707.91]], dtype=object)
         line_names = np.array(['Ca II H', 'H beta', 'Mg b', 'Na D', 'H alpha', 'Li'])
-        line_orders = np.array([117, 95, 90, 79, 71, 70])
+        line_orders = np.array([117, 96, 90, 79, 71, 70])
 
-        fig, axes = pl.subplots(nrows=2,ncols=3)
+        fig, axes = pl.subplots(nrows=2,ncols=3,figsize=(11,8.5))
 
         for ax, line_center, line_name, line_order in zip(axes.flatten(), line_centers, line_names, line_orders):
-            ax = make_line_plot(wavelength, flux, order, ax, line_center, line_name, line_order)
+            ax = make_line_plot(fig, wavelength, flux, order, ax, line_center, line_name, line_order)
         next_page(pp)
 
         #make the plots of the telluric lines
@@ -91,10 +92,10 @@ class MakePDFSummary(Stage):
         line_names = np.array(['Telluric B-band', 'Telluric A-band'])
         line_orders = np.array([68, 61])
 
-        fig, axes = pl.subplots(nrows=2,ncols=1)
+        fig, axes = pl.subplots(nrows=2,ncols=1,figsize=(11,8.5))
 
         for ax, line_center, line_name, line_order in zip(axes.flatten(), line_centers, line_names, line_orders):
-            ax = make_line_plot(wavelength, flux, order, ax, line_center, line_name, line_order)
+            ax = make_line_plot(fig, wavelength, flux, order, ax, line_center, line_name, line_order)
         next_page(pp)
 
         pp.close()
@@ -103,22 +104,23 @@ class MakePDFSummary(Stage):
 
 
 
-def make_line_plot(wavelength, flux, order, ax, line_center, line_name, line_order):
+def make_line_plot(fig, wavelength, flux, order, ax, line_center, line_name, line_order):
     this_order = order == line_order
-    ax.plot(wavelength[this_order,:], flux[this_order,:], color='black')
+    ax.plot(np.squeeze(wavelength[this_order,:]), np.squeeze(flux[this_order,:]), color='black')
     if isinstance(line_center, (list, tuple, np.ndarray)):
         for this_center in line_center:
-            ax.plot([this_center, this_center], [0, 1], color='blue')
+            ax.plot([this_center, this_center], [0, 1.1], color='blue')
     else:
-        ax.plot([line_center, line_center], [0, 1], color='blue')
-    pl.xlabel('wavelength (Angstroms)')
-    pl.ylabel('normalized flux')
-    pl.title(line_name)
-    pl.xlim([np.min(line_center)-7.5, np.max(line_center)+7.5])
+        ax.plot([line_center, line_center], [0, 1.1], color='blue')
+    ax.set_xlabel('wavelength (Angstroms)')
+    ax.set_ylabel('normalized flux')
+    ax.set_title(line_name)
+    ax.set_xlim([np.min(line_center)-7.5, np.max(line_center)+7.5])
+    ax.set_ylim([0.,1.1])
     return ax
 
 def next_page(pp):
     pl.tight_layout()
     pl.savefig(pp, format='pdf')
     pl.clf()
-    pl.figure(figsize=(11,8.5)) #inches
+    #pl.figure(figsize=(11,8.5)) #inches
