@@ -16,7 +16,7 @@ class CalculateScienceFrameMetrics(Stage):
 
     def do_stage(self, image):
         snr, snr_wave = get_snr(image, SNR_ORDER)
-        image.meta['SNR'] = snr, 'Signal-to-noise ratio per pix at 5180 Angstroms'
+        image.meta['SNR'] = snr, 'Signal-to-noise ratio per pix at 5180 Angstrom'
 
         return image
 
