@@ -24,6 +24,7 @@ ORDERED_STAGES = [
                   'banzai_nres.continuum.MaskBlueHookRegion',
                   'banzai_nres.continuum.ContinuumNormalizer',
                   'banzai_nres.continuum.MaskTellurics',
+                  'banzai_nres.qc.qc_science.CalculateScienceFrameMetrics',
                   'banzai_nres.classify.StellarClassifier',
                   'banzai_nres.rv.RVCalculator'
                   ]
@@ -170,6 +171,3 @@ MAX_ORDER_TO_CORRELATE = 97
 GAIA_CLASS = os.getenv('BANZAI_GAIA_CLASS', 'astroquery.gaia.GaiaClass')
 
 SIMBAD_CLASS = os.getenv('BANZAI_SIMBAD', 'astroquery.simbad.Simbad')
-
-# The final trace will be +- this from the center in the y-direction
-TRACE_HALF_HEIGHT = 5
