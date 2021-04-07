@@ -32,13 +32,14 @@ class MakePDFSummary(Stage):
         #make the first page showing the spectrum, template, etc.
         pl.subplot(2, 1, 1)
         primary_order = order == 90
-        pl.plot(np.squeeze(wavelength[primary_order,:]), np.squeeze(flux[primary_order,:]), color='blue')
-        pl.plot(template['wavelength']*v_over_c_plus_one, template['flux'], color='red', linewidth=0.5)
+        spectrum_line, = pl.plot(np.squeeze(wavelength[primary_order,:]), np.squeeze(flux[primary_order,:]), color='blue')
+        template_line, = pl.plot(template['wavelength']*v_over_c_plus_one, template['flux'], color='red', linewidth=0.5)
         pl.xlim([5135.,5220.])
         pl.ylim([0.,np.max(flux[primary_order,:])])
         pl.xlabel('wavelength (Angstroms)')
         pl.ylabel('normalized flux')
         pl.title(image.meta['OBJECT']+' on '+image.meta['DAY-OBS']+' from '+image.meta['TELESCOP']+'-'+image.meta['SITEID']+' for program '+image.meta['PROPID'])
+        pl.legend((spectrum_line, template_line), ('Spectrum', 'Best-Fit Phoenix Template'))
 
         pl.subplot(2, 3, 4)
         stacked_ccf=np.ones_like(image.ccf['v'][0,:])
