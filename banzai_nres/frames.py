@@ -1,12 +1,11 @@
 from banzai_nres.fibers import fiber_states_from_header
 from banzai.lco import LCOFrameFactory, LCOObservationFrame, LCOCalibrationFrame
 from banzai.frames import ObservationFrame
-from banzai.data import DataProduct, ArrayData, HeaderOnly
+from banzai.data import DataProduct, ArrayData, HeaderOnly, DataTable
 import logging
 from typing import Optional
 import numpy as np
 from astropy.table import Table
-from io import BytesIO
 import os
 from astropy.coordinates import Angle
 from astropy import units
@@ -199,10 +198,10 @@ class NRESObservationFrame(LCOObservationFrame):
 
     @property
     def fibers(self):
-       if 'FIBERS' in self._hdu_keys:
-           return self['FIBERS'].data
-       else:
-           return self._fibers
+        if 'FIBERS' in self._hdu_keys:
+            return self['FIBERS'].data
+        else:
+            return self._fibers
 
     @fibers.setter
     def fibers(self, value):
