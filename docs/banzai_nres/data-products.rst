@@ -139,4 +139,6 @@ ThAr Arc Lamps
   This extension is compressed, but it is compressed using the GZip algorithm instead of RICE compression like most
   of the rest of the image extensions produced by LCO, because GZip is lossless.
 
+- 'FIBERS': FITS binary table mapping the order number from the TRACES extension to fiber number.
+
 .. include:: idl-differences-data-products.rst

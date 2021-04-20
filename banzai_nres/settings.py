@@ -19,7 +19,6 @@ ORDERED_STAGES = [
                   # this is turned off because it yields negative fluxes and causes crashing on tracing. See issue #60
                   # 'banzai_nres.background.BackgroundSubtractor',
                   'banzai_nres.wavelength.ArcLoader',
-                  'banzai_nres.extract.GetOptimalExtractionWeights',
                   'banzai_nres.extract.WeightedExtract',
                   'banzai_nres.continuum.MaskBlueHookRegion',
                   'banzai_nres.continuum.ContinuumNormalizer',
@@ -77,9 +76,12 @@ CALIBRATION_STACKER_STAGES = {'BIAS': ['banzai.bias.BiasMaker'],
                               'LAMPFLAT': ['banzai_nres.flats.FlatStacker',
                                            'banzai_nres.flats.FlatLoader',
                                            'banzai_nres.traces.TraceInitializer',
-                                           'banzai_nres.background.BackgroundSubtractor',
+                                           # this is turned off because it yields negative fluxes and causes crashing
+                                           # on tracing. See issue #60
+                                           # 'banzai_nres.background.BackgroundSubtractor',
                                            'banzai_nres.traces.TraceRefiner',
                                            'banzai_nres.profile.ProfileFitter'
+                                           'banzai_nres.extract.GetOptimalExtractionWeights',
                                            ],
                               'DOUBLE': ['banzai_nres.wavelength.ArcStacker',  # stack
                                          'banzai_nres.flats.FlatLoader',  # load traces
@@ -158,9 +160,10 @@ MASTER_CALIBRATION_EXTENSION_ORDER = {'BIAS': ['SPECTRUM', 'BPM', 'ERR'],
 REDUCED_DATA_EXTENSION_TYPES = {'ERR': 'float32',
                                 'BPM': 'uint8',
                                 'SPECTRUM': 'float32',
-                                'TRACES': 'int32',  # try uint8
+                                'TRACES': 'int8',
                                 'PROFILE': 'float32',
                                 'WAVELENGTH': 'float64',
+                                'WEIGHTS': 'float32'
                                 }
 
 PHOENIX_MODEL_LOCATION = os.getenv('PHOENIX_FILE_LOCATION', 's3://banzai-nres-phoenix-models-lco-global')
