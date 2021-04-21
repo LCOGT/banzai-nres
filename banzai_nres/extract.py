@@ -1,7 +1,7 @@
 import numpy as np
 
 from banzai.stages import Stage
-from banzai_nres.frames import EchelleSpectralCCDData, Spectrum1D
+from banzai_nres.frames import Spectrum1D, NRESObservationFrame
 from banzai_nres.utils.trace_utils import get_trace_region
 import logging
 from banzai.data import ArrayData
@@ -11,7 +11,7 @@ logger = logging.getLogger('banzai')
 
 
 class WeightedExtract(Stage):
-    def do_stage(self, image: EchelleSpectralCCDData):
+    def do_stage(self, image: NRESObservationFrame):
         if image.weights is None:
             logger.error('Extraction weights are missing. Rejecting image.', image=image)
             return None
@@ -58,7 +58,7 @@ class WeightedExtract(Stage):
 
 
 class GetOptimalExtractionWeights(WeightedExtract):
-    def do_stage(self, image: EchelleSpectralCCDData):
+    def do_stage(self, image: NRESObservationFrame):
         if image.profile is None:
             logger.error('Profile missing. Rejecting image.', image=image)
             return None

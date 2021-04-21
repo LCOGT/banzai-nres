@@ -65,7 +65,6 @@ class NRESObservationFrame(LCOObservationFrame):
         LCOObservationFrame.__init__(self, hdu_list, file_path, frame_id=frame_id, hdu_order=hdu_order)
         self.fiber0_lit, self.fiber1_lit, self.fiber2_lit = fiber_states_from_header(self.meta)
         self.classification = None
-        self._hdu_names = [hdu.name for hdu in hdu_list]
 
         self._traces = None
         self._profile = None
@@ -75,16 +74,6 @@ class NRESObservationFrame(LCOObservationFrame):
         self._wavelengths = None
         self._spectrum = None
         self._ccf = None
-
-    def __getitem__(self, item):
-        if item not in self._hdu_names and not isinstance(item, int):
-            raise ValueError('Requested HDU name is not in frame')
-        if isinstance(item, int):
-            return self._hdus[item]
-        return self._hdus[self._hdu_names.index(item)]
-
-    def __contains__(self, item):
-        return item in self._hdu_names
 
     def get_output_data_products(self, runtime_context):
         if self.obstype != 'TARGET':
@@ -141,7 +130,7 @@ class NRESObservationFrame(LCOObservationFrame):
 
     @background.setter
     def background(self, value):
-        self['BACKGROUND'] = ArrayData(value, meta={}, name='BACKGROUND')
+        self['BACKGROUND'] = ArrayData(value, name='BACKGROUND')
 
     @property
     def profile(self):

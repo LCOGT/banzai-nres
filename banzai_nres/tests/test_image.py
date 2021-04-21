@@ -1,7 +1,6 @@
-from banzai_nres.frames import NRESObservationFrame, EchelleSpectralCCDData, Spectrum1D
-from banzai.data import HeaderOnly
+from banzai_nres.frames import NRESObservationFrame, Spectrum1D
+from banzai.data import HeaderOnly, CCDData, ArrayData, DataTable
 from banzai import context
-
 import numpy as np
 
 
@@ -15,17 +14,14 @@ def test_get_num_lit_fibers():
 def test_to_fits():
     data = np.ones((2, 2))
     spec = Spectrum1D({'fiber': [0], 'order': [1], 'flux': [np.arange(10)], 'wavelength': [np.arange(10)]})
-    image = EchelleSpectralCCDData(data=data, uncertainty=2 * data,
-                                   traces=3 * data, weights=4 * data,
-                                   background=5 * data, spectrum=spec,
-                                   meta={'OBJECTS': 'tung&tung&none', 'EXTNAME': ''})
-    hdulist = image.to_fits(context.Context({'EXTENSION_NAMES_TO_CONDENSE': []}))
-    attribute = {'TRACES': 'traces', 'BACKGROUND': 'background', '1DSPEC': 'spectrum',
-                 'WEIGHTS': 'weights'}
+    image = NRESObservationFrame([CCDData(data=data, uncertainty=2 * data, name='SCI',
+                                          meta={'OBJECTS': 'tung&tung&none', 'EXTNAME': ''})], 'foo.fits')
+    image['TRACES'] = ArrayData(3 * data, name='TRACES')
+    image['WEIGHTS'] = ArrayData(4 * data, name='WEIGHTS')
+    image['BACKGROUND'] = ArrayData(5 * data, name='BACKGROUND')
+    image['SPECTRUM'] = DataTable(spec.table, name='SPECTRUM')
+
+    hdulist = image.to_fits(context.Context({'EXTENSION_NAMES_TO_CONDENSE': ['SCI']}))
     hdu_ext_names = [hdulist[i].header['EXTNAME'] for i in range(len(hdulist))]
-    for name in attribute.keys():
-        i = np.where([n == name for n in hdu_ext_names])[0][0]
-        if name != '1DSPEC':
-            assert np.allclose(hdulist[i].data, getattr(image, attribute[name]))
-        else:
-            assert np.allclose(hdulist[i].data[0]['flux'][1:], image.spectrum[0, 1]['flux'])
+    for name in ['SCI', 'BPM', 'ERR', 'TRACES', 'WEIGHTS', 'BACKGROUND', 'SPECTRUM']:
+        assert name in hdu_ext_names

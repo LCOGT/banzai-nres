@@ -2,7 +2,7 @@ import numpy as np
 
 from banzai_nres.tests.test_traces import make_simple_traces
 from banzai_nres.frames import NRESObservationFrame
-from banzai_nres.frames import EchelleSpectralCCDData
+from banzai.data import CCDData
 from banzai_nres.utils.trace_utils import get_trace_region
 from banzai_nres.profile import ProfileFitter
 from banzai import context
@@ -14,8 +14,8 @@ def test_profile_fit_without_noise_without_blaze():
     # Filter out the numerical noise
     input_profile[input_profile < 1e-15] = 0.0
     uncertainty = np.sqrt(input_profile)
-    image = NRESObservationFrame([EchelleSpectralCCDData(data=input_profile.copy(), uncertainty=uncertainty,
-                                                         meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
+    image = NRESObservationFrame([CCDData(data=input_profile.copy(), uncertainty=uncertainty,
+                                          meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
     image.traces = input_traces
     input_context = context.Context({})
 
@@ -36,8 +36,8 @@ def test_profile_fit_with_noise_with_blaze():
     input_profile += np.random.poisson(input_profile)
     input_profile += np.random.normal(0.0, read_noise, size=input_profile.shape)
     uncertainty = np.sqrt(input_profile + read_noise ** 2.0)
-    image = NRESObservationFrame([EchelleSpectralCCDData(data=input_profile.copy(), uncertainty=uncertainty,
-                                                         meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
+    image = NRESObservationFrame([CCDData(data=input_profile.copy(), uncertainty=uncertainty,
+                                          meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
     image.traces = input_traces
     input_context = context.Context({})
 

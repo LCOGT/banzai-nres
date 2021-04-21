@@ -1,6 +1,7 @@
 import numpy as np
 
-from banzai_nres.frames import NRESObservationFrame, EchelleSpectralCCDData
+from banzai.data import CCDData
+from banzai_nres.frames import NRESObservationFrame
 from banzai_nres.extract import WeightedExtract, GetOptimalExtractionWeights
 from banzai import context
 
@@ -131,13 +132,12 @@ def two_order_image():
     data[~np.isclose(traces, 0)] = 100.
     uncertainty = 1. * data
     wavelengths = np.ones_like(traces) * 5  # dummy wavelengths image that has values distinct from flux and traces.
-    image = NRESObservationFrame([EchelleSpectralCCDData(data=data, uncertainty=uncertainty,
-                                                         wavelengths=wavelengths, traces=traces,
-                                                         fibers={'fiber': np.arange(2), 'order': np.arange(2)},
-                                                         blaze={'id': np.arange(2),
-                                                                'blaze': [np.arange(20), np.arange(20)],
-                                                                'blaze_error': [np.arange(20), np.arange(20)]},
-                                                         meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
+    image = NRESObservationFrame([CCDData(data=data, uncertainty=uncertainty, meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
+    image.wavelengths = wavelengths
+    image.traces = traces
+    image.fibers = {'fiber': np.arange(2), 'order': np.arange(2)}
+    image.blaze = {'id': np.arange(2), 'blaze': [np.arange(20), np.arange(20)],
+                   'blaze_error': [np.arange(20), np.arange(20)]},
     return image
 
 
@@ -157,14 +157,13 @@ def five_hundred_square_image(maxflux, number_traces, trace_width, read_noise=10
     data += np.random.normal(0.0, read_noise, size=data.shape)
     uncertainty = np.sqrt(data + read_noise ** 2)
     wavelengths = np.ones_like(traces) * 5  # dummy wavelengths image that has values distinct from flux and traces.
-    image = NRESObservationFrame([EchelleSpectralCCDData(data=data, uncertainty=uncertainty, traces=traces,
-                                                         profile=profile, wavelengths=wavelengths,
-                                                         meta={'OBJECTS': 'tung&tung&none'},
-                                                         blaze={'id': np.arange(number_traces) + 1,
-                                                                'blaze': [np.ones(traces.shape[1]) for i in
-                                                                          range(number_traces)],
-                                                                'blaze_error': [np.ones(traces.shape[1]) for i in
-                                                                                range(number_traces)]},
-                                                         fibers={'fiber': np.arange(number_traces) + 1,
-                                                                 'order': np.arange(number_traces) + 1})], 'foo.fits')
+    image = NRESObservationFrame([CCDData(data=data, uncertainty=uncertainty, meta={'OBJECTS': 'tung&tung&none'})],
+                                 'foo.fits')
+    image.traces = traces,
+    image.profile = profile
+    image.wavelengths = wavelengths
+    image.blaze = {'id': np.arange(number_traces) + 1,
+                   'blaze': [np.ones(traces.shape[1]) for i in range(number_traces)],
+                   'blaze_error': [np.ones(traces.shape[1]) for i in range(number_traces)]}
+    image.fibers = {'fiber': np.arange(number_traces) + 1, 'order': np.arange(number_traces) + 1}
     return image
