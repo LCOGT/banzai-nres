@@ -44,7 +44,7 @@ class TestIdentifyFeatures:
         input_context = context.Context({})
         ccd_data = CCDData(data=self.data, uncertainty=self.err, meta={'OBJECTS': 'tung&tung&none'})
         image = NRESObservationFrame([ccd_data], 'foo.fits')
-        image.traces = np.ones_like(self.data, dtype=int),
+        image.traces = np.ones_like(self.data, dtype=int)
         image.blaze = {'blaze': blaze_factor * np.ones((1, self.data.shape[1]), dtype=int)}
 
         stage = IdentifyFeatures(input_context)
@@ -73,7 +73,7 @@ class TestIdentifyFeatures:
         input_context = context.Context({})
         image = NRESObservationFrame([CCDData(data=self.data, uncertainty=self.err,
                                       meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
-        image.traces = np.ones_like(self.data, dtype=int),
+        image.traces = np.ones_like(self.data, dtype=int)
         image.blaze = {'blaze': np.ones_like(self.data, dtype=int)}
         stage = IdentifyFeatures(input_context)
         stage.fwhm, stage.nsigma = self.sigma, 1.5

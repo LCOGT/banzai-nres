@@ -137,7 +137,7 @@ def two_order_image():
     image.traces = traces
     image.fibers = {'fiber': np.arange(2), 'order': np.arange(2)}
     image.blaze = {'id': np.arange(2), 'blaze': [np.arange(20), np.arange(20)],
-                   'blaze_error': [np.arange(20), np.arange(20)]},
+                   'blaze_error': [np.arange(20), np.arange(20)]}
     return image
 
 

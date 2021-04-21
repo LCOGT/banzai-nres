@@ -71,6 +71,7 @@ class NRESObservationFrame(LCOObservationFrame):
         self._blaze = None
         self._weights = None
         self._fibers = None
+        self._features = None
         self._wavelengths = None
         self._spectrum = None
         self._ccf = None
@@ -195,6 +196,17 @@ class NRESObservationFrame(LCOObservationFrame):
     @fibers.setter
     def fibers(self, value):
         self._fibers = value
+
+    @property
+    def features(self):
+        if 'FEATURES' in self._hdu_keys:
+            return self['FEATURES'].data
+        else:
+            return self._features
+
+    @features.setter
+    def features(self, value):
+        self._features = value
 
     @property
     def ccf(self):
