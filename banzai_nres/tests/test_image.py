@@ -20,11 +20,11 @@ def test_to_fits():
     image['WEIGHTS'] = ArrayData(4 * data, name='WEIGHTS')
     image['BACKGROUND'] = ArrayData(5 * data, name='BACKGROUND')
     image['SPECTRUM'] = DataTable(spec.table, name='SPECTRUM')
-
-    hdulist = image.to_fits(context.Context({'EXTENSION_NAMES_TO_CONDENSE': ['SCI'], 
+    hdulist = image.to_fits(context.Context({'EXTENSION_NAMES_TO_CONDENSE': ['SCI'],
                                              'REDUCED_DATA_EXTENSION_TYPES': {},
                                              'fpack': True,
                                              'LOSSLESS_EXTENSIONS': []}))
-    hdu_ext_names = [hdulist[i].header['EXTNAME'] for i in range(len(hdulist))]
+    hdu_ext_names = [hdulist[i].header.get('EXTNAME') for i in range(len(hdulist))
+                     if hdulist[i].header.get('EXTNAME') is not None]
     for name in ['SCI', 'BPM', 'ERR', 'TRACES', 'WEIGHTS', 'BACKGROUND', 'SPECTRUM']:
         assert name in hdu_ext_names

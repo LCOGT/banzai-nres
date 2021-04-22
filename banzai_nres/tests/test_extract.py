@@ -159,7 +159,7 @@ def five_hundred_square_image(maxflux, number_traces, trace_width, read_noise=10
     wavelengths = np.ones_like(traces) * 5  # dummy wavelengths image that has values distinct from flux and traces.
     image = NRESObservationFrame([CCDData(data=data, uncertainty=uncertainty, meta={'OBJECTS': 'tung&tung&none'})],
                                  'foo.fits')
-    image.traces = traces,
+    image.traces = traces
     image.profile = profile
     image.wavelengths = wavelengths
     image.blaze = {'id': np.arange(number_traces) + 1,
