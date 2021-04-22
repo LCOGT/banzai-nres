@@ -80,7 +80,7 @@ CALIBRATION_STACKER_STAGES = {'BIAS': ['banzai.bias.BiasMaker'],
                                            # on tracing. See issue #60
                                            # 'banzai_nres.background.BackgroundSubtractor',
                                            'banzai_nres.traces.TraceRefiner',
-                                           'banzai_nres.profile.ProfileFitter'
+                                           'banzai_nres.profile.ProfileFitter',
                                            'banzai_nres.extract.GetOptimalExtractionWeights',
                                            ],
                               'DOUBLE': ['banzai_nres.wavelength.ArcStacker',  # stack
