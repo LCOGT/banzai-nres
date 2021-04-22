@@ -318,7 +318,7 @@ class NRESCalibrationFrame(LCOCalibrationFrame, NRESObservationFrame):
         NRESObservationFrame.__init__(self, hdu_list, file_path, frame_id=frame_id, hdu_order=hdu_order)
 
     def write(self, runtime_context):
-        LCOCalibrationFrame.write(runtime_context)
+        LCOCalibrationFrame.write(self, runtime_context)
 
 
 class NRESFrameFactory(LCOFrameFactory):
