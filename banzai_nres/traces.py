@@ -73,7 +73,7 @@ class TraceInitializer(Stage):
         if image.traces is None:
             image['TRACES'] = ArrayData(self.blind_solve(image, TRACE_HALF_HEIGHT), name='TRACES')
             refine_traces(image, weights=image.traces > 0,
-                          trace_half_height=self.runtime_context.TRACE_HALF_HEIGHT)
+                          trace_half_height=TRACE_HALF_HEIGHT)
         else:
             image['TRACES'] = ArrayData(image.traces, name='TRACES')
         return image
