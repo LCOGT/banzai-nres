@@ -238,7 +238,7 @@ class NRESObservationFrame(LCOObservationFrame):
     @property
     def ccf(self):
         if 'CCF' in self._hdu_keys:
-            return ['CCF'].data
+            return self['CCF'].data
         else:
             return self._ccf
 
