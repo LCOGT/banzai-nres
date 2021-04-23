@@ -95,7 +95,7 @@ class NRESObservationFrame(LCOObservationFrame):
             fits_1d[0].header['L1ID2D'] = filename_2d
             output_product_1d = DataProduct.from_fits(fits_1d, filename_1d, self.get_output_directory(runtime_context))
 
-            frame_2d = LCOObservationFrame([hdu for hdu in self._hdu_list if hdu.name not in ['SPECTRUM1D', 'CCF']],
+            frame_2d = LCOObservationFrame([hdu for hdu in self._hdus if hdu.name not in ['SPECTRUM1D', 'CCF']],
                                            os.path.join(self.get_output_directory(runtime_context), filename_2d))
             fits_2d = frame_2d.to_fits(runtime_context)
             fits_2d[0].header['L1ID1D'] = filename_1d
