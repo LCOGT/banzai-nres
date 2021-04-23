@@ -88,7 +88,7 @@ class NRESObservationFrame(LCOObservationFrame):
             filename_1d = self.get_output_filename(runtime_context)
             filename_1d = filename_1d.replace('.fits', '-1d.fits')
             filename_2d = filename_1d.replace('-1d.fits', '-2d.fits')
-            filename_summary = filename_1d.replace('-1d.fits', '-summary.pdf')
+            filename_summary = filename_1d.replace('-1d.fits', '-summary.pdf').replace('.fz', '')
 
             frame_1d_meta = self.meta.copy()
             # Remove any name from the header of the primary hdu
