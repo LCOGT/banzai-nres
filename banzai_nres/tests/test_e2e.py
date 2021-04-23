@@ -332,7 +332,9 @@ class TestScienceFrameProcessing:
             raw_files = glob(os.path.join(DATA_ROOT, day_obs, 'raw', '*e00*'))
             processed_1d_files = glob(os.path.join(DATA_ROOT, day_obs, 'processed', '*e91-1d*'))
             processed_2d_files = glob(os.path.join(DATA_ROOT, day_obs, 'processed', '*e91-2d*'))
+            summary_files = glob(os.path.join(DATA_ROOT, day_obs, 'processed', '*.pdf'))
 
             assert len(raw_files) == len(processed_1d_files)
             assert len(raw_files) == len(processed_2d_files)
+            assert len(raw_files) == len(summary_files)
         check_extracted_spectra('*e91-1d.fits*', 'SPECTRUM', ['wavelength', 'flux', 'uncertainty'])

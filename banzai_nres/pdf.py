@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as pl
-from matplotlib.backends.backend_pdf import PdfPages
 from astropy import constants
 from astropy import units
 
@@ -18,15 +17,12 @@ class MakePDFSummary(Stage):
         super(MakePDFSummary, self).__init__(runtime_context)
 
     def do_stage(self, image):
-        pl.figure(figsize=(11, 8.5))
+        fig1 = pl.figure(figsize=(11, 8.5))
 
-        # NOTE: need to change the following to use the e92-summary.pdf format we've agreed on
-        pdf_filename = image.meta['ORIGNAME'] + '.pdf'
-        pp = PdfPages(pdf_filename)
         fiber = image.spectrum.table['fiber']
-        wavelength, flux, order = image.spectrum.table['wavelength'][fiber == image.science_fiber, :], \
-                                image.spectrum.table['normflux'][fiber == image.science_fiber, :], \
-                                image.spectrum.table['order'][fiber == image.science_fiber]
+        wavelength = image.spectrum.table['wavelength'][fiber == image.science_fiber, :]
+        flux = image.spectrum.table['normflux'][fiber == image.science_fiber, :]
+        order = image.spectrum.table['order'][fiber == image.science_fiber]
 
         phoenix_loader = phoenix.PhoenixModelLoader(self.runtime_context.db_address)
         template = phoenix_loader.load(image.classification)
@@ -91,7 +87,7 @@ class MakePDFSummary(Stage):
         pl.text(0.1, top_line - line_separation * 11, 'SNR = {0:1.0f}/pixel @ 5180 Angstroms'.format(image.meta['SNR']))
         pl.text(0.1, top_line - line_separation * 12, 'Exposure time = {0:1.0f} seconds'.format(image.meta['EXPTIME']))
 
-        next_page(pp)
+        # Next Page
 
         # make the plots of individual lines of interest
         line_centers = np.array([3969.63, 4862.764, [5185.14, 5174.22, 5168.84],
@@ -99,12 +95,13 @@ class MakePDFSummary(Stage):
         line_names = np.array(['Ca II H', 'H beta', 'Mg b', 'Na D', 'H alpha', 'Li'])
         line_orders = np.array([117, 96, 90, 79, 71, 70])
 
-        fig, axes = pl.subplots(nrows=2, ncols=3, figsize=(11, 8.5))
+        fig2, axes = pl.subplots(nrows=2, ncols=3, figsize=(11, 8.5))
 
         for ax, line_center, line_name, line_order in zip(axes.flatten(), line_centers, line_names, line_orders):
-            ax = make_line_plot(fig, wavelength, flux, order, ax, line_center, line_name,
-                                line_order, wavelength_correction=v_over_c_plus_one)
-        next_page(pp)
+            make_line_plot(wavelength, flux, order, ax, line_center, line_name,
+                           line_order, wavelength_correction=v_over_c_plus_one)
+
+        # Next Page
 
         # make the plots of the telluric lines
         # NOTE: these are approximate wavelengths, need to look up the actual wavelengths later!
@@ -112,20 +109,18 @@ class MakePDFSummary(Stage):
         line_names = np.array(['Telluric B-band', 'Telluric A-band'])
         line_orders = np.array([68, 61])
 
-        fig, axes = pl.subplots(nrows=2, ncols=1, figsize=(11, 8.5))
+        fig3, axes = pl.subplots(nrows=2, ncols=1, figsize=(11, 8.5))
 
         for ax, line_center, line_name, line_order in zip(axes.flatten(), line_centers, line_names, line_orders):
-            ax = make_line_plot(fig, wavelength, flux, order, ax, line_center, line_name, line_order)
-        next_page(pp)
+            make_line_plot(wavelength, flux, order, ax, line_center, line_name, line_order)
 
         # If there is a working exposure meter, a fourth page showing that can go here.
 
-        pp.close()
-
+        image.summary_figures = [fig1, fig2, fig3]
         return image
 
 
-def make_line_plot(fig, wavelength, flux, order, ax, line_center, line_name, line_order, wavelength_correction=1.0):
+def make_line_plot(wavelength, flux, order, ax, line_center, line_name, line_order, wavelength_correction=1.0):
     this_order = order == line_order
     non_zero = np.squeeze(wavelength[this_order, :]) != 0.
     ax.plot(np.squeeze(wavelength[this_order, non_zero]), np.squeeze(flux[this_order, non_zero]), color='black')
@@ -141,10 +136,3 @@ def make_line_plot(fig, wavelength, flux, order, ax, line_center, line_name, lin
     ax.set_title(line_name)
     ax.set_xlim([np.min(line_center) - 7.5, np.max(line_center) + 7.5])
     ax.set_ylim([0., 1.1])
-    return ax
-
-
-def next_page(pp):
-    pl.tight_layout()
-    pl.savefig(pp, format='pdf')
-    pl.clf()
