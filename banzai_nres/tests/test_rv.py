@@ -3,7 +3,8 @@ import numpy as np
 import mock
 from astropy.io import fits
 from banzai_nres.frames import NRESObservationFrame
-from banzai_nres.frames import EchelleSpectralCCDData, Spectrum1D
+from banzai_nres.frames import Spectrum1D
+from banzai.data import CCDData
 from types import SimpleNamespace
 from astropy import units
 from astropy import constants
@@ -82,8 +83,9 @@ def test_rv(mock_loader, mock_db):
         row = {'wavelength': test_wavelengths[order] * (1.0 + true_v / constants.c),
                'normflux': noisy_flux[order], 'normuncertainty': uncertainty[order], 'fiber': 0, 'order': i}
         spectrum.append(row)
-    image = NRESObservationFrame([EchelleSpectralCCDData(np.zeros((1, 1)), meta=header, spectrum=Spectrum1D(spectrum))],
+    image = NRESObservationFrame([CCDData(np.zeros((1, 1)), meta=header)],
                                  'test.fits')
+    image.spectrum = Spectrum1D(spectrum)
     image.instrument = SimpleNamespace()
     image.instrument.site = 'npt'
     # Classification just can't be None so that the stage does not abort.

@@ -4,7 +4,8 @@ from banzai import context
 from banzai_nres.qc.qc_science import CalculateScienceFrameMetrics
 from banzai_nres.qc.qc_science import get_snr
 from banzai_nres.frames import NRESObservationFrame
-from banzai_nres.frames import EchelleSpectralCCDData, Spectrum1D
+from banzai_nres.frames import Spectrum1D
+from banzai.data import CCDData
 
 
 class TestCalculateScienceFrameMetrics:
@@ -20,8 +21,8 @@ class TestCalculateScienceFrameMetrics:
         row = {'wavelength': test_wavelengths, 'flux': test_flux, 'uncertainty': test_uncertainty,
                'fiber': 0, 'order': snr_order}
         spectrum.append(row)
-    test_image = NRESObservationFrame([EchelleSpectralCCDData(np.zeros((1, 1)), meta=header,
-                                                              spectrum=Spectrum1D(spectrum))], 'test.fits')
+    test_image = NRESObservationFrame([CCDData(np.zeros((1, 1)), meta=header)], 'test.fits')
+    test_image.spectrum = Spectrum1D(spectrum)
 
     def test_do_stage_does_not_crash(self):
         image = CalculateScienceFrameMetrics(self.input_context).do_stage(self.test_image)

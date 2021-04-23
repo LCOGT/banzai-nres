@@ -16,6 +16,8 @@ from banzai.utils import date_utils, import_utils
 from banzai import calibrations, logs
 from banzai_nres import dbs
 import banzai.dbs
+import os
+from banzai.data import DataProduct
 
 import logging
 import argparse
@@ -87,7 +89,9 @@ def add_bpm():
     frame_factory = import_utils.import_attribute(banzai_nres.settings.FRAME_FACTORY)()
     bpm_image = frame_factory.open({'path': args.filename}, args)
     bpm_image.is_master = True
-    banzai.dbs.save_calibration_info(args.filename, bpm_image, args.db_address)
+    banzai.dbs.save_calibration_info(bpm_image.to_db_record(DataProduct(None, filename=os.path.basename(args.filename),
+                                                                        filepath=os.path.dirname(args.filename))),
+                                     args.db_address)
 
 
 def add_bpms_from_archive():
@@ -111,7 +115,8 @@ def add_bpms_from_archive():
         bpm_image = frame_factory.open(frame, args)
         if bpm_image is not None:
             bpm_image.is_master = True
-            banzai.dbs.save_calibration_info(frame['filename'], bpm_image, args.db_address)
+            banzai.dbs.save_calibration_info(bpm_image.to_db_record(DataProduct(None, filename=bpm_image.filename,
+                                                                                filepath=None)), args.db_address)
 
 
 def create_db():
