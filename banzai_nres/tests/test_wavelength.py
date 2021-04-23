@@ -92,7 +92,7 @@ class TestWavelengthCalibrate:
                                       meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
         image.features = features
         image.traces = traces
-        image.line_list=line_list
+        image.line_list = line_list
         return image
 
     @mock.patch('banzai_nres.wavelength.WavelengthCalibrate.refine_wavelengths')

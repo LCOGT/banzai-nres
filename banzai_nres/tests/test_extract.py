@@ -132,7 +132,8 @@ def two_order_image():
     data[~np.isclose(traces, 0)] = 100.
     uncertainty = 1. * data
     wavelengths = np.ones_like(traces) * 5  # dummy wavelengths image that has values distinct from flux and traces.
-    image = NRESObservationFrame([CCDData(data=data, uncertainty=uncertainty, meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
+    image = NRESObservationFrame([CCDData(data=data, uncertainty=uncertainty, meta={'OBJECTS': 'tung&tung&none'})],
+                                 'foo.fits')
     image.wavelengths = wavelengths
     image.traces = traces
     image.fibers = {'fiber': np.arange(2), 'order': np.arange(2)}
