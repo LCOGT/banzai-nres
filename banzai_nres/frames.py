@@ -237,12 +237,14 @@ class NRESObservationFrame(LCOObservationFrame):
 
     @property
     def ccf(self):
-        return self._ccf
+        if 'CCF' in self._hdu_keys:
+            return ['CCF'].data
+        else:
+            return self._ccf
 
     @ccf.setter
     def ccf(self, value):
         self._ccf = value
-        self['CCF'] = DataTable(self._ccf, name='CCF')
 
     @property
     def ra(self):
