@@ -328,5 +328,11 @@ class TestScienceFrameProcessing:
         run_reduce_individual_frames('*e00.fits*')
 
     def test_if_science_frames_were_created(self):
-        check_if_individual_frames_exist('*e00.fits*')
-        check_extracted_spectra('*e91.fits*', '1DSPEC', ['wavelength', 'flux', 'uncertainty'])
+        for day_obs in DAYS_OBS:
+            raw_files = glob(os.path.join(DATA_ROOT, day_obs, 'raw', '*e00*'))
+            processed_1d_files = glob(os.path.join(DATA_ROOT, day_obs, 'processed', '*e91-1d*'))
+            processed_2d_files = glob(os.path.join(DATA_ROOT, day_obs, 'processed', '*e91-2d*'))
+
+            assert len(raw_files) == len(processed_1d_files)
+            assert len(raw_files) == len(processed_2d_files)
+        check_extracted_spectra('*e91-1d.fits*', 'SPECTRUM', ['wavelength', 'flux', 'uncertainty'])

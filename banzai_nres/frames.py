@@ -84,7 +84,11 @@ class NRESObservationFrame(LCOObservationFrame):
             filename_1d = filename_1d.replace('.fits', '-1d.fits')
             filename_2d = filename_1d.replace('-1d.fits', '-2d.fits')
 
-            frame_1d = LCOObservationFrame([HeaderOnly(meta=self.meta.copy()), self['SPECTRUM1D'], self['CCF']],
+            frame_1d_meta = self.meta.copy()
+            # Remove any name from the header of the primary hdu
+            if 'EXTNAME' in frame_1d_meta:
+                frame_1d_meta.pop('EXTNAME')
+            frame_1d = LCOObservationFrame([HeaderOnly(frame_1d_meta), self['SPECTRUM1D'], self['CCF']],
                                            os.path.join(self.get_output_directory(runtime_context), filename_1d))
             fits_1d = frame_1d.to_fits(runtime_context)
             fits_1d['SPECTRUM1D'].name = 'SPECTRUM'
