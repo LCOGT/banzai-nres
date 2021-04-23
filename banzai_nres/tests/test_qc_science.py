@@ -29,5 +29,5 @@ class TestCalculateScienceFrameMetrics:
         assert image is not None
 
     def test_snr_calculation(self):
-        snr = get_snr(self.test_image, self.snr_order)
+        snr, _ = get_snr(self.test_image, self.snr_order)
         assert np.isclose(snr, np.max(self.test_flux/self.test_uncertainty), rtol=0.1)
