@@ -160,7 +160,7 @@ MASTER_CALIBRATION_EXTENSION_ORDER = {'BIAS': ['SPECTRUM', 'BPM', 'ERR'],
 REDUCED_DATA_EXTENSION_TYPES = {'ERR': 'float32',
                                 'BPM': 'uint8',
                                 'SPECTRUM': 'float32',
-                                'TRACES': 'int8',
+                                'TRACES': 'uint8',
                                 'PROFILE': 'float32',
                                 'WAVELENGTH': 'float64',
                                 'WEIGHTS': 'float32'
