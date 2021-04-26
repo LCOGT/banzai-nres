@@ -16,10 +16,10 @@ def test_to_fits():
     spec = Spectrum1D({'fiber': [0], 'order': [1], 'flux': [np.arange(10)], 'wavelength': [np.arange(10)]})
     image = NRESObservationFrame([CCDData(data=data, uncertainty=2 * data, name='SCI',
                                           meta={'OBJECTS': 'tung&tung&none', 'EXTNAME': ''})], 'foo.fits')
-    image['TRACES'] = ArrayData(3 * data, name='TRACES')
-    image['WEIGHTS'] = ArrayData(4 * data, name='WEIGHTS')
-    image['BACKGROUND'] = ArrayData(5 * data, name='BACKGROUND')
-    image['SPECTRUM'] = DataTable(spec.table, name='SPECTRUM')
+    image.add_or_update(ArrayData(3 * data, name='TRACES'))
+    image.add_or_update(ArrayData(4 * data, name='WEIGHTS'))
+    image.add_or_update(ArrayData(5 * data, name='BACKGROUND'))
+    image.add_or_update(DataTable(spec.table, name='SPECTRUM'))
     hdulist = image.to_fits(context.Context({'EXTENSION_NAMES_TO_CONDENSE': ['SCI'],
                                              'REDUCED_DATA_EXTENSION_TYPES': {},
                                              'fpack': True,

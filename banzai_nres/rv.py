@@ -173,5 +173,5 @@ class RVCalculator(Stage):
         sort_array = np.argsort(final_ccfs['v'][0])
         final_ccfs['xcor'] = final_ccfs['xcor'][:, sort_array]
         final_ccfs['v'] = final_ccfs['v'][:, sort_array]
-        image['CCF'] = DataTable(final_ccfs, name='CCF')
+        image.add_or_update(DataTable(final_ccfs, name='CCF'))
         return image

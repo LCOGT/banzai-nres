@@ -9,7 +9,9 @@ Preview PDFs
 ~~~~~~~~~~~~
 For quick look information about an observation, we provide a summary PDF of the observation showing a few
 important regions of the spectrum. These are primarily aimed to be diagnostic plots of the observation
-quality. An example of the pages are below with some additional explanation.
+quality. The naming convention of the summary PDFs follows the standard LCO naming convention, replacing the
+last '00.fits' with 'e92-summary.pdf'.
+An example of the pages are below with some additional explanation.
 
 .. image:: PDF_summary_mockup1.png
     :width: 792px
@@ -42,9 +44,10 @@ representative absorption lines.
 
 Extracted Spectra
 ~~~~~~~~~~~~~~~~~
-The primary data products we provide are the 1-D extracted wavelength-calibrated spectra. These spectra are stored in a FITS
-binary table. As such they are in extension 1 of the FITS file. The extension is also named SPECTRUM for
-easy access. The columns included in the table are below:
+The primary data products we provide are the 1-D extracted wavelength-calibrated spectra. The file naming convention
+for these products follows the standard LCO naming convention replacing 'e00.fits' with
+'e92-1d.fits'. These spectra are stored in a FITS binary table. As such they are in extension 1 of the FITS file.
+The extension is also named SPECTRUM for easy access. The columns included in the table are below:
 
 - 'id': Integer ID of the trace in this row. This corresponds to the number in the TRACE extension of the 2-D
   calibration products.
@@ -83,7 +86,8 @@ Results from the cross correlation are stored in the 'CCF' FITS binary table ext
 2-D Spectroscopic Frames
 ~~~~~~~~~~~~~~~~~~~~~~~~
 We provide the full 2-D frames that have not been extracted for users who wish to perform advanced analysis
-on their data. These files are much larger than the extracted spectra so are provided as a separate FITS file.
+on their data. These files are much larger than the extracted spectra so are provided as a separate FITS file
+following the standard LCO naming convention replacing 'e00.fits' with 'e92-2d.fits'.
 Each extension is named, so we recommend accessing the data by name so that any analysis code is insensitive
 to order changes in the FITS files. A list of extension names and a description of their contents are below.
 

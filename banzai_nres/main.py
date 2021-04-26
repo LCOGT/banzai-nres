@@ -153,5 +153,4 @@ def populate_phoenix_models():
     args = parser.parse_args()
     logs.set_log_level(args.log_level)
 
-    dbs.create_db(args.db_address)
     dbs.populate_phoenix_models(args.model_location, args.db_address)

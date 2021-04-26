@@ -143,7 +143,7 @@ class NRESObservationFrame(LCOObservationFrame):
 
     @property
     def traces(self):
-        if 'TRACES' in self._hdu_keys:
+        if 'TRACES' in self:
             return self['TRACES'].data
         else:
             return self._traces
@@ -158,11 +158,11 @@ class NRESObservationFrame(LCOObservationFrame):
 
     @background.setter
     def background(self, value):
-        self['BACKGROUND'] = ArrayData(value, name='BACKGROUND')
+        self.add_or_update(ArrayData(value, name='BACKGROUND'))
 
     @property
     def profile(self):
-        if 'PROFILE' in self._hdu_keys:
+        if 'PROFILE' in self:
             return self['PROFILE'].data
         else:
             return self._profile
@@ -173,7 +173,7 @@ class NRESObservationFrame(LCOObservationFrame):
 
     @property
     def weights(self):
-        if 'WEIGHTS' in self._hdu_keys:
+        if 'WEIGHTS' in self:
             return self['WEIGHTS'].data
         else:
             return self._weights
@@ -189,11 +189,11 @@ class NRESObservationFrame(LCOObservationFrame):
     @spectrum.setter
     def spectrum(self, value):
         self._spectrum = value
-        self['SPECTRUM1D'] = DataTable(value.table, name='SPECTRUM1D')
+        self.add_or_update(DataTable(value.table, name='SPECTRUM1D'))
 
     @property
     def blaze(self):
-        if 'BLAZE' in self._hdu_keys:
+        if 'BLAZE' in self:
             return self['BLAZE'].data
         else:
             return self._blaze
@@ -204,7 +204,7 @@ class NRESObservationFrame(LCOObservationFrame):
 
     @property
     def wavelengths(self):
-        if 'WAVELENGTH' in self._hdu_keys:
+        if 'WAVELENGTH' in self:
             return self['WAVELENGTH'].data
         else:
             return self._wavelengths
@@ -215,7 +215,7 @@ class NRESObservationFrame(LCOObservationFrame):
 
     @property
     def fibers(self):
-        if 'FIBERS' in self._hdu_keys:
+        if 'FIBERS' in self:
             return self['FIBERS'].data
         else:
             return self._fibers
@@ -226,7 +226,7 @@ class NRESObservationFrame(LCOObservationFrame):
 
     @property
     def features(self):
-        if 'FEATURES' in self._hdu_keys:
+        if 'FEATURES' in self:
             return self['FEATURES'].data
         else:
             return self._features
@@ -237,7 +237,7 @@ class NRESObservationFrame(LCOObservationFrame):
 
     @property
     def ccf(self):
-        if 'CCF' in self._hdu_keys:
+        if 'CCF' in self:
             return self['CCF'].data
         else:
             return self._ccf

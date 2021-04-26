@@ -7,7 +7,7 @@ from banzai.data import ArrayData, DataTable
 
 class ProfileFitter(Stage):
     def do_stage(self, image):
-        image['PROFILE'] = ArrayData(np.zeros_like(image.data), meta={}, name='PROFILE')
+        image.add_or_update(ArrayData(np.zeros_like(image.data), meta={}, name='PROFILE'))
         blazes = np.zeros((image.num_traces, image.data.shape[1]), dtype=float)
         blazes_errors = np.zeros((image.num_traces, image.data.shape[1]), dtype=float)
         trace_ids = range(1, image.num_traces + 1)
@@ -48,7 +48,7 @@ class ProfileFitter(Stage):
             x_extent = slice(np.min(this_trace[1]), np.max(this_trace[1]) + 1)
             blazes[i, x_extent] = blaze
             blazes_errors[i, x_extent] = blaze_errors
-        image['BLAZE'] = DataTable(Table({'id': trace_ids, 'blaze': blazes, 'blaze_error': blazes_errors}),
-                                   name='BLAZE')
+        image.add_or_update(DataTable(Table({'id': trace_ids, 'blaze': blazes, 'blaze_error': blazes_errors}),
+                                      name='BLAZE'))
 
         return image
