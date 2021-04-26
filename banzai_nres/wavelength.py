@@ -249,7 +249,7 @@ class IdentifyFeatures(Stage):
         if image.blaze is not None:
             logger.info('Blaze correcting emission feature fluxes', image=image)
             # blaze correct the emission features fluxes. This speeds up and improves overlap fitting in xwavecal.
-            features['corrected_flux'] = features['flux'] / image.blaze['blaze'][features['id'] - 1,
+            features['corrected_flux'] = features['flux'] / image.blaze['blaze'][np.array(features['id'], dtype=int) - 1,
                                                                                  np.array(features['xcentroid'],
                                                                                           dtype=int)]
 
