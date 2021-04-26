@@ -62,7 +62,7 @@ class GetOptimalExtractionWeights(WeightedExtract):
         if image.profile is None:
             logger.error('Profile missing. Rejecting image.', image=image)
             return None
-        image['WEIGHTS'] = ArrayData(np.zeros_like(image.data, dtype=float), name='WEIGHTS')
+        image.add_or_update(ArrayData(np.zeros_like(image.data, dtype=float), name='WEIGHTS'))
         trace_ids = np.arange(1, image.num_traces + 1)
         for trace_id in trace_ids:
             yx = get_trace_region(np.isclose(image.traces, trace_id))

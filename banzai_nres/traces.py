@@ -71,11 +71,11 @@ def refine_traces(image, weights=None, trace_half_height=5):
 class TraceInitializer(Stage):
     def do_stage(self, image):
         if image.traces is None:
-            image['TRACES'] = ArrayData(self.blind_solve(image, TRACE_HALF_HEIGHT), name='TRACES')
+            image.add_or_update(ArrayData(self.blind_solve(image, TRACE_HALF_HEIGHT), name='TRACES'))
             refine_traces(image, weights=image.traces > 0,
                           trace_half_height=TRACE_HALF_HEIGHT)
         else:
-            image['TRACES'] = ArrayData(image.traces, name='TRACES')
+            image.add_or_update(ArrayData(image.traces, name='TRACES'))
         return image
 
     @staticmethod
