@@ -100,7 +100,7 @@ class WavelengthCalibrate(Stage):
     M0_RANGE = (48, 55)  # range of possible values for the integer principle order number.
 
     def do_stage(self, image):
-        image.features = self.init_feature_labels(image.num_traces, image.features)
+        image.add_or_update(DataTable(self.init_feature_labels(image.num_traces, image.features), name='FEATURES'))
         do_fresh_wavelength_calibration = image.wavelengths is None
         if do_fresh_wavelength_calibration:
             image.features['wavelength'] = np.zeros_like(image.features['pixel'], dtype=float)  # init wavelengths
@@ -127,7 +127,7 @@ class WavelengthCalibrate(Stage):
     def refine_wavelengths(self, image):
         ref_ids, fiber_ids, trace_ids = get_ref_ids_and_fibers(image.num_traces)
         # get_ref_ids_and_fibers this is also called in init_feature_labels, so everything should be consistent
-        image.add_or_update(ArrayData(np.zeros_like(image.data, dtype=float), name='WAVELENGTH'))
+        image.add_or_update(ArrayData(np.zeros_like(image.data, dtype=np.float64), name='WAVELENGTH'))
         for fiber in list(set(fiber_ids)):
             this_fiber = image.features['fiber'] == fiber
             if np.all(np.isnan(image.features['wavelength'][this_fiber])) or np.all(
@@ -284,10 +284,10 @@ class IdentifyFeatures(Stage):
 
 def get_ref_ids_and_fibers(num_traces):
     # this function always assumes two fibers are lit.
-    fibers, ref_id = np.zeros(num_traces), np.zeros(num_traces)
+    fibers, ref_id = np.zeros(num_traces, dtype=int), np.zeros(num_traces, dtype=int)
     fibers[1::2] = 1  # group alternating traces as part of the same fiber
     for fiber in [0, 1]:
-        ref_id[fibers == fiber] = np.arange(np.count_nonzero(fibers == fiber))
+        ref_id[fibers == fiber] = np.arange(np.count_nonzero(fibers == fiber), dtype=int)
     # note that the fiber designation does not matter, all that matters is that we separate the two AGU's wavelength
     # solutions.
     return ref_id, fibers, np.arange(1, num_traces + 1)

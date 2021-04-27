@@ -82,5 +82,5 @@ class MaskTellurics(Stage):
     def do_stage(self, image) -> NRESObservationFrame:
         telluric_spectrum = np.genfromtxt(self.TELLURIC_FILENAME)
         mask = generate_telluric_mask(image.spectrum.table, telluric_spectrum)
-        image.spectrum.mask = image.spectrum.mask.astype(np.int64) + (mask * 16).astype(np.int64)
+        image.spectrum.mask[mask] |= 16
         return image
