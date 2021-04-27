@@ -96,15 +96,15 @@ class TraceInitializer(Stage):
         labeled_indices = np.arange(1, n_labels + 1)
 
         # Find the widths of the traces by finding the min and max x position
-        x_maxes = ndimage.labeled_comprehension(X, labeled_image, labeled_indices, np.max, int, None)
-        x_mins = ndimage.labeled_comprehension(X, labeled_image, labeled_indices, np.min, int, None)
+        x_maxes = ndimage.labeled_comprehension(X, labeled_image, labeled_indices, np.max, float, None).astype(int)
+        x_mins = ndimage.labeled_comprehension(X, labeled_image, labeled_indices, np.min, float, None).astype(int)
         # Pick out only features that are wide like traces and span the center
         # Note labeled_indices is one indexed
         trace_xextents_ok = np.logical_and(x_maxes > (image.shape[1] // 2 + MIN_TRACE_HALF_WIDTH),
                                            x_mins < (image.shape[1] // 2 - MIN_TRACE_HALF_WIDTH))
         # and remove any traces whose centers are close (by a half width) to the top or bottom of the detector
-        y_maxes = ndimage.labeled_comprehension(Y, labeled_image, labeled_indices, np.max, int, None)
-        y_mins = ndimage.labeled_comprehension(Y, labeled_image, labeled_indices, np.min, int, None)
+        y_maxes = ndimage.labeled_comprehension(Y, labeled_image, labeled_indices, np.max, float, None).astype(int)
+        y_mins = ndimage.labeled_comprehension(Y, labeled_image, labeled_indices, np.min, float, None).astype(int)
         trace_centers_not_near_edge = np.logical_and(y_maxes < (image.shape[0] - trace_half_height),
                                                      y_mins > trace_half_height)
         true_labels = labeled_indices[np.logical_and(trace_xextents_ok, trace_centers_not_near_edge)]
