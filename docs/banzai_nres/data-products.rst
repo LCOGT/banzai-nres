@@ -91,10 +91,10 @@ following the standard LCO naming convention replacing 'e00.fits' with 'e92-2d.f
 Each extension is named, so we recommend accessing the data by name so that any analysis code is insensitive
 to order changes in the FITS files. A list of extension names and a description of their contents are below.
 
-- 'SPECTRUM': 2-D non-extracted image after subtracting the bias and dark frames
+- 'SPECTRUM': 2-D non-extracted image after subtracting the bias and dark frames.
 
-- 'ERROR': 2-D frame of the of formal uncertainties including the read noise, Poisson contribution, the bias subtraction,
-  and the dark subtraction
+- 'ERR': 2-D frame of the of formal uncertainties including the read noise, Poisson contribution, the bias subtraction,
+  and the dark subtraction.
 
 - 'BPM': Bad pixel mask (unsigned 8-bit integer). BPM = 1 for known bad pixels. BPM = 2 for saturated pixels.
 
@@ -125,19 +125,22 @@ estimate the profile. These files have the following extensions:
 - 'SPECTRUM': 2-D stacked frame of the lamp flat spectrum after bias and dark subtraction and
   dividing out the profile and blaze.
 
-- 'ERROR': Formal uncertainties on the stacked quartz lamp flats after bias and dark subtraction and
+- 'BPM': Bad pixel mask (unsigned 8-bit integer). BPM = 1 for known bad pixels. BPM = 2 for saturated pixels.
+
+- 'ERR': Formal uncertainties on the stacked quartz lamp flats after bias and dark subtraction and
   dividing out the profile and blaze.
 
 - 'TRACES': Integer mask with the extraction regions. Each value corresponds to the 'id' column in the extracted
   data product. :code:`banzai_nres.utils.trace_utils.get_trace_region` is a useful method to get the numpy slice
   corresponding to a given trace region.
 
+- 'PROFILE': Profile estimate from the stacked lamp flat. Non-zero only where the 'TRACE' extension is non-zero.
+  The profile is normalized so the sum in each column of each trace is unity. This extension is compressed, but it 
+  is compressed using the GZip algorithm instead of RICE compression like most
+  of the rest of the image extensions produced by LCO, because GZip is lossless.
+
 - 'BLAZE': FITS Binary table with the estimate of the 'blaze' and 'blaze_error' from the stacked lamp flat. 'id'
   values correspond to the regions in the 'TRACE' extension.
-
-- 'PROFILE': Profile estimate from the stacked lamp flat. Non-zero only where the 'TRACE' extension is non-zero.
-  The profile is normalized so the sum in each column of each trace is unity. This extension is compressed, but it is compressed using the GZip algorithm instead of RICE compression like most
-  of the rest of the image extensions produced by LCO, because GZip is lossless.
 
 - 'WEIGHTS': 2-D frame of optimal extraction weights based on the profile extension described above. Using the
   :code:`get_trace_region` method can be used to easily reapply these weights and sum to produce an extraction.
@@ -147,17 +150,19 @@ ThAr Arc Lamps
 - 'SPECTRUM': 2-D stacked frame of the ThAr arc lamp spectrum after bias and dark subtraction,
   used for the wavelength solution.
 
-- 'ERROR': Formal uncertainty on the 2-D stacked frame of the ThAr arc lamp spectrum after bias and dark subtraction.
+- 'BPM': Bad pixel mask (unsigned 8-bit integer). BPM = 1 for known bad pixels. BPM = 2 for saturated pixels.
+
+- 'ERR': Formal uncertainty on the 2-D stacked frame of the ThAr arc lamp spectrum after bias and dark subtraction.
+
+- 'WAVELENGTH': 2-D frame of the wavelength model evaluated at the center of every pixel in Angstroms.
+  This extension is compressed, but it is compressed using the GZip algorithm instead of RICE compression like most
+  of the rest of the image extensions produced by LCO, because GZip is lossless.
 
 - 'FEATURES': FITS binary table with the centroids of the detected features in the stacked ThAr arc lamp frames.
   These features are used to fit the wavelength solution. The pixel positions are stored in the 'x' and 'y' columns.
   The 'flux' and 'fluxerror' columns store the brightness of the features. The error on the centroid is stored in
   the 'centroid_error' column. The 'traceid' column corresponds to the value in the 'TRACES' extension of the
   stacked quartz lamp flat.
-
-- 'WAVELENGTH': 2-D frame of the wavelength model evaluated at the center of every pixel in Angstroms.
-  This extension is compressed, but it is compressed using the GZip algorithm instead of RICE compression like most
-  of the rest of the image extensions produced by LCO, because GZip is lossless.
 
 - 'FIBERS': FITS binary table mapping the order number from the TRACES extension to fiber number.
 
