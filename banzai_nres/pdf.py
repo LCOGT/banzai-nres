@@ -87,7 +87,7 @@ class MakePDFSummary(Stage):
 
         pl.text(0.1, top_line - line_separation * 11, 'SNR = {0:1.0f}/pixel @ 5180 Angstroms'.format(image.meta['SNR']))
         pl.text(0.1, top_line - line_separation * 12, 'Exposure time = {0:1.0f} seconds'.format(image.meta['EXPTIME']))
-
+        
         # Next Page
 
         # make the plots of individual lines of interest
@@ -116,7 +116,6 @@ class MakePDFSummary(Stage):
             make_line_plot(wavelength, flux, order, ax, line_center, line_name, line_order)
 
         # If there is a working exposure meter, a fourth page showing that can go here.
-        import pdb; pdb.set_trace()
         image.summary_figures = [fig1, fig2, fig3]
         return image
 
