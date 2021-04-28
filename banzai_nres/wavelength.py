@@ -122,6 +122,10 @@ class WavelengthCalibrate(Stage):
             image.features['wavelength'] = image.wavelengths[image.features['ycentroid'].astype(int),
                                                              image.features['xcentroid'].astype(int)]
         self.refine_wavelengths(image)
+
+        image.features.remove_columns(['npix', 'sky', 'mag', 'pixel'])
+        # remove daofind parameters that are not relevant to our case
+
         return image
 
     def refine_wavelengths(self, image):
