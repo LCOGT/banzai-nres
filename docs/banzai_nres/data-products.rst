@@ -10,7 +10,7 @@ Preview PDFs
 For quick look information about an observation, we provide a summary PDF of the observation showing a few
 important regions of the spectrum. These are primarily aimed to be diagnostic plots of the observation
 quality. The naming convention of the summary PDFs follows the standard LCO naming convention, replacing the
-last '00.fits' with 'e92-summary.pdf'.
+last 'e00.fits' with 'e92-summary.pdf'.
 An example of the pages are below with some additional explanation.
 
 .. image:: PDF_summary_mockup1.png
@@ -24,7 +24,7 @@ the individual orders (gray). Note that the RVs are measured for each of the ind
 final RV measurement; the combined CCF shown here is computed only for display purposes.
 Bottom center: peak SNR per pixel for each order of the extracted spectrum. The orders used to measure the RV are highlighted in red.
 Bottom right: summary information on the stellar classification, RV measurement, and exposure parameters. These and other parameters
-can also be found in the image headers.
+can also be found in the fits headers.
 
 .. image:: PDF_summary_mockup2.png
     :width: 792px
@@ -55,7 +55,7 @@ The extension is also named SPECTRUM for easy access. The columns included in th
 - 'order': Physical dispersion order of this trace.
 
 - 'fiber': Fiber ID. The calibration fiber is always 1. The science fiber is either 0 or 2. The science fiber on the
-  target can be determined from the 'OBJECTS' keyword in the header.
+  target can be determined from the 'SCIFIBER' keyword in the header.
 
 - 'wavelength': Wavelength per pixel for this trace (Angstroms).
 
@@ -117,7 +117,7 @@ Bias and Dark Frames
 Stacked bias and dark frames are available via the LCO archive. These can be found with OBSTYPE=BIAS and DARK, 
 respectively.
 
-Bad pixels masks
+Bad Pixels Masks
 ----------------
 Masks with known bad pixels are available in the archive under OBSTYPE=BPM. Non-zero values are bad pixels.
 
@@ -165,7 +165,7 @@ relating back to the IDL Commissioning Pipeline. These spectra have the followin
 
 - 'ERR': Formal uncertainty on the 2-D stacked frame of the ThAr arc lamp spectrum after bias and dark subtraction.
 
-- 'WAVELENGTH': 2-D frame of the wavelength model evaluated at the center of every pixel in Angstroms.
+- 'WAVELENGTH': 2-D frame of the wavelength model evaluated at the center of every pixel, in Angstroms.
   This extension is compressed, but it is compressed using the GZip algorithm instead of RICE compression like most
   of the rest of the image extensions produced by LCO, because GZip is lossless.
 

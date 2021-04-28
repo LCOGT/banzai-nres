@@ -116,7 +116,7 @@ class MakePDFSummary(Stage):
             make_line_plot(wavelength, flux, order, ax, line_center, line_name, line_order)
 
         # If there is a working exposure meter, a fourth page showing that can go here.
-
+        import pdb; pdb.set_trace()
         image.summary_figures = [fig1, fig2, fig3]
         return image
 
