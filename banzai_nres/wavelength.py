@@ -1,6 +1,7 @@
 import numpy as np
 
 from banzai.stages import Stage
+from banzai.data import DataTable, ArrayData
 from banzai.calibrations import CalibrationStacker, CalibrationUser
 from astropy import table
 
@@ -126,7 +127,7 @@ class WavelengthCalibrate(Stage):
     def refine_wavelengths(self, image):
         ref_ids, fiber_ids, trace_ids = get_ref_ids_and_fibers(image.num_traces)
         # get_ref_ids_and_fibers this is also called in init_feature_labels, so everything should be consistent
-        image.wavelengths = np.zeros_like(image.data, dtype=float)
+        image.add_or_update(ArrayData(np.zeros_like(image.data, dtype=float), name='WAVELENGTH'))
         for fiber in list(set(fiber_ids)):
             this_fiber = image.features['fiber'] == fiber
             if np.all(np.isnan(image.features['wavelength'][this_fiber])) or np.all(
@@ -166,7 +167,8 @@ class WavelengthCalibrate(Stage):
                                                       low_fiber_first=False)
         ref_ids = IdentifyFibers.build_ref_id_column(matched_ids, fiber_ids, anchor_ref_id, low_fiber_first=False)
         # set fibers attribute on image
-        image.fibers = Table({'trace_id': trace_ids, 'order': ref_ids, 'fiber': fiber_ids})
+        image.add_or_update(DataTable(Table({'trace_id': trace_ids, 'order': ref_ids, 'fiber': fiber_ids}),
+                                      name='FIBERS'))
 
     @staticmethod
     def init_feature_labels(num_traces, features):
@@ -265,7 +267,7 @@ class IdentifyFeatures(Stage):
         if len(features) == 0:
             logger.error('No emission features found on this image!', image=image)
         # save the features to the image.
-        image.features = features
+        image.add_or_update(DataTable(features, name='FEATURES'))
         return image
 
     @staticmethod

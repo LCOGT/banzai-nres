@@ -2,11 +2,12 @@ from banzai.stages import Stage
 import numpy as np
 from banzai_nres.utils.trace_utils import get_trace_region
 from astropy.table import Table
+from banzai.data import ArrayData, DataTable
 
 
 class ProfileFitter(Stage):
     def do_stage(self, image):
-        image.profile = np.zeros_like(image.data)
+        image.add_or_update(ArrayData(np.zeros_like(image.data), meta={}, name='PROFILE'))
         blazes = np.zeros((image.num_traces, image.data.shape[1]), dtype=float)
         blazes_errors = np.zeros((image.num_traces, image.data.shape[1]), dtype=float)
         trace_ids = range(1, image.num_traces + 1)
@@ -47,6 +48,7 @@ class ProfileFitter(Stage):
             x_extent = slice(np.min(this_trace[1]), np.max(this_trace[1]) + 1)
             blazes[i, x_extent] = blaze
             blazes_errors[i, x_extent] = blaze_errors
-        image.blaze = Table({'id': trace_ids, 'blaze': blazes, 'blaze_error': blazes_errors})
+        image.add_or_update(DataTable(Table({'id': trace_ids, 'blaze': blazes, 'blaze_error': blazes_errors}),
+                                      name='BLAZE'))
 
         return image

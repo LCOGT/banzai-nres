@@ -1,15 +1,17 @@
 import numpy as np
 
 from banzai.stages import Stage
-from banzai_nres.frames import EchelleSpectralCCDData, Spectrum1D
+from banzai_nres.frames import Spectrum1D, NRESObservationFrame
 from banzai_nres.utils.trace_utils import get_trace_region
 import logging
+from banzai.data import ArrayData
+
 
 logger = logging.getLogger('banzai')
 
 
 class WeightedExtract(Stage):
-    def do_stage(self, image: EchelleSpectralCCDData):
+    def do_stage(self, image: NRESObservationFrame):
         if image.weights is None:
             logger.error('Extraction weights are missing. Rejecting image.', image=image)
             return None
@@ -39,9 +41,6 @@ class WeightedExtract(Stage):
                                      'fiber': image.fibers['fiber'], 'wavelength': wavelength,
                                      'flux': flux, 'uncertainty': np.sqrt(variance), 'blaze': image.blaze['blaze'],
                                      'blaze_error': image.blaze['blaze_error'], 'mask': mask})
-        # Remove the fibers and the blaze extensions now that the info is stored in the extracted spectrum
-        image.fibers = None
-        image.blaze = None
         return image
 
     @staticmethod
@@ -59,11 +58,11 @@ class WeightedExtract(Stage):
 
 
 class GetOptimalExtractionWeights(WeightedExtract):
-    def do_stage(self, image: EchelleSpectralCCDData):
+    def do_stage(self, image: NRESObservationFrame):
         if image.profile is None:
             logger.error('Profile missing. Rejecting image.', image=image)
             return None
-        image.weights = np.zeros_like(image.data, dtype=float)
+        image.add_or_update(ArrayData(np.zeros_like(image.data, dtype=float), name='WEIGHTS'))
         trace_ids = np.arange(1, image.num_traces + 1)
         for trace_id in trace_ids:
             yx = get_trace_region(np.isclose(image.traces, trace_id))

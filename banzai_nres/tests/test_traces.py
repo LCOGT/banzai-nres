@@ -1,8 +1,8 @@
 import numpy as np
 from banzai_nres.traces import find_y_center, TraceInitializer, TraceRefiner, refine_traces
 from banzai_nres.frames import NRESObservationFrame
-from banzai_nres.frames import EchelleSpectralCCDData
 from banzai import context
+from banzai.data import CCDData
 
 
 def gaussian(y, mu, sigma, a=1.0):
@@ -44,7 +44,7 @@ def test_centroid_flux_weights():
 
 def test_blind_solve():
     trace_centers, test_data, x2d, y2d = make_realistic_trace_image()
-    test_image = NRESObservationFrame([EchelleSpectralCCDData(data=test_data, uncertainty=1e-5*np.ones_like(test_data),
+    test_image = NRESObservationFrame([CCDData(data=test_data, uncertainty=1e-5*np.ones_like(test_data),
                                        meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
     input_context = context.Context({'TRACE_HALF_HEIGHT': 5})
     stage = TraceInitializer(input_context)
@@ -58,8 +58,8 @@ def test_blind_solve_with_bpm():
     trace_centers, test_data, x2d, y2d = make_realistic_trace_image()
     bpm_mask = np.ones_like(test_data, dtype=bool)
     bpm_mask[150:250, :] = 0  # set the pixels around the center trace as good. Leave the other pixels masked.
-    test_image = NRESObservationFrame([EchelleSpectralCCDData(data=test_data, uncertainty=1e-5*np.ones_like(test_data),
-                                       meta={'OBJECTS': 'tung&tung&none'}, mask=bpm_mask)], 'foo.fits')
+    test_image = NRESObservationFrame([CCDData(data=test_data, uncertainty=1e-5*np.ones_like(test_data),
+                                               meta={'OBJECTS': 'tung&tung&none'}, mask=bpm_mask)], 'foo.fits')
     input_context = context.Context({'TRACE_HALF_HEIGHT': 5})
     stage = TraceInitializer(input_context)
     output_image = stage.do_stage(test_image)
@@ -70,8 +70,8 @@ def test_blind_solve_with_bpm():
 
 def test_blind_solve_with_edge_clipping_traces():
     trace_centers, test_data, x2d, y2d = make_realistic_trace_image(nx=401, ny=403, y0_centers=[1, 200, 400])
-    test_image = NRESObservationFrame([EchelleSpectralCCDData(data=test_data, uncertainty=1e-5*np.ones_like(test_data),
-                                       meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
+    test_image = NRESObservationFrame([CCDData(data=test_data, uncertainty=1e-5*np.ones_like(test_data),
+                                               meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
     input_context = context.Context({'TRACE_HALF_HEIGHT': 5})
     stage = TraceInitializer(input_context)
     output_image = stage.do_stage(test_image)
@@ -95,8 +95,8 @@ def test_refining_on_noisy_data():
     test_data += np.random.poisson(test_data)
     test_data += np.random.normal(0.0, read_noise, size=test_data.shape)
     uncertainty = np.sqrt(test_data + read_noise ** 2.0)
-    test_image = NRESObservationFrame([EchelleSpectralCCDData(data=test_data, uncertainty=uncertainty,
-                                                              meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
+    test_image = NRESObservationFrame([CCDData(data=test_data, uncertainty=uncertainty,
+                                               meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
     input_context = context.Context({'TRACE_HALF_HEIGHT': 5})
     stage = TraceInitializer(input_context)
     output_image = stage.do_stage(test_image)
@@ -124,8 +124,8 @@ def test_blind_solve_realistic_data():
     test_data += np.random.poisson(test_data)
     test_data += np.random.normal(0.0, read_noise, size=test_data.shape)
     uncertainty = np.sqrt(test_data + read_noise ** 2.0)
-    test_image = NRESObservationFrame([EchelleSpectralCCDData(data=test_data, uncertainty=uncertainty,
-                                                              meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
+    test_image = NRESObservationFrame([CCDData(data=test_data, uncertainty=uncertainty,
+                                               meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
     input_context = context.Context({'TRACE_HALF_HEIGHT': 5})
     stage = TraceInitializer(input_context)
     output_image = stage.do_stage(test_image)
@@ -157,8 +157,8 @@ def test_refine_traces_with_previous_trace():
     test_data += np.random.poisson(test_data)
     test_data += np.random.normal(0.0, read_noise, size=test_data.shape)
     uncertainty = np.sqrt(test_data + read_noise ** 2.0)
-    test_image = NRESObservationFrame([EchelleSpectralCCDData(data=test_data, uncertainty=uncertainty,
-                                                              meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
+    test_image = NRESObservationFrame([CCDData(data=test_data, uncertainty=uncertainty,
+                                               meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
     test_image.traces = input_traces
     input_context = context.Context({'TRACE_HALF_HEIGHT': 5})
 
@@ -182,8 +182,8 @@ def test_refine_traces_offset_centroid():
     test_data += np.random.poisson(test_data)
     test_data += np.random.normal(0.0, read_noise, size=test_data.shape)
     uncertainty = np.sqrt(test_data + read_noise ** 2.0)
-    test_image = NRESObservationFrame([EchelleSpectralCCDData(data=test_data, uncertainty=uncertainty,
-                                                              meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
+    test_image = NRESObservationFrame([CCDData(data=test_data, uncertainty=uncertainty,
+                                               meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
     test_image.traces = input_traces
     input_context = context.Context({'TRACE_HALF_HEIGHT': 5})
 
@@ -225,8 +225,8 @@ def test_refine_traces_curved_trace():
     y_center = np.array([input_y_center.copy() for i in range(ny)])
     test_data = 1 / sigma / (2.0 * np.pi) * np.exp(-0.5 * (y2d - y_center) ** 2.0 / sigma ** 2)
 
-    test_image = NRESObservationFrame([EchelleSpectralCCDData(data=test_data, uncertainty=np.zeros_like(test_data),
-                                                              meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
+    test_image = NRESObservationFrame([CCDData(data=test_data, uncertainty=np.zeros_like(test_data),
+                                               meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
     test_image.traces = np.ones_like(expected_trace)
     refine_traces(test_image, weights=test_image.data, trace_half_height=trace_half_height)
 
