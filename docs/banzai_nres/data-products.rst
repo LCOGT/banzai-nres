@@ -107,7 +107,15 @@ to process this data and are described below.
 
 Calibration files
 ~~~~~~~~~~~~~~~~~
-Stacked bias and dark frames are available via the LCO archive.
+All calibration files are available via the `LCO Archive <https://archive.lco.global>`_. The filenames of the 
+stacked calibration frames used to reduce each science spectrum can be found in the science spectrum headers.
+The relevant keywords are: L1IDMASK (bad pixel mask), L1IDBIAS (bias), L1IDDARK (dark), L1IDFLAT (flat), and 
+L1IDARC (ThAr).
+
+Bias and Dark Frames
+--------------------
+Stacked bias and dark frames are available via the LCO archive. These can be found with OBSTYPE=BIAS and DARK, 
+respectively.
 
 Bad pixels masks
 ----------------
@@ -147,6 +155,9 @@ estimate the profile. These files have the following extensions:
 
 ThAr Arc Lamps
 --------------
+Note that the Thorium-Argon lamp spectra are referred to as "double" spectra within the pipeline for historical reasons
+relating back to the IDL Commissioning Pipeline. These spectra have the following extensions:
+
 - 'SPECTRUM': 2-D stacked frame of the ThAr arc lamp spectrum after bias and dark subtraction,
   used for the wavelength solution.
 
@@ -159,10 +170,15 @@ ThAr Arc Lamps
   of the rest of the image extensions produced by LCO, because GZip is lossless.
 
 - 'FEATURES': FITS binary table with the centroids of the detected features in the stacked ThAr arc lamp frames.
-  These features are used to fit the wavelength solution. The pixel positions are stored in the 'x' and 'y' columns.
-  The 'flux' and 'fluxerror' columns store the brightness of the features. The error on the centroid is stored in
-  the 'centroid_error' column. The 'traceid' column corresponds to the value in the 'TRACES' extension of the
-  stacked quartz lamp flat.
+  These features are used to fit the wavelength solution. The pixel positions are stored in the 'xcentroid' and 'ycentroid' columns.
+  The 'flux' and 'fluxerr' columns store the brightness of the features, while 'corrected_flux' is the blaze-corrected flux
+  and 'peak' is the peak flux in a pixel within the feature.
+  The error on the centroid is stored in
+  the 'centroid_err' column. The 'id' column corresponds to the value in the 'TRACES' extension of the
+  stacked quartz lamp flat, while 'order' and 'fiber' are the physical order and fiber number, respectively.
+  'wavelength' is the laboratory vacuum wavelength of each feature.
+  'sharpness', 'roundness1', and 'roundness2' are measures of the 2-D morphology of each feature.
+
 
 - 'FIBERS': FITS binary table mapping the order number from the TRACES extension to fiber number.
 
