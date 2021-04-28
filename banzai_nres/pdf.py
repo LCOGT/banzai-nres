@@ -34,7 +34,7 @@ class MakePDFSummary(Stage):
         spectrum_line, = pl.plot(np.squeeze(wavelength[primary_order, :]),
                                  np.squeeze(flux[primary_order, :]), color='blue')
         template_line, = pl.plot(template['wavelength']*v_over_c_plus_one, template['flux'], color='red', linewidth=0.5)
-        pl.xlim([5135., 5220.])
+        pl.xlim([5140., 5220.])
         pl.ylim([0., np.max(flux[primary_order, :])])
         pl.xlabel('wavelength (Angstroms)')
         pl.ylabel('normalized flux')
@@ -71,9 +71,9 @@ class MakePDFSummary(Stage):
 
         ax = pl.subplot(2, 3, 6)
         ax.set_axis_off()
-        pl.title('Summary Information for')
+        pl.title('Summary Information for file')
         line_separation, top_line = 0.065, 0.925
-        pl.text(0.1, top_line, 'File ' + image.meta['ORIGNAME'])
+        pl.text(0.1, top_line, image.meta['ORIGNAME'].replace('e00','e'+str(self.runtime_context.reduction_level)+'-1d')+'.fz')
         pl.text(0.1, top_line - line_separation, 'Teff = {0:1.4g} K'.format(image.meta['TEFF']))
         pl.text(0.1, top_line - line_separation * 2, 'logg = {0:1.2g} (cgs units)'.format(image.meta['LOGG']))
         pl.text(0.1, top_line - line_separation * 3, '[Fe/H] = {0:1.2g}'.format(image.meta['FEH']))
