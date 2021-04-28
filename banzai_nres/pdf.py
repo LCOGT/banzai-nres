@@ -73,8 +73,8 @@ class MakePDFSummary(Stage):
         ax.set_axis_off()
         pl.title('Summary Information for file')
         line_separation, top_line = 0.065, 0.925
-        pl.text(0.1, top_line, image.meta['ORIGNAME'].replace('e00', 'e' + \
-                                                              str(self.runtime_context.reduction_level) + '-1d') + '.fz')
+        pl.text(0.1, top_line, image.meta['ORIGNAME'].replace('e00', 'e' + str(self.runtime_context.reduction_level) + 
+                                                              '-1d') + '.fz')
         pl.text(0.1, top_line - line_separation, 'Teff = {0:1.4g} K'.format(image.meta['TEFF']))
         pl.text(0.1, top_line - line_separation * 2, 'logg = {0:1.2g} (cgs units)'.format(image.meta['LOGG']))
         pl.text(0.1, top_line - line_separation * 3, '[Fe/H] = {0:1.2g}'.format(image.meta['FEH']))
