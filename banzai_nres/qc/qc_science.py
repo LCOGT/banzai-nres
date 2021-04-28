@@ -18,6 +18,8 @@ class CalculateScienceFrameMetrics(Stage):
         snr, snr_wave = get_snr(image, SNR_ORDER)
         image.meta['SNR'] = snr, 'Signal-to-noise ratio per pix at 5180 Angstrom'
 
+        image.meta['SCIFIBER'] = image.science_fiber, 'Fiber ID of the science spectrum'
+
         return image
 
 
