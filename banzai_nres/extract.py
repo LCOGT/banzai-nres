@@ -24,7 +24,7 @@ class WeightedExtract(Stage):
         variance = np.zeros_like(flux, dtype=float)
         mask = np.zeros_like(flux, dtype=np.uint8)
 
-        trace_ids = np.arange(1, image.num_traces + 1)
+        trace_ids = np.arange(1, image.num_traces + 1, dtype=int)
         for i, trace_id in enumerate(trace_ids):
             this_trace = get_trace_region(np.isclose(image.traces, trace_id))
             # get the horizontal (x) extent of the trace. Consider making this a get_extent function.
