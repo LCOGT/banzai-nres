@@ -2,6 +2,9 @@ from banzai_nres.fibers import fiber_states_from_header
 from banzai.lco import LCOFrameFactory, LCOObservationFrame, LCOCalibrationFrame
 from banzai.frames import ObservationFrame
 from banzai.data import DataProduct, ArrayData, HeaderOnly, DataTable
+from matplotlib.backends.backend_pdf import PdfPages
+from matplotlib import pyplot
+from io import BytesIO
 import logging
 from typing import Optional
 import numpy as np
@@ -9,6 +12,7 @@ from astropy.table import Table
 import os
 from astropy.coordinates import Angle
 from astropy import units
+from banzai.utils import fits_utils
 
 
 logger = logging.getLogger('banzai')
@@ -75,6 +79,7 @@ class NRESObservationFrame(LCOObservationFrame):
         self._wavelengths = None
         self._spectrum = None
         self._ccf = None
+        self.summary_figures = []
 
     def get_output_data_products(self, runtime_context):
         if self.obstype != 'TARGET':
@@ -83,6 +88,7 @@ class NRESObservationFrame(LCOObservationFrame):
             filename_1d = self.get_output_filename(runtime_context)
             filename_1d = filename_1d.replace('.fits', '-1d.fits')
             filename_2d = filename_1d.replace('-1d.fits', '-2d.fits')
+            filename_summary = filename_1d.replace('-1d.fits', '-summary.pdf').replace('.fz', '')
 
             frame_1d_meta = self.meta.copy()
             # Remove any name from the header of the primary hdu
@@ -101,8 +107,25 @@ class NRESObservationFrame(LCOObservationFrame):
             fits_2d[0].header['L1ID1D'] = filename_1d
             output_product_2d = DataProduct.from_fits(fits_2d, filename_2d, self.get_output_directory(runtime_context))
 
-            # TODO: Add pdf to file buffer here
-            return [output_product_1d, output_product_2d]
+            # make sure we pop all the fits garbage before we write the meta data.
+            summary_pdf_meta = fits_utils.sanitize_header(self.meta.copy())
+            for keyword in ['NAXIS1', 'NAXIS2', 'EXTNAME', 'EXTVER']:
+                if keyword in summary_pdf_meta:
+                    summary_pdf_meta.pop(keyword)
+
+            summary_buffer = BytesIO()
+            pp = PdfPages(summary_buffer, keep_empty=False, metadata=dict(summary_pdf_meta))
+            for fig in self.summary_figures:
+                fig.tight_layout()
+                pp.savefig(fig)
+                pyplot.close(fig)
+            pp.close()
+            summary_buffer.seek(0)
+
+            output_summary = DataProduct(summary_buffer, filename_summary, self.get_output_directory(runtime_context),
+                                         meta=summary_pdf_meta)
+
+            return [output_product_1d, output_product_2d, output_summary]
 
     def num_lit_fibers(self):
         return 1 * self.fiber0_lit + 1 * self.fiber1_lit + 1 * self.fiber2_lit
@@ -222,7 +245,6 @@ class NRESObservationFrame(LCOObservationFrame):
     @ccf.setter
     def ccf(self, value):
         self._ccf = value
-        self['CCF'] = DataTable(self._ccf, name='CCF')
 
     @property
     def ra(self):

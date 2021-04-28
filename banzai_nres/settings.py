@@ -25,7 +25,8 @@ ORDERED_STAGES = [
                   'banzai_nres.continuum.MaskTellurics',
                   'banzai_nres.qc.qc_science.CalculateScienceFrameMetrics',
                   'banzai_nres.classify.StellarClassifier',
-                  'banzai_nres.rv.RVCalculator'
+                  'banzai_nres.rv.RVCalculator',
+                  'banzai_nres.pdf.MakePDFSummary'
                   ]
 
 CALIBRATION_MIN_FRAMES = {'BIAS': 5,

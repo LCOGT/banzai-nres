@@ -94,7 +94,7 @@ def stack_calibrations(frame_type):
         timezone = dbs.get_timezone(site, db_address=os.environ['DB_ADDRESS'])
         min_date, max_date = get_min_and_max_dates(timezone, dayobs=dayobs)
         runtime_context = dict(processed_path=DATA_ROOT, log_level='debug', post_to_archive=False,
-                               post_to_elasticsearch=False, fpack=True, reduction_level=91,
+                               post_to_elasticsearch=False, fpack=True, reduction_level=92,
                                db_address=os.environ['DB_ADDRESS'], elasticsearch_qc_index='banzai_qc',
                                elasticsearch_url='http://elasticsearch.lco.gtn:9200', elasticsearch_doc_type='qc',
                                no_bpm=False, ignore_schedulability=True, use_only_older_calibrations=False,
@@ -140,7 +140,7 @@ def get_expected_number_of_calibrations(raw_filenames, calibration_type):
 def check_if_individual_frames_exist(filenames):
     for day_obs in DAYS_OBS:
         raw_files = glob(os.path.join(DATA_ROOT, day_obs, 'raw', filenames))
-        processed_files = glob(os.path.join(DATA_ROOT, day_obs, 'processed', filenames.replace('00', '91')))
+        processed_files = glob(os.path.join(DATA_ROOT, day_obs, 'processed', filenames.replace('00', '92')))
         assert len(raw_files) == len(processed_files)
 
 
@@ -233,7 +233,7 @@ class TestMasterBiasCreation:
     @mock.patch('banzai.utils.observation_utils.requests.get', side_effect=observation_portal_side_effect)
     def stack_bias_frames(self, mock_lake, init):
         run_reduce_individual_frames('*b00.fits*')
-        mark_frames_as_good('*b91.fits*')
+        mark_frames_as_good('*b92.fits*')
         stack_calibrations('bias')
 
     def test_if_stacked_bias_frame_was_created(self):
@@ -249,7 +249,7 @@ class TestMasterDarkCreation:
     @mock.patch('banzai.utils.observation_utils.requests.get', side_effect=observation_portal_side_effect)
     def stack_dark_frames(self, mock_lake):
         run_reduce_individual_frames('*d00.fits*')
-        mark_frames_as_good('*d91.fits*')
+        mark_frames_as_good('*d92.fits*')
         stack_calibrations('dark')
 
     def test_if_stacked_dark_frame_was_created(self):
@@ -265,7 +265,7 @@ class TestMasterFlatCreation:
     @mock.patch('banzai.utils.observation_utils.requests.get', side_effect=observation_portal_side_effect)
     def stack_flat_frames(self, mock_lake):
         run_reduce_individual_frames('*w00.fits*')
-        mark_frames_as_good('*w91.fits*')
+        mark_frames_as_good('*w92.fits*')
         stack_calibrations('lampflat')
 
     def test_if_stacked_flat_frame_was_created(self):
@@ -282,7 +282,7 @@ class TestMasterArcCreation:
     @mock.patch('banzai.utils.observation_utils.requests.get', side_effect=observation_portal_side_effect)
     def stack_arc_frames(self, mock_lake):
         run_reduce_individual_frames('*a00.fits*')
-        mark_frames_as_good('*a91.fits*')
+        mark_frames_as_good('*a92.fits*')
         stack_calibrations('double')
 
     def test_if_stacked_arc_frame_was_created(self):
@@ -330,9 +330,11 @@ class TestScienceFrameProcessing:
     def test_if_science_frames_were_created(self):
         for day_obs in DAYS_OBS:
             raw_files = glob(os.path.join(DATA_ROOT, day_obs, 'raw', '*e00*'))
-            processed_1d_files = glob(os.path.join(DATA_ROOT, day_obs, 'processed', '*e91-1d*'))
-            processed_2d_files = glob(os.path.join(DATA_ROOT, day_obs, 'processed', '*e91-2d*'))
+            processed_1d_files = glob(os.path.join(DATA_ROOT, day_obs, 'processed', '*e92-1d*'))
+            processed_2d_files = glob(os.path.join(DATA_ROOT, day_obs, 'processed', '*e92-2d*'))
+            summary_files = glob(os.path.join(DATA_ROOT, day_obs, 'processed', '*.pdf'))
 
             assert len(raw_files) == len(processed_1d_files)
             assert len(raw_files) == len(processed_2d_files)
-        check_extracted_spectra('*e91-1d.fits*', 'SPECTRUM', ['wavelength', 'flux', 'uncertainty'])
+            assert len(raw_files) == len(summary_files)
+        check_extracted_spectra('*e92-1d.fits*', 'SPECTRUM', ['wavelength', 'flux', 'uncertainty'])

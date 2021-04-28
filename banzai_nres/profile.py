@@ -10,7 +10,7 @@ class ProfileFitter(Stage):
         image.add_or_update(ArrayData(np.zeros_like(image.data), meta={}, name='PROFILE'))
         blazes = np.zeros((image.num_traces, image.data.shape[1]), dtype=float)
         blazes_errors = np.zeros((image.num_traces, image.data.shape[1]), dtype=float)
-        trace_ids = range(1, image.num_traces + 1)
+        trace_ids = np.arange(1, image.num_traces + 1, dtype=int)
         for i, trace_id in enumerate(trace_ids):
             # Extract the pixels from the spectrum extension in that order
             this_trace = get_trace_region(image.traces == trace_id)

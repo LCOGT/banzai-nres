@@ -9,26 +9,45 @@ Preview PDFs
 ~~~~~~~~~~~~
 For quick look information about an observation, we provide a summary PDF of the observation showing a few
 important regions of the spectrum. These are primarily aimed to be diagnostic plots of the observation
-quality. An example of the pages are below.
+quality. The naming convention of the summary PDFs follows the standard LCO naming convention, replacing the
+last 'e00.fits' with 'e92-summary.pdf'.
+An example of the pages are below with some additional explanation.
 
 .. image:: PDF_summary_mockup1.png
     :width: 792px
     :height: 612px
 
+Top: the continuum-normalized spectrum (blue) and best-fit Phoenix model template (red) for the order containing the Mg b
+triplet. 
+Bottom left: combined normalized CCF from all of the orders used to compute the RVs (black) and the CCFs for all of
+the individual orders (gray). Note that the RVs are measured for each of the individual orders and then averaged to compute the
+final RV measurement; the combined CCF shown here is computed only for display purposes.
+Bottom center: peak SNR per pixel for each order of the extracted spectrum. The orders used to measure the RV are highlighted in red.
+Bottom right: summary information on the stellar classification, RV measurement, and exposure parameters. These and other parameters
+can also be found in the fits headers.
+
 .. image:: PDF_summary_mockup2.png
     :width: 792px
     :height: 612px
+
+The second page of the PDF report shows zoom-ins around six lines or regions of general interest: Ca H, H alpha and beta, the Mg b triplet, 
+the Na D doublet, and the Li line near 6700 Angstroms. The vertical blue lines show the position of the line centers given the measured 
+stellar RV.
 
 .. image:: PDF_summary_mockup3.png
     :width: 792px
     :height: 612px
 
+The third page of the PDF report shows two regions of the telluric A and B bands. The vertical blue lines show the wavelengths of two
+representative absorption lines.
+
 
 Extracted Spectra
 ~~~~~~~~~~~~~~~~~
-The primary data products we provide are the 1-D extracted wavelength-calibrated spectra. These spectra are stored in a FITS
-binary table. As such they are in extension 1 of the FITS file. The extension is also named SPECTRUM for
-easy access. The columns included in the table are below:
+The primary data products we provide are the 1-D extracted wavelength-calibrated spectra. The file naming convention
+for these products follows the standard LCO naming convention replacing 'e00.fits' with
+'e92-1d.fits'. These spectra are stored in a FITS binary table. As such they are in extension 1 of the FITS file.
+The extension is also named SPECTRUM for easy access. The columns included in the table are below:
 
 - 'id': Integer ID of the trace in this row. This corresponds to the number in the TRACE extension of the 2-D
   calibration products.
@@ -36,7 +55,7 @@ easy access. The columns included in the table are below:
 - 'order': Physical dispersion order of this trace.
 
 - 'fiber': Fiber ID. The calibration fiber is always 1. The science fiber is either 0 or 2. The science fiber on the
-  target can be determined from the 'OBJECTS' keyword in the header.
+  target can be determined from the 'SCIFIBER' keyword in the header.
 
 - 'wavelength': Wavelength per pixel for this trace (Angstroms).
 
@@ -67,14 +86,15 @@ Results from the cross correlation are stored in the 'CCF' FITS binary table ext
 2-D Spectroscopic Frames
 ~~~~~~~~~~~~~~~~~~~~~~~~
 We provide the full 2-D frames that have not been extracted for users who wish to perform advanced analysis
-on their data. These files are much larger than the extracted spectra so are provided as a separate FITS file.
+on their data. These files are much larger than the extracted spectra so are provided as a separate FITS file
+following the standard LCO naming convention replacing 'e00.fits' with 'e92-2d.fits'.
 Each extension is named, so we recommend accessing the data by name so that any analysis code is insensitive
 to order changes in the FITS files. A list of extension names and a description of their contents are below.
 
-- 'SPECTRUM': 2-D non-extracted image after subtracting the bias and dark frames
+- 'SPECTRUM': 2-D non-extracted image after subtracting the bias and dark frames.
 
-- 'ERROR': 2-D frame of the of formal uncertainties including the read noise, Poisson contribution, the bias subtraction,
-  and the dark subtraction
+- 'ERR': 2-D frame of the of formal uncertainties including the read noise, Poisson contribution, the bias subtraction,
+  and the dark subtraction.
 
 - 'BPM': Bad pixel mask (unsigned 8-bit integer). BPM = 1 for known bad pixels. BPM = 2 for saturated pixels.
 
@@ -87,9 +107,17 @@ to process this data and are described below.
 
 Calibration files
 ~~~~~~~~~~~~~~~~~
-Stacked bias and dark frames are available via the LCO archive.
+All calibration files are available via the `LCO Archive <https://archive.lco.global>`_. The filenames of the 
+stacked calibration frames used to reduce each science spectrum can be found in the science spectrum headers.
+The relevant keywords are: L1IDMASK (bad pixel mask), L1IDBIAS (bias), L1IDDARK (dark), L1IDFLAT (flat), and 
+L1IDARC (ThAr).
 
-Bad pixels masks
+Bias and Dark Frames
+--------------------
+Stacked bias and dark frames are available via the LCO archive. These can be found with OBSTYPE=BIAS and DARK, 
+respectively.
+
+Bad Pixels Masks
 ----------------
 Masks with known bad pixels are available in the archive under OBSTYPE=BPM. Non-zero values are bad pixels.
 
@@ -105,39 +133,52 @@ estimate the profile. These files have the following extensions:
 - 'SPECTRUM': 2-D stacked frame of the lamp flat spectrum after bias and dark subtraction and
   dividing out the profile and blaze.
 
-- 'ERROR': Formal uncertainties on the stacked quartz lamp flats after bias and dark subtraction and
+- 'BPM': Bad pixel mask (unsigned 8-bit integer). BPM = 1 for known bad pixels. BPM = 2 for saturated pixels.
+
+- 'ERR': Formal uncertainties on the stacked quartz lamp flats after bias and dark subtraction and
   dividing out the profile and blaze.
 
 - 'TRACES': Integer mask with the extraction regions. Each value corresponds to the 'id' column in the extracted
   data product. :code:`banzai_nres.utils.trace_utils.get_trace_region` is a useful method to get the numpy slice
   corresponding to a given trace region.
 
+- 'PROFILE': Profile estimate from the stacked lamp flat. Non-zero only where the 'TRACE' extension is non-zero.
+  The profile is normalized so the sum in each column of each trace is unity. This extension is compressed, but it 
+  is compressed using the GZip algorithm instead of RICE compression like most
+  of the rest of the image extensions produced by LCO, because GZip is lossless.
+
 - 'BLAZE': FITS Binary table with the estimate of the 'blaze' and 'blaze_error' from the stacked lamp flat. 'id'
   values correspond to the regions in the 'TRACE' extension.
-
-- 'PROFILE': Profile estimate from the stacked lamp flat. Non-zero only where the 'TRACE' extension is non-zero.
-  The profile is normalized so the sum in each column of each trace is unity. This extension is compressed, but it is compressed using the GZip algorithm instead of RICE compression like most
-  of the rest of the image extensions produced by LCO, because GZip is lossless.
 
 - 'WEIGHTS': 2-D frame of optimal extraction weights based on the profile extension described above. Using the
   :code:`get_trace_region` method can be used to easily reapply these weights and sum to produce an extraction.
 
 ThAr Arc Lamps
 --------------
+Note that the Thorium-Argon lamp spectra are referred to as "double" spectra within the pipeline for historical reasons
+relating back to the IDL Commissioning Pipeline. These spectra have the following extensions:
+
 - 'SPECTRUM': 2-D stacked frame of the ThAr arc lamp spectrum after bias and dark subtraction,
   used for the wavelength solution.
 
-- 'ERROR': Formal uncertainty on the 2-D stacked frame of the ThAr arc lamp spectrum after bias and dark subtraction.
+- 'BPM': Bad pixel mask (unsigned 8-bit integer). BPM = 1 for known bad pixels. BPM = 2 for saturated pixels.
 
-- 'FEATURES': FITS binary table with the centroids of the detected features in the stacked ThAr arc lamp frames.
-  These features are used to fit the wavelength solution. The pixel positions are stored in the 'x' and 'y' columns.
-  The 'flux' and 'fluxerror' columns store the brightness of the features. The error on the centroid is stored in
-  the 'centroid_error' column. The 'traceid' column corresponds to the value in the 'TRACES' extension of the
-  stacked quartz lamp flat.
+- 'ERR': Formal uncertainty on the 2-D stacked frame of the ThAr arc lamp spectrum after bias and dark subtraction.
 
-- 'WAVELENGTH': 2-D frame of the wavelength model evaluated at the center of every pixel in Angstroms.
+- 'WAVELENGTH': 2-D frame of the wavelength model evaluated at the center of every pixel, in Angstroms.
   This extension is compressed, but it is compressed using the GZip algorithm instead of RICE compression like most
   of the rest of the image extensions produced by LCO, because GZip is lossless.
+
+- 'FEATURES': FITS binary table with the centroids of the detected features in the stacked ThAr arc lamp frames.
+  These features are used to fit the wavelength solution. The pixel positions are stored in the 'xcentroid' and 'ycentroid' columns.
+  The 'flux' and 'fluxerr' columns store the brightness of the features, while 'corrected_flux' is the blaze-corrected flux
+  and 'peak' is the peak flux in a pixel within the feature.
+  The error on the centroid is stored in
+  the 'centroid_err' column. The 'id' column corresponds to the value in the 'TRACES' extension of the
+  stacked quartz lamp flat, while 'order' and 'fiber' are the physical order and fiber number, respectively.
+  'wavelength' is the laboratory vacuum wavelength of each feature.
+  'sharpness', 'roundness1', and 'roundness2' are measures of the 2-D morphology of each feature.
+
 
 - 'FIBERS': FITS binary table mapping the order number from the TRACES extension to fiber number.
 

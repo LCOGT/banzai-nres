@@ -184,8 +184,8 @@ def get_closest_phoenix_models(db_address, T_effective, log_g, metallicity=0.0, 
         query = []
         for param in fixed:
             query.append(getattr(PhoenixModel, param) == eval(param))
-        order = [PhoenixModel.diff_T(T_effective), PhoenixModel.diff_log_g(log_g),
-                 PhoenixModel.diff_metallicity(metallicity), PhoenixModel.diff_alpha(alpha)]
+        order = [PhoenixModel.diff_T(float(T_effective)), PhoenixModel.diff_log_g(float(log_g)),
+                 PhoenixModel.diff_metallicity(float(metallicity)), PhoenixModel.diff_alpha(float(alpha))]
         model = db_session.query(PhoenixModel).filter(*query).order_by(*order).limit(n).all()
         if model is None:
             logger.error('Phoenix model does not exist for these parameters',
@@ -197,8 +197,8 @@ def get_closest_phoenix_models(db_address, T_effective, log_g, metallicity=0.0, 
 
 def get_closest_HR_phoenix_models(db_address, T_effective, luminosity, metallicity=0.0, alpha=0.0):
     with banzai.dbs.get_session(db_address=db_address) as db_session:
-        order = [PhoenixModel.diff_T(T_effective), PhoenixModel.diff_luminosity(luminosity),
-                 PhoenixModel.diff_metallicity(metallicity), PhoenixModel.diff_alpha(alpha)]
+        order = [PhoenixModel.diff_T(float(T_effective)), PhoenixModel.diff_luminosity(float(luminosity)),
+                 PhoenixModel.diff_metallicity(float(metallicity)), PhoenixModel.diff_alpha(float(alpha))]
         model = db_session.query(PhoenixModel).order_by(*order).first()
         if model is None:
             logger.error('Phoenix model does not exist for these parameters',

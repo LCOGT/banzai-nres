@@ -23,7 +23,8 @@ Wavelength calibration metrics
 BANZAI-NRES calculates metrics characterizing the quality of the wavelength solution. The metrics are only calculated on features that are
 matched to lines in the catalog. Features are matched to the closest feature in the line list and then outliers/non-matches
 are rejected using sigma clipping. The header keywords that contain the metrics and rule-of-thumb values for
-good wavelength calibrations are included in the list below.
+good wavelength calibrations are included in the list below. Note that these header keywords are only included in the stacked
+ThAr super-calibration frames.
 
 - 'SIGLAM': Standard deviation of measured wavelengths - line list wavelengths in Angstroms.
   Typically this should be between 0.003 and 0.01 Angstroms for NRES.
