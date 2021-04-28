@@ -87,7 +87,7 @@ class MakePDFSummary(Stage):
 
         pl.text(0.1, top_line - line_separation * 11, 'SNR = {0:1.0f}/pixel @ 5180 Angstroms'.format(image.meta['SNR']))
         pl.text(0.1, top_line - line_separation * 12, 'Exposure time = {0:1.0f} seconds'.format(image.meta['EXPTIME']))
-        
+
         # Next Page
 
         # make the plots of individual lines of interest
