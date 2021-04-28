@@ -123,8 +123,10 @@ class WavelengthCalibrate(Stage):
                                                              image.features['xcentroid'].astype(int)]
         self.refine_wavelengths(image)
 
-        image.features.remove_columns(['npix', 'sky', 'mag', 'pixel'])
-        # remove daofind parameters that are not relevant to our case
+        # remove daofind parameters that are not relevant to our case from the features table
+        for column_to_remove in ['npix', 'sky', 'mag', 'pixel']:
+            if column_to_remove in image.features.colnames:
+                image.features.remove_column(column_to_remove)
 
         return image
 
