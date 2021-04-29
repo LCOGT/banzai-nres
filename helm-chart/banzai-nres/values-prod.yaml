@@ -47,12 +47,12 @@ useDockerizedDatabase: false
 useDockerizedRabbitMQ: false
 
 postgresql:
-  hostname:
-  postgresqlUsername:
-  postgresqlDatabase:
+  hostname: postgres1-cluster.cluster-cple9sjsskrf.us-west-2.rds.amazonaws.com
+  postgresqlUsername: banzai-nres
+  postgresqlDatabase: banzai-nres
 
 rabbitmq:
   hostname: rabbitmq-ha.prod.svc.cluster.local.
   rabbitmq:
-    username:
-  vhost:
+    username: banzai-nres
+  vhost: banzai-nres
