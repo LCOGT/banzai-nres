@@ -52,9 +52,9 @@ For sensitive keys, this helm chart will pull from the kubernetes secret `banzai
 
 Environment Variable | Description | Secret | Key
 --- | --- | --- | ---
-`AUTH_TOKEN` | Authorization token for Science Archive. | `banzai-secrets` | `archive-auth-token`
-`AWS_ACCESS_KEY_ID` | AWS access key ID for Archive S3 bucket. | `banzai-secrets` | `aws-access-key-id`
-`AWS_SECRET_ACCESS_KEY` | AWS secret access key for Archive S3 bucket. | `banzai-secrets` | `aws-secret-access-key`
+`AUTH_TOKEN` | Authorization token for Science Archive. | `banzai-nres-secrets` | `AUTH_TOKEN`
+`AWS_ACCESS_KEY_ID` | AWS access key ID for Archive S3 bucket. | `banzai-nres-secrets` | `AWS_ACCESS_KEY_ID`
+`AWS_SECRET_ACCESS_KEY` | AWS secret access key for Archive S3 bucket. | `banzai-nres-secrets` | `AWS_SECRET_ACCESS_KEY`
 
 #### Optional OpenTSDB configuration
 If you would like ingestion metrics posted to an [OpenTSDB](http://opentsdb.net/) server, set these values accordingly.
@@ -79,6 +79,12 @@ Parameter | Description | Default
 `banzaiNres.fitsExchange` | Exchange name for FITS files queue | **_Not set (required)_**
 `banzaiNres.queueName` | BANZAI file queue name (fanout from fitsExchange) | **_Not set (required)_**
 
+
+Environment Variable | Description | Secret | Key
+--- | --- | --- | ---
+`PHOENIX_MODEL_AWS_ACCESS_KEY_ID` | AWS Access Key ID for Phoenix Model Bucket| `banzai-nres-secrets` | `PHOENIX_MODEL_AWS_ACCESS_KEY_ID`
+`PHOENIX_MODEL_AWS_SECRET_ACCESS_KEY` | AWS Secret Access Key for Phoenix Model Bucket | `banzai-nres-secrets` | `PHOENIX_MODEL_AWS_SECRET_ACCESS_KEY`
+
 #### Optional separate raw and processed archive sources
 During development, it is sometimes necessary to pull raw data from a "production" science archive, and push/pull processed
 data to/from a "development" science archive running independently in a separate namespace.
@@ -96,7 +102,7 @@ The authorization token for the raw data source is pulled from the `banzai-nres-
 
 Environment Variable | Description | Secret | Key
 --- | --- | --- | ---
-`RAW_DATA_AUTH_TOKEN` | Authorization token for raw data source | `banzai-secrets` | `raw-data-auth-token`
+`RAW_DATA_AUTH_TOKEN` | Authorization token for raw data source | `banzai-nres-secrets` | `RAW_DATA_AUTH_TOKEN`
 
 ### PostgreSQL Database Configuration
 
@@ -117,7 +123,7 @@ Additionally, specify the DB password associated with the username you set via a
 
 Environment Variable | Description | Secret | Key
 --- | --- | --- | ---
-`DB_PASSWORD` | Password for BANZAI-NRES DB | `banzai-nres-secrets` | `postgresql-password`
+`DB_PASSWORD` | Password for BANZAI-NRES DB | `banzai-nres-secrets` | `postgresqlPassword`
 
 
 #### Using a Dockerized database
@@ -152,12 +158,14 @@ See Kubernetes secrets documentation [here](https://kubernetes.io/docs/concepts/
 ```yaml
 apiVersion: v1
 data:
-  archive-auth-token:
+  AUTH_TOKEN: 
   # raw-data-auth-token key only needed if .Values.useDifferentArchiveSources is true
-  raw-data-auth-token:
-  aws-access-key-id:
-  aws-secret-access-key:
-  postgresql-password:
+  RAW_DATA_AUTH_TOKEN:
+  AWS_ACCESS_KEY_ID: 
+  AWS_SECRET_ACCESS_KEY: 
+  PHOENIX_MODEL_AWS_ACCESS_KEY_ID: 
+  PHOENIX_MODEL_AWS_SECRET_ACCESS_KEY:
+  postgresqlPassword:
   rabbitmq-password:
 kind: Secret
 metadata:
