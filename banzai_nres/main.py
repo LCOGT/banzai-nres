@@ -147,7 +147,7 @@ def munge_phoenix_files():
     parser = argparse.ArgumentParser('This copies out the optical region 300nm - 1000nm into fresh files for BANZAI')
     parser.add_argument('--input-dir', dest='input_dir', help='Top level directory with the PHOENIX models')
     parser.add_argument("--output-dir", dest='output_dir', help='Directory to save the reformatted models')
-    parser.add_argument('--ncpu', dest='ncpu', help='Number of cores to run on.')
+    parser.add_argument('--ncpu', dest='ncpu', default=20, type=int, help='Number of cores to run on.')
     args = parser.parse_args()
     model_files = []
     # Traverse the directory to find all of the phoenix files
