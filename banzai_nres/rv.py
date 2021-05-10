@@ -126,7 +126,7 @@ class RVCalculator(Stage):
         if image.classification is None:
             logger.warning('No classification to use for an RV template', image=image)
             return image
-        phoenix_loader = phoenix.PhoenixModelLoader(self.runtime_context.db_address)
+        phoenix_loader = phoenix.PhoenixModelLoader(self.runtime_context)
         template = phoenix_loader.load(image.classification)
         # Pick orders near the center of the detector that have a high Signal to noise and are free of tellurics.
         orders_to_use = np.arange(self.runtime_context.MIN_ORDER_TO_CORRELATE,
