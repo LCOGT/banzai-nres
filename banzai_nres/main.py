@@ -170,8 +170,8 @@ def munge_phoenix_files():
     wavelength_hdu.writeto(os.path.join(args.output_dir, 'phoenix_wavelength.fits'), overwrite=True)
 
     pool = multiprocessing.Pool(args.ncpu)
-    pool.apply_async(phoenix.normalize_phoenix_model,
-                     [(model_file, wavelength_filename, args.output_dir) for model_file in model_files])
+    pool.map(phoenix.normalize_phoenix_model,
+             [(model_file, wavelength_filename, args.output_dir) for model_file in model_files])
     pool.close()
     pool.join()
 
