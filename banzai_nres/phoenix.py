@@ -10,7 +10,10 @@ from banzai.context import Context
 from scipy import interpolate
 from banzai_nres.continuum import ContinuumNormalizer
 from banzai_nres.utils import phoenix_utils
+import logging
 
+
+logger = logging.getLogger('banzai')
 
 class PhoenixModelLoader:
     def __init__(self, runtime_context: Context):
@@ -45,7 +48,7 @@ class PhoenixModelLoader:
 
 def normalize_phoenix_model(args):
     model_file, wavelength_filename, output_dir = args
-
+    logger.info(f'Normalizing {model_file}')
     wavelength_hdu = fits.open(wavelength_filename)
     optical = np.logical_and(wavelength_hdu[0].data >= 3000.0, wavelength_hdu[0].data <= 10000.0)
     hdu = fits.open(model_file)
