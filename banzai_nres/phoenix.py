@@ -54,7 +54,7 @@ def normalize_phoenix_model(args):
     hdu = fits.open(model_file)
     # take the data to only be the optical region
     hdu[0].data = hdu[0].data[optical]
-    wavelength, flux = wavelength_hdu[0].data, hdu[0].data
+    wavelength, flux = wavelength_hdu[0].data[optical], hdu[0].data
     # thin the spectrum by a factor of 25 so that this finishes in a few seconds instead of a few minutes.
     continuum = interpolate.interp1d(wavelength[::25],
                                      ContinuumNormalizer.get_continuum_model(flux[::25], wavelength[::25], 881),
