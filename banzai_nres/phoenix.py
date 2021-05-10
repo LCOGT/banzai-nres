@@ -1,11 +1,15 @@
 import os
 import io
+import numpy as np
 
 from astropy.io import fits
 import boto3
 
 from banzai_nres.dbs import get_resource_file, PhoenixModel
 from banzai.context import Context
+from scipy import interpolate
+from banzai_nres.continuum import ContinuumNormalizer
+from banzai_nres.utils import phoenix_utils
 
 
 class PhoenixModelLoader:
@@ -37,3 +41,27 @@ class PhoenixModelLoader:
 
         data = hdu[0].data.copy()
         return data
+
+
+def normalize_phoenix_model(args):
+    model_file, wavelength_filename, output_dir = args
+
+    wavelength_hdu = fits.open(wavelength_filename)
+    optical = np.logical_and(wavelength_hdu[0].data >= 3000.0, wavelength_hdu[0].data <= 10000.0)
+    hdu = fits.open(model_file)
+    # take the data to only be the optical region
+    hdu[0].data = hdu[0].data[optical]
+    wavelength, flux = wavelength_hdu[0].data, hdu[0].data
+    # thin the spectrum by a factor of 25 so that this finishes in a few seconds instead of a few minutes.
+    continuum = interpolate.interp1d(wavelength[::25],
+                                     ContinuumNormalizer.get_continuum_model(flux[::25], wavelength[::25], 881),
+                                     bounds_error=False)(wavelength)
+    hdu[0].data /= continuum
+    # Save the model file to the output directory
+    Teff = hdu[0].header['PHXTEFF']
+    logg = hdu[0].header['PHXLOGG']
+    metallicity = hdu[0].header['PHXM_H']
+    alpha = hdu[0].header['PHXALPHA']
+    output_filename = phoenix_utils.parameters_to_filename(Teff, logg, metallicity, alpha)
+    hdu.writeto(os.path.join(args.output_dir, output_filename), overwrite=True)
+
