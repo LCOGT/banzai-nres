@@ -151,6 +151,7 @@ def populate_phoenix_models():
                         default='sqlite3:///test.db',
                         help='Database address: Should be in SQLAlchemy form')
     args = parser.parse_args()
+    add_settings_to_context(args, banzai_nres.settings)
     logs.set_log_level(args.log_level)
 
-    dbs.populate_phoenix_models(args.model_location, args.db_address)
+    dbs.populate_phoenix_models(args.model_location, args)

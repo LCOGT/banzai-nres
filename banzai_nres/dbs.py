@@ -129,15 +129,17 @@ def create_nres_db(db_address):
     create_db(db_address)
 
 
-def populate_phoenix_models(model_location, db_address):
+def populate_phoenix_models(model_location, runtime_context):
     if 's3' in model_location:
-        s3 = boto3.resource('s3')
+        s3 = boto3.resource('s3', 
+                             aws_access_key_id=runtime_context.PHOENIX_MODEL_AWS_ACCESS_KEY_ID,
+                             aws_secret_access_key=runtime_context.PHOENIX_MODEL_AWS_SECRET_ACCESS_KEY)
         model_bucket = s3.Bucket(model_location.replace('s3://', ''))
         model_files = model_bucket.objects.all()
     else:
         # Assume they are on disk
         model_files = glob(os.path.join(model_location, '*.fits'))
-    with banzai.dbs.get_session(db_address) as db_session:
+    with banzai.dbs.get_session(runtime_context.db_address) as db_session:
         for model_file in model_files:
             # strip off the s3
             if 's3' in model_location:
