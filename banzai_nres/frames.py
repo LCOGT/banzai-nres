@@ -123,7 +123,7 @@ class NRESObservationFrame(LCOObservationFrame):
             summary_buffer.seek(0)
 
             output_summary = DataProduct(summary_buffer, filename_summary, self.get_output_directory(runtime_context),
-                                         meta=summary_pdf_meta)
+                                         meta=dict(summary_pdf_meta))
 
             return [output_product_1d, output_product_2d, output_summary]
 
