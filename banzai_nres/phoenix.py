@@ -67,4 +67,3 @@ def normalize_phoenix_model(args):
     alpha = hdu[0].header['PHXALPHA']
     output_filename = phoenix_utils.parameters_to_filename(Teff, logg, metallicity, alpha)
     hdu.writeto(os.path.join(output_dir, output_filename), overwrite=True)
-
