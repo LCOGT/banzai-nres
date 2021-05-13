@@ -15,6 +15,7 @@ import logging
 
 logger = logging.getLogger('banzai')
 
+
 class PhoenixModelLoader:
     def __init__(self, runtime_context: Context):
         self.runtime_context = runtime_context
