@@ -84,7 +84,7 @@ class StellarClassifier(Stage):
 
         orders_to_use = np.arange(self.runtime_context.MIN_ORDER_TO_CORRELATE,
                                   self.runtime_context.MAX_ORDER_TO_CORRELATE, 1)
-        phoenix_loader = phoenix.PhoenixModelLoader(self.runtime_context.db_address)
+        phoenix_loader = phoenix.PhoenixModelLoader(self.runtime_context)
         template = phoenix_loader.load(image.classification)
         rv = calculate_rv(image, orders_to_use, template)[0]
         best_metric = np.sum(cross_correlate_over_traces(image, orders_to_use, np.array([rv.value]) * rv.unit,

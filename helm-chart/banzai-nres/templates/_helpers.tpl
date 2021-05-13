@@ -175,4 +175,14 @@ Celery task queue configuration
   value: {{ .Values.banzaiNres.banzaiWorkerLogLevel | quote }}
 - name: PHOENIX_FILE_LOCATION
   value: {{ .Values.banzaiNres.phoenixFileLocation | quote }}
+- name: PHOENIX_MODEL_AWS_ACCESS_KEY_ID
+  valueFrom:
+    secretKeyRef:
+      name: banzai-nres-secrets
+      key: PHOENIX_MODEL_AWS_ACCESS_KEY_ID
+- name: PHOENIX_MODEL_AWS_SECRET_ACCESS_KEY
+  valueFrom:
+    secretKeyRef:
+      name: banzai-nres-secrets
+      key: PHOENIX_MODEL_AWS_SECRET_ACCESS_KEY
 {{- end -}}

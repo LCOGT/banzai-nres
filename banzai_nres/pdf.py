@@ -24,7 +24,7 @@ class MakePDFSummary(Stage):
         flux = image.spectrum.table['normflux'][fiber == image.science_fiber, :]
         order = image.spectrum.table['order'][fiber == image.science_fiber]
 
-        phoenix_loader = phoenix.PhoenixModelLoader(self.runtime_context.db_address)
+        phoenix_loader = phoenix.PhoenixModelLoader(self.runtime_context)
         template = phoenix_loader.load(image.classification)
         v_over_c_plus_one = 1 + image.meta['RV']/constants.c.to(units.m/units.s).value
 

@@ -12,7 +12,7 @@ horizontalPodAutoscaler:
 
 image:
   repository: docker.lco.global/banzai-nres
-  tag: ""
+  tag: "1.0.0"
   pullPolicy: IfNotPresent
 
 # Values for the OCS Ingester library, used by BANZAI.
