@@ -131,9 +131,9 @@ def create_nres_db(db_address):
 
 def populate_phoenix_models(model_location, runtime_context):
     if 's3' in model_location:
-        s3 = boto3.resource('s3', 
-                             aws_access_key_id=runtime_context.PHOENIX_MODEL_AWS_ACCESS_KEY_ID,
-                             aws_secret_access_key=runtime_context.PHOENIX_MODEL_AWS_SECRET_ACCESS_KEY)
+        s3 = boto3.resource('s3',
+                            aws_access_key_id=runtime_context.PHOENIX_MODEL_AWS_ACCESS_KEY_ID,
+                            aws_secret_access_key=runtime_context.PHOENIX_MODEL_AWS_SECRET_ACCESS_KEY)
         model_bucket = s3.Bucket(model_location.replace('s3://', ''))
         model_files = model_bucket.objects.all()
     else:
