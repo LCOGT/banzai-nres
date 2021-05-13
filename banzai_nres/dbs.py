@@ -129,15 +129,17 @@ def create_nres_db(db_address):
     create_db(db_address)
 
 
-def populate_phoenix_models(model_location, db_address):
+def populate_phoenix_models(model_location, runtime_context):
     if 's3' in model_location:
-        s3 = boto3.resource('s3')
+        s3 = boto3.resource('s3',
+                            aws_access_key_id=runtime_context.PHOENIX_MODEL_AWS_ACCESS_KEY_ID,
+                            aws_secret_access_key=runtime_context.PHOENIX_MODEL_AWS_SECRET_ACCESS_KEY)
         model_bucket = s3.Bucket(model_location.replace('s3://', ''))
         model_files = model_bucket.objects.all()
     else:
         # Assume they are on disk
         model_files = glob(os.path.join(model_location, '*.fits'))
-    with banzai.dbs.get_session(db_address) as db_session:
+    with banzai.dbs.get_session(runtime_context.db_address) as db_session:
         for model_file in model_files:
             # strip off the s3
             if 's3' in model_location:
@@ -184,8 +186,8 @@ def get_closest_phoenix_models(db_address, T_effective, log_g, metallicity=0.0, 
         query = []
         for param in fixed:
             query.append(getattr(PhoenixModel, param) == eval(param))
-        order = [PhoenixModel.diff_T(T_effective), PhoenixModel.diff_log_g(log_g),
-                 PhoenixModel.diff_metallicity(metallicity), PhoenixModel.diff_alpha(alpha)]
+        order = [PhoenixModel.diff_T(float(T_effective)), PhoenixModel.diff_log_g(float(log_g)),
+                 PhoenixModel.diff_metallicity(float(metallicity)), PhoenixModel.diff_alpha(float(alpha))]
         model = db_session.query(PhoenixModel).filter(*query).order_by(*order).limit(n).all()
         if model is None:
             logger.error('Phoenix model does not exist for these parameters',
@@ -197,8 +199,8 @@ def get_closest_phoenix_models(db_address, T_effective, log_g, metallicity=0.0, 
 
 def get_closest_HR_phoenix_models(db_address, T_effective, luminosity, metallicity=0.0, alpha=0.0):
     with banzai.dbs.get_session(db_address=db_address) as db_session:
-        order = [PhoenixModel.diff_T(T_effective), PhoenixModel.diff_luminosity(luminosity),
-                 PhoenixModel.diff_metallicity(metallicity), PhoenixModel.diff_alpha(alpha)]
+        order = [PhoenixModel.diff_T(float(T_effective)), PhoenixModel.diff_luminosity(float(luminosity)),
+                 PhoenixModel.diff_metallicity(float(metallicity)), PhoenixModel.diff_alpha(float(alpha))]
         model = db_session.query(PhoenixModel).order_by(*order).first()
         if model is None:
             logger.error('Phoenix model does not exist for these parameters',

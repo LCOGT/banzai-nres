@@ -19,13 +19,14 @@ ORDERED_STAGES = [
                   # this is turned off because it yields negative fluxes and causes crashing on tracing. See issue #60
                   # 'banzai_nres.background.BackgroundSubtractor',
                   'banzai_nres.wavelength.ArcLoader',
-                  'banzai_nres.extract.GetOptimalExtractionWeights',
                   'banzai_nres.extract.WeightedExtract',
                   'banzai_nres.continuum.MaskBlueHookRegion',
                   'banzai_nres.continuum.ContinuumNormalizer',
                   'banzai_nres.continuum.MaskTellurics',
+                  'banzai_nres.qc.qc_science.CalculateScienceFrameMetrics',
                   'banzai_nres.classify.StellarClassifier',
-                  'banzai_nres.rv.RVCalculator'
+                  'banzai_nres.rv.RVCalculator',
+                  'banzai_nres.pdf.MakePDFSummary'
                   ]
 
 CALIBRATION_MIN_FRAMES = {'BIAS': 5,
@@ -76,9 +77,12 @@ CALIBRATION_STACKER_STAGES = {'BIAS': ['banzai.bias.BiasMaker'],
                               'LAMPFLAT': ['banzai_nres.flats.FlatStacker',
                                            'banzai_nres.flats.FlatLoader',
                                            'banzai_nres.traces.TraceInitializer',
-                                           'banzai_nres.background.BackgroundSubtractor',
+                                           # this is turned off because it yields negative fluxes and causes crashing
+                                           # on tracing. See issue #60
+                                           # 'banzai_nres.background.BackgroundSubtractor',
                                            'banzai_nres.traces.TraceRefiner',
-                                           'banzai_nres.profile.ProfileFitter'
+                                           'banzai_nres.profile.ProfileFitter',
+                                           'banzai_nres.extract.GetOptimalExtractionWeights',
                                            ],
                               'DOUBLE': ['banzai_nres.wavelength.ArcStacker',  # stack
                                          'banzai_nres.flats.FlatLoader',  # load traces
@@ -115,7 +119,7 @@ OBSERVATION_REQUEST_TYPES = {'BIAS': 'NRESBIAS', 'DARK': 'NRESDARK', 'DOUBLE': '
 EXTENSION_NAMES_TO_CONDENSE = ['SPECTRUM']
 
 # number of days to lookback and stack frames:
-CALIBRATION_LOOKBACK = {'BIAS': 2.5, 'DARK': 4.5, 'LAMPFLAT': 0.5, 'DOUBLE': 0.5}
+CALIBRATION_LOOKBACK = {'BIAS': 0.5, 'DARK': 2.5, 'LAMPFLAT': 0.5, 'DOUBLE': 0.5}
 
 PIPELINE_VERSION = banzai_nres.__version__
 
@@ -157,12 +161,15 @@ MASTER_CALIBRATION_EXTENSION_ORDER = {'BIAS': ['SPECTRUM', 'BPM', 'ERR'],
 REDUCED_DATA_EXTENSION_TYPES = {'ERR': 'float32',
                                 'BPM': 'uint8',
                                 'SPECTRUM': 'float32',
-                                'TRACES': 'int32',  # try uint8
+                                'TRACES': 'uint8',
                                 'PROFILE': 'float32',
                                 'WAVELENGTH': 'float64',
+                                'WEIGHTS': 'float32'
                                 }
 
 PHOENIX_MODEL_LOCATION = os.getenv('PHOENIX_FILE_LOCATION', 's3://banzai-nres-phoenix-models-lco-global')
+PHOENIX_MODEL_AWS_ACCESS_KEY_ID = os.getenv('PHOENIX_MODEL_AWS_ACCESS_KEY_ID')
+PHOENIX_MODEL_AWS_SECRET_ACCESS_KEY = os.getenv('PHOENIX_MODEL_AWS_SECRET_ACCESS_KEY')
 
 MIN_ORDER_TO_CORRELATE = 77
 MAX_ORDER_TO_CORRELATE = 97
@@ -170,6 +177,3 @@ MAX_ORDER_TO_CORRELATE = 97
 GAIA_CLASS = os.getenv('BANZAI_GAIA_CLASS', 'astroquery.gaia.GaiaClass')
 
 SIMBAD_CLASS = os.getenv('BANZAI_SIMBAD', 'astroquery.simbad.Simbad')
-
-# The final trace will be +- this from the center in the y-direction
-TRACE_HALF_HEIGHT = 5

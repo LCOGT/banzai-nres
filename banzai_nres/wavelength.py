@@ -1,6 +1,7 @@
 import numpy as np
 
 from banzai.stages import Stage
+from banzai.data import DataTable, ArrayData
 from banzai.calibrations import CalibrationStacker, CalibrationUser
 from astropy import table
 
@@ -99,7 +100,7 @@ class WavelengthCalibrate(Stage):
     M0_RANGE = (48, 55)  # range of possible values for the integer principle order number.
 
     def do_stage(self, image):
-        image.features = self.init_feature_labels(image.num_traces, image.features)
+        image.add_or_update(DataTable(self.init_feature_labels(image.num_traces, image.features), name='FEATURES'))
         do_fresh_wavelength_calibration = image.wavelengths is None
         if do_fresh_wavelength_calibration:
             image.features['wavelength'] = np.zeros_like(image.features['pixel'], dtype=float)  # init wavelengths
@@ -121,12 +122,18 @@ class WavelengthCalibrate(Stage):
             image.features['wavelength'] = image.wavelengths[image.features['ycentroid'].astype(int),
                                                              image.features['xcentroid'].astype(int)]
         self.refine_wavelengths(image)
+
+        # remove daofind parameters that are not relevant to our case from the features table
+        for column_to_remove in ['npix', 'sky', 'mag', 'pixel']:
+            if column_to_remove in image.features.colnames:
+                image.features.remove_column(column_to_remove)
+
         return image
 
     def refine_wavelengths(self, image):
         ref_ids, fiber_ids, trace_ids = get_ref_ids_and_fibers(image.num_traces)
         # get_ref_ids_and_fibers this is also called in init_feature_labels, so everything should be consistent
-        image.wavelengths = np.zeros_like(image.data, dtype=float)
+        image.add_or_update(ArrayData(np.zeros_like(image.data, dtype=np.float64), name='WAVELENGTH'))
         for fiber in list(set(fiber_ids)):
             this_fiber = image.features['fiber'] == fiber
             if np.all(np.isnan(image.features['wavelength'][this_fiber])) or np.all(
@@ -166,7 +173,8 @@ class WavelengthCalibrate(Stage):
                                                       low_fiber_first=False)
         ref_ids = IdentifyFibers.build_ref_id_column(matched_ids, fiber_ids, anchor_ref_id, low_fiber_first=False)
         # set fibers attribute on image
-        image.fibers = Table({'trace_id': trace_ids, 'order': ref_ids, 'fiber': fiber_ids})
+        image.add_or_update(DataTable(Table({'trace_id': trace_ids, 'order': ref_ids, 'fiber': fiber_ids}),
+                                      name='FIBERS'))
 
     @staticmethod
     def init_feature_labels(num_traces, features):
@@ -247,9 +255,9 @@ class IdentifyFeatures(Stage):
         if image.blaze is not None:
             logger.info('Blaze correcting emission feature fluxes', image=image)
             # blaze correct the emission features fluxes. This speeds up and improves overlap fitting in xwavecal.
-            features['corrected_flux'] = features['flux'] / image.blaze['blaze'][features['id'] - 1,
-                                                                                 np.array(features['xcentroid'],
-                                                                                          dtype=int)]
+            features['corrected_flux'] = features['flux']
+            features['corrected_flux'] /= image.blaze['blaze'][np.array(features['id'], dtype=int) - 1,
+                                                               np.array(features['xcentroid'], dtype=int)]
 
         # cutting which lines to keep:
         # calculate the error in the centroids provided by identify_features()
@@ -265,7 +273,7 @@ class IdentifyFeatures(Stage):
         if len(features) == 0:
             logger.error('No emission features found on this image!', image=image)
         # save the features to the image.
-        image.features = features
+        image.add_or_update(DataTable(features, name='FEATURES'))
         return image
 
     @staticmethod
@@ -282,10 +290,10 @@ class IdentifyFeatures(Stage):
 
 def get_ref_ids_and_fibers(num_traces):
     # this function always assumes two fibers are lit.
-    fibers, ref_id = np.zeros(num_traces), np.zeros(num_traces)
+    fibers, ref_id = np.zeros(num_traces, dtype=int), np.zeros(num_traces, dtype=int)
     fibers[1::2] = 1  # group alternating traces as part of the same fiber
     for fiber in [0, 1]:
-        ref_id[fibers == fiber] = np.arange(np.count_nonzero(fibers == fiber))
+        ref_id[fibers == fiber] = np.arange(np.count_nonzero(fibers == fiber), dtype=int)
     # note that the fiber designation does not matter, all that matters is that we separate the two AGU's wavelength
     # solutions.
     return ref_id, fibers, np.arange(1, num_traces + 1)

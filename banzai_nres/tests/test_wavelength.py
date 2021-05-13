@@ -4,8 +4,9 @@ from banzai_nres.utils.wavelength_utils import identify_features, group_features
 from banzai_nres.wavelength import IdentifyFeatures, WavelengthCalibrate, get_ref_ids_and_fibers
 from banzai_nres.wavelength import ArcLoader, LineListLoader, ArcStacker
 from scipy.ndimage import gaussian_filter
-from banzai_nres.frames import EchelleSpectralCCDData, NRESObservationFrame
+from banzai_nres.frames import NRESObservationFrame
 from banzai import context
+from banzai.data import CCDData
 from astropy.table import Table
 import sep
 import mock
@@ -41,10 +42,11 @@ class TestIdentifyFeatures:
     def test_do_stage(self):
         blaze_factor = 0.5
         input_context = context.Context({})
-        ccd_data = EchelleSpectralCCDData(data=self.data, uncertainty=self.err, meta={'OBJECTS': 'tung&tung&none'},
-                                          traces=np.ones_like(self.data, dtype=int),
-                                          blaze={'blaze': blaze_factor * np.ones((1, self.data.shape[1]), dtype=int)})
+        ccd_data = CCDData(data=self.data, uncertainty=self.err, meta={'OBJECTS': 'tung&tung&none'})
         image = NRESObservationFrame([ccd_data], 'foo.fits')
+        image.traces = np.ones_like(self.data, dtype=int)
+        image.blaze = {'blaze': blaze_factor * np.ones((1, self.data.shape[1]), dtype=int)}
+
         stage = IdentifyFeatures(input_context)
         stage.fwhm, stage.nsigma = self.sigma, 0.5
         image = stage.do_stage(image)
@@ -56,9 +58,9 @@ class TestIdentifyFeatures:
 
     def test_do_stage_no_blaze(self):
         input_context = context.Context({})
-        ccd_data = EchelleSpectralCCDData(data=self.data, uncertainty=self.err, meta={'OBJECTS': 'tung&tung&none'},
-                                          traces=np.ones_like(self.data, dtype=int))
+        ccd_data = CCDData(data=self.data, uncertainty=self.err, meta={'OBJECTS': 'tung&tung&none'})
         image = NRESObservationFrame([ccd_data], 'foo.fits')
+        image.traces = np.ones_like(self.data, dtype=int)
         stage = IdentifyFeatures(input_context)
         stage.fwhm, stage.nsigma = self.sigma, 0.5
         image = stage.do_stage(image)
@@ -69,10 +71,10 @@ class TestIdentifyFeatures:
 
     def test_do_stage_on_empty_features(self):
         input_context = context.Context({})
-        image = NRESObservationFrame([EchelleSpectralCCDData(data=self.data, uncertainty=self.err,
-                                      meta={'OBJECTS': 'tung&tung&none'},
-                                      traces=np.ones_like(self.data, dtype=int),
-                                      blaze={'blaze': np.ones_like(self.data, dtype=int)})], 'foo.fits')
+        image = NRESObservationFrame([CCDData(data=self.data, uncertainty=self.err,
+                                      meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
+        image.traces = np.ones_like(self.data, dtype=int)
+        image.blaze = {'blaze': np.ones_like(self.data, dtype=int)}
         stage = IdentifyFeatures(input_context)
         stage.fwhm, stage.nsigma = self.sigma, 1.5
         image = stage.do_stage(image)
@@ -86,9 +88,11 @@ class TestWavelengthCalibrate:
         pixel_positions = np.array([1, 2, 1, 2])
         features = Table({'pixel': pixel_positions, 'id': np.array([1, 1, 2, 3]), 'order': np.array([1, 1, 2, 3]),
                           'wavelength': pixel_positions, 'centroid_err': np.ones_like(pixel_positions)})
-        image = NRESObservationFrame([EchelleSpectralCCDData(data=np.zeros((2, 2)), uncertainty=np.zeros((2, 2)),
-                                      meta={'OBJECTS': 'tung&tung&none'}, features=features,
-                                      traces=traces, line_list=line_list)], 'foo.fits')
+        image = NRESObservationFrame([CCDData(data=np.zeros((2, 2)), uncertainty=np.zeros((2, 2)),
+                                      meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
+        image.features = features
+        image.traces = traces
+        image.line_list = line_list
         return image
 
     @mock.patch('banzai_nres.wavelength.WavelengthCalibrate.refine_wavelengths')

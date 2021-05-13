@@ -1,6 +1,7 @@
 from banzai.stages import Stage
 from banzai.frames import ObservationFrame
 from banzai import dbs
+from banzai.data import DataTable
 import numpy as np
 from astropy.table import Table, QTable
 from astropy import constants
@@ -125,7 +126,7 @@ class RVCalculator(Stage):
         if image.classification is None:
             logger.warning('No classification to use for an RV template', image=image)
             return image
-        phoenix_loader = phoenix.PhoenixModelLoader(self.runtime_context.db_address)
+        phoenix_loader = phoenix.PhoenixModelLoader(self.runtime_context)
         template = phoenix_loader.load(image.classification)
         # Pick orders near the center of the detector that have a high Signal to noise and are free of tellurics.
         orders_to_use = np.arange(self.runtime_context.MIN_ORDER_TO_CORRELATE,
@@ -172,5 +173,5 @@ class RVCalculator(Stage):
         sort_array = np.argsort(final_ccfs['v'][0])
         final_ccfs['xcor'] = final_ccfs['xcor'][:, sort_array]
         final_ccfs['v'] = final_ccfs['v'][:, sort_array]
-        image.ccf = final_ccfs
+        image.add_or_update(DataTable(final_ccfs, name='CCF'))
         return image

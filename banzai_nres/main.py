@@ -16,6 +16,12 @@ from banzai.utils import date_utils, import_utils
 from banzai import calibrations, logs
 from banzai_nres import dbs
 import banzai.dbs
+import os
+from banzai.data import DataProduct
+from banzai_nres import phoenix
+from astropy.io import fits
+import numpy as np
+import multiprocessing
 
 import logging
 import argparse
@@ -87,7 +93,9 @@ def add_bpm():
     frame_factory = import_utils.import_attribute(banzai_nres.settings.FRAME_FACTORY)()
     bpm_image = frame_factory.open({'path': args.filename}, args)
     bpm_image.is_master = True
-    banzai.dbs.save_calibration_info(args.filename, bpm_image, args.db_address)
+    banzai.dbs.save_calibration_info(bpm_image.to_db_record(DataProduct(None, filename=os.path.basename(args.filename),
+                                                                        filepath=os.path.dirname(args.filename))),
+                                     args.db_address)
 
 
 def add_bpms_from_archive():
@@ -111,7 +119,8 @@ def add_bpms_from_archive():
         bpm_image = frame_factory.open(frame, args)
         if bpm_image is not None:
             bpm_image.is_master = True
-            banzai.dbs.save_calibration_info(frame['filename'], bpm_image, args.db_address)
+            banzai.dbs.save_calibration_info(bpm_image.to_db_record(DataProduct(None, filename=bpm_image.filename,
+                                                                                filepath=None)), args.db_address)
 
 
 def create_db():
@@ -134,6 +143,39 @@ def create_db():
     dbs.create_db(args.db_address)
 
 
+def munge_phoenix_files():
+    parser = argparse.ArgumentParser('This copies out the optical region 300nm - 1000nm into fresh files for BANZAI')
+    parser.add_argument('--input-dir', dest='input_dir', help='Top level directory with the PHOENIX models')
+    parser.add_argument("--output-dir", dest='output_dir', help='Directory to save the reformatted models')
+    parser.add_argument('--ncpu', dest='ncpu', default=20, type=int, help='Number of cores to run on.')
+    args = parser.parse_args()
+    model_files = []
+    # Traverse the directory to find all of the phoenix files
+    for root, dirs, files in os.walk(args.input_dir):
+        for file in files:
+            # Get the wavelength file
+            if 'wave' in file.lower():
+                wavelength_filename = os.path.join(root, file)
+            elif file.endswith(".fits"):
+                model_files.append(os.path.join(root, file))
+
+    # Find the indices that correspond to the optical region
+    # NOTE PHOENIX WAVELENGTHS ARE IN VACUUM
+    wavelength_hdu = fits.open(wavelength_filename)
+    optical = np.logical_and(wavelength_hdu[0].data >= 3000.0, wavelength_hdu[0].data <= 10000.0)
+    # Restrict the wavelengths to the optical regime
+    wavelength_hdu[0].data = wavelength_hdu[0].data[optical]
+
+    # save the wavelengths as a separate file
+    wavelength_hdu.writeto(os.path.join(args.output_dir, 'phoenix_wavelength.fits'), overwrite=True)
+
+    pool = multiprocessing.Pool(args.ncpu)
+    pool.map(phoenix.normalize_phoenix_model,
+             [(model_file, wavelength_filename, args.output_dir) for model_file in model_files])
+    pool.close()
+    pool.join()
+
+
 def populate_phoenix_models():
     parser = argparse.ArgumentParser("Populate the database with the Phoenix models.\n\n"
                                      "This only needs to be run once on initialization of the database.")
@@ -146,7 +188,7 @@ def populate_phoenix_models():
                         default='sqlite3:///test.db',
                         help='Database address: Should be in SQLAlchemy form')
     args = parser.parse_args()
+    add_settings_to_context(args, banzai_nres.settings)
     logs.set_log_level(args.log_level)
 
-    dbs.create_db(args.db_address)
-    dbs.populate_phoenix_models(args.model_location, args.db_address)
+    dbs.populate_phoenix_models(args.model_location, args)

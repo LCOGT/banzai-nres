@@ -6,13 +6,13 @@
 # will be started when the CPU usage rises above the configured threshold.
 horizontalPodAutoscaler:
   enabled: true
-  minReplicas: 5
+  minReplicas: 6
   maxReplicas: 10
   targetCPUUtilizationPercentage: 50
 
 image:
   repository: docker.lco.global/banzai-nres
-  tag: ""
+  tag: "1.0.0"
   pullPolicy: IfNotPresent
 
 # Values for the OCS Ingester library, used by BANZAI-NRES.
@@ -47,12 +47,12 @@ useDockerizedDatabase: false
 useDockerizedRabbitMQ: false
 
 postgresql:
-  hostname:
-  postgresqlUsername:
-  postgresqlDatabase:
+  hostname: postgres1-cluster.cluster-cple9sjsskrf.us-west-2.rds.amazonaws.com
+  postgresqlUsername: banzai-nres
+  postgresqlDatabase: banzai-nres
 
 rabbitmq:
   hostname: rabbitmq-ha.prod.svc.cluster.local.
   rabbitmq:
-    username:
-  vhost:
+    username: banzai-nres
+  vhost: banzai-nres

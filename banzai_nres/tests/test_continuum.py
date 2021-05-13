@@ -1,7 +1,8 @@
 from banzai_nres.continuum import ContinuumNormalizer
 import mock
 import numpy as np
-from banzai_nres.frames import NRESObservationFrame, EchelleSpectralCCDData, Spectrum1D
+from banzai.data import CCDData
+from banzai_nres.frames import NRESObservationFrame, Spectrum1D
 from types import SimpleNamespace
 from astropy.table import Table
 
@@ -15,9 +16,9 @@ def test_do_stage(mock_normalize):
     x = np.arange(1, 101)
     spectrum = Table({'wavelength': [x, 2*x], 'flux': [flux, 2 * flux], 'blaze': [flux, 2 * flux],
                       'blaze_error': [flux, 2 * flux], 'uncertainty': [flux, 2*flux], 'fiber': [0, 0], 'order': [1, 2]})
-    image = NRESObservationFrame([EchelleSpectralCCDData(np.zeros((1, 1)), meta={'OBJECTS': 'tung&tung&none'},
-                                                         spectrum=Spectrum1D(spectrum))],
+    image = NRESObservationFrame([CCDData(np.zeros((1, 1)), meta={'OBJECTS': 'tung&tung&none'})],
                                  'test.fits')
+    image.spectrum = Spectrum1D(spectrum)
     # make it so that ContinuumNormalizer.normalize just returns ones.
     mock_normalize.return_value = (expected * np.ones_like(flux), expected * np.ones_like(flux))
 
@@ -35,9 +36,9 @@ def test_do_stage_does_not_fit_non_science_fiber():
     x = np.arange(1, 101)
     spectrum = Table({'wavelength': [x], 'flux': [flux], 'blaze': [flux],
                       'blaze_error': [flux], 'uncertainty': [flux], 'fiber': [1], 'order': [1]})
-    image = NRESObservationFrame([EchelleSpectralCCDData(np.zeros((1, 1)), meta={'OBJECTS': 'tung&tung&none'},
-                                                         spectrum=Spectrum1D(spectrum))],
+    image = NRESObservationFrame([CCDData(np.zeros((1, 1)), meta={'OBJECTS': 'tung&tung&none'})],
                                  'test.fits')
+    image.spectrum = Spectrum1D(spectrum)
 
     # Run the normalizer code
     stage = ContinuumNormalizer(SimpleNamespace(db_address='foo'))
