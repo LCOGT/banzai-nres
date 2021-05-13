@@ -24,16 +24,16 @@ class PhoenixModelLoader:
                                                       self.runtime_context)
 
     def load(self, model_record: PhoenixModel):
-        flux = self.open_model_fits_file(model_record.location, 
-                                         model_record.filename, 
+        flux = self.open_model_fits_file(model_record.location,
+                                         model_record.filename,
                                          self.runtime_context)
         return {'wavelength': self._wavelengths, 'flux': flux}
 
     @staticmethod
     def open_model_fits_file(file_location: str, filename: str, runtime_context: Context):
         if 's3' in file_location:
-            s3 = boto3.client('s3', 
-                              aws_access_key_id=runtime_context.PHOENIX_MODEL_AWS_ACCESS_KEY_ID, 
+            s3 = boto3.client('s3',
+                              aws_access_key_id=runtime_context.PHOENIX_MODEL_AWS_ACCESS_KEY_ID,
                               aws_secret_access_key=runtime_context.PHOENIX_MODEL_AWS_SECRET_ACCESS_KEY)
             buffer = io.BytesIO()
             s3.download_fileobj(file_location.replace('s3://', ''), filename, buffer)
