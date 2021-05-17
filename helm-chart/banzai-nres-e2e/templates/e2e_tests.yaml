@@ -115,6 +115,8 @@ spec:
                 secretKeyRef:
                   name: banzai-nres-secrets
                   key: AWS_SECRET_ACCESS_KEY
+            - name: CELERY_TASK_QUEUE_NAME
+              value: "e2e_task_queue"
           command:
             - celery
             - -A
@@ -169,6 +171,8 @@ spec:
                 secretKeyRef:
                   name: banzai-nres-secrets
                   key: AWS_SECRET_ACCESS_KEY
+            - name: CELERY_TASK_QUEUE_NAME
+              value: "e2e_task_queue"
           command:
             - banzai_nres_run_realtime_pipeline
             - "--db-address=sqlite:////archive/engineering/test.db"

@@ -177,3 +177,5 @@ MAX_ORDER_TO_CORRELATE = 97
 GAIA_CLASS = os.getenv('BANZAI_GAIA_CLASS', 'astroquery.gaia.GaiaClass')
 
 SIMBAD_CLASS = os.getenv('BANZAI_SIMBAD', 'astroquery.simbad.Simbad')
+
+CELERY_TASK_QUEUE_NAME = os.getenv('CELERY_TASK_QUEUE_NAME', 'celery')

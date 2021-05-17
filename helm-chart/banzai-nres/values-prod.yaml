@@ -38,6 +38,7 @@ banzaiNres:
   fitsExchange: archived_fits
   queueName: banzai_nres_pipeline
   phoenixFileLocation: s3://banzai-nres-phoenix-models-lco-global
+  celeryTaskQueueName: banzai_nres
 
 # CronJob configuration to periodically update instrument table in BANZAI DB
 instrumentTableCronjob:
@@ -54,5 +55,5 @@ postgresql:
 rabbitmq:
   hostname: rabbitmq-ha.prod.svc.cluster.local.
   rabbitmq:
-    username: banzai-nres
-  vhost: banzai-nres
+    username: banzai
+  vhost: banzai
