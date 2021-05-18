@@ -93,8 +93,10 @@ class MakePDFSummary(Stage):
         # Next Page
 
         # make the plots of individual lines of interest
-        line_centers = np.array([3969.63, 4862.764, [5185.14, 5174.22, 5168.84],
-                                [5891.68, 5897.65], 6564.73, [6709.73, 6709.88]], dtype=object)
+        # TODO verify that these line locations are correct. I corrected H beta and H alpha,
+        #  but the others might be off my 0.1 Ang ..
+        line_centers = np.array([3969.63, 4862.721, [5185.14, 5174.22, 5168.84],
+                                [5891.68, 5897.65], 6564.614, [6709.73, 6709.88]], dtype=object)
         line_names = np.array(['Ca II H', 'H beta', 'Mg b', 'Na D', 'H alpha', 'Li'])
         line_orders = np.array([117, 96, 90, 79, 71, 70])
 
