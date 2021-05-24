@@ -93,11 +93,12 @@ class MakePDFSummary(Stage):
         # Next Page
 
         # make the plots of individual lines of interest
-        # TODO verify that these line locations are correct. I corrected H beta and H alpha,
-        #  but the others might be off my 0.1 Ang ..
-        line_centers = np.array([3969.63, 4862.721, [5185.14, 5174.22, 5168.84],
-                                [5891.68, 5897.65], 6564.614, [6709.73, 6709.88]], dtype=object)
-        line_names = np.array(['Ca II H', 'H beta', 'Mg b', 'Na D', 'H alpha', 'Li'])
+        # Ca II K: 3934.775
+        # locations obtained from NIST, e.g., https://physics.nist.gov/PhysRefData/Handbook/Tables/magnesiumtable2.htm
+        line_centers = np.array([3969.590, 4862.721, [5185.048, 5174.125, 5168.761],
+                                [5891.582, 5897.558], 6564.614, [6709.627, 6709.778]], dtype=object)
+        line_names = np.array(['Ca II H', 'H beta', 'Mg b',
+                               'Na D', 'H alpha', 'Li'])
         line_orders = np.array([117, 96, 90, 79, 71, 70])
 
         fig2, axes = pl.subplots(nrows=2, ncols=3, figsize=(11, 8.5))
