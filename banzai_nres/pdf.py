@@ -26,14 +26,14 @@ class MakePDFSummary(Stage):
 
         phoenix_loader = phoenix.PhoenixModelLoader(self.runtime_context)
         template = phoenix_loader.load(image.classification)
-        v_over_c_plus_one = 1 + (image.meta['RV'] - image.meta['BARYCORR'])/constants.c.to(units.m/units.s).value
-        wavelength_correction = 1/v_over_c_plus_one  # we will multiply the science frame wavelengths
+        v_over_c_plus_one = 1 + (image.meta['RV'] - image.meta['BARYCORR']) / constants.c.to(units.m/units.s).value
+        wavelength_correction = 1 / v_over_c_plus_one  # we will multiply the science frame wavelengths
         # by this, thereby undoing the doppler shift (lambda_vac*(1 + v/c) = lambda_obs)
         # and placing everything into vacuumw wavelengths.
         # make the first page showing the spectrum, template, etc.
         pl.subplot(2, 1, 1)
         primary_order = order == 90
-        spectrum_line, = pl.plot(np.squeeze(wavelength[primary_order, :])*wavelength_correction,
+        spectrum_line, = pl.plot(np.squeeze(wavelength[primary_order, :]) * wavelength_correction,
                                  np.squeeze(flux[primary_order, :]), color='blue')
         template_line, = pl.plot(template['wavelength'], template['flux'], color='red', linewidth=0.5)
         pl.xlim([5140., 5220.])
@@ -128,7 +128,8 @@ class MakePDFSummary(Stage):
 def make_line_plot(wavelength, flux, order, ax, line_center, line_name, line_order, wavelength_correction=1.0):
     this_order = order == line_order
     non_zero = np.squeeze(wavelength[this_order, :]) != 0.
-    ax.plot(np.squeeze(wavelength[this_order, non_zero])*wavelength_correction, np.squeeze(flux[this_order, non_zero]),
+    ax.plot(np.squeeze(wavelength[this_order, non_zero]) * wavelength_correction,
+            np.squeeze(flux[this_order, non_zero]),
             color='black')
     if isinstance(line_center, (list, tuple, np.ndarray)):
         for this_center in line_center:
