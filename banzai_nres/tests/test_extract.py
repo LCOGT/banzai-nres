@@ -83,6 +83,39 @@ class TestExtract:
             assert optimal_median_sn > 1.45 * box_median_sn
 
 
+def test_if_robust_to_wavelength_region_mismatch_between_trace_region():
+    """
+    This creates a simulated image where the trace region for the wavelength image
+    is different than image.traces by 1 pixel (a 1 pixel shift). This kind of shift
+    used to cause the wavelengths to be incorrect by
+    (trace width - 1)/trace width  . This tests in particular this bug, because trace regions shift by 1 pixel nearly
+    every night (even though the traces themselves do not shift by much).
+    """
+    image = two_order_image()
+    image.weights = np.ones_like(image.data)
+    expected_extracted_flux = np.max(image.data) * 3
+    expected_extracted_wavelength = np.max(image.wavelengths)
+    expected_extracted_uncertainty = np.sqrt(3) * np.max(image.data)
+    input_context = context.Context({})
+    # now we shift the wavelength image up by 1 pixel. This creates a mismatch between image.wavelengths
+    # and image.traces
+    image.wavelengths = np.vstack([image.wavelengths[1:], np.zeros((1, len(image.wavelengths[0])), dtype=float)])
+    output_image = WeightedExtract(input_context).do_stage(image)
+    spectrum = output_image.spectrum
+
+    assert np.allclose(spectrum[0, 0]['flux'], expected_extracted_flux)
+    assert np.allclose(spectrum[0, 0]['wavelength'], expected_extracted_wavelength)
+    assert np.allclose(spectrum[0, 0]['uncertainty'], expected_extracted_uncertainty)
+    assert np.allclose(spectrum[0, 0]['id'], 1)
+
+    assert np.allclose(spectrum[1, 1]['flux'][1:-1], expected_extracted_flux)
+    assert np.allclose(spectrum[1, 1]['wavelength'][1:-1], expected_extracted_wavelength)
+    assert len(spectrum[1, 1]['flux']) == image.traces.shape[1] - 2
+    assert np.allclose(spectrum[1, 1]['uncertainty'][1:-1], expected_extracted_uncertainty)
+    assert len(spectrum[1, 1]['uncertainty']) == image.traces.shape[1] - 2
+    assert np.allclose(spectrum[1, 1]['id'], 2)
+
+
 class TestGetWeights:
     def test_rejects_on_no_profile(self):
         con = context.Context({})
@@ -126,12 +159,14 @@ def two_order_image():
     traces = np.zeros((60, 20))
     traces[[10, 11, 12], :] = 1
     # the second trace that does not span the image entirely
-    traces[[50, 51, 53], 1:-1] = 2
+    traces[[50, 51, 52], :] = 2
+    traces[[50, 51, 52], 0] = 0
+    traces[[50, 51, 52], -1] = 0
     # generate test data with zero noise
     data = np.ones_like(traces, dtype=float)
     data[~np.isclose(traces, 0)] = 100.
     uncertainty = 1. * data
-    wavelengths = np.ones_like(traces) * 5  # dummy wavelengths image that has values distinct from flux and traces.
+    wavelengths = (traces > 0).astype(float) * 5
     image = NRESObservationFrame([CCDData(data=data, uncertainty=uncertainty, meta={'OBJECTS': 'tung&tung&none'})],
                                  'foo.fits')
     image.wavelengths = wavelengths
