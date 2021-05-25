@@ -26,14 +26,16 @@ class MakePDFSummary(Stage):
 
         phoenix_loader = phoenix.PhoenixModelLoader(self.runtime_context)
         template = phoenix_loader.load(image.classification)
-        v_over_c_plus_one = 1 + image.meta['RV']/constants.c.to(units.m/units.s).value
-
+        v_over_c_plus_one = 1 + (image.meta['RV'] - image.meta['BARYCORR']) / constants.c.to(units.m/units.s).value
+        wavelength_correction = 1 / v_over_c_plus_one  # we will multiply the science frame wavelengths
+        # by this, thereby undoing the doppler shift (lambda_vac*(1 + v/c) = lambda_obs)
+        # and placing everything into vacuumw wavelengths.
         # make the first page showing the spectrum, template, etc.
         pl.subplot(2, 1, 1)
         primary_order = order == 90
-        spectrum_line, = pl.plot(np.squeeze(wavelength[primary_order, :]),
+        spectrum_line, = pl.plot(np.squeeze(wavelength[primary_order, :]) * wavelength_correction,
                                  np.squeeze(flux[primary_order, :]), color='blue')
-        template_line, = pl.plot(template['wavelength']*v_over_c_plus_one, template['flux'], color='red', linewidth=0.5)
+        template_line, = pl.plot(template['wavelength'], template['flux'], color='red', linewidth=0.5)
         pl.xlim([5140., 5220.])
         pl.ylim([0., np.max(flux[primary_order, :])])
         pl.xlabel('wavelength (Angstroms)')
@@ -91,16 +93,19 @@ class MakePDFSummary(Stage):
         # Next Page
 
         # make the plots of individual lines of interest
-        line_centers = np.array([3969.63, 4862.764, [5185.14, 5174.22, 5168.84],
-                                [5891.68, 5897.65], 6564.73, [6709.73, 6709.88]], dtype=object)
-        line_names = np.array(['Ca II H', 'H beta', 'Mg b', 'Na D', 'H alpha', 'Li'])
+        # Ca II K: 3934.775
+        # locations obtained from NIST, e.g., https://physics.nist.gov/PhysRefData/Handbook/Tables/magnesiumtable2.htm
+        line_centers = np.array([3969.590, 4862.721, [5185.048, 5174.125, 5168.761],
+                                [5891.582, 5897.558], 6564.614, [6709.627, 6709.778]], dtype=object)
+        line_names = np.array(['Ca II H', 'H beta', 'Mg b',
+                               'Na D', 'H alpha', 'Li'])
         line_orders = np.array([117, 96, 90, 79, 71, 70])
 
         fig2, axes = pl.subplots(nrows=2, ncols=3, figsize=(11, 8.5))
 
         for ax, line_center, line_name, line_order in zip(axes.flatten(), line_centers, line_names, line_orders):
             make_line_plot(wavelength, flux, order, ax, line_center, line_name,
-                           line_order, wavelength_correction=v_over_c_plus_one)
+                           line_order, wavelength_correction=wavelength_correction)
 
         # Next Page
 
@@ -123,13 +128,13 @@ class MakePDFSummary(Stage):
 def make_line_plot(wavelength, flux, order, ax, line_center, line_name, line_order, wavelength_correction=1.0):
     this_order = order == line_order
     non_zero = np.squeeze(wavelength[this_order, :]) != 0.
-    ax.plot(np.squeeze(wavelength[this_order, non_zero]), np.squeeze(flux[this_order, non_zero]), color='black')
+    ax.plot(np.squeeze(wavelength[this_order, non_zero]) * wavelength_correction,
+            np.squeeze(flux[this_order, non_zero]),
+            color='black')
     if isinstance(line_center, (list, tuple, np.ndarray)):
         for this_center in line_center:
-            this_center *= wavelength_correction
             ax.plot([this_center, this_center], [0, 1.1], color='blue')
     else:
-        line_center *= wavelength_correction
         ax.plot([line_center, line_center], [0, 1.1], color='blue')
     ax.set_xlabel('wavelength (Angstroms)')
     ax.set_ylabel('normalized flux')
