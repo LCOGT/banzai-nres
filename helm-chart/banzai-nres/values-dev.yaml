@@ -12,7 +12,7 @@ horizontalPodAutoscaler:
 
 image:
   repository: docker.lco.global/banzai-nres
-  tag: "1.0.0"
+  tag: "1.0.1"
   pullPolicy: IfNotPresent
 
 # Values for the OCS Ingester library, used by BANZAI.
@@ -35,6 +35,7 @@ banzaiNres:
   fitsExchange: archived_fits
   queueName: banzai_nres_dev_pipeline
   phoenixFileLocation: s3://banzai-nres-phoenix-models-lco-global
+  celeryTaskQueueName: banzai_nres
 
 # CronJob configuration to periodically update instrument table in BANZAI-NRES DB
 instrumentTableCronjob:

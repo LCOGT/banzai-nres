@@ -1,3 +1,11 @@
+1.0.1 (2021-05-24)
+------------------
+- Add ability to configure task queue name (BANZAI 1.3.2)
+
+1.0.0 (2021-05-13)
+------------------
+- Initial release
+
 0.5.1 (2020-05-07)
 ------------------
 - Extracted spectra now have wavelengths attached.
