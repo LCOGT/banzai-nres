@@ -1,6 +1,9 @@
 1.0.2 (2021-06-01)
 ------------------
 - Changed SNR calculation to be per resolution element rather than per pixel
+- Fixed the extraction so that slightly mismatched trace regions and wavelength 
+files do not yield incorrect wavelengths. This resulted from ~1 pix noise
+in the center of the trace (in the super lampflats).
 
 1.0.1 (2021-05-24)
 ------------------
