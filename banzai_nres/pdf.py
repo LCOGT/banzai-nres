@@ -68,7 +68,7 @@ class MakePDFSummary(Stage):
                     (order <= self.runtime_context.MAX_ORDER_TO_CORRELATE)
         pl.plot(snr_wavelength[rv_orders], snr[rv_orders], 'ro')
         pl.xlabel('wavelength (Angstroms)')
-        pl.ylabel('peak SNR/pixel in order')
+        pl.ylabel('peak SNR/resolution element in order')
         pl.title('SNR vs wavelength')
 
         ax = pl.subplot(2, 3, 6)
@@ -87,7 +87,8 @@ class MakePDFSummary(Stage):
         pl.text(0.1, top_line - line_separation * 8, 'Barycorr = {0:1.3f} km/s'.format(image.meta['BARYCORR'] / 1000.))
         pl.text(0.1, top_line - line_separation * 9, 'BJD_TDB = {0:1.5f}'.format(image.meta['TCORR']))
 
-        pl.text(0.1, top_line - line_separation * 11, 'SNR = {0:1.0f}/pixel @ 5180 Angstroms'.format(image.meta['SNR']))
+        pl.text(0.1, top_line - line_separation * 11,
+                'SNR = {0:1.0f}/resolution element @ 5180 Angstroms'.format(image.meta['SNR']))
         pl.text(0.1, top_line - line_separation * 12, 'Exposure time = {0:1.0f} seconds'.format(image.meta['EXPTIME']))
 
         # Next Page
