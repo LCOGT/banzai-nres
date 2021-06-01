@@ -1,3 +1,7 @@
+1.0.2 (2021-06-01)
+------------------
+- Changed SNR calculation to be per resolution element rather than per pixel
+
 1.0.1 (2021-05-24)
 ------------------
 - Add ability to configure task queue name (BANZAI 1.3.2)
