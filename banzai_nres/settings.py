@@ -174,6 +174,9 @@ PHOENIX_MODEL_AWS_SECRET_ACCESS_KEY = os.getenv('PHOENIX_MODEL_AWS_SECRET_ACCESS
 MIN_ORDER_TO_CORRELATE = 77
 MAX_ORDER_TO_CORRELATE = 97
 
+# TODO: measure the number of pixels per resolution element to verify this value.
+PIXELS_PER_RESOLUTION_ELEMENT = 4.15
+
 GAIA_CLASS = os.getenv('BANZAI_GAIA_CLASS', 'astroquery.gaia.GaiaClass')
 
 SIMBAD_CLASS = os.getenv('BANZAI_SIMBAD', 'astroquery.simbad.Simbad')

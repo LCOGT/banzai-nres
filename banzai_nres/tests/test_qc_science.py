@@ -9,7 +9,7 @@ from banzai.data import CCDData
 
 
 class TestCalculateScienceFrameMetrics:
-    input_context = context.Context({})
+    input_context = context.Context({'PIXELS_PER_RESOLUTION_ELEMENT': 4.15})
     test_wavelengths = np.linspace(5100.0, 5200.0, 4096)
     test_flux = -0.001 * test_wavelengths**2 + 10.3 * test_wavelengths
     test_uncertainty = np.sqrt(test_flux)
@@ -29,5 +29,6 @@ class TestCalculateScienceFrameMetrics:
         assert image is not None
 
     def test_snr_calculation(self):
-        snr, _ = get_snr(self.test_image, self.snr_order)
-        assert np.isclose(snr, np.max(self.test_flux/self.test_uncertainty), rtol=0.1)
+        snr, _ = get_snr(self.test_image, self.snr_order, self.input_context.PIXELS_PER_RESOLUTION_ELEMENT)
+        snr_test = self.test_flux/self.test_uncertainty * np.sqrt(self.input_context.PIXELS_PER_RESOLUTION_ELEMENT)
+        assert np.isclose(snr, np.max(snr_test), rtol=0.1)
