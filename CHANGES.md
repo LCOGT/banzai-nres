@@ -1,3 +1,7 @@
+1.0.3 (2021-06-10)
+------------------
+- Bugfix to SNR calculation in PDF generation code
+
 1.0.2 (2021-06-01)
 ------------------
 - Changed SNR calculation to be per resolution element rather than per pixel
