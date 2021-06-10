@@ -62,7 +62,8 @@ class MakePDFSummary(Stage):
         pl.subplot(2, 3, 5)
         snr, snr_wavelength = np.zeros(len(order), dtype=np.float), np.zeros(len(order), dtype=np.float)
         for snr_order in order:
-            snr[snr_order - order[0]], snr_wavelength[snr_order - order[0]] = get_snr(image, snr_order, self.runtime_context.PIXELS_PER_RESOLUTION_ELEMENT)
+            snr[snr_order - order[0]], snr_wavelength[snr_order - order[0]] \
+                                       = get_snr(image, snr_order, self.runtime_context.PIXELS_PER_RESOLUTION_ELEMENT)
         pl.plot(snr_wavelength, snr, 'ko')
         rv_orders = (order >= self.runtime_context.MIN_ORDER_TO_CORRELATE) & \
                     (order <= self.runtime_context.MAX_ORDER_TO_CORRELATE)
