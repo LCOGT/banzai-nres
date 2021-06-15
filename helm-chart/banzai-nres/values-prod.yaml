@@ -39,6 +39,7 @@ banzaiNres:
   queueName: banzai_nres_pipeline
   phoenixFileLocation: s3://banzai-nres-phoenix-models-lco-global
   celeryTaskQueueName: banzai_nres
+  celeryStackQueueName: banzai_nres_stack
 
 # CronJob configuration to periodically update instrument table in BANZAI DB
 instrumentTableCronjob:
