@@ -37,7 +37,7 @@ class MakePDFSummary(Stage):
                                  np.squeeze(flux[primary_order, :]), color='blue')
         template_line, = pl.plot(template['wavelength'], template['flux'], color='red', linewidth=0.5)
         pl.xlim([5140., 5220.])
-        pl.ylim([0., np.max(flux[primary_order, :])])
+        pl.ylim([0., np.nanmax(flux[primary_order, :])])
         pl.xlabel('wavelength (Angstroms)')
         pl.ylabel('normalized flux')
         pl.title(image.meta['OBJECT'] + ' on ' + image.meta['DAY-OBS'] + ' from ' + image.meta['TELESCOP'] + '-' +
@@ -49,10 +49,10 @@ class MakePDFSummary(Stage):
         pl.plot([image.meta['RV'] / 1000., image.meta['RV'] / 1000.], [-0.1, 1.1], color='blue')
         for ccf in image.ccf:
             this_ccf = ccf['xcor'] - np.min(ccf['xcor'])
-            pl.plot(ccf['v'] + image.meta['BARYCORR'] / 1000., this_ccf / np.max(this_ccf), color='gray', alpha=0.25)
+            pl.plot(ccf['v'] + image.meta['BARYCORR'] / 1000., this_ccf / np.nanmax(this_ccf), color='gray', alpha=0.25)
             stacked_ccf *= ccf['xcor']
         stacked_ccf -= np.min(stacked_ccf)
-        pl.plot(image.ccf['v'][0, :] + image.meta['BARYCORR'] / 1000., stacked_ccf / np.max(stacked_ccf), color='black')
+        pl.plot(image.ccf['v'][0, :] + image.meta['BARYCORR'] / 1000., stacked_ccf / np.nanmax(stacked_ccf), color='black')
         pl.xlim([image.meta['RV'] / 1000. - 50, image.meta['RV'] / 1000. + 50])
         pl.ylim([-0.1, 1.1])
         pl.xlabel('barycentric velocity (km/s)')
