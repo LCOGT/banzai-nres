@@ -37,7 +37,7 @@ class MakePDFSummary(Stage):
                                  np.squeeze(flux[primary_order, :]), color='blue')
         template_line, = pl.plot(template['wavelength'], template['flux'], color='red', linewidth=0.5)
         pl.xlim([5140., 5220.])
-        pl.ylim([0., np.nanmax(flux[primary_order, :])])
+        pl.ylim([0., np.nanmin([np.nanmax(flux[primary_order, :]), 2.0])])
         pl.xlabel('wavelength (Angstroms)')
         pl.ylabel('normalized flux')
         pl.title(image.meta['OBJECT'] + ' on ' + image.meta['DAY-OBS'] + ' from ' + image.meta['TELESCOP'] + '-' +
@@ -130,16 +130,17 @@ class MakePDFSummary(Stage):
 def make_line_plot(wavelength, flux, order, ax, line_center, line_name, line_order, wavelength_correction=1.0):
     this_order = order == line_order
     non_zero = np.squeeze(wavelength[this_order, :]) != 0.
+    upper_plot_limit = np.nanmin([np.nanmax(np.squeeze(flux[this_order, non_zero])), 2.0])
     ax.plot(np.squeeze(wavelength[this_order, non_zero]) * wavelength_correction,
             np.squeeze(flux[this_order, non_zero]),
             color='black')
     if isinstance(line_center, (list, tuple, np.ndarray)):
         for this_center in line_center:
-            ax.plot([this_center, this_center], [0, 1.1], color='blue')
+            ax.plot([this_center, this_center], [0, upper_plot_limit], color='blue')
     else:
-        ax.plot([line_center, line_center], [0, 1.1], color='blue')
+        ax.plot([line_center, line_center], [0, upper_plot_limit], color='blue')
     ax.set_xlabel('wavelength (Angstroms)')
     ax.set_ylabel('normalized flux')
     ax.set_title(line_name)
     ax.set_xlim([np.min(line_center) - 7.5, np.max(line_center) + 7.5])
-    ax.set_ylim([0., 1.1])
+    ax.set_ylim([0., upper_plot_limit])
