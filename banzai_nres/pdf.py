@@ -52,7 +52,8 @@ class MakePDFSummary(Stage):
             pl.plot(ccf['v'] + image.meta['BARYCORR'] / 1000., this_ccf / np.nanmax(this_ccf), color='gray', alpha=0.25)
             stacked_ccf *= ccf['xcor']
         stacked_ccf -= np.min(stacked_ccf)
-        pl.plot(image.ccf['v'][0, :] + image.meta['BARYCORR'] / 1000., stacked_ccf / np.nanmax(stacked_ccf), color='black')
+        pl.plot(image.ccf['v'][0, :] + image.meta['BARYCORR'] / 1000.,
+                stacked_ccf / np.nanmax(stacked_ccf), color='black')
         pl.xlim([image.meta['RV'] / 1000. - 50, image.meta['RV'] / 1000. + 50])
         pl.ylim([-0.1, 1.1])
         pl.xlabel('barycentric velocity (km/s)')
