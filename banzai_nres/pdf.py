@@ -55,7 +55,8 @@ class MakePDFSummary(Stage):
             pl.plot([image.meta['RV'] / 1000., image.meta['RV'] / 1000.], [-0.1, 1.1], color='blue')
             for ccf in image.ccf:
                 this_ccf = ccf['xcor'] - np.min(ccf['xcor'])
-                pl.plot(ccf['v'] + image.meta['BARYCORR'] / 1000., this_ccf / np.nanmax(this_ccf), color='gray', alpha=0.25)
+                pl.plot(ccf['v'] + image.meta['BARYCORR'] / 1000., this_ccf / np.nanmax(this_ccf),
+                        color='gray', alpha=0.25)
                 stacked_ccf *= ccf['xcor']
             stacked_ccf -= np.min(stacked_ccf)
             pl.plot(image.ccf['v'][0, :] + image.meta['BARYCORR'] / 1000.,
@@ -92,7 +93,8 @@ class MakePDFSummary(Stage):
             pl.text(0.1, top_line - line_separation * 4, '[alpha/Fe] = {0:1.2g}'.format(image.meta['ALPHA']))
             pl.text(0.1, top_line - line_separation * 6, 'RV = {0:1.3f} km/s'.format(image.meta['RV'] / 1000.))
             pl.text(0.1, top_line - line_separation * 7, 'RV error = {0:1.3f} km/s'.format(image.meta['RVERR'] / 1000.))
-            pl.text(0.1, top_line - line_separation * 8, 'Barycorr = {0:1.3f} km/s'.format(image.meta['BARYCORR'] / 1000.))
+            pl.text(0.1, top_line - line_separation * 8,
+                    'Barycorr = {0:1.3f} km/s'.format(image.meta['BARYCORR'] / 1000.))
             pl.text(0.1, top_line - line_separation * 9, 'BJD_TDB = {0:1.5f}'.format(image.meta['TCORR']))
 
         pl.text(0.1, top_line - line_separation * 11,
