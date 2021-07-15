@@ -96,6 +96,10 @@ class MakePDFSummary(Stage):
             pl.text(0.1, top_line - line_separation * 8,
                     'Barycorr = {0:1.3f} km/s'.format(image.meta['BARYCORR'] / 1000.))
             pl.text(0.1, top_line - line_separation * 9, 'BJD_TDB = {0:1.5f}'.format(image.meta['TCORR']))
+        else:
+            pl.text(0.1, top_line - line_separation, 'Target does not appear in catalogs')
+            pl.text(0.1, top_line - line_separation * 2, 'and was not classified.')
+            pl.text(0.1, top_line - line_separation * 3, 'No stellar parameters or RVs to report.')
 
         pl.text(0.1, top_line - line_separation * 11,
                 'SNR = {0:1.0f}/resolution element @ 5180 Angstroms'.format(image.meta['SNR']))
