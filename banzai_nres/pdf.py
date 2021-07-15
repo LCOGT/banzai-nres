@@ -31,9 +31,9 @@ class MakePDFSummary(Stage):
             wavelength_correction = 1 / v_over_c_plus_one  # we will multiply the science frame wavelengths
             # by this, thereby undoing the doppler shift (lambda_vac*(1 + v/c) = lambda_obs)
             # and placing everything into vacuumw wavelengths.
-            # make the first page showing the spectrum, template, etc.
         else:
             wavelength_correction = 1.0
+        # make the first page showing the spectrum, template, etc.
         pl.subplot(2, 1, 1)
         primary_order = order == 90
         spectrum_line, = pl.plot(np.squeeze(wavelength[primary_order, :]) * wavelength_correction,
