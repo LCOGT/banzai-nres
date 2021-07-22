@@ -34,8 +34,10 @@ def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
         gaia_connection.ROW_LIMIT = 200
         results = gaia_connection.query_object(coordinate=transformed_coordinate, radius=10.0 * units.arcsec)
 
-    # Filter out objects fainter than r=12
-    results = results[results['phot_rp_mean_mag'] < 12.0]
+    # Filter out objects fainter than r=12 and brighter than r = 5.
+    # There is at least one case (gamma cas) that is in gaia but does not have a complete catalog record like proper
+    # motions and effective temperatures.
+    results = results[np.logical_and(results['phot_rp_mean_mag'] < 12.0, results['phot_rp_mean_mag'] > 5.0)]
     if len(results) > 0:
         # convert the luminosity from the LSun units that Gaia provides to cgs units
         results[0]['lum_val'] *= constants.L_sun.to('erg / s').value
