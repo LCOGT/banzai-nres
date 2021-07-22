@@ -94,8 +94,13 @@ class NRESObservationFrame(LCOObservationFrame):
             # Remove any name from the header of the primary hdu
             if 'EXTNAME' in frame_1d_meta:
                 frame_1d_meta.pop('EXTNAME')
-            frame_1d = LCOObservationFrame([HeaderOnly(frame_1d_meta), self['SPECTRUM1D'], self['CCF']],
-                                           os.path.join(self.get_output_directory(runtime_context), filename_1d))
+
+            if 'CCF' in self:
+                frame_1d = LCOObservationFrame([HeaderOnly(frame_1d_meta), self['SPECTRUM1D'], self['CCF']],
+                                               os.path.join(self.get_output_directory(runtime_context), filename_1d))
+            else:
+                frame_1d = LCOObservationFrame([HeaderOnly(frame_1d_meta), self['SPECTRUM1D']],
+                                               os.path.join(self.get_output_directory(runtime_context), filename_1d))
             fits_1d = frame_1d.to_fits(runtime_context)
             fits_1d['SPECTRUM1D'].name = 'SPECTRUM'
             fits_1d[0].header['L1ID2D'] = filename_2d

@@ -10,6 +10,9 @@ from banzai_nres.rv import cross_correlate_over_traces, calculate_rv
 from banzai_nres import phoenix
 import numpy as np
 from banzai.utils import import_utils
+import logging
+
+logger = logging.getLogger('banzai')
 
 
 def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
@@ -83,7 +86,12 @@ class StellarClassifier(Stage):
                                                                    self.runtime_context.db_address,)
                 image.meta['CLASSIFY'] = 0, 'Was this spectrum classified'
                 return image
-
+        # Short circuit if the object is not a star
+        if image.classification is None:
+            image.meta['CLASSIFY'] = 0, 'Was this spectrum classified'
+            logger.warning('Target not found in SIMBAD or Gaia. Assuming it is not a star. Will not classify',
+                           image=image)
+            return image
         orders_to_use = np.arange(self.runtime_context.MIN_ORDER_TO_CORRELATE,
                                   self.runtime_context.MAX_ORDER_TO_CORRELATE, 1)
         phoenix_loader = phoenix.PhoenixModelLoader(self.runtime_context)

@@ -24,41 +24,48 @@ class MakePDFSummary(Stage):
         flux = image.spectrum.table['normflux'][fiber == image.science_fiber, :]
         order = image.spectrum.table['order'][fiber == image.science_fiber]
 
-        phoenix_loader = phoenix.PhoenixModelLoader(self.runtime_context)
-        template = phoenix_loader.load(image.classification)
-        v_over_c_plus_one = 1 + (image.meta['RV'] - image.meta['BARYCORR']) / constants.c.to(units.m/units.s).value
-        wavelength_correction = 1 / v_over_c_plus_one  # we will multiply the science frame wavelengths
-        # by this, thereby undoing the doppler shift (lambda_vac*(1 + v/c) = lambda_obs)
-        # and placing everything into vacuumw wavelengths.
+        if image.classification is not None:
+            phoenix_loader = phoenix.PhoenixModelLoader(self.runtime_context)
+            template = phoenix_loader.load(image.classification)
+            v_over_c_plus_one = 1 + (image.meta['RV'] - image.meta['BARYCORR']) / constants.c.to(units.m/units.s).value
+            wavelength_correction = 1 / v_over_c_plus_one  # we will multiply the science frame wavelengths
+            # by this, thereby undoing the doppler shift (lambda_vac*(1 + v/c) = lambda_obs)
+            # and placing everything into vacuumw wavelengths.
+        else:
+            wavelength_correction = 1.0
         # make the first page showing the spectrum, template, etc.
         pl.subplot(2, 1, 1)
         primary_order = order == 90
         spectrum_line, = pl.plot(np.squeeze(wavelength[primary_order, :]) * wavelength_correction,
                                  np.squeeze(flux[primary_order, :]), color='blue')
-        template_line, = pl.plot(template['wavelength'], template['flux'], color='red', linewidth=0.5)
+        if image.classification is not None:
+            template_line, = pl.plot(template['wavelength'], template['flux'], color='red', linewidth=0.5)
         pl.xlim([5140., 5220.])
         pl.ylim([0., np.nanmin([np.nanmax(flux[primary_order, :]), 2.0])])
         pl.xlabel('wavelength (Angstroms)')
         pl.ylabel('normalized flux')
         pl.title(image.meta['OBJECT'] + ' on ' + image.meta['DAY-OBS'] + ' from ' + image.meta['TELESCOP'] + '-' +
                  image.meta['SITEID'] + ' for program ' + image.meta['PROPID'])
-        pl.legend((spectrum_line, template_line), ('Spectrum', 'Best-Fit Phoenix Template'))
+        if image.classification is not None:
+            pl.legend((spectrum_line, template_line), ('Spectrum', 'Best-Fit Phoenix Template'))
 
         pl.subplot(2, 3, 4)
-        stacked_ccf = np.ones_like(image.ccf['v'][0, :])
-        pl.plot([image.meta['RV'] / 1000., image.meta['RV'] / 1000.], [-0.1, 1.1], color='blue')
-        for ccf in image.ccf:
-            this_ccf = ccf['xcor'] - np.min(ccf['xcor'])
-            pl.plot(ccf['v'] + image.meta['BARYCORR'] / 1000., this_ccf / np.nanmax(this_ccf), color='gray', alpha=0.25)
-            stacked_ccf *= ccf['xcor']
-        stacked_ccf -= np.min(stacked_ccf)
-        pl.plot(image.ccf['v'][0, :] + image.meta['BARYCORR'] / 1000.,
-                stacked_ccf / np.nanmax(stacked_ccf), color='black')
-        pl.xlim([image.meta['RV'] / 1000. - 50, image.meta['RV'] / 1000. + 50])
-        pl.ylim([-0.1, 1.1])
-        pl.xlabel('barycentric velocity (km/s)')
-        pl.ylabel('normalized CCF')
-        pl.title('CCF')
+        if image.classification is not None:
+            stacked_ccf = np.ones_like(image.ccf['v'][0, :])
+            pl.plot([image.meta['RV'] / 1000., image.meta['RV'] / 1000.], [-0.1, 1.1], color='blue')
+            for ccf in image.ccf:
+                this_ccf = ccf['xcor'] - np.min(ccf['xcor'])
+                pl.plot(ccf['v'] + image.meta['BARYCORR'] / 1000., this_ccf / np.nanmax(this_ccf),
+                        color='gray', alpha=0.25)
+                stacked_ccf *= ccf['xcor']
+            stacked_ccf -= np.min(stacked_ccf)
+            pl.plot(image.ccf['v'][0, :] + image.meta['BARYCORR'] / 1000.,
+                    stacked_ccf / np.nanmax(stacked_ccf), color='black')
+            pl.xlim([image.meta['RV'] / 1000. - 50, image.meta['RV'] / 1000. + 50])
+            pl.ylim([-0.1, 1.1])
+            pl.xlabel('barycentric velocity (km/s)')
+            pl.ylabel('normalized CCF')
+            pl.title('CCF')
 
         pl.subplot(2, 3, 5)
         snr, snr_wavelength = np.zeros(len(order), dtype=np.float), np.zeros(len(order), dtype=np.float)
@@ -79,15 +86,20 @@ class MakePDFSummary(Stage):
         line_separation, top_line = 0.065, 0.925
         pl.text(0.1, top_line, image.meta['ORIGNAME'].replace('e00', 'e' + str(self.runtime_context.reduction_level) +
                                                               '-1d') + '.fz')
-        pl.text(0.1, top_line - line_separation, 'Teff = {0:1.4g} K'.format(image.meta['TEFF']))
-        pl.text(0.1, top_line - line_separation * 2, 'logg = {0:1.2g} (cgs units)'.format(image.meta['LOGG']))
-        pl.text(0.1, top_line - line_separation * 3, '[Fe/H] = {0:1.2g}'.format(image.meta['FEH']))
-        pl.text(0.1, top_line - line_separation * 4, '[alpha/Fe] = {0:1.2g}'.format(image.meta['ALPHA']))
-
-        pl.text(0.1, top_line - line_separation * 6, 'RV = {0:1.3f} km/s'.format(image.meta['RV'] / 1000.))
-        pl.text(0.1, top_line - line_separation * 7, 'RV error = {0:1.3f} km/s'.format(image.meta['RVERR'] / 1000.))
-        pl.text(0.1, top_line - line_separation * 8, 'Barycorr = {0:1.3f} km/s'.format(image.meta['BARYCORR'] / 1000.))
-        pl.text(0.1, top_line - line_separation * 9, 'BJD_TDB = {0:1.5f}'.format(image.meta['TCORR']))
+        if image.classification is not None:
+            pl.text(0.1, top_line - line_separation, 'Teff = {0:1.4g} K'.format(image.meta['TEFF']))
+            pl.text(0.1, top_line - line_separation * 2, 'logg = {0:1.2g} (cgs units)'.format(image.meta['LOGG']))
+            pl.text(0.1, top_line - line_separation * 3, '[Fe/H] = {0:1.2g}'.format(image.meta['FEH']))
+            pl.text(0.1, top_line - line_separation * 4, '[alpha/Fe] = {0:1.2g}'.format(image.meta['ALPHA']))
+            pl.text(0.1, top_line - line_separation * 6, 'RV = {0:1.3f} km/s'.format(image.meta['RV'] / 1000.))
+            pl.text(0.1, top_line - line_separation * 7, 'RV error = {0:1.3f} km/s'.format(image.meta['RVERR'] / 1000.))
+            pl.text(0.1, top_line - line_separation * 8,
+                    'Barycorr = {0:1.3f} km/s'.format(image.meta['BARYCORR'] / 1000.))
+            pl.text(0.1, top_line - line_separation * 9, 'BJD_TDB = {0:1.5f}'.format(image.meta['TCORR']))
+        else:
+            pl.text(0.1, top_line - line_separation, 'Target does not appear in catalogs')
+            pl.text(0.1, top_line - line_separation * 2, 'and was not classified.')
+            pl.text(0.1, top_line - line_separation * 3, 'No stellar parameters or RVs to report.')
 
         pl.text(0.1, top_line - line_separation * 11,
                 'SNR = {0:1.0f}/resolution element @ 5180 Angstroms'.format(image.meta['SNR']))
