@@ -377,10 +377,19 @@ class NRESFrameFactory(LCOFrameFactory):
         if 'TELESCOPE_1' in image:
 
             # Fix the RA and DEC keywords to be the requested values for all of our measurements
-            if image['TELESCOPE_1'].meta['OBJECT'].lower() in image.meta['OBJECTS'].lower():
-                telescope_num = 1
+            if image['TELESCOPE_1'].meta['OBJECT'].lower() != '' and image['TELESCOPE_2'].meta['OBJECT'].lower() != '':
+                if image['TELESCOPE_1'].meta['OBJECT'].lower() in image.meta['OBJECTS'].lower():
+                    telescope_num = 1
+                else:
+                    telescope_num = 2
             else:
-                telescope_num = 2
+                if image['TELESCOPE_1'].meta['OBJECT'].lower() == '' and image['TELESCOPE_2'].meta['OBJECT'].lower() != '':
+                    telescope_num = 2
+                if image['TELESCOPE_1'].meta['OBJECT'].lower() != '' and image['TELESCOPE_2'].meta['OBJECT'].lower() == '':
+                    telescope_num = 1
+                if image['TELESCOPE_1'].meta['OBJECT'].lower() == '' and image['TELESCOPE_2'].meta['OBJECT'].lower() == '':
+                    logger.error('The OBJECT keyword in both TELESCOPE extensions is empty.', image=image)
+                    return None
 
             if 'nan' in str(image[f'TELESCOPE_{telescope_num}'].meta['CAT-RA']).lower() or \
                     'n/a' in str(image[f'TELESCOPE_{telescope_num}'].meta['CAT-RA']).lower() or \
