@@ -383,11 +383,14 @@ class NRESFrameFactory(LCOFrameFactory):
                 else:
                     telescope_num = 2
             else:
-                if image['TELESCOPE_1'].meta['OBJECT'].lower() == '' and image['TELESCOPE_2'].meta['OBJECT'].lower() != '':
+                if image['TELESCOPE_1'].meta['OBJECT'].lower() == '' and \
+                   image['TELESCOPE_2'].meta['OBJECT'].lower() != '':
                     telescope_num = 2
-                if image['TELESCOPE_1'].meta['OBJECT'].lower() != '' and image['TELESCOPE_2'].meta['OBJECT'].lower() == '':
+                if image['TELESCOPE_1'].meta['OBJECT'].lower() != '' and \
+                   image['TELESCOPE_2'].meta['OBJECT'].lower() == '':
                     telescope_num = 1
-                if image['TELESCOPE_1'].meta['OBJECT'].lower() == '' and image['TELESCOPE_2'].meta['OBJECT'].lower() == '':
+                if image['TELESCOPE_1'].meta['OBJECT'].lower() == '' and \
+                   image['TELESCOPE_2'].meta['OBJECT'].lower() == '':
                     logger.error('The OBJECT keyword in both TELESCOPE extensions is empty.', image=image)
                     return None
 
