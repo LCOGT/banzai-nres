@@ -387,8 +387,14 @@ class NRESFrameFactory(LCOFrameFactory):
                 ra_dec_keyword = ''
             else:
                 ra_dec_keyword = 'CAT-'
-            image.ra = Angle(image[f'TELESCOPE_{telescope_num}'].meta[f'{ra_dec_keyword}RA'], units.hourangle).deg
-            image.dec = image[f'TELESCOPE_{telescope_num}'].meta[f'{ra_dec_keyword}DEC']
+            ra_pointing = image[f'TELESCOPE_{telescope_num}'].meta[f'{ra_dec_keyword}RA']
+            dec_pointing = image[f'TELESCOPE_{telescope_num}'].meta[f'{ra_dec_keyword}DEC']
+            if ra_pointing.lower() != 'nan' and dec_pointing.lower() != 'nan':
+                image.ra = Angle(ra_pointing, units.hourangle).deg
+                image.dec = dec_pointing
+            else:
+                image.ra = np.nan
+                image.dec = np.nan
             if image[f'TELESCOPE_{telescope_num}'].meta['PM-RA'] == 'N/A':
                 image.pm_ra = np.nan
                 image.pm_dec = np.nan
