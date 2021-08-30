@@ -377,7 +377,8 @@ class NRESFrameFactory(LCOFrameFactory):
         if 'TELESCOPE_1' in image:
 
             # Fix the RA and DEC keywords to be the requested values for all of our measurements
-            if image['TELESCOPE_1'].meta['OBJECT'].lower() in image.meta['OBJECTS'].lower():
+            objects = image.meta['OBJECTS'].lower().split('&')
+            if objects[0] != 'none':
                 telescope_num = 1
             else:
                 telescope_num = 2
