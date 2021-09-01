@@ -7,12 +7,12 @@
 horizontalPodAutoscaler:
   enabled: true
   minReplicas: 6
-  maxReplicas: 10
+  maxReplicas: 6
   targetCPUUtilizationPercentage: 50
 
 image:
   repository: docker.lco.global/banzai-nres
-  tag: "1.0.1"
+  tag: "1.0.4"
   pullPolicy: IfNotPresent
 
 # Values for the OCS Ingester library, used by BANZAI-NRES.
