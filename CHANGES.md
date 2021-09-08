@@ -1,3 +1,18 @@
+1.0.6 (2021-09-08)
+------------------
+- Added catches for NaNs in the telescope coordinates
+- Added a catch for SIMBAD failures
+- Automated deployment
+
+1.0.5 (2021-08-30)
+------------------
+- More robust determination of which fiber was active
+
+1.0.4 (2021-06-22)
+------------------
+- Small bugfixes for bright stars
+- Minor updates to PDF formatting
+
 1.0.3 (2021-06-10)
 ------------------
 - Bugfix to SNR calculation in PDF generation code
