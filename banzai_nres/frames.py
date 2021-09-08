@@ -365,6 +365,10 @@ class NRESFrameFactory(LCOFrameFactory):
     def calibration_frame_class(self):
         return NRESCalibrationFrame
 
+    @staticmethod
+    def is_empty_coordinate(coordinate):
+        return 'nan' in str(coordinate).lower() or 'n/a' in str(coordinate).lower()
+
     def open(self, path, runtime_context) -> Optional[ObservationFrame]:
         image = super().open(path, runtime_context)
         # Currently we can't distinguish between the NRES composite data products and the raw frames off the telescope
@@ -383,13 +387,17 @@ class NRESFrameFactory(LCOFrameFactory):
             else:
                 telescope_num = 2
 
-            if 'nan' in str(image[f'TELESCOPE_{telescope_num}'].meta['CAT-RA']).lower() or \
-                    'n/a' in str(image[f'TELESCOPE_{telescope_num}'].meta['CAT-RA']).lower():
+            if self.is_empty_coordinate(image[f'TELESCOPE_{telescope_num}'].meta['CAT-RA']):
                 ra_dec_keyword = ''
             else:
                 ra_dec_keyword = 'CAT-'
-            image.ra = Angle(image[f'TELESCOPE_{telescope_num}'].meta[f'{ra_dec_keyword}RA'], units.hourangle).deg
-            image.dec = image[f'TELESCOPE_{telescope_num}'].meta[f'{ra_dec_keyword}DEC']
+
+            if self.is_empty_coordinate(image[f'TELESCOPE_{telescope_num}'].meta[f'{ra_dec_keyword}RA']):
+                image.ra = np.nan
+                image.dec = np.nan
+            else:
+                image.ra = Angle(image[f'TELESCOPE_{telescope_num}'].meta[f'{ra_dec_keyword}RA'], units.hourangle).deg
+                image.dec = image[f'TELESCOPE_{telescope_num}'].meta[f'{ra_dec_keyword}DEC']
             if image[f'TELESCOPE_{telescope_num}'].meta['PM-RA'] == 'N/A':
                 image.pm_ra = np.nan
                 image.pm_dec = np.nan
