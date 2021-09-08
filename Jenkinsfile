@@ -59,6 +59,21 @@ pipeline {
                  }
 		    }
 		}
+		stage('DeployProdStack') {
+	        when {
+                buildingTag();
+	        }
+		    steps {
+	            script {
+                    withKubeConfig([credentialsId: "prod-kube-config"]) {
+                        sh('helm repo update && helm dependency update helm-chart/banzai-nres/ '+
+                                '&& helm upgrade --install banzai-nres helm-chart/banzai-nres --namespace=prod ' +
+                                '--set image.tag="${GIT_DESCRIPTION}" --values=helm-chart/banzai-nres/values-prod.yaml ' +
+                                '--force --atomic --timeout=3600')
+                    }
+                 }
+		    }
+		}
 		stage('DeployTestStack') {
 			when {
 				anyOf {
