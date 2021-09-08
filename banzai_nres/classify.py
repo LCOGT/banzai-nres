@@ -11,6 +11,7 @@ from banzai_nres import phoenix
 import numpy as np
 from banzai.utils import import_utils
 import logging
+import astroquery.exceptions
 
 logger = logging.getLogger('banzai')
 
@@ -55,7 +56,12 @@ def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
         simbad = import_utils.import_attribute(simbad_class)
         simbad_connection = simbad()
         simbad_connection.add_votable_fields('pmra', 'pmdec', 'fe_h')
-        results = simbad_connection.query_region(coordinate, radius='0d0m10s')
+        try:
+            results = simbad_connection.query_region(coordinate, radius='0d0m10s')
+        except astroquery.exceptions.TableParseError:
+            response = simbad_connection.last_response.content
+            logger.error(f'Error querying SIMBAD. Response from SIMBAD: {response}', image=image)
+            results = None
         if results:
             image.classification = dbs.get_closest_phoenix_models(db_address, results[0]['Fe_H_Teff'],
                                                                   results[0]['Fe_H_log_g'])[0]
@@ -68,8 +74,6 @@ def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
 
 class StellarClassifier(Stage):
     def do_stage(self, image) -> NRESObservationFrame:
-        find_object_in_catalog(image, self.runtime_context.db_address,
-                               self.runtime_context.GAIA_CLASS, self.runtime_context.SIMBAD_CLASS)
 
         closest_previous_classification = dbs.get_closest_existing_classification(self.runtime_context.db_address,
                                                                                   image.ra, image.dec)
@@ -86,6 +90,11 @@ class StellarClassifier(Stage):
                                                                    self.runtime_context.db_address,)
                 image.meta['CLASSIFY'] = 0, 'Was this spectrum classified'
                 return image
+
+        # The object was not previously classified, check Gaia and/or SIMBAD
+        find_object_in_catalog(image, self.runtime_context.db_address,
+                               self.runtime_context.GAIA_CLASS, self.runtime_context.SIMBAD_CLASS)
+
         # Short circuit if the object is not a star
         if image.classification is None:
             image.meta['CLASSIFY'] = 0, 'Was this spectrum classified'
