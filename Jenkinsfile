@@ -67,9 +67,9 @@ pipeline {
 	            script {
                     withKubeConfig([credentialsId: "prod-kube-config"]) {
                         sh('helm repo update && helm dependency update helm-chart/banzai-nres/ '+
-                                '&& helm upgrade --install banzai-nres helm-chart/banzai-nres ' +
+                                '&& helm upgrade --install banzai-nres helm-chart/banzai-nres --namespace=prod ' +
                                 '--set image.tag="${GIT_DESCRIPTION}" --values=helm-chart/banzai-nres/values-prod.yaml ' +
-                                '--force --wait --timeout=3600')
+                                '--force --atomic --timeout=3600')
                     }
                  }
 		    }
