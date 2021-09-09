@@ -1,3 +1,7 @@
+1.0.7 (2021-09-09)
+------------------
+- Bugfix to automatic deployment
+
 1.0.6 (2021-09-08)
 ------------------
 - Added catches for NaNs in the telescope coordinates

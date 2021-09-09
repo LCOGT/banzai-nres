@@ -51,10 +51,11 @@ pipeline {
 		    steps {
 	            script {
                     withKubeConfig([credentialsId: "dev-kube-config"]) {
-                        sh('helm repo update && helm dependency update helm-chart/banzai-nres/ '+
-                                '&& helm upgrade --install banzai-nres-dev helm-chart/banzai-nres ' +
+                        sh('helm repo update && helm dependency update helm-chart/banzai-nres/ && '+
+                                'helm package helm-chart/banzai-nres --app-version="${GIT_DESCRIPTION}" --version="${GIT_DESCRIPTION}" && ' +
+                                'helm upgrade --install banzai-nres-dev banzai-nres-"${GIT_DESCRIPTION}".tgz --namespace=dev ' +
                                 '--set image.tag="${GIT_DESCRIPTION}" --values=helm-chart/banzai-nres/values-dev.yaml ' +
-                                '--force --wait --timeout=3600')
+                                '--force --atomic --timeout=3600')
                     }
                  }
 		    }
@@ -67,7 +68,8 @@ pipeline {
 	            script {
                     withKubeConfig([credentialsId: "prod-kube-config"]) {
                         sh('helm repo update && helm dependency update helm-chart/banzai-nres/ '+
-                                '&& helm upgrade --install banzai-nres helm-chart/banzai-nres --namespace=prod ' +
+                                'helm package helm-chart/banzai-nres --app-version="${GIT_DESCRIPTION}" --version="${GIT_DESCRIPTION}" ' +
+                                '&& helm upgrade --install banzai-nres banzai-nres-"${GIT_DESCRIPTION}".tar.gz --namespace=prod ' +
                                 '--set image.tag="${GIT_DESCRIPTION}" --values=helm-chart/banzai-nres/values-prod.yaml ' +
                                 '--force --atomic --timeout=3600')
                     }
