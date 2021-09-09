@@ -42,24 +42,6 @@ pipeline {
 				}
 			}
 		}
-		stage('DeployDevStack') {
-			when {
-				anyOf {
-				branch 'dev'
-				}
-			}
-		    steps {
-	            script {
-                    withKubeConfig([credentialsId: "dev-kube-config"]) {
-                        sh('helm repo update && helm dependency update helm-chart/banzai-nres/ && '+
-                                'helm package helm-chart/banzai-nres --app-version="${GIT_DESCRIPTION}" --version="${GIT_DESCRIPTION}" && ' +
-                                'helm upgrade --install banzai-nres-dev banzai-nres-"${GIT_DESCRIPTION}".tgz --namespace=dev ' +
-                                '--set image.tag="${GIT_DESCRIPTION}" --values=helm-chart/banzai-nres/values-dev.yaml ' +
-                                '--force --atomic --timeout=3600')
-                    }
-                 }
-		    }
-		}
 		stage('DeployProdStack') {
 	        when {
                 buildingTag();
