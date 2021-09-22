@@ -50,7 +50,8 @@ def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
         # Update the ra and dec to the catalog coordinates as those are basically always better than a user enters
         # manually.
         image.ra, image.dec = results[0]['ra'], results[0]['dec']
-        image.pm_ra, image.pm_dec = results[0]['pmra'], results[0]['pmdec']
+        if results[0]['pmra'] is not np.ma.masked:
+            image.pm_ra, image.pm_dec = results[0]['pmra'], results[0]['pmdec']
     # If nothing in Gaia fall back to simbad. This should only be for stars that are brighter than mag = 3
     else:
         simbad = import_utils.import_attribute(simbad_class)
@@ -68,7 +69,8 @@ def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
             # Update the ra and dec to the catalog coordinates as those are basically always better than a user enters
             # manually.
             image.ra, image.dec = results[0]['RA'], results[0]['DEC']
-            image.pm_ra, image.pm_dec = results[0]['PMRA'], results[0]['PMDEC']
+            if results[0]['PMRA'] is not np.ma.masked:
+                image.pm_ra, image.pm_dec = results[0]['PMRA'], results[0]['PMDEC']
         # If there are still no results, then do nothing
 
 
