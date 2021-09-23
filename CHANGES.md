@@ -1,3 +1,7 @@
+1.0.8 (2021-09-23)
+------------------
+- Bugfix for an incorrect unit conversion in RA from simbad responses during classification.
+
 1.0.7 (2021-09-09)
 ------------------
 - Bugfix to automatic deployment
