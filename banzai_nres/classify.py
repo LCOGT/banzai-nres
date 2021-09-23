@@ -65,11 +65,34 @@ def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
         if results:
             image.classification = dbs.get_closest_phoenix_models(db_address, results[0]['Fe_H_Teff'],
                                                                   results[0]['Fe_H_log_g'])[0]
+            image.pm_ra = results[0]['PMRA'] # note that we always assume these are in mas/yr... which they should be.
+            image.pm_dec = results[0]['PMDEC']
             # Update the ra and dec to the catalog coordinates as those are basically always better than a user enters
             # manually.
-            image.ra, image.dec = results[0]['RA'], results[0]['DEC']
-            image.pm_ra, image.pm_dec = results[0]['PMRA'], results[0]['PMDEC']
+            coords = parse_simbad_coordinates(results)
+            if coords is not None:
+                image.ra = coords['RA'].to(units.deg).value
+                image.dec = coords['DEC'].to(units.deg).value
+            else:
+                logger.error('Using the ra and dec retrieved from image header.', image=image)
         # If there are still no results, then do nothing
+
+
+def parse_simbad_coordinates(results):
+    ra_unit, dec_unit = results['RA'].unit, results['DEC'].unit
+    ra, dec = results[0]['RA'], results[0]['DEC']
+    if type(ra_unit) is units.UnrecognizedUnit or type(dec_unit) is units.UnrecognizedUnit:
+        # if the units are unrecognized (see if they are something descriptive like hms or dms.
+        if 'h:m:s' in ra_unit.to_string() and 'd:m:s' in dec_unit.to_string():
+            coord = SkyCoord(ra, dec, unit=(units.hourangle, units.deg))
+            ra, dec = coord.ra.deg, coord.dec.deg
+            ra_unit, dec_unit = units.deg, units.deg
+        else:
+            # if the units are not recognized, and are not descriptive, then return None.
+            logger.error('Parsing the simbad RA/DEC failed.')
+            return None
+    ra, dec = ra * ra_unit, dec * dec_unit
+    return {'RA': ra, 'DEC': dec}
 
 
 class StellarClassifier(Stage):
