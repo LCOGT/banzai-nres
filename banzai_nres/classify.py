@@ -66,21 +66,18 @@ def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
 
         results = restrict_simbad_results_to_stellar_only(results)
         results = parse_simbad_coordinates(results)
+        results = convert_simbad_coordinates_to_degrees(results)
+        # note that results will be None if coordinate conversion fails
+        results = get_closest_source(results, coordinate)
         if results:
-            results = get_closest_source(results, coordinate)
             image.classification = dbs.get_closest_phoenix_models(db_address, results['Fe_H_Teff'],
                                                                   results['Fe_H_log_g'])[0]
-            image.pm_ra = results['PMRA'] # note that we always assume these are in mas/yr... which they should be.
+            image.pm_ra = results['PMRA']  # note that we always assume these are in mas/yr... which they should be.
             image.pm_dec = results['PMDEC']
             # Update the ra and dec to the catalog coordinates as those are basically always better than a user enters
             # manually.
-            results = convert_simbad_coordinates_to_degrees(results)
-            if results is not None:
-                # results will be None if the conversion to degrees failed.
-                image.ra = results['RA']
-                image.dec = results['DEC']
-            else:
-                logger.error('Using the ra and dec retrieved from image header.', image=image)
+            image.ra = results['RA']
+            image.dec = results['DEC']
         # If there are still no results, then do nothing
 
 
