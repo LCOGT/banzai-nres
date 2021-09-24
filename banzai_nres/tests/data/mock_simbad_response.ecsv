@@ -2,7 +2,7 @@
 # ---
 # datatype:
 # - name: MAIN_ID
-#   datatype: object
+#   datatype: string
 #   description: Main identifier for an object
 #   meta: !!omap
 #   - {ucd: meta.id;meta.main}
@@ -78,7 +78,7 @@
 #   - {width: 1}
 #   - {_votable_string_dtype: char}
 # - name: COO_BIBCODE
-#   datatype: object
+#   datatype: string
 #   description: Coordinate reference
 #   meta: !!omap
 #   - {ucd: meta.bib.bibcode;pos.eq}
@@ -134,7 +134,7 @@
 #   - {width: 1}
 #   - {_votable_string_dtype: char}
 # - name: Fe_H_CompStar
-#   datatype: object
+#   datatype: string
 #   description: Designates the comparison star from which the [Fe/H] value was obtained
 #   meta: !!omap
 #   - {ucd: META.ID}
@@ -155,7 +155,7 @@
 #   - {width: 19}
 #   - {_votable_string_dtype: char}
 # - name: OTYPE
-#   datatype: object
+#   datatype: string
 #   description: Object type
 #   meta: !!omap
 #   - {ucd: src.class}
