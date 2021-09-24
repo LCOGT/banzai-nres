@@ -59,17 +59,17 @@ def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
         simbad_connection.add_votable_fields('pmra', 'pmdec', 'fe_h', 'otype')
         try:
             results = simbad_connection.query_region(coordinate, radius='0d0m10s')
+            results = restrict_simbad_results_to_stellar_only(results)
+            results = parse_simbad_coordinates(results)
+            results = convert_simbad_coordinates_to_degrees(results)
+            # note that results will be None if coordinate conversion fails
         except astroquery.exceptions.TableParseError:
             response = simbad_connection.last_response.content
             logger.error(f'Error querying SIMBAD. Response from SIMBAD: {response}', image=image)
             results = None
 
-        results = restrict_simbad_results_to_stellar_only(results)
-        results = parse_simbad_coordinates(results)
-        results = convert_simbad_coordinates_to_degrees(results)
-        # note that results will be None if coordinate conversion fails
-        results = get_closest_source(results, coordinate)
         if results:
+            results = get_closest_source(results, coordinate)
             image.classification = dbs.get_closest_phoenix_models(db_address, results['Fe_H_Teff'],
                                                                   results['Fe_H_log_g'])[0]
             image.pm_ra = results['PMRA']  # note that we always assume these are in mas/yr... which they should be.
@@ -114,7 +114,7 @@ def parse_simbad_coordinates(results):
         if 'h:m:s' in ra_unit.to_string() and 'd:m:s' in dec_unit.to_string():
             results['RA'].unit, results['DEC'].unit = units.hourangle, units.deg
         else:
-            logger.error('Parsing the simbad RA/DEC failed.')
+            logger.error('Interpreting the the simbad RA & DEC units failed.')
     return results
 
 
@@ -132,6 +132,7 @@ def convert_simbad_coordinates_to_degrees(results):
         results['DEC'] = Column(all_dec, unit=units.deg, dtype=float, description='Declination')
     else:
         # if we can't parse the simbad units, then we give up.
+        logger.error('Converting the simbad RA & DEC to degrees failed.')
         results = None
     return results
 
