@@ -110,7 +110,7 @@ def parse_simbad_coordinates(results):
     ra_unit, dec_unit = results['RA'].unit, results['DEC'].unit
     units_not_recognized = type(ra_unit) is units.UnrecognizedUnit or type(dec_unit) is units.UnrecognizedUnit
     if units_not_recognized:
-        # if the units are unrecognized (see if they are something descriptive like hms or dms.
+        # if the units are unrecognized (see if they are something descriptive like hms or dms).
         if 'h:m:s' in ra_unit.to_string() and 'd:m:s' in dec_unit.to_string():
             results['RA'].unit, results['DEC'].unit = units.hourangle, units.deg
         else:
