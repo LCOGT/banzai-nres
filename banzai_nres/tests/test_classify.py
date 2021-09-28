@@ -26,7 +26,7 @@ def test_restrict_simbad_results_to_stellar_only():
 
 def test_restrict_simbad_results_to_stellar_only_improper():
     results = Table.read(SIMBAD_RESPONSE_FILENAME)
-    results['OTYPE'][results['MAIN_ID'] == '* tau Cet'] = 'SN'
+    results['OTYPE'][results['MAIN_ID'] == '* tau Cet'] = 'SN*'
     results = restrict_simbad_results_to_stellar_only(results)
     assert results is None
 

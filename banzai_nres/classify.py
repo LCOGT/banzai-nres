@@ -90,15 +90,17 @@ def get_closest_source(results, coordinate):
 
 
 def restrict_simbad_results_to_stellar_only(results):
-    # remove galaxies
-    results = results[['*' in i for i in results['MAIN_ID']]]
+    # remove galaxies/planets etc. https://simbad.u-strasbg.fr/simbad/sim-display?data=otypes
+    results = results[['*' in i for i in results['OTYPE']]]
     is_nonstellar = np.zeros(len(results), dtype=bool)
-    nonstellar_otypes = ['su*', 'Pl?', 'Pl', 'SN', 'Galaxy', 'Planet', 'Planet?']
+    # next trim away any objects that have the * in OTYPE but are not
+    # stars, e.g., su* or SN* (sub-stellar object and supernova, respectively)
+    nonstellar_otypes = ['su*', 'SN*', 'C?*', 'Cl*', 'As*', 'St*', 'N*']
     for i, row in enumerate(results):
         if row['OTYPE'] in nonstellar_otypes:
             is_nonstellar[i] = True
-
     results = results[~is_nonstellar]
+    #
     if len(results) == 0:
         # in the (unlikely) event of no stellar objects being in the table, return None
         # so that the later catch realizes this.
