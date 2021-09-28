@@ -28,7 +28,7 @@ def test_restrict_simbad_results_to_stellar_only_improper():
     results = Table.read(SIMBAD_RESPONSE_FILENAME)
     results['OTYPE'][results['MAIN_ID'] == '* tau Cet'] = 'SN*'
     results = restrict_simbad_results_to_stellar_only(results)
-    assert results is None
+    assert len(results) == 0
 
 
 def test_convert_simbad_coordinates_to_degrees():
@@ -56,9 +56,19 @@ def test_get_closest_source():
     assert results['NAME'] == 'right'
 
 
-test_convert_simbad_coordinates_to_degrees()
-test_convert_simbad_coordinates_to_degrees_improper()
-test_restrict_simbad_results_to_stellar_only()
-test_restrict_simbad_results_to_stellar_only_improper()
-test_parse_simbad_coordinates()
-test_get_closest_source()
+def test_integration_on_no_match():
+    results = Table.read(SIMBAD_RESPONSE_FILENAME)
+    results['OTYPE'][results['MAIN_ID'] == '* tau Cet'] = 'SN*'
+    results = restrict_simbad_results_to_stellar_only(results)
+    results = parse_simbad_coordinates(results)
+    results = convert_simbad_coordinates_to_degrees(results)
+    assert results is None
+
+
+def test_integration_on_match():
+    results = Table.read(SIMBAD_RESPONSE_FILENAME)
+    results = restrict_simbad_results_to_stellar_only(results)
+    results = parse_simbad_coordinates(results)
+    results = convert_simbad_coordinates_to_degrees(results)
+    results = get_closest_source(results, SkyCoord("01 44 04.0834", "-15 56 14.926", unit=(units.hourangle, units.deg)))
+    assert results['MAIN_ID'] == '* tau Cet'

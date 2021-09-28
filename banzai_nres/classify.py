@@ -100,11 +100,6 @@ def restrict_simbad_results_to_stellar_only(results):
         if row['OTYPE'] in nonstellar_otypes:
             is_nonstellar[i] = True
     results = results[~is_nonstellar]
-    #
-    if len(results) == 0:
-        # in the (unlikely) event of no stellar objects being in the table, return None
-        # so that the later catch realizes this.
-        results = None
     return results
 
 
@@ -123,7 +118,7 @@ def parse_simbad_coordinates(results):
 def convert_simbad_coordinates_to_degrees(results):
     ra_unit, dec_unit = results['RA'].unit, results['DEC'].unit
     units_recognized = type(ra_unit) is not units.UnrecognizedUnit and type(dec_unit) is not units.UnrecognizedUnit
-    if units_recognized:
+    if units_recognized and len(results) >= 1:
         # convert the RA and DECs to degrees.
         all_ra, all_dec = [], []
         for i in range(len(results)):
