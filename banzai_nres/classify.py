@@ -6,7 +6,6 @@ from astropy import units
 from astropy.time import Time
 from astropy.coordinates import SkyCoord
 from astropy import constants
-from astropy.table import Column
 from banzai_nres.rv import cross_correlate_over_traces, calculate_rv
 from banzai_nres import phoenix
 import numpy as np
@@ -59,79 +58,29 @@ def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
         simbad_connection.add_votable_fields('pmra', 'pmdec', 'fe_h', 'otype')
         try:
             results = simbad_connection.query_region(coordinate, radius='0d0m10s')
-            results = restrict_simbad_results_to_stellar_only(results)
-            results = parse_simbad_coordinates(results)
-            results = convert_simbad_coordinates_to_degrees(results)
-            # note that results will be None if coordinate conversion fails
+            results = remove_planets_from_simbad(results)
         except astroquery.exceptions.TableParseError:
             response = simbad_connection.last_response.content
             logger.error(f'Error querying SIMBAD. Response from SIMBAD: {response}', image=image)
             results = None
 
-        if results:
-            results = get_closest_source(results, coordinate)
+        if len(results) > 0:
+            results = results[0]  # get the closest source.
             image.classification = dbs.get_closest_phoenix_models(db_address, results['Fe_H_Teff'],
                                                                   results['Fe_H_log_g'])[0]
-            image.pm_ra = results['PMRA']  # note that we always assume these are in mas/yr... which they should be.
-            image.pm_dec = results['PMDEC']
-            # Update the ra and dec to the catalog coordinates as those are basically always better than a user enters
-            # manually.
-            image.ra = results['RA']
-            image.dec = results['DEC']
+            # note that we always assume the proper motions are in mas/yr... which they should be.
+            image.pm_ra, image.pm_dec = results['PMRA'], results['PMDEC']
+            # Update the ra and dec to the catalog coordinates as those will be consistent across observations.
+            # Simbad always returns h:m:s, d:m:s, for ra, dec. If for some reason simbad does not, these coords will be
+            # very wrong and barycenter correction will be very wrong.
+            coord = SkyCoord(results['RA'], results['DEC'], unit=(units.hourangle, units.deg))
+            image.ra, image.dec = coord.ra.deg, coord.dec.deg
         # If there are still no results, then do nothing
 
 
-def get_closest_source(results, coordinate):
-    ra_unit, dec_unit = results['RA'].unit, results['DEC'].unit
-    coords = [SkyCoord(row['RA'], row['DEC'], unit=(ra_unit, dec_unit)) for row in results]
-    diffs = [coord.separation(coordinate).to(units.arcsecond).value for coord in coords]
-    closest = np.argmin(np.abs(diffs))
-    return results[closest]
-
-
-def restrict_simbad_results_to_stellar_only(results):
-    # remove galaxies/planets etc. https://simbad.u-strasbg.fr/simbad/sim-display?data=otypes
-    results = results[['*' in i for i in results['OTYPE']]]
-    is_nonstellar = np.zeros(len(results), dtype=bool)
-    # next trim away any objects that have the * in OTYPE but are not
-    # stars, e.g., su* or SN* (sub-stellar object and supernova, respectively)
-    nonstellar_otypes = ['su*', 'SN*', 'C?*', 'Cl*', 'As*', 'St*', 'N*']
-    for i, row in enumerate(results):
-        if row['OTYPE'] in nonstellar_otypes:
-            is_nonstellar[i] = True
-    results = results[~is_nonstellar]
-    return results
-
-
-def parse_simbad_coordinates(results):
-    ra_unit, dec_unit = results['RA'].unit, results['DEC'].unit
-    units_not_recognized = type(ra_unit) is units.UnrecognizedUnit or type(dec_unit) is units.UnrecognizedUnit
-    if units_not_recognized:
-        # if the units are unrecognized (see if they are something descriptive like hms or dms).
-        if 'h:m:s' in ra_unit.to_string() and 'd:m:s' in dec_unit.to_string():
-            results['RA'].unit, results['DEC'].unit = units.hourangle, units.deg
-        else:
-            logger.error('Interpreting the the simbad RA & DEC units failed.')
-    return results
-
-
-def convert_simbad_coordinates_to_degrees(results):
-    ra_unit, dec_unit = results['RA'].unit, results['DEC'].unit
-    units_recognized = type(ra_unit) is not units.UnrecognizedUnit and type(dec_unit) is not units.UnrecognizedUnit
-    if units_recognized and len(results) >= 1:
-        # convert the RA and DECs to degrees.
-        all_ra, all_dec = [], []
-        for i in range(len(results)):
-            coord = SkyCoord(results[i]['RA'], results[i]['DEC'], unit=(ra_unit, dec_unit))
-            all_ra.append(coord.ra.deg)
-            all_dec.append(coord.dec.deg)
-        results['RA'] = Column(all_ra, unit=units.deg, dtype=float, description='Right Ascension')
-        results['DEC'] = Column(all_dec, unit=units.deg, dtype=float, description='Declination')
-    else:
-        # if we can't parse the simbad units, then we give up.
-        logger.error('Converting the simbad RA & DEC to degrees failed.')
-        results = None
-    return results
+def remove_planets_from_simbad(results):
+    # Remove planets. See https://simbad.u-strasbg.fr/simbad/sim-display?data=otypes for otype designations.
+    return results[['Pl' not in row['OTYPE'] for row in results]]
 
 
 class StellarClassifier(Stage):
