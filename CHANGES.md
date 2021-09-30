@@ -1,3 +1,7 @@
+1.0.8 (2021-09-22)
+------------------
+- Add catch for masked values from Gaia
+
 1.0.7 (2021-09-09)
 ------------------
 - Bugfix to automatic deployment
