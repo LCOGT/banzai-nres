@@ -50,7 +50,8 @@ def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
         # Update the ra and dec to the catalog coordinates as those are basically always better than a user enters
         # manually.
         image.ra, image.dec = results[0]['ra'], results[0]['dec']
-        image.pm_ra, image.pm_dec = results[0]['pmra'], results[0]['pmdec']
+        if results[0]['pmra'] is not np.ma.masked:
+            image.pm_ra, image.pm_dec = results[0]['pmra'], results[0]['pmdec']
     # If nothing in Gaia fall back to simbad. This should only be for stars that are brighter than mag = 3
     else:
         simbad = import_utils.import_attribute(simbad_class)
@@ -62,14 +63,14 @@ def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
         except astroquery.exceptions.TableParseError:
             response = simbad_connection.last_response.content
             logger.error(f'Error querying SIMBAD. Response from SIMBAD: {response}', image=image)
-            results = None
-
+            results = []
         if len(results) > 0:
             results = results[0]  # get the closest source.
             image.classification = dbs.get_closest_phoenix_models(db_address, results['Fe_H_Teff'],
                                                                   results['Fe_H_log_g'])[0]
             # note that we always assume the proper motions are in mas/yr... which they should be.
-            image.pm_ra, image.pm_dec = results['PMRA'], results['PMDEC']
+            if results['PMRA'] is not np.ma.masked:
+                image.pm_ra, image.pm_dec = results['PMRA'], results['PMDEC']
             # Update the ra and dec to the catalog coordinates as those will be consistent across observations.
             # Simbad always returns h:m:s, d:m:s, for ra, dec. If for some reason simbad does not, these coords will be
             # very wrong and barycenter correction will be very wrong.
