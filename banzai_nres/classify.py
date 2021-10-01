@@ -58,13 +58,17 @@ def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
         simbad_connection = simbad()
         simbad_connection.add_votable_fields('pmra', 'pmdec', 'fe_h', 'otype')
         try:
+            logger.info(f'coordinate queried: {coordinate}')
             results = simbad_connection.query_region(coordinate, radius='0d0m10s')
+            logger.info(f'Response from SIMBAD: {results}', image=image)
+            logger.info(f'colnames in response {results.colnames}', image=image)
             results = remove_planets_from_simbad(results)
         except astroquery.exceptions.TableParseError:
             response = simbad_connection.last_response.content
             logger.error(f'Error querying SIMBAD. Response from SIMBAD: {response}', image=image)
             results = []
         if len(results) > 0:
+            logger.info('Went into simbad region', image=image)
             results = results[0]  # get the closest source.
             image.classification = dbs.get_closest_phoenix_models(db_address, results['Fe_H_Teff'],
                                                                   results['Fe_H_log_g'])[0]
