@@ -13,7 +13,6 @@ from banzai.utils import import_utils
 import logging
 import astroquery.exceptions
 
-from astroquery.simbad import Simbad  # temporary debug
 
 logger = logging.getLogger('banzai')
 
@@ -56,21 +55,22 @@ def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
             image.pm_ra, image.pm_dec = results[0]['pmra'], results[0]['pmdec']
     # If nothing in Gaia fall back to simbad. This should only be for stars that are brighter than mag = 3
     else:
-        simbad = Simbad()  # import_utils.import_attribute(simbad_class)
+        # IMPORTANT NOTE:
+        # During e2e tests we do not import astroquery.simbad.Simbad. We import a mocked simbad call
+        # which can be found in banzai_nres.tests.utils.MockSimbad . This returns a simbad table that is
+        # truncated. If you add a new votable field, you will need to add it to the mocked table as well.
+        simbad = import_utils.import_attribute(simbad_class)
         simbad_connection = simbad()
         simbad_connection.add_votable_fields('pmra', 'pmdec', 'fe_h', 'otype')
         try:
             logger.info(f'coordinate queried: {coordinate}')
             results = simbad_connection.query_region(coordinate, radius='0d0m10s')
-            logger.info(f'Response from SIMBAD: {results}', image=image)
-            logger.info(f'colnames in response {results.colnames}', image=image)
             results = remove_planets_from_simbad(results)
         except astroquery.exceptions.TableParseError:
             response = simbad_connection.last_response.content
             logger.error(f'Error querying SIMBAD. Response from SIMBAD: {response}', image=image)
             results = []
         if len(results) > 0:
-            logger.info('Went into simbad region', image=image)
             results = results[0]  # get the closest source.
             image.classification = dbs.get_closest_phoenix_models(db_address, results['Fe_H_Teff'],
                                                                   results['Fe_H_log_g'])[0]
