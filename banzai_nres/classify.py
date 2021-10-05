@@ -63,7 +63,6 @@ def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
         simbad_connection = simbad()
         simbad_connection.add_votable_fields('pmra', 'pmdec', 'fe_h', 'otype')
         try:
-            logger.info(f'coordinate queried: {coordinate}')
             results = simbad_connection.query_region(coordinate, radius='0d0m10s')
             results = remove_planets_from_simbad(results)
         except astroquery.exceptions.TableParseError:
