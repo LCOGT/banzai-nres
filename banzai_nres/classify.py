@@ -13,6 +13,7 @@ from banzai.utils import import_utils
 import logging
 import astroquery.exceptions
 
+
 logger = logging.getLogger('banzai')
 
 
@@ -54,24 +55,38 @@ def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
             image.pm_ra, image.pm_dec = results[0]['pmra'], results[0]['pmdec']
     # If nothing in Gaia fall back to simbad. This should only be for stars that are brighter than mag = 3
     else:
+        # IMPORTANT NOTE:
+        # During e2e tests we do not import astroquery.simbad.Simbad. We import a mocked simbad call
+        # which can be found in banzai_nres.tests.utils.MockSimbad . This returns a simbad table that is
+        # truncated. If you add a new votable field, you will need to add it to the mocked table as well.
         simbad = import_utils.import_attribute(simbad_class)
         simbad_connection = simbad()
-        simbad_connection.add_votable_fields('pmra', 'pmdec', 'fe_h')
+        simbad_connection.add_votable_fields('pmra', 'pmdec', 'fe_h', 'otype')
         try:
             results = simbad_connection.query_region(coordinate, radius='0d0m10s')
+            results = remove_planets_from_simbad(results)
         except astroquery.exceptions.TableParseError:
             response = simbad_connection.last_response.content
             logger.error(f'Error querying SIMBAD. Response from SIMBAD: {response}', image=image)
-            results = None
-        if results:
-            image.classification = dbs.get_closest_phoenix_models(db_address, results[0]['Fe_H_Teff'],
-                                                                  results[0]['Fe_H_log_g'])[0]
-            # Update the ra and dec to the catalog coordinates as those are basically always better than a user enters
-            # manually.
-            image.ra, image.dec = results[0]['RA'], results[0]['DEC']
-            if results[0]['PMRA'] is not np.ma.masked:
-                image.pm_ra, image.pm_dec = results[0]['PMRA'], results[0]['PMDEC']
+            results = []
+        if len(results) > 0:
+            results = results[0]  # get the closest source.
+            image.classification = dbs.get_closest_phoenix_models(db_address, results['Fe_H_Teff'],
+                                                                  results['Fe_H_log_g'])[0]
+            # note that we always assume the proper motions are in mas/yr... which they should be.
+            if results['PMRA'] is not np.ma.masked:
+                image.pm_ra, image.pm_dec = results['PMRA'], results['PMDEC']
+            # Update the ra and dec to the catalog coordinates as those will be consistent across observations.
+            # Simbad always returns h:m:s, d:m:s, for ra, dec. If for some reason simbad does not, these coords will be
+            # very wrong and barycenter correction will be very wrong.
+            coord = SkyCoord(results['RA'], results['DEC'], unit=(units.hourangle, units.deg))
+            image.ra, image.dec = coord.ra.deg, coord.dec.deg
         # If there are still no results, then do nothing
+
+
+def remove_planets_from_simbad(results):
+    # Remove planets. See https://simbad.u-strasbg.fr/simbad/sim-display?data=otypes for otype designations.
+    return results[['Pl' not in row['OTYPE'] for row in results]]
 
 
 class StellarClassifier(Stage):

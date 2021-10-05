@@ -303,20 +303,6 @@ class TestMasterArcCreation:
             assert quality_metrics['RVPRECSN'] > 1
 
 
-mock_simbad_response = [{'RA': '07 39 18.1195',
-                         'DEC': '+05 13 29.955',
-                         'PMRA': -714.59,
-                         'PMDEC': -1036.8,
-                         'Fe_H_Teff': 6654,
-                         'Fe_H_log_g': 3.950000047683716},
-                        {'RA': '07 39 17.8800',
-                         'DEC': '+05 13 26.800',
-                         'PMRA': -709.0,
-                         'PMDEC': -1024.0,
-                         'Fe_H_Teff': 7870,
-                         'Fe_H_log_g': 8.079999923706055}]
-
-
 @pytest.mark.e2e
 @pytest.mark.science_frames
 class TestScienceFrameProcessing:

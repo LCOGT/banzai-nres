@@ -1,3 +1,7 @@
+1.0.9 (2021-09-30)
+------------------
+- Bugfix for an incorrect unit conversion in RA from simbad responses during classification.
+
 1.0.8 (2021-09-22)
 ------------------
 - Add catch for masked values from Gaia
