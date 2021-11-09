@@ -1,3 +1,7 @@
+1.0.10 (2021-11-09)
+------------------
+- Fix auto-deploy in Jenkinsfile
+
 1.0.9 (2021-09-30)
 ------------------
 - Bugfix for an incorrect unit conversion in RA from simbad responses during classification.
