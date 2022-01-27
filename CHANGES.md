@@ -1,3 +1,7 @@
+1.0.11 (2022-01-27)
+-------------------
+- Bugfix to catch if simbad returns none instead of an empty list.
+
 1.0.10 (2021-11-09)
 ------------------
 - Fix auto-deploy in Jenkinsfile
