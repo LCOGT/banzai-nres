@@ -64,14 +64,12 @@ def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
         simbad_connection.add_votable_fields('pmra', 'pmdec', 'fe_h', 'otype')
         try:
             results = simbad_connection.query_region(coordinate, radius='0d0m10s')
-            if results is None:
-                results = []
-            results = remove_planets_from_simbad(results)
         except astroquery.exceptions.TableParseError:
             response = simbad_connection.last_response.content
             logger.error(f'Error querying SIMBAD. Response from SIMBAD: {response}', image=image)
             results = []
-        if len(results) > 0:
+        if results:
+            results = remove_planets_from_simbad(results)
             results = results[0]  # get the closest source.
             image.classification = dbs.get_closest_phoenix_models(db_address, results['Fe_H_Teff'],
                                                                   results['Fe_H_log_g'])[0]
