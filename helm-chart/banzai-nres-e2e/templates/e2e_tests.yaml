@@ -133,11 +133,11 @@ spec:
           resources:
             requests:
               cpu: "0.1"
-              memory: "4Gi"
+              memory: "2Gi"
               ephemeral-storage: "1Gi"
             limits:
               cpu: "4"
-              memory: "8Gi"
+              memory: "4Gi"
         - name: banzai-nres-e2e-listener
           image:  "{{ .Values.banzaiNRES.repository }}:{{ .Values.banzaiNRES.tag }}"
           imagePullPolicy:  "{{ .Values.banzaiNRES.pullPolicy }}"
@@ -188,4 +188,4 @@ spec:
               memory: "128M"
             limits:
               cpu: "1"
-              memory: "4Gi"
+              memory: "2Gi"
