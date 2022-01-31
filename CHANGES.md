@@ -1,3 +1,7 @@
+1.0.12 (2022-01-31)
+-------------------
+- Bugfix to catch if simbad returns none instead of an empty list.
+
 1.0.11 (2022-01-27)
 -------------------
 - Bugfix to catch if simbad returns none instead of an empty list.
