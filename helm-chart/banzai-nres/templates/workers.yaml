@@ -47,10 +47,10 @@ spec:
               readOnly: false
           resources:
             requests:
-              cpu: "0.75"
+              cpu: "0.5"
               memory: "1Gi"
             limits:
-              cpu: "3"
+              cpu: "4"
               memory: "4Gi"
       volumes:
       - name: tmp
