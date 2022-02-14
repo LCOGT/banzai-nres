@@ -8,7 +8,9 @@ RUN pip install astropy==4.2
 
 COPY --chown=10087:10000 . /lco/banzai-nres
 
-RUN pip install /lco/banzai-nres/ --no-cache-dir
+RUN apt get install gcc && \
+    pip install /lco/banzai-nres/ --no-cache-dir && \
+    apt-get -y remove gcc
 
 RUN chown -R archive /home/archive
 
