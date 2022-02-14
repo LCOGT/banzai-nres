@@ -1,3 +1,7 @@
+1.0.13 (2022-02-14)
+-------------------
+- Update upstream BANZAI install to use new version of OCS Ingester library
+
 1.0.12 (2022-01-31)
 -------------------
 - Bugfix to catch if simbad returns none instead of an empty list.
