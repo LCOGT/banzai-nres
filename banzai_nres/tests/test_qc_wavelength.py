@@ -49,7 +49,7 @@ class TestAssessWavelengthSolution:
         scatter_per_line = expected_precision * np.sqrt(nlines)
         # Our precision is in velocity space so delta lambda = lambda * delta v / c
         features = np.random.normal(lab_lines, scale=lab_lines * scatter_per_line / constants.c)
-        velocity_precision = get_velocity_precision(features.value, lab_lines, nlines)
+        velocity_precision = get_velocity_precision(features, lab_lines, nlines)
         # For a 1000 lines we expect sigma to be ~3% so we double that here in the tests.
         assert np.isclose(velocity_precision, expected_precision, rtol=6.e-2)
 
