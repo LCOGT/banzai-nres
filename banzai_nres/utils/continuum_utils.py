@@ -1,8 +1,8 @@
 import numpy as np
 from scipy.ndimage import binary_dilation, percentile_filter
-from scipy.stats import median_absolute_deviation
 from scipy.ndimage import gaussian_filter1d
 import logging
+from banzai.utils.stats import robust_standard_deviation
 
 logger = logging.getLogger('banzai')
 
@@ -22,7 +22,7 @@ def mark_features(flux, sigma=3, continuum_formal_error=None, detector_resolutio
         # get the noisy scatter in the continuum-only portion of the spectrum by high-pass filtering the spectrum and
         # then taking the mad times 1.4826 (the robust standard deviation)
         smoothed_flux = gaussian_filter1d(flux, sigma=detector_resolution / 2)
-        continuum_formal_error = median_absolute_deviation(flux - smoothed_flux)
+        continuum_formal_error = robust_standard_deviation(flux - smoothed_flux, 5)
     # take the brightest 10% of pixels to trace above the tops of the continuum
     continuum_estimate = percentile_filter(flux, percentile=-10, size=3 * detector_resolution, mode='nearest')
     # keep the pixels that are close to the continuum estimate (mark as "keep")
