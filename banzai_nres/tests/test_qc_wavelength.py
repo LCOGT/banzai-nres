@@ -41,7 +41,7 @@ class TestAssessWavelengthSolution:
         assert len(image.meta['RVPRECSN'][1]) > 0  # description string is not empty
 
     def test_velocity_precision(self):
-        np.random.seed(189897239471)
+        np.random.seed(87213483)
         # make a mock line list
         nlines, expected_precision = 1000, 10 * units.m / units.s
         lab_lines = np.linspace(4000, 5000, nlines)
