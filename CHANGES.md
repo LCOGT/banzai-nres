@@ -1,3 +1,8 @@
+1.0.14 (2022-02-15)
+-------------------
+- Update upstream BANZAI install to use new version of OCS Ingester library (3.0.1)
+- Helm chart updates for ingester library
+
 1.0.13 (2022-02-14)
 -------------------
 - Update upstream BANZAI install to use new version of OCS Ingester library

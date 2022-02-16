@@ -31,6 +31,7 @@ securityContext:
 ingester:
   noMetrics: true
   postProcessFiles: false
+  filetypeMappingOverrides: "{'.fits': 'ocs_archive.input.lcofitsfile.LcoFitsFile', '.tar.gz': 'ocs_archive.input.lcotarwithfitsfile.LcoTarWithFitsFile'}"
 
 banzaiNres:
   useDifferentArchiveSources: false

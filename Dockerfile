@@ -1,4 +1,4 @@
-FROM docker.lco.global/banzai:1.9.2
+FROM docker.lco.global/banzai:1.9.3
 
 USER root
 
