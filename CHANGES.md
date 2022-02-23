@@ -1,3 +1,7 @@
+1.0.16 (2022-02-22)
+-------------------
+- Update to use upstream BANZAI version with new version of OCS Ingester library (3.0.4)
+
 1.0.15 (2022-02-22)
 -------------------
 - Update to use upstream BANZAI version with new version of OCS Ingester library (3.0.3)
