@@ -110,7 +110,7 @@ class MakePDFSummary(Stage):
         # make the plots of individual lines of interest
         # Ca II K: 3934.775
         # locations obtained from NIST, e.g., https://physics.nist.gov/PhysRefData/Handbook/Tables/magnesiumtable2.htm
-        line_centers = np.array([3969.590, 4862.721, [5185.048, 5174.125, 5168.761],
+        line_centers = np.array([3968.46, 4862.721, [5185.048, 5174.125, 5168.761],
                                 [5891.582, 5897.558], 6564.614, [6709.627, 6709.778]], dtype=object)
         line_names = np.array(['Ca II H', 'H beta', 'Mg b',
                                'Na D', 'H alpha', 'Li'])
