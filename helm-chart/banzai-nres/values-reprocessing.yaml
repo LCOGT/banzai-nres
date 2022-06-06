@@ -1,0 +1,58 @@
+# Development deployment values for banzai-nres.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Automatically manage worker count within the configured limits. More workers
+# will be started when the CPU usage rises above the configured threshold.
+horizontalPodAutoscaler:
+  enabled: true
+  minReplicas: 4
+  maxReplicas: 4
+  targetCPUUtilizationPercentage: 50
+
+image:
+  repository: docker.lco.global/banzai-nres
+  tag: 1.0.16
+  pullPolicy: IfNotPresent
+
+# Values for the OCS Ingester library, used by BANZAI.
+ingester:
+  apiRoot: http://archive-api-internal.prod
+  s3Bucket: archive-lco-global
+  ingesterProcessName: banzai_nres_reprocessing
+  postProcessFiles: false
+  noMetrics: true
+  filestoreType: s3
+
+# Values specific to the BANZAI-NRES pipeline
+banzaiNres:
+  configdbUrl: http://configdb.lco.gtn/sites/
+  observationPortalUrl: http://internal-observation-portal.lco.gtn/api/observations/
+  useDifferentArchiveSources: false
+  rawDataApiRoot: http://archiveapi-internal.prod/
+  calibrateProposalId: calibrate
+  banzaiWorkerLogLevel: info
+  fitsBroker: rabbitmq.lco.gtn
+  fitsExchange: banzai_nres_reprocessing_dummy_exchange
+  queueName: banzai_nres_reprocessing_dummy_queue
+  phoenixFileLocation: s3://banzai-nres-phoenix-models-lco-global
+  celeryTaskQueueName: banzai_nres_reprocessing
+  stackingEnabled: false
+
+# CronJob configuration to periodically update instrument table in BANZAI-NRES DB
+instrumentTableCronjob:
+  schedule: "*/5 * * * *"
+
+useDockerizedDatabase: false
+useDockerizedRabbitMQ: false
+
+postgresql:
+  hostname: postgres1-cluster.cluster-cple9sjsskrf.us-west-2.rds.amazonaws.com
+  postgresqlUsername: banzai-nres
+  postgresqlDatabase: banzai-nres
+
+rabbitmq:
+  hostname: rabbitmq-ha.prod.svc.cluster.local.
+  rabbitmq:
+    username: banzai-nres-reprocessing
+  vhost: banzai-nres-reprocessing

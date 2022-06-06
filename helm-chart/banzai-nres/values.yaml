@@ -35,6 +35,7 @@ ingester:
 
 banzaiNres:
   useDifferentArchiveSources: false
+  stackingEnabled: true
 
 useDockerizedDatabase: false
 useDockerizedRabbitMQ: false

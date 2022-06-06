@@ -107,6 +107,7 @@ spec:
             limits:
               cpu: "1"
               memory: "1Gi"
+        {{ if .Values.banzaiNres.stackingEnabled }}
         - name: 'banzai-nres-scheduler'
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
@@ -131,6 +132,7 @@ spec:
             limits:
               cpu: "1"
               memory: "1Gi"
+        {{ end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
