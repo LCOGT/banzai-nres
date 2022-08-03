@@ -127,7 +127,7 @@ PIPELINE_VERSION = banzai_nres.__version__
 DATA_RELEASE_DELAY = 365
 
 # Proposal ids for data that should be public instantly. Should all be lowercase
-PUBLIC_PROPOSALS = ['calibrate', 'standard', '*epo*', 'pointing']
+PUBLIC_PROPOSALS = ['calibrate', 'standard', '*epo*', 'pointing', '*standards*']
 
 SUPPORTED_FRAME_TYPES = ['BPM', 'BIAS', 'DARK', 'LAMPFLAT', 'TARGET', 'DOUBLE']
 
