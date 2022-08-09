@@ -22,7 +22,6 @@ def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
     Find the object in external catalogs. Update the ra and dec if found. Also add an initial classification if found.
     :return:
     """
-
     # Assume that the equinox and input epoch are both j2000.
     # Gaia uses an equinox of 2000, but epoch of 2015.5 for the proper motion
     coordinate = SkyCoord(ra=image.ra, dec=image.dec, unit=(units.deg, units.deg),
@@ -91,10 +90,17 @@ def remove_planets_from_simbad(results):
 
 class StellarClassifier(Stage):
     def do_stage(self, image) -> NRESObservationFrame:
+        # Short circuit if the header coordinates are malformed
+        if any(np.isnan([image.ra, image.dec, image.pm_ra, image.pm_dec])):
+            if len(image.meta['RADECSYS'].strip()) == 0:
+                # Assume that we are looking at a non-sidereal object
+                pass
+            else:
+                logger.error('RA or Dec or Proper Motion is malformed in header.', image=image)
+            return image
 
         closest_previous_classification = dbs.get_closest_existing_classification(self.runtime_context.db_address,
                                                                                   image.ra, image.dec)
-
         if closest_previous_classification is not None:
             previous_coordinate = SkyCoord(closest_previous_classification.ra, closest_previous_classification.dec,
                                            unit=(units.deg, units.deg))
