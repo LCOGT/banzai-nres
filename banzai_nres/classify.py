@@ -92,7 +92,7 @@ class StellarClassifier(Stage):
     def do_stage(self, image) -> NRESObservationFrame:
         # Short circuit if the header coordinates are malformed
         if any(np.isnan([image.ra, image.dec, image.pm_ra, image.pm_dec])):
-            if len(image.meta['RADECSYS'].strip()) == 0:
+            if len(image.meta['RADESYS'].strip()) == 0:
                 # Assume that we are looking at a non-sidereal object
                 pass
             else:
