@@ -37,7 +37,7 @@ class AssessWavelengthSolution(Stage):
         if num_matched_lines == 0:  # get rid of nans in the matched statistics if we have zero matched lines.
             matched_sigma_delta_lambda, reduced_chi2, velocity_precision = 0, 0, 0 * units.meter/units.second
 
-        # elastic search keys don't have to be the same as the fits headers
+        # opensearch keys don't have to be the same as the fits headers
         qc_results = {'SIGLAM': np.round(matched_sigma_delta_lambda, 4),
                       'RVPRECSN': np.round(velocity_precision.to(units.meter/units.second).value, 4),
                       'WAVRCHI2': np.round(reduced_chi2, 4),
