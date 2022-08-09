@@ -1,3 +1,8 @@
+1.0.17 (2022-07-09)
+-------------------
+- Update to use OpenSearch now that Elasticsearch is preferred
+- Update to make NRES standards reduced data public
+
 1.0.16 (2022-02-22)
 -------------------
 - Update to use upstream BANZAI version with new version of OCS Ingester library (3.0.4)
