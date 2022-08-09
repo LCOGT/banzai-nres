@@ -21,7 +21,7 @@ class TestAssessWavelengthSolution:
         assert image is not None
 
     @mock.patch('banzai_nres.qc.qc_wavelength.qc.save_qc_results')
-    def test_do_stage_posts_to_elastic_search(self, fake_post):
+    def test_do_stage_posts_to_open_search(self, fake_post):
         # define a test function to mock the saving of the quality control metrics
 
         def save_qc_results_locally(runtime_context, qc_results, image):
