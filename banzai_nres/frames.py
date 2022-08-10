@@ -405,5 +405,5 @@ class NRESFrameFactory(LCOFrameFactory):
                 # Convert to mas / yr from arcsec / year
                 image.pm_ra = image[f'TELESCOPE_{telescope_num}'].meta['PM-RA'] * 1000.0
                 image.pm_dec = image[f'TELESCOPE_{telescope_num}'].meta['PM-DEC'] * 1000.0
-            image.meta['RADESYS'] = image[f'TELESCOPE_{telescope_num}'].meta['RADECSYS']
+            image.meta['RADESYS'] = image[f'TELESCOPE_{telescope_num}'].meta['RADESYS']
         return image
