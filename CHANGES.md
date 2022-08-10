@@ -1,3 +1,7 @@
+1.0.17 (2022-08-10)
+-------------------
+- Bugfixes to not try to classify non-sidereal targets
+
 1.0.17 (2022-07-09)
 -------------------
 - Update to use OpenSearch now that Elasticsearch is preferred
