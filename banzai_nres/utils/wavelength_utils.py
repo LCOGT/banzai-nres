@@ -1,5 +1,11 @@
 import numpy as np
 from photutils import DAOStarFinder
+from astropy.convolution import convolve
+from photutils.segmentation import make_2dgaussian_kernel
+from photutils.background import Background2D, MedianBackground
+from photutils.utils import calc_total_error
+from photutils.segmentation import detect_sources
+from photutils.segmentation import SourceCatalog
 from astropy.table import Table
 from banzai.utils.stats import robust_standard_deviation
 
@@ -23,6 +29,34 @@ def identify_features(data, err, mask=None, nsigma=2., fwhm=6.0, **kwargs):
     """
     daofind = DAOStarFinder(fwhm=fwhm, threshold=nsigma, exclude_border=True, **kwargs)
     features = daofind(data / err, mask=mask)
+    
+    #Background estimation
+    bkg_estimator = MedianBackground()
+    bkg = Background2D(data, (50, 50), filter_size=(3, 3), bkg_estimator=bkg_estimator)
+    data -= bkg.background  # subtract the background
+    data -= bkg.background_rms
+    threshold = 1.5*bkg.background_rms
+    
+    #Image segmentation
+    kernel = make_2dgaussian_kernel(5, size=3, mode='center')
+    convolved_data = convolve(data, kernel)
+    
+    #Get total error
+    err = calc_total_error(data, bkg.background_rms, 1)
+    
+    print('Making a segment map')
+    print('Masking')
+    segment_map = detect_sources(convolved_data, threshold, npixels = 5, connectivity = 4, mask = mask)
+    
+    # print('Deblending')
+    # segm_deblend = deblend_sources(convolved_data, segment_map, npixels=5, nlevels=64, contrast=0.001, progress_bar=False)
+    # segment_map = segm_deblend
+    cat = SourceCatalog(data, segment_map, convolved_data=convolved_data, error=err)
+    xerr = np.sqrt(cat.covar_sigx2)
+    yerr = np.sqrt(cat.covar_sigy2)
+    tbl = cat.to_table()
+    tbl.add_columns([xerr, yerr], names = ['xcentroid_err', 'ycentroid_err'])
+    
     if features is None:
         features = Table({'xcentroid': [], 'ycentroid': [], 'flux': []})
     features['pixel'] = features['xcentroid']  # because xwavecal uses 'pixel' as the coordinate key.
