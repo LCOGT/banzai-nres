@@ -123,10 +123,10 @@ class WavelengthCalibrate(Stage):
                                                              image.features['xcentroid'].astype(int)]
         self.refine_wavelengths(image)
 
-        # remove daofind parameters that are not relevant to our case from the features table
-        for column_to_remove in ['npix', 'sky', 'mag', 'pixel']:
-            if column_to_remove in image.features.colnames:
-                image.features.remove_column(column_to_remove)
+        # # remove daofind parameters that are not relevant to our case from the features table
+        # for column_to_remove in ['npix', 'sky', 'mag', 'pixel']:
+        #     if column_to_remove in image.features.colnames:
+        #         image.features.remove_column(column_to_remove)
 
         return image
 
@@ -249,9 +249,9 @@ class IdentifyFeatures(Stage):
         features = group_features_by_trace(features, image.traces)
         features = features[features['id'] != 0]  # throw out features that are outside of any trace.
         # get total flux in each emission feature. For now just sum_circle, although we should use sum_ellipse.
-        features['flux'], features['fluxerr'], _ = sep.sum_circle(image.data, features['xcentroid'],
-                                                                  features['ycentroid'], self.fwhm, gain=1.0,
-                                                                  err=image.uncertainty, mask=image.mask)
+        # features['flux'], features['fluxerr'], _ = sep.sum_circle(image.data, features['xcentroid'],
+        #                                                           features['ycentroid'], self.fwhm, gain=1.0,
+        #                                                           err=image.uncertainty, mask=image.mask)
         if image.blaze is not None:
             logger.info('Blaze correcting emission feature fluxes', image=image)
             # blaze correct the emission features fluxes. This speeds up and improves overlap fitting in xwavecal.

@@ -6,6 +6,7 @@ from photutils.background import Background2D, MedianBackground
 from photutils.utils import calc_total_error
 from photutils.segmentation import detect_sources
 from photutils.segmentation import SourceCatalog
+from photutils.segmentation import deblend_sources
 from astropy.table import Table
 from banzai.utils.stats import robust_standard_deviation
 
@@ -27,8 +28,6 @@ def identify_features(data, err, mask=None, nsigma=2., fwhm=6.0, **kwargs):
              catalog of features (e.g. emission lines). features['xcentroid'][j] gives the horizontal pixel position
              of the jth feature. features['ycentroid'][j] gives the y pixel (vertical) position of the jth feature.
     """
-    daofind = DAOStarFinder(fwhm=fwhm, threshold=nsigma, exclude_border=True, **kwargs)
-    features = daofind(data / err, mask=mask)
     
     #Background estimation
     bkg_estimator = MedianBackground()
@@ -48,15 +47,18 @@ def identify_features(data, err, mask=None, nsigma=2., fwhm=6.0, **kwargs):
     print('Masking')
     segment_map = detect_sources(convolved_data, threshold, npixels = 5, connectivity = 4, mask = mask)
     
-    # print('Deblending')
-    # segm_deblend = deblend_sources(convolved_data, segment_map, npixels=5, nlevels=64, contrast=0.001, progress_bar=False)
-    # segment_map = segm_deblend
-    cat = SourceCatalog(data, segment_map, convolved_data=convolved_data, error=err)
-    xerr = np.sqrt(cat.covar_sigx2)
-    yerr = np.sqrt(cat.covar_sigy2)
-    tbl = cat.to_table()
-    tbl.add_columns([xerr, yerr], names = ['xcentroid_err', 'ycentroid_err'])
+    print('Deblending')
+    segm_deblend = deblend_sources(convolved_data, segment_map, npixels=5, nlevels=64, contrast=0.001, progress_bar=False)
+    segment_map = segm_deblend
     
+    cat = SourceCatalog(data, segment_map, convolved_data=convolved_data, error=err)
+    
+    features = cat.to_table()
+    features.keep_columns(['xcentroid', 'ycentroid', 'eccentricity', 'segment_flux', 'segment_fluxerr'])
+    features.rename_column('segment_flux', 'flux')
+    features.rename_column('segment_fluxerr', 'fluxerr')
+    # daofind = DAOStarFinder(fwhm=fwhm, threshold=nsigma, exclude_border=True, **kwargs)
+    # features = daofind(data / err, mask=mask)
     if features is None:
         features = Table({'xcentroid': [], 'ycentroid': [], 'flux': []})
     features['pixel'] = features['xcentroid']  # because xwavecal uses 'pixel' as the coordinate key.

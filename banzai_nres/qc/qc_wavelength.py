@@ -22,7 +22,7 @@ class AssessWavelengthSolution(Stage):
 
         sigma_delta_lambda = robust_standard_deviation(delta_lambda)
         low_scatter_lines = delta_lambda < 3. * sigma_delta_lambda
-
+        
         matched_sigma_delta_lambda = robust_standard_deviation(delta_lambda[low_scatter_lines])
         num_detected_lines = len(image.features['wavelength'])
         num_matched_lines = np.count_nonzero(low_scatter_lines)
@@ -36,7 +36,7 @@ class AssessWavelengthSolution(Stage):
 
         if num_matched_lines == 0:  # get rid of nans in the matched statistics if we have zero matched lines.
             matched_sigma_delta_lambda, reduced_chi2, velocity_precision = 0, 0, 0 * units.meter/units.second
-
+        import pdb; pdb.set_trace()
         # opensearch keys don't have to be the same as the fits headers
         qc_results = {'SIGLAM': np.round(matched_sigma_delta_lambda, 4),
                       'RVPRECSN': np.round(velocity_precision.to(units.meter/units.second).value, 4),
