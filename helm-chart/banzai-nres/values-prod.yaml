@@ -12,6 +12,7 @@ horizontalPodAutoscaler:
 
 image:
   repository: docker.lco.global/banzai-nres
+  tag: 1.0.18
   pullPolicy: IfNotPresent
 
 # Values for the OCS Ingester library, used by BANZAI-NRES.
@@ -48,7 +49,7 @@ useDockerizedDatabase: false
 useDockerizedRabbitMQ: false
 
 postgresql:
-  hostname: postgres1-cluster.cluster-cple9sjsskrf.us-west-2.rds.amazonaws.com
+  hostname: prod-postgres1-cluster-writer-pgbouncer.prod-db-proxy.svc.cluster.local
   postgresqlUsername: banzai-nres
   postgresqlDatabase: banzai-nres
 
