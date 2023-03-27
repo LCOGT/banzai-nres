@@ -6,6 +6,7 @@ from banzai.calibrations import CalibrationStacker, CalibrationUser
 from astropy import table
 
 from banzai_nres.frames import NRESObservationFrame
+from banzai_nres.calibrations import NRESCalibrationComparer
 from banzai_nres.utils.wavelength_utils import identify_features, group_features_by_trace, get_principle_order_number
 from xwavecal.wavelength import find_feature_wavelengths, WavelengthSolution
 from xwavecal.utils.wavelength_utils import find_nearest
@@ -29,6 +30,12 @@ WAVELENGTH_SOLUTION_MODEL = {0: [0, 1, 2, 3, 4, 5],
 # TODO refactor xwavecal so that we dont need this. We only need to set flux_tol to 0.5
 OVERLAP_SETTINGS = {'min_num_overlaps': 5, 'overlap_linear_scale_range': (0.5, 2), 'flux_tol': 0.4,
                     'max_red_overlap': 1000, 'max_blue_overlap': 2000}
+
+
+class ArcComparer(NRESCalibrationComparer):
+    @property
+    def calibration_type(self):
+        return 'DOUBLE'
 
 
 class ArcStacker(CalibrationStacker):

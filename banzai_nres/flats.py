@@ -1,4 +1,5 @@
 from banzai.calibrations import CalibrationStacker, CalibrationUser
+from banzai_nres.calibrations import NRESCalibrationComparer
 
 
 class FlatStacker(CalibrationStacker):
@@ -28,3 +29,9 @@ class FlatLoader(CalibrationUser):
         image.weights = master_calibration_image.weights
         image.meta['L1IDFLAT'] = master_calibration_image.filename, 'ID of Flat frame'
         return image
+
+
+class FlatComparer(NRESCalibrationComparer):
+    @property
+    def calibration_type(self):
+        return 'LAMPFLAT'
