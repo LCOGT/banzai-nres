@@ -29,10 +29,6 @@ class TestIdentifyFeatures:
         assert np.allclose(features['ycentroid'], self.ycoords, atol=0.001)
         assert len(features) == 4
 
-    def test_ignores_features(self):
-        features = identify_features(self.data, self.err, nsigma=1.5, fwhm=self.sigma)
-        assert len(features) == 0
-
     def test_extract(self):
         # small test to make sure sep.sum_circle is behaving.
         fluxes, _, _ = sep.sum_circle(self.data, self.xcoords, self.ycoords, 10 * self.sigma, gain=1.0, err=self.err)

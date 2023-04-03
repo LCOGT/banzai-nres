@@ -50,7 +50,7 @@ def refine_traces(image, weights=None, trace_half_height=5):
         y_center, y_center_errors = find_y_center(y2d[y_stamp, x_stamp], (image.traces == i)[y_stamp, x_stamp],
                                                   weights=stamp_weights)
         # Refit the centroids to reject cosmic rays etc, but only evaluate where the S/N is good
-        x_center = np.arange(min(x2d[image.traces == i]), max(x2d[image.traces == i]) + 1, dtype=np.float)
+        x_center = np.arange(min(x2d[image.traces == i]), max(x2d[image.traces == i]) + 1, dtype=float)
         logger.info(f'Fitting a polynomial to order {i}', image=image)
         # order 5 chosen based on visually inspecting the residuals between the trace centers and the model fit centers
         # TODO we need to verify that an order 5 polynomial fit is the best thing to do.
