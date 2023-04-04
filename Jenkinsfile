@@ -56,7 +56,7 @@ pipeline {
                                 '&& helm package helm-chart/banzai-nres --app-version="${GIT_DESCRIPTION}" --version="${GIT_DESCRIPTION}" ' +
                                 '&& helm upgrade --install banzai-nres banzai-nres-"${GIT_DESCRIPTION}".tgz --namespace=prod ' +
                                 '--set image.tag="${GIT_DESCRIPTION}" --values=helm-chart/banzai-nres/values-prod.yaml ' +
-                                '--force --atomic --timeout=3600')
+                                '--force --atomic --timeout=3600s')
                     }
                  }
 		    }
@@ -89,7 +89,7 @@ pipeline {
                         sh(script: "kubectl delete pvc banzai-nres-e2e --wait=true --timeout=600s", returnStatus: true)
                         sh('helm upgrade --namespace=build --install banzai-nres-e2e helm-chart/banzai-nres-e2e ' +
                             '--set banzaiNRES.tag="${GIT_DESCRIPTION}" --set dataImage.tag=' + dataTag +
-                            ' --force --wait --timeout=3600')
+                            ' --force --wait --timeout=3600s')
 
                         podName = sh(script: 'kubectl get po -l app.kubernetes.io/instance=banzai-nres-e2e ' +
                                         '--sort-by=.status.startTime -o jsonpath="{.items[-1].metadata.name}"',
