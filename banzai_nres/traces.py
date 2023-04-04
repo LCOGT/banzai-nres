@@ -90,7 +90,7 @@ class TraceInitializer(Stage):
         binary_map = np.logical_and(peaks == image.data.data, significant)
 
         # Dilate the label map to make sure all traces are connected
-        binary_map = ndimage.morphology.binary_dilation(binary_map)
+        binary_map = ndimage.binary_dilation(binary_map)
         labeled_image, n_labels = ndimage.label(binary_map)
         X, Y = np.meshgrid(np.arange(image.shape[1], dtype=int), np.arange(image.shape[0], dtype=int))
         labeled_indices = np.arange(1, n_labels + 1)
