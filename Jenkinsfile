@@ -52,9 +52,9 @@ pipeline {
 		    steps {
 	            script {
                     withKubeConfig([credentialsId: "prod-kube-config"]) {
-                        sh('helm3 repo update && helm3 dependency update helm-chart/banzai-nres/ '+
-                                '&& helm3 package helm-chart/banzai-nres --app-version="${GIT_DESCRIPTION}" --version="${GIT_DESCRIPTION}" ' +
-                                '&& helm3 upgrade --install banzai-nres banzai-nres-"${GIT_DESCRIPTION}".tgz --namespace=prod ' +
+                        sh('helm repo update && helm dependency update helm-chart/banzai-nres/ '+
+                                '&& helm package helm-chart/banzai-nres --app-version="${GIT_DESCRIPTION}" --version="${GIT_DESCRIPTION}" ' +
+                                '&& helm upgrade --install banzai-nres banzai-nres-"${GIT_DESCRIPTION}".tgz --namespace=prod ' +
                                 '--set image.tag="${GIT_DESCRIPTION}" --values=helm-chart/banzai-nres/values-prod.yaml ' +
                                 '--force --atomic --timeout=3600')
                     }
@@ -77,14 +77,14 @@ pipeline {
                         } else {
                             dataTag = '1.0.4-slim'
                         }
-                        sh('helm3 repo update')
-                        final cmd = " helm3 delete --namespace=build --purge banzai-nres-e2e &> cleanup.txt"
+                        sh('helm repo update')
+                        final cmd = " helm delete --namespace=build --purge banzai-nres-e2e &> cleanup.txt"
                         final status = sh(script: cmd, returnStatus: true)
                         final output = readFile('cleanup.txt').trim()
                         sh(script: "rm -f cleanup.txt", returnStatus: true)
                         echo output
                         sh(script: "kubectl delete pvc banzai-nres-e2e --wait=true --timeout=600s", returnStatus: true)
-                        sh('helm3 upgrade --namespace=build --install banzai-nres-e2e helm-chart/banzai-nres-e2e ' +
+                        sh('helm upgrade --namespace=build --install banzai-nres-e2e helm-chart/banzai-nres-e2e ' +
                             '--set banzaiNRES.tag="${GIT_DESCRIPTION}" --set dataImage.tag=' + dataTag +
                             ' --force --wait --timeout=3600')
 
@@ -240,7 +240,7 @@ pipeline {
 				success {
 					script {
 					    withKubeConfig([credentialsId: "build-kube-config"]) {
-                            sh("helm3 delete --namespace=build banzai-nres-e2e --purge || true")
+                            sh("helm delete --namespace=build banzai-nres-e2e --purge || true")
 					    }
 					}
 				}
