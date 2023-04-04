@@ -62,6 +62,9 @@ pipeline {
 		    }
 		}
 		stage('DeployTestStack') {
+			agent {
+				label 'helm'
+			}
 			when {
 				anyOf {
 					branch 'PR-*'
