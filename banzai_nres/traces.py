@@ -50,7 +50,7 @@ def refine_traces(image, weights=None, trace_half_height=5):
         y_center, y_center_errors = find_y_center(y2d[y_stamp, x_stamp], (image.traces == i)[y_stamp, x_stamp],
                                                   weights=stamp_weights)
         # Refit the centroids to reject cosmic rays etc, but only evaluate where the S/N is good
-        x_center = np.arange(min(x2d[image.traces == i]), max(x2d[image.traces == i]) + 1, dtype=np.float)
+        x_center = np.arange(min(x2d[image.traces == i]), max(x2d[image.traces == i]) + 1, dtype=float)
         logger.info(f'Fitting a polynomial to order {i}', image=image)
         # order 5 chosen based on visually inspecting the residuals between the trace centers and the model fit centers
         # TODO we need to verify that an order 5 polynomial fit is the best thing to do.
@@ -90,7 +90,7 @@ class TraceInitializer(Stage):
         binary_map = np.logical_and(peaks == image.data.data, significant)
 
         # Dilate the label map to make sure all traces are connected
-        binary_map = ndimage.morphology.binary_dilation(binary_map)
+        binary_map = ndimage.binary_dilation(binary_map)
         labeled_image, n_labels = ndimage.label(binary_map)
         X, Y = np.meshgrid(np.arange(image.shape[1], dtype=int), np.arange(image.shape[0], dtype=int))
         labeled_indices = np.arange(1, n_labels + 1)

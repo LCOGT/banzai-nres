@@ -60,15 +60,15 @@ CALIBRATION_IMAGE_TYPES = ['BPM', 'BIAS', 'DARK', 'LAMPFLAT', 'DOUBLE']
 
 LAST_STAGE = {'BIAS': 'banzai.trim.Trimmer',
               'DARK': 'banzai.uncertainty.PoissonInitializer',
-              'LAMPFLAT': 'banzai.dark.DarkSubtractor',
-              'DOUBLE': 'banzai.dark.DarkSubtractor',
+              'LAMPFLAT': 'banzai_nres.flats.FlatLoader',
+              'DOUBLE': 'banzai_nres.flats.FlatLoader',
               'TARGET': None,
               }
 
 EXTRA_STAGES = {'BIAS': ['banzai.bias.BiasMasterLevelSubtractor', 'banzai.bias.BiasComparer'],
                 'DARK': ['banzai.dark.DarkNormalizer', 'banzai.dark.DarkComparer'],
-                'LAMPFLAT': [],
-                'DOUBLE': [],
+                'LAMPFLAT': ['banzai_nres.flats.FlatComparer'],
+                'DOUBLE': ['banzai_nres.wavelength.ArcComparer'],
                 'TARGET': None,
                 }
 

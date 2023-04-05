@@ -146,7 +146,7 @@ def test_refine_traces_with_previous_trace():
     trace_centers = []
     y_0s = [100, 200, 300]
     blaze_function = 1 - 1e-5 * (x2d - nx / 2.) ** 2
-    input_traces = np.zeros((ny, nx), dtype=np.int)
+    input_traces = np.zeros((ny, nx), dtype=int)
     for i in range(num_traces):
         trace_centers.append(5e-4 * (np.arange(nx) - nx / 2.) ** 2 + y_0s[i])
         test_data += gaussian(y2d, trace_centers[i], 2, a=10000.0) * blaze_function
@@ -202,7 +202,7 @@ def make_simple_traces(nx=401, ny=403, trace_half_width=6, blaze=True):
     trace_centers = []
     y_0s = [int(2*ny/5), int(3*ny/5), int(4*ny/5)]
     blaze_function = 1 - blaze * 1e-5 * (x2d - nx / 2.) ** 2
-    input_traces = np.zeros((ny, nx), dtype=np.int)
+    input_traces = np.zeros((ny, nx), dtype=int)
     for i in range(3):
         trace_centers.append(5e-4 * (np.arange(nx) - nx / 2.) ** 2 + y_0s[i])
         test_data += gaussian(y2d, trace_centers[i], 3, a=10000.0) * blaze_function

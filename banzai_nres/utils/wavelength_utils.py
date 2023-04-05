@@ -1,5 +1,5 @@
 import numpy as np
-from photutils import DAOStarFinder
+from photutils.detection import DAOStarFinder
 from astropy.table import Table
 from banzai.utils.stats import robust_standard_deviation
 

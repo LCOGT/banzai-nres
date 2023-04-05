@@ -1,3 +1,7 @@
+1.1.0 (2023-04-04)
+------------------
+- Added calibration frame comparison to reject them if they deviate too much from previous stacks
+
 1.0.17 (2022-08-10)
 -------------------
 - Bugfixes to not try to classify non-sidereal targets
