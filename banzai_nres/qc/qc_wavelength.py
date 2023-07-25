@@ -21,7 +21,7 @@ class AssessWavelengthSolution(Stage):
         delta_lambda = image.features['wavelength'] - lab_lines
 
         sigma_delta_lambda = robust_standard_deviation(delta_lambda)
-        low_scatter_lines = delta_lambda < 3. * sigma_delta_lambda
+        low_scatter_lines = np.abs(delta_lambda) < 3. * sigma_delta_lambda
 
         matched_sigma_delta_lambda = robust_standard_deviation(delta_lambda[low_scatter_lines])
         num_detected_lines = len(image.features['wavelength'])
