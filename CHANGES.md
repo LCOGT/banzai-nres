@@ -1,3 +1,7 @@
+1.1.2 (2023-07-25)
+------------------
+- Update NRES Frame Factory to handle UNKNOWN as a valid empty coordinate
+
 1.1.0 (2023-04-04)
 ------------------
 - Added calibration frame comparison to reject them if they deviate too much from previous stacks
