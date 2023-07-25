@@ -367,7 +367,7 @@ class NRESFrameFactory(LCOFrameFactory):
 
     @staticmethod
     def is_empty_coordinate(coordinate):
-        return 'nan' in str(coordinate).lower() or 'n/a' in str(coordinate).lower()
+        return any(coordinate.lower() in value for value in ['nan', 'n/a', 'unknown'])
 
     def open(self, path, runtime_context) -> Optional[ObservationFrame]:
         image = super().open(path, runtime_context)
