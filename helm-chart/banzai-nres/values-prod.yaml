@@ -34,7 +34,7 @@ banzaiNres:
   calibrateProposalId: calibrate
   banzaiWorkerLogLevel: info
   rawDataApiRoot: http://archiveapi-internal.prod/
-  fitsBroker: rabbitmq.lco.gtn
+  fitsBroker: rabbitmq-ha.prod.svc.cluster.local.
   fitsExchange: archived_fits
   queueName: banzai_nres_pipeline
   phoenixFileLocation: s3://banzai-nres-phoenix-models-lco-global
