@@ -2,10 +2,10 @@ from banzai_nres.fibers import fiber_states_from_header
 from banzai.lco import LCOFrameFactory, LCOObservationFrame, LCOCalibrationFrame
 from banzai.frames import ObservationFrame
 from banzai.data import DataProduct, ArrayData, HeaderOnly, DataTable
+from banzai.logs import get_logger
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib import pyplot
 from io import BytesIO
-import logging
 from typing import Optional
 import numpy as np
 from astropy.table import Table
@@ -15,7 +15,7 @@ from astropy import units
 from banzai.utils import fits_utils
 
 
-logger = logging.getLogger('banzai')
+logger = get_logger()
 
 
 class Spectrum1D:

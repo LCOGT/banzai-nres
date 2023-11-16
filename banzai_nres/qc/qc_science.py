@@ -1,8 +1,9 @@
 import numpy as np
 from banzai.stages import Stage
+from banzai.logs import get_logger
 import logging
 
-logger = logging.getLogger('banzai')
+logger = get_logger()
 
 # This defines the order for which we calculate the SNR value for the header.
 # By default this is the order containing the Mg b lines.

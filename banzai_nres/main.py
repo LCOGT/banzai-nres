@@ -23,11 +23,10 @@ from astropy.io import fits
 import numpy as np
 import multiprocessing
 
-import logging
 import argparse
 import requests
 
-logger = logging.getLogger(__name__)
+logger = logs.get_logger()
 
 
 def nres_run_realtime_pipeline():

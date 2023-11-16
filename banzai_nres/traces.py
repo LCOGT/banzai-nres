@@ -6,13 +6,13 @@ Authors
     G. Mirek Brandt (gmbrandt@ucsb.edu)
 """
 from banzai.stages import Stage
-import logging
+from banzai.logs import get_logger
 from scipy import ndimage
 import numpy as np
 from banzai_nres.fitting import fit_polynomial
 from banzai.data import ArrayData
 
-logger = logging.getLogger('banzai')
+logger = get_logger()
 
 # Minimum separation between peaks in the image that could be separate traces
 MIN_TRACE_SEPARATION = 10

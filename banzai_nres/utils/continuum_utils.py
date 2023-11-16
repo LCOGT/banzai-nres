@@ -1,10 +1,10 @@
 import numpy as np
 from scipy.ndimage import binary_dilation, percentile_filter
 from scipy.ndimage import gaussian_filter1d
-import logging
 from banzai.utils.stats import robust_standard_deviation
+from banzai.logs import get_logger
 
-logger = logging.getLogger('banzai')
+logger = get_logger()
 
 
 def mark_features(flux, sigma=3, continuum_formal_error=None, detector_resolution=4):

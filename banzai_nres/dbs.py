@@ -2,6 +2,7 @@ from banzai.dbs import Base, create_db, add_or_update_record
 from sqlalchemy import Column, String, Integer, Float, Index, ForeignKey
 import boto3
 import banzai.dbs
+from banzai.logs import get_logger
 import os
 from glob import glob
 import logging
@@ -11,7 +12,7 @@ import numpy as np
 
 from banzai_nres.utils.phoenix_utils import parse_phoenix_header
 
-logger = logging.getLogger('banzai')
+logger = get_logger()
 
 
 class PhoenixModel(Base):

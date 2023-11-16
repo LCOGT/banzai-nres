@@ -3,11 +3,11 @@ import numpy as np
 from banzai.stages import Stage
 from banzai_nres.frames import Spectrum1D, NRESObservationFrame
 from banzai_nres.utils.trace_utils import get_trace_region
-import logging
 from banzai.data import ArrayData
+from banzai.logs import get_logger
 
 
-logger = logging.getLogger('banzai')
+logger = get_logger()
 
 
 class WeightedExtract(Stage):

@@ -10,10 +10,9 @@ from banzai.context import Context
 from scipy import interpolate
 from banzai_nres.continuum import ContinuumNormalizer
 from banzai_nres.utils import phoenix_utils
-import logging
+from banzai.logs import get_logger
 
-
-logger = logging.getLogger('banzai')
+logger = get_logger()
 
 
 class PhoenixModelLoader:

@@ -4,11 +4,11 @@ from astropy import constants
 from astropy import units
 
 from banzai.stages import Stage
+from banzai import logs
 from banzai_nres import phoenix
-import logging
 from banzai_nres.qc.qc_science import get_snr
 
-logger = logging.getLogger('banzai')
+logger = get_logger()
 
 
 class MakePDFSummary(Stage):

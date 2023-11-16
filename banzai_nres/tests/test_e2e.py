@@ -1,6 +1,7 @@
 import pytest
 from banzai.tests.utils import FakeResponse, get_min_and_max_dates
 from banzai_nres import settings
+from banzai.logs import get_logger
 import os
 import mock
 import numpy as np
@@ -20,9 +21,7 @@ from banzai.utils import fits_utils
 import banzai_nres.dbs
 import json
 
-import logging
-
-logger = logging.getLogger('banzai')
+logger = get_logger()
 
 TEST_PACKAGE = 'banzai_nres.tests'
 

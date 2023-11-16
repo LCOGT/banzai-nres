@@ -1,6 +1,7 @@
 from banzai.stages import Stage
 from banzai_nres.frames import NRESObservationFrame
 from banzai_nres import dbs
+from banzai.logs import get_logger
 import warnings
 from astropy import units
 from astropy.time import Time
@@ -14,7 +15,7 @@ import logging
 import astroquery.exceptions
 
 
-logger = logging.getLogger('banzai')
+logger = get_logger()
 
 
 def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
