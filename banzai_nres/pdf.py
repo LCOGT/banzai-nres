@@ -4,7 +4,7 @@ from astropy import constants
 from astropy import units
 
 from banzai.stages import Stage
-from banzai import logs
+from banzai.logs import get_logger
 from banzai_nres import phoenix
 from banzai_nres.qc.qc_science import get_snr
 
