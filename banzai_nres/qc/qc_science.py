@@ -1,7 +1,6 @@
 import numpy as np
 from banzai.stages import Stage
 from banzai.logs import get_logger
-import logging
 
 logger = get_logger()
 

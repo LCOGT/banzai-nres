@@ -14,7 +14,6 @@ from xwavecal.utils.wavelength_utils import find_nearest
 from xwavecal.fibers import IdentifyFibers
 
 import sep
-import logging
 import os
 import pkg_resources
 from astropy.table import Table

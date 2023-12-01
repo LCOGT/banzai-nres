@@ -5,7 +5,6 @@ import banzai.dbs
 from banzai.logs import get_logger
 import os
 from glob import glob
-import logging
 from sqlalchemy import func, desc
 from sqlalchemy.ext.hybrid import hybrid_method
 import numpy as np

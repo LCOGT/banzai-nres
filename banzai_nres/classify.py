@@ -11,7 +11,6 @@ from banzai_nres.rv import cross_correlate_over_traces, calculate_rv
 from banzai_nres import phoenix
 import numpy as np
 from banzai.utils import import_utils
-import logging
 import astroquery.exceptions
 
 
