@@ -1,6 +1,7 @@
 from banzai.stages import Stage
 from banzai.frames import ObservationFrame
 from banzai import dbs
+from banzai.logs import get_logger
 from banzai.data import DataTable
 import numpy as np
 from astropy.table import Table, QTable
@@ -10,10 +11,9 @@ from astropy.coordinates import SkyCoord, EarthLocation, solar_system_ephemeris
 from astropy import units
 from banzai.utils import stats
 from astropy.stats import sigma_clip
-import logging
 from banzai_nres import phoenix
 
-logger = logging.getLogger('banzai')
+logger = get_logger()
 
 
 # wavelength regions selected by eye by Mirek on 09 16 2020 wherever there are large (H alpha like, i.e. broad wings)

@@ -1,3 +1,7 @@
+1.1.3 (2023-11-17)
+------------------
+- Fixes to use BANZAI LoggingAdapter
+
 1.1.2 (2023-07-25)
 ------------------
 - Update NRES Frame Factory to handle UNKNOWN as a valid empty coordinate

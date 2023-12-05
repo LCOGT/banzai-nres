@@ -3,6 +3,7 @@ import numpy as np
 from banzai.stages import Stage
 from banzai.data import DataTable, ArrayData
 from banzai.calibrations import CalibrationStacker, CalibrationUser
+from banzai.logs import get_logger
 from astropy import table
 
 from banzai_nres.frames import NRESObservationFrame
@@ -13,13 +14,12 @@ from xwavecal.utils.wavelength_utils import find_nearest
 from xwavecal.fibers import IdentifyFibers
 
 import sep
-import logging
 import os
 import pkg_resources
 from astropy.table import Table
 
 
-logger = logging.getLogger('banzai')
+logger = get_logger()
 
 WAVELENGTH_SOLUTION_MODEL = {0: [0, 1, 2, 3, 4, 5],
                              1: [0, 1, 2, 3, 4, 5],

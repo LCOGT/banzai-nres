@@ -2,10 +2,9 @@ import numpy as np
 from photutils.detection import DAOStarFinder
 from astropy.table import Table
 from banzai.utils.stats import robust_standard_deviation
+from banzai.logs import get_logger
 
-import logging
-
-logger = logging.getLogger('banzai')
+logger = get_logger()
 
 
 def identify_features(data, err, mask=None, nsigma=2., fwhm=6.0, **kwargs):

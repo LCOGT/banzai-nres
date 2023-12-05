@@ -1,10 +1,10 @@
-FROM docker.lco.global/banzai:1.9.8
+FROM ghcr.io/lcogt/banzai:1.13.1
 
 USER root
 
-RUN conda install -y coveralls sphinx statsmodels docutils=0.15
+RUN conda install -y coveralls sphinx statsmodels docutils
 
-RUN pip install astropy==4.2
+RUN pip install astropy==5.3.4
 
 COPY --chown=10087:10000 . /lco/banzai-nres
 

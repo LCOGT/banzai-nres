@@ -1,14 +1,14 @@
 import numpy as np
 from banzai.stages import Stage
 from banzai.utils import qc
+from banzai.logs import get_logger
 from astropy import constants
 from astropy import units
 from xwavecal.utils.wavelength_utils import find_nearest
 from banzai.utils.stats import robust_standard_deviation
-import logging
 
 
-logger = logging.getLogger('banzai')
+logger = get_logger()
 
 
 class AssessWavelengthSolution(Stage):
