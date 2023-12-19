@@ -121,7 +121,8 @@ class MakePDFSummary(Stage):
         fig2, axes = pl.subplots(nrows=2, ncols=3, figsize=(11, 8.5))
 
         for ax, line_center, line_name, line_order in zip(axes.flatten(), line_centers, line_names, line_orders):
-            label = f"{line_name} at \n {image.meta['RV'] / 1000.0: 0.3f} (RV) - {image.meta['BARYCORR'] / 1000.0: 0.3f} (BC) km / s"
+            label = f"{line_name} at \n "
+            label += f"{image.meta['RV'] / 1000.0: 0.3f} (RV) - {image.meta['BARYCORR'] / 1000.0: 0.3f} (BC) km / s"
             make_line_plot(wavelength, flux, order, ax, line_center, label,
                            line_order, wavelength_correction=wavelength_correction)
 
@@ -155,7 +156,7 @@ def make_line_plot(wavelength, flux, order, ax, line_center, line_name, line_ord
             ax.plot(np.array([this_center, this_center]) / wavelength_correction,
                     [0, upper_plot_limit], color='blue')
     else:
-        ax.plot(np.array([line_center, line_center]) / wavelength_correction, 
+        ax.plot(np.array([line_center, line_center]) / wavelength_correction,
                 [0, upper_plot_limit], color='blue')
     ax.set_xlabel('observed wavelength (Angstroms)')
     ax.set_ylabel('normalized flux')
