@@ -1,3 +1,7 @@
+1.2.0 (2023-12-19)
+------------------
+- Changes to the summary plot to use observed wavelengths in case the RV results are wrong.
+
 1.1.3 (2023-11-17)
 ------------------
 - Fixes to use BANZAI LoggingAdapter
