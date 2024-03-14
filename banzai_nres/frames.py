@@ -112,14 +112,8 @@ class NRESObservationFrame(LCOObservationFrame):
             fits_2d[0].header['L1ID1D'] = filename_1d
             output_product_2d = DataProduct.from_fits(fits_2d, filename_2d, self.get_output_directory(runtime_context))
 
-            # make sure we pop all the fits garbage before we write the meta data.
-            summary_pdf_meta = fits_utils.sanitize_header(self.meta.copy())
-            for keyword in ['NAXIS1', 'NAXIS2', 'EXTNAME', 'EXTVER']:
-                if keyword in summary_pdf_meta:
-                    summary_pdf_meta.pop(keyword)
-
             summary_buffer = BytesIO()
-            pp = PdfPages(summary_buffer, keep_empty=False, metadata=dict(summary_pdf_meta))
+            pp = PdfPages(summary_buffer, keep_empty=False)
             for fig in self.summary_figures:
                 fig.tight_layout()
                 pp.savefig(fig)
@@ -127,8 +121,7 @@ class NRESObservationFrame(LCOObservationFrame):
             pp.close()
             summary_buffer.seek(0)
 
-            output_summary = DataProduct(summary_buffer, filename_summary, self.get_output_directory(runtime_context),
-                                         meta=dict(summary_pdf_meta))
+            output_summary = DataProduct(summary_buffer, filename_summary, self.get_output_directory(runtime_context))
 
             return [output_product_1d, output_product_2d, output_summary]
 
