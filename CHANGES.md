@@ -1,3 +1,7 @@
+1.1.4 (2024-03-14)
+------------------
+- Fixes to documentation for updated BANZAI installs
+
 1.1.3 (2023-11-17)
 ------------------
 - Fixes to use BANZAI LoggingAdapter
