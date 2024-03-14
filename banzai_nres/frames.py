@@ -12,7 +12,6 @@ from astropy.table import Table
 import os
 from astropy.coordinates import Angle
 from astropy import units
-from banzai.utils import fits_utils
 
 
 logger = get_logger()
