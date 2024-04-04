@@ -34,7 +34,7 @@ banzaiNres:
   calibrateProposalId: calibrate
   banzaiWorkerLogLevel: info
   rawDataApiRoot: http://archiveapi-internal.prod/
-  fitsBroker: rabbitmq-ha.prod.svc.cluster.local.
+  fitsBroker: "amqp://science-archive:science-archive@rabbitmq.prod-rmq-shared.svc:5672/science-archive"
   fitsExchange: archived_fits
   queueName: banzai_nres_pipeline
   phoenixFileLocation: s3://banzai-nres-phoenix-models-lco-global
@@ -53,7 +53,7 @@ postgresql:
   postgresqlDatabase: banzai-nres
 
 rabbitmq:
-  hostname: rabbitmq-ha.prod.svc.cluster.local.
+  hostname: rabbitmq.prod-rmq-shared.svc
   rabbitmq:
     username: banzai
   vhost: banzai
