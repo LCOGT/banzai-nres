@@ -177,6 +177,8 @@ Celery task queue configuration
   value: {{ .Values.banzaiNres.queueName | quote }}
 - name: CELERY_TASK_QUEUE_NAME
   value: {{ .Values.banzaiNres.celeryTaskQueueName | quote }}
+- name: CELERY_LARGE_TASK_QUEUE_NAME
+  value: {{ .Values.banzaiNres.celeryTaskQueueName | quote }}
 - name: BANZAI_WORKER_LOGLEVEL
   value: {{ .Values.banzaiNres.banzaiWorkerLogLevel | quote }}
 - name: PHOENIX_FILE_LOCATION
