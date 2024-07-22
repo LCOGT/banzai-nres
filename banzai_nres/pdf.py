@@ -36,13 +36,14 @@ class MakePDFSummary(Stage):
         # make the first page showing the spectrum, template, etc.
         pl.subplot(2, 1, 1)
         primary_order = order == 90
-        spectrum_line, = pl.plot(np.squeeze(wavelength[primary_order, :]) * wavelength_correction,
+        spectrum_line, = pl.plot(np.squeeze(wavelength[primary_order, :]),
                                  np.squeeze(flux[primary_order, :]), color='blue')
         if image.classification is not None:
-            template_line, = pl.plot(template['wavelength'], template['flux'], color='red', linewidth=0.5)
+            template_line, = pl.plot(template['wavelength'] / wavelength_correction,
+                                     template['flux'], color='red', linewidth=0.5)
         pl.xlim([5140., 5220.])
         pl.ylim([0., np.nanmin([np.nanmax(flux[primary_order, :]), 2.0])])
-        pl.xlabel('wavelength (Angstroms)')
+        pl.xlabel('observed wavelength (Angstroms)')
         pl.ylabel('normalized flux')
         pl.title(image.meta['OBJECT'] + ' on ' + image.meta['DAY-OBS'] + ' from ' + image.meta['TELESCOP'] + '-' +
                  image.meta['SITEID'] + ' for program ' + image.meta['PROPID'])
@@ -86,24 +87,25 @@ class MakePDFSummary(Stage):
         line_separation, top_line = 0.065, 0.925
         pl.text(0.1, top_line, image.meta['ORIGNAME'].replace('e00', 'e' + str(self.runtime_context.reduction_level) +
                                                               '-1d') + '.fz')
+        pl.text(0.1, top_line - line_separation, f'Request Numbers: {image.request_number}')
         if image.classification is not None:
-            pl.text(0.1, top_line - line_separation, 'Teff = {0:1.4g} K'.format(image.meta['TEFF']))
-            pl.text(0.1, top_line - line_separation * 2, 'logg = {0:1.2g} (cgs units)'.format(image.meta['LOGG']))
-            pl.text(0.1, top_line - line_separation * 3, '[Fe/H] = {0:1.2g}'.format(image.meta['FEH']))
-            pl.text(0.1, top_line - line_separation * 4, '[alpha/Fe] = {0:1.2g}'.format(image.meta['ALPHA']))
-            pl.text(0.1, top_line - line_separation * 6, 'RV = {0:1.3f} km/s'.format(image.meta['RV'] / 1000.))
-            pl.text(0.1, top_line - line_separation * 7, 'RV error = {0:1.3f} km/s'.format(image.meta['RVERR'] / 1000.))
-            pl.text(0.1, top_line - line_separation * 8,
+            pl.text(0.1, top_line - line_separation * 2, 'Teff = {0:1.4g} K'.format(image.meta['TEFF']))
+            pl.text(0.1, top_line - line_separation * 3, 'logg = {0:1.2g} (cgs units)'.format(image.meta['LOGG']))
+            pl.text(0.1, top_line - line_separation * 4, '[Fe/H] = {0:1.2g}'.format(image.meta['FEH']))
+            pl.text(0.1, top_line - line_separation * 5, '[alpha/Fe] = {0:1.2g}'.format(image.meta['ALPHA']))
+            pl.text(0.1, top_line - line_separation * 7, 'RV = {0:1.3f} km/s'.format(image.meta['RV'] / 1000.))
+            pl.text(0.1, top_line - line_separation * 8, 'RV error = {0:1.3f} km/s'.format(image.meta['RVERR'] / 1000.))
+            pl.text(0.1, top_line - line_separation * 9,
                     'Barycorr = {0:1.3f} km/s'.format(image.meta['BARYCORR'] / 1000.))
-            pl.text(0.1, top_line - line_separation * 9, 'BJD_TDB = {0:1.5f}'.format(image.meta['TCORR']))
+            pl.text(0.1, top_line - line_separation * 10, 'BJD_TDB = {0:1.5f}'.format(image.meta['TCORR']))
         else:
-            pl.text(0.1, top_line - line_separation, 'Target does not appear in catalogs')
-            pl.text(0.1, top_line - line_separation * 2, 'and was not classified.')
-            pl.text(0.1, top_line - line_separation * 3, 'No stellar parameters or RVs to report.')
+            pl.text(0.1, top_line - line_separation * 2, 'Target does not appear in catalogs')
+            pl.text(0.1, top_line - line_separation * 3, 'and was not classified.')
+            pl.text(0.1, top_line - line_separation * 4, 'No stellar parameters or RVs to report.')
 
-        pl.text(0.1, top_line - line_separation * 11,
+        pl.text(0.1, top_line - line_separation * 12,
                 'SNR = {0:1.0f}/resolution element @ 5180 Angstroms'.format(image.meta['SNR']))
-        pl.text(0.1, top_line - line_separation * 12, 'Exposure time = {0:1.0f} seconds'.format(image.meta['EXPTIME']))
+        pl.text(0.1, top_line - line_separation * 13, 'Exposure time = {0:1.0f} seconds'.format(image.meta['EXPTIME']))
 
         # Next Page
 
@@ -119,7 +121,9 @@ class MakePDFSummary(Stage):
         fig2, axes = pl.subplots(nrows=2, ncols=3, figsize=(11, 8.5))
 
         for ax, line_center, line_name, line_order in zip(axes.flatten(), line_centers, line_names, line_orders):
-            make_line_plot(wavelength, flux, order, ax, line_center, line_name,
+            label = f"{line_name} at \n "
+            label += f"{image.meta['RV'] / 1000.0: 0.3f} (RV) - {image.meta['BARYCORR'] / 1000.0: 0.3f} (BC) km / s"
+            make_line_plot(wavelength, flux, order, ax, line_center, label,
                            line_order, wavelength_correction=wavelength_correction)
 
         # Next Page
@@ -144,16 +148,21 @@ def make_line_plot(wavelength, flux, order, ax, line_center, line_name, line_ord
     this_order = order == line_order
     non_zero = np.squeeze(wavelength[this_order, :]) != 0.
     upper_plot_limit = np.nanmin([np.nanmax(np.squeeze(flux[this_order, non_zero])), 2.0])
-    ax.plot(np.squeeze(wavelength[this_order, non_zero]) * wavelength_correction,
+    ax.plot(np.squeeze(wavelength[this_order, non_zero]),
             np.squeeze(flux[this_order, non_zero]),
             color='black')
     if isinstance(line_center, (list, tuple, np.ndarray)):
         for this_center in line_center:
-            ax.plot([this_center, this_center], [0, upper_plot_limit], color='blue')
+            ax.plot(np.array([this_center, this_center]) / wavelength_correction,
+                    [0, upper_plot_limit], color='blue')
     else:
-        ax.plot([line_center, line_center], [0, upper_plot_limit], color='blue')
-    ax.set_xlabel('wavelength (Angstroms)')
+        ax.plot(np.array([line_center, line_center]) / wavelength_correction,
+                [0, upper_plot_limit], color='blue')
+    ax.set_xlabel('observed wavelength (Angstroms)')
     ax.set_ylabel('normalized flux')
     ax.set_title(line_name)
-    ax.set_xlim([np.min(line_center) - 7.5, np.max(line_center) + 7.5])
+    xlow, xhigh = np.min(line_center) - 15, np.max(line_center) + 15
+    ax.set_xlim([xlow, xhigh])
+    tens = [i for i in range(int(xlow), int(xhigh) + 1) if i % 10 == 0]
+    ax.set_xticks(tens)
     ax.set_ylim([0., upper_plot_limit])

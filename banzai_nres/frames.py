@@ -119,7 +119,7 @@ class NRESObservationFrame(LCOObservationFrame):
                     summary_pdf_meta.pop(keyword)
 
             summary_buffer = BytesIO()
-            pp = PdfPages(summary_buffer, keep_empty=False, metadata=dict(summary_pdf_meta))
+            pp = PdfPages(summary_buffer, keep_empty=False)
             for fig in self.summary_figures:
                 fig.tight_layout()
                 pp.savefig(fig)
