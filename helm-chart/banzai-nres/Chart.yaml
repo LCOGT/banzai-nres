@@ -1,4 +1,4 @@
 apiVersion: v1
 description: A Helm chart to deploy the BANZAI-NRES pipeline
 name: banzai-nres
-version: "1.1.0"
+version: "1.1.4"
