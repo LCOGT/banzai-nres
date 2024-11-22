@@ -1,3 +1,7 @@
+1.1.4 (2024-11-21)
+-----------------
+- Fix to helm chart to define large task queue as the same as normal task queue
+
 1.1.3 (2023-11-17)
 ------------------
 - Fixes to use BANZAI LoggingAdapter
