@@ -87,7 +87,6 @@ def run_reduce_individual_frames(raw_filenames):
 
 def stack_calibrations(frame_type):
     logger.info('Stacking calibrations for frame type: {frame_type}'.format(frame_type=frame_type))
-    logger.info('Stacking calibrations for frame type: {frame_type}'.format(frame_type=frame_type))
     for day_obs in DAYS_OBS:
         site, camera, dayobs = day_obs.split('/')
         timezone = dbs.get_timezone(site, db_address=os.environ['DB_ADDRESS'])
@@ -213,9 +212,9 @@ def init(configdb):
               f' --elevation 2027 --timezone -6 --db-address={os.environ["DB_ADDRESS"]}'))
     os.system((f'banzai_add_site --site lsc --latitude -30.1673833333 --longitude -70.8047888889'
               f' --elevation 2198 --timezone -4 --db-address={os.environ["DB_ADDRESS"]}'))
-    os.system((f'banzai_add_instrument --site lsc --camera fl09 --name nres01'
+    os.system((f'banzai_add_instrument --site lsc --camera fl09 --name nres01 --nx 4096 --ny 4096'
               f' --instrument-type 1m0-NRES-SciCam --db-address={os.environ["DB_ADDRESS"]}'))
-    os.system((f'banzai_add_instrument --site elp --camera fl17 --name nres02'
+    os.system((f'banzai_add_instrument --site elp --camera fl17 --name nres02 --nx 4096 --ny 4096'
               f' --instrument-type 1m0-NRES-SciCam --db-address={os.environ["DB_ADDRESS"]}'))
 
     mock_phoenix_models_in_db(os.environ["DB_ADDRESS"])
