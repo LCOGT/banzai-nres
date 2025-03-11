@@ -21,7 +21,7 @@ jobs:
       - name: Set up project
         run: poetry install -E cpu -E test
       - name: Run tests
-        run: poetry run pytest --pyargs banzai_nres.tests -m "not e2e"
+        run: poetry run pytest --pyargs banzai_nres -m "not e2e"
   macos:
     runs-on: macos-latest
     strategy:
@@ -37,4 +37,4 @@ jobs:
       - name: Set up project
         run: poetry install -E cpu -E test
       - name: Run tests
-        run: poetry run pytest --pyargs banzai_nres.tests -m "not e2e"
+        run: poetry run pytest --pyargs banzai_nres -m "not e2e"
