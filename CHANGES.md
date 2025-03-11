@@ -1,3 +1,7 @@
+1.1.5 (2025-03-11)
+------------------
+- Fixes to documentation for updated BANZAI installs
+
 1.1.4 (2024-11-21)
 -----------------
 - Fix to helm chart to define large task queue as the same as normal task queue
