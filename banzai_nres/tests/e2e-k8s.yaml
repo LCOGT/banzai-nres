@@ -1,0 +1,178 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: banzai-nres-e2e
+  labels:
+    app.kubernetes.io/name: banzai-nres-e2e
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: banzai-nres-e2e
+      app.kubernetes.io/instance: banzai-nres-e2e
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: banzai-nres-e2e
+        app.kubernetes.io/instance: banzai-nres-e2e
+    spec:
+      securityContext:
+        fsGroup: 10000
+
+  # Create some empty directories to be mounted within the Pod
+      volumes:
+        - name: banzai-nres-e2e-tmp
+          emptyDir:
+            sizeLimit: 2Gi
+
+      containers:
+        - name: banzai-nres-e2e-redis
+          image: redis:5.0.3
+          imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              cpu: "0.1"
+              memory: "1Gi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - 'response=$(redis-cli -h localhost ping); if [ "$response" != "PONG" ]; then exit 1; fi;'
+            initialDelaySeconds: 3
+            timeoutSeconds: 5
+            periodSeconds: 3
+        - name: banzai-nres-e2e-fits-exchange
+          image: rabbitmq:3.12.3
+          imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              cpu: "0.1"
+              memory: "1Gi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+          readinessProbe:
+            exec:
+              command:
+                - rabbitmq-diagnostics
+                - ping
+            initialDelaySeconds: 3
+            timeoutSeconds: 5
+            periodSeconds: 3
+        - name: banzai-nres-e2e-celery-workers
+          image: banzai-nres:test-latest
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: banzai-nres-e2e-tmp
+              mountPath: /archive/engineering
+              subPath: engineering
+              readOnly: false
+          env:
+            - name: DB_ADDRESS
+              value: "sqlite:////archive/engineering/test.db"
+            - name: RETRY_DELAY
+              value: "0"
+            - name: REDIS_HOST
+              value: "redis://localhost:6379/0"
+            - name: BANZAI_WORKER_LOGLEVEL
+              value: "DEBUG"
+            - name: CALIBRATE_PROPOSAL_ID
+              value: "calibrate"
+            - name: OMP_NUM_THREADS
+              value: "2"
+            - name: FITS_EXCHANGE
+              value: "fits_files"
+            - name: OPENTSDB_PYTHON_METRICS_TEST_MODE
+              value: "1"
+            - name: CELERY_TASK_QUEUE_NAME
+              value: "e2e_task_queue"
+            - name: API_ROOT
+              value: "https://archive-api.lco.global/"
+          command:
+            - celery
+            - -A
+            - banzai
+            - worker
+            - --hostname
+            - "banzai-celery-worker"
+            - --concurrency
+            - "2"
+            - --loglevel
+            - "DEBUG"
+            - -Q
+            - "$(CELERY_TASK_QUEUE_NAME)"
+          resources:
+            requests:
+              cpu: "0.1"
+              memory: "8Gi"
+            limits:
+              cpu: "4"
+              memory: "8Gi"
+          readinessProbe:
+            exec:
+              command:
+                - celery
+                - -A
+                - banzai
+                - inspect
+                - ping
+            initialDelaySeconds: 8
+            timeoutSeconds: 15
+            periodSeconds: 3
+        - name: banzai-nres-e2e-listener
+          image: banzai-nres:test-latest
+          imagePullPolicy: "IfNotPresent"
+          volumeMounts:
+            - name: banzai-nres-e2e-tmp
+              mountPath: /archive/engineering
+              subPath: engineering
+              readOnly: false
+          env:
+            - name: DB_ADDRESS
+              value: "sqlite:////archive/engineering/test.db"
+            - name: FITS_BROKER_URL
+              value: "localhost"
+            - name: REDIS_HOST
+              value: "redis://localhost:6379/0"
+            - name: CALIBRATE_PROPOSAL_ID
+              value: "calibrate"
+            - name: FITS_EXCHANGE
+              value: "fits_files"
+            - name: OPENTSDB_PYTHON_METRICS_TEST_MODE
+              value: "1"
+            - name: CELERY_TASK_QUEUE_NAME
+              value: "e2e_task_queue"
+            - name: API_ROOT
+              value: "https://archive-api.lco.global/"
+          command:
+            - banzai_nres_run_realtime_pipeline
+            - "--db-address=sqlite:////archive/engineering/test.db"
+            - "--fpack"
+            - "--broker-url=localhost"
+            - "--log-level=debug"
+            - "--rlevel=91"
+            - "--prefer-same-block-cals"
+            - "--check-public-cals"
+            - "--prefer-same-proposal-cals"
+          resources:
+            requests:
+              cpu: "0.1"
+              memory: "2Gi"
+            limits:
+              cpu: "1"
+              memory: "2Gi"
+          readinessProbe:
+            exec:
+              command:
+                - celery
+                - -A
+                - banzai
+                - inspect
+                - ping
+            initialDelaySeconds: 8
+            timeoutSeconds: 15
+            periodSeconds: 3

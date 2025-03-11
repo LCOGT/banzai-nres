@@ -1,3 +1,8 @@
+1.1.5 (2025-03-11)
+------------------
+- Migrate to use poetry for dependency management
+- Use updated banzai from upstream
+
 1.1.4 (2024-11-21)
 -----------------
 - Fix to helm chart to define large task queue as the same as normal task queue
