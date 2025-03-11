@@ -8,7 +8,6 @@ import numpy as np
 from banzai.utils import file_utils
 import time
 from glob import glob
-import pkg_resources
 from banzai.celery import app, schedule_calibration_stacking
 from banzai.dbs import get_session
 from banzai import dbs
@@ -20,6 +19,7 @@ from astropy.table import Table
 from banzai.utils import fits_utils
 import banzai_nres.dbs
 import json
+import importlib.resources
 
 logger = get_logger()
 
@@ -35,15 +35,15 @@ DAYS_OBS = [os.path.join(instrument, os.path.basename(dayobs_path)) for instrume
             for dayobs_path in glob(os.path.join(DATA_ROOT, instrument, '201*'))]
 
 TEST_PACKAGE = 'banzai_nres.tests'
-CONFIGDB_FILENAME = pkg_resources.resource_filename('banzai_nres.tests', 'data/configdb_example.json')
-PHOENIX_FILENAME = pkg_resources.resource_filename('banzai_nres.tests', 'data/phoenix.json')
+CONFIGDB_FILENAME = os.path.join(importlib.resources.files('banzai_nres.tests'), 'data', 'configdb_example.json')
+PHOENIX_FILENAME = os.path.join(importlib.resources.files('banzai_nres.tests'), 'data', 'phoenix.json')
 
 
 def observation_portal_side_effect(*args, **kwargs):
     site = kwargs['params']['site']
     start = datetime.strftime(parse(kwargs['params']['start_after']).replace(tzinfo=None).date(), '%Y%m%d')
     filename = 'test_obs_portal_response_{site}_{start}.json'.format(site=site, start=start)
-    filename = pkg_resources.resource_filename('banzai_nres.tests', f'data/{filename}')
+    filename = os.path.join(importlib.resources.files('banzai_nres.tests'), 'data', f'{filename}')
     return FakeResponse(filename)
 
 
