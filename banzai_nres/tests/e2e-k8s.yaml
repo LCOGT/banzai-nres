@@ -108,10 +108,10 @@ spec:
           resources:
             requests:
               cpu: "0.1"
-              memory: "8Gi"
+              memory: "10Gi"
             limits:
               cpu: "4"
-              memory: "8Gi"
+              memory: "10Gi"
           readinessProbe:
             exec:
               command:

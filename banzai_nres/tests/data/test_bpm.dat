@@ -1,0 +1,3 @@
+frameid filename binning mode obstype dateobs site instrument 
+22529799 bpm-lsc-nres01-fl09-20180215.fits.fz '[1, 1]' default BPM 2018-02-15 lsc fl09
+22529802 bpm-elp-nres02-fl17-20171215.fits.fz '[1, 1]' default BPM 2017-12-15 elp fl17

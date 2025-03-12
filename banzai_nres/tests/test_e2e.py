@@ -14,7 +14,7 @@ from banzai import dbs
 from types import ModuleType
 from datetime import datetime
 from dateutil.parser import parse
-from astropy.io import fits
+from astropy.io import fits, ascii
 from astropy.table import Table
 from banzai.utils import fits_utils
 import banzai_nres.dbs
@@ -25,16 +25,18 @@ logger = get_logger()
 
 TEST_PACKAGE = 'banzai_nres.tests'
 
-DATA_ROOT = os.path.join(os.sep, 'archive', 'engineering')
-
-SITES = [os.path.basename(site_path) for site_path in glob(os.path.join(DATA_ROOT, '???'))]
-INSTRUMENTS = [os.path.join(site, os.path.basename(instrument_path)) for site in SITES
-               for instrument_path in glob(os.path.join(os.path.join(DATA_ROOT, site, '*')))]
-
-DAYS_OBS = [os.path.join(instrument, os.path.basename(dayobs_path)) for instrument in INSTRUMENTS
-            for dayobs_path in glob(os.path.join(DATA_ROOT, instrument, '201*'))]
 
 TEST_PACKAGE = 'banzai_nres.tests'
+TEST_FRAMES = ascii.read(os.path.join(importlib.resources.files(TEST_PACKAGE), 'data/test_data.dat'))
+BPM_FILES = ascii.read(os.path.join(importlib.resources.files(TEST_PACKAGE), 'data/test_bpm.dat'))
+
+DATA_ROOT = os.path.join(os.sep, 'archive', 'engineering')
+
+SITES = set([frame[:3] for frame in TEST_FRAMES['filename']])
+INSTRUMENTS = set([os.path.join(frame[:3], frame.split('-')[1]) for frame in TEST_FRAMES['filename']])
+
+DAYS_OBS = set([os.path.join(frame[:3], frame.split('-')[1], frame.split('-')[2]) for frame in TEST_FRAMES['filename']])
+
 CONFIGDB_FILENAME = os.path.join(importlib.resources.files('banzai_nres.tests'), 'data', 'configdb_example.json')
 PHOENIX_FILENAME = os.path.join(importlib.resources.files('banzai_nres.tests'), 'data', 'phoenix.json')
 
@@ -74,15 +76,16 @@ def celery_join():
             break
 
 
-def run_reduce_individual_frames(raw_filenames):
-    logger.info('Reducing individual frames for filenames: {filenames}'.format(filenames=raw_filenames))
-    for day_obs in DAYS_OBS:
-        raw_path = os.path.join(DATA_ROOT, day_obs, 'raw')
-        for filename in glob(os.path.join(raw_path, raw_filenames)):
-            file_utils.post_to_archive_queue(filename, os.getenv('FITS_BROKER'),
-                                             exchange_name=os.getenv('FITS_EXCHANGE'))
+def run_reduce_individual_frames(filename_pattern):
+    logger.info('Reducing individual frames for filenames: {filenames}'.format(filenames=filename_pattern))
+    for frame in TEST_FRAMES:
+        if filename_pattern in frame['filename']:
+            file_utils.post_to_archive_queue(frame['filename'], frame['frameid'],
+                                             os.getenv('FITS_BROKER'),
+                                             exchange_name=os.getenv('FITS_EXCHANGE'),
+                                             SITEID=frame['site'], INSTRUME=frame['instrument'])
     celery_join()
-    logger.info('Finished reducing individual frames for filenames: {filenames}'.format(filenames=raw_filenames))
+    logger.info('Finished reducing individual frames for filenames: {filenames}'.format(filenames=filename_pattern))
 
 
 def stack_calibrations(frame_type):
@@ -115,31 +118,34 @@ def mark_frames_as_good(raw_filenames):
     logger.info('Finished marking frames as good for filenames: {filenames}'.format(filenames=raw_filenames))
 
 
-def get_expected_number_of_calibrations(raw_filenames, calibration_type):
+def get_expected_number_of_calibrations(raw_filename_pattern, calibration_type):
     number_of_stacks_that_should_have_been_created = 0
     for day_obs in DAYS_OBS:
-        raw_filenames_for_this_dayobs = glob(os.path.join(DATA_ROOT, day_obs, 'raw', raw_filenames))
+        site, instrument, dayobs = day_obs.split('/')
+        raw_frames_for_this_dayobs = [
+            frame for frame in TEST_FRAMES
+            if site in frame['filename'] and instrument in frame['filename']
+            and dayobs in frame['filename'] and raw_filename_pattern in frame['filename']
+        ]
         if calibration_type.lower() == 'lampflat' or calibration_type.lower() == 'double':
             # Group by fibers lit if we are stacking lampflats or doubles (arc frames)
             observed_fibers = []
-            for raw_filename in raw_filenames_for_this_dayobs:
-                cal_hdu = fits.open(raw_filename)
-                observed_fibers.append(cal_hdu[1].header.get('OBJECTS'))
-                cal_hdu.close()
+            for frame in raw_frames_for_this_dayobs:
+                observed_fibers.append(frame['OBJECTS'])
             observed_fibers = set(observed_fibers)
             number_of_stacks_that_should_have_been_created += len(observed_fibers)
         else:
             # Just one calibration per night
-            if len(raw_filenames_for_this_dayobs) > 0:
+            if len(raw_frames_for_this_dayobs) > 0:
                 number_of_stacks_that_should_have_been_created += 1
     return number_of_stacks_that_should_have_been_created
 
 
-def check_if_individual_frames_exist(filenames):
-    for day_obs in DAYS_OBS:
-        raw_files = glob(os.path.join(DATA_ROOT, day_obs, 'raw', filenames))
-        processed_files = glob(os.path.join(DATA_ROOT, day_obs, 'processed', filenames.replace('00', '92')))
-        assert len(raw_files) == len(processed_files)
+def check_if_individual_frames_exist(filename_pattern):
+    for frame in TEST_FRAMES:
+        if filename_pattern in frame['filename']:
+            processed_path = os.path.join(DATA_ROOT, frame['site'], frame['instrument'], frame['dayobs'], 'processed')
+            assert os.path.exists(processed_path, frame['filename'].replace('00', '92'))
 
 
 def run_check_if_stacked_calibrations_were_created(raw_filenames, calibration_type):
@@ -218,10 +224,24 @@ def init(configdb):
               f' --instrument-type 1m0-NRES-SciCam --db-address={os.environ["DB_ADDRESS"]}'))
 
     mock_phoenix_models_in_db(os.environ["DB_ADDRESS"])
-    for instrument in INSTRUMENTS:
-        for bpm_filename in glob(os.path.join(DATA_ROOT, instrument, 'bpm/*bpm*')):
-            logger.info(f'adding bpm {bpm_filename} to the database')
-            os.system(f'banzai_nres_add_bpm --filename {bpm_filename} --db-address={os.environ["DB_ADDRESS"]}')
+    for frame in BPM_FILES:
+        logger.info(f'adding bpm {frame["filename"]} to the database')
+        instrument = dbs.query_for_instrument(camera=frame['instrument'],
+                                              site=frame['site'],
+                                              db_address=os.environ['DB_ADDRESS'])
+        calimage = dbs.CalibrationImage(
+            type=frame['obstype'],
+            filename=frame['filename'],
+            frameid=f'{frame["frameid"]:d}',
+            dateobs=datetime.strptime(frame['dateobs'], '%Y-%m-%d'),
+            datecreated=datetime(2023, 11, 19),
+            instrument_id=instrument.id,
+            is_master=True, is_bad=False,
+            attributes={'binning': frame['binning'], 'configuration_mode': frame['mode']}
+        )
+        with get_session(os.environ['DB_ADDRESS']) as db_session:
+            db_session.add(calimage)
+            db_session.commit()
 
 
 @pytest.mark.e2e
@@ -230,13 +250,13 @@ class TestMasterBiasCreation:
     @pytest.fixture(autouse=True)
     @mock.patch('banzai.utils.observation_utils.requests.get', side_effect=observation_portal_side_effect)
     def stack_bias_frames(self, mock_lake, init):
-        run_reduce_individual_frames('*b00.fits*')
+        run_reduce_individual_frames('b00.fits')
         mark_frames_as_good('*b92.fits*')
         stack_calibrations('bias')
 
     def test_if_stacked_bias_frame_was_created(self):
-        check_if_individual_frames_exist('*b00*')
-        run_check_if_stacked_calibrations_were_created('*b00.fits*', 'bias')
+        check_if_individual_frames_exist('b00')
+        run_check_if_stacked_calibrations_were_created('b00.fits', 'bias')
         run_check_if_stacked_calibrations_are_in_db('*b00.fits*', 'BIAS')
 
 
@@ -246,13 +266,13 @@ class TestMasterDarkCreation:
     @pytest.fixture(autouse=True)
     @mock.patch('banzai.utils.observation_utils.requests.get', side_effect=observation_portal_side_effect)
     def stack_dark_frames(self, mock_lake):
-        run_reduce_individual_frames('*d00.fits*')
+        run_reduce_individual_frames('d00.fits')
         mark_frames_as_good('*d92.fits*')
         stack_calibrations('dark')
 
     def test_if_stacked_dark_frame_was_created(self):
-        check_if_individual_frames_exist('*d00*')
-        run_check_if_stacked_calibrations_were_created('*d00.fits*', 'dark')
+        check_if_individual_frames_exist('d00')
+        run_check_if_stacked_calibrations_were_created('d00.fits', 'dark')
         run_check_if_stacked_calibrations_are_in_db('*d00.fits*', 'DARK')
 
 
@@ -262,13 +282,13 @@ class TestMasterFlatCreation:
     @pytest.fixture(autouse=True)
     @mock.patch('banzai.utils.observation_utils.requests.get', side_effect=observation_portal_side_effect)
     def stack_flat_frames(self, mock_lake):
-        run_reduce_individual_frames('*w00.fits*')
+        run_reduce_individual_frames('w00.fits')
         mark_frames_as_good('*w92.fits*')
         stack_calibrations('lampflat')
 
     def test_if_stacked_flat_frame_was_created(self):
-        check_if_individual_frames_exist('*w00*')
-        run_check_if_stacked_calibrations_were_created('*w00.fits*', 'lampflat')
+        check_if_individual_frames_exist('w00')
+        run_check_if_stacked_calibrations_were_created('w00.fits', 'lampflat')
         run_check_if_stacked_calibrations_have_extensions('lampflat', ['TRACES', 'PROFILE', 'BLAZE'])
         run_check_if_stacked_calibrations_are_in_db('*w00.fits*', 'LAMPFLAT')
 
@@ -279,13 +299,13 @@ class TestMasterArcCreation:
     @pytest.fixture(autouse=True)
     @mock.patch('banzai.utils.observation_utils.requests.get', side_effect=observation_portal_side_effect)
     def stack_arc_frames(self, mock_lake):
-        run_reduce_individual_frames('*a00.fits*')
+        run_reduce_individual_frames('a00.fits')
         mark_frames_as_good('*a92.fits*')
         stack_calibrations('double')
 
     def test_if_stacked_arc_frame_was_created(self):
-        check_if_individual_frames_exist('*a00*')
-        run_check_if_stacked_calibrations_were_created('*a00.fits*', 'double')
+        check_if_individual_frames_exist('a00')
+        run_check_if_stacked_calibrations_were_created('a00.fits', 'double')
         run_check_if_stacked_calibrations_have_extensions('double', ['WAVELENGTH', 'FEATURES'])
         run_check_if_stacked_calibrations_are_in_db('*a00.fits*', 'DOUBLE')
 
@@ -312,13 +332,14 @@ class TestScienceFrameProcessing:
         run_reduce_individual_frames('*e00.fits*')
 
     def test_if_science_frames_were_created(self):
-        for day_obs in DAYS_OBS:
-            raw_files = glob(os.path.join(DATA_ROOT, day_obs, 'raw', '*e00*'))
-            processed_1d_files = glob(os.path.join(DATA_ROOT, day_obs, 'processed', '*e92-1d*'))
-            processed_2d_files = glob(os.path.join(DATA_ROOT, day_obs, 'processed', '*e92-2d*'))
-            summary_files = glob(os.path.join(DATA_ROOT, day_obs, 'processed', '*.pdf'))
+        for frame in TEST_FRAMES:
+            if 'e00.fits' in frame['filename']:
+                processed_path = os.path.join(DATA_ROOT, frame['site'], frame['instrument'],
+                                              frame['dayobs'], 'processed')
+                assert os.path.exists(processed_path, frame['filename'].replace('00', '92'))
+                assert os.path.exists(processed_path, frame['filename'].replace('00', '92-1d'))
+                assert os.path.exists(processed_path, frame['filename'].replace('00', '92-2d'))
+                summary_filename = processed_path, frame['filename'].replace('00.fits', '92.fits').replace('.fz', '')
+                assert os.path.exists(summary_filename)
 
-            assert len(raw_files) == len(processed_1d_files)
-            assert len(raw_files) == len(processed_2d_files)
-            assert len(raw_files) == len(summary_files)
         check_extracted_spectra('*e92-1d.fits*', 'SPECTRUM', ['wavelength', 'flux', 'uncertainty'])

@@ -182,3 +182,8 @@ GAIA_CLASS = os.getenv('BANZAI_GAIA_CLASS', 'astroquery.gaia.GaiaClass')
 SIMBAD_CLASS = os.getenv('BANZAI_SIMBAD', 'astroquery.simbad.Simbad')
 
 CELERY_TASK_QUEUE_NAME = os.getenv('CELERY_TASK_QUEUE_NAME', 'celery')
+
+# Choose a threshold a little larger than the 4096 x 4096 size frames
+LARGE_WORKER_THRESHOLD = 6000 * 6000
+
+LARGE_WORKER_QUEUE = os.getenv('CELERY_LARGE_TASK_QUEUE_NAME', 'celery_large')
