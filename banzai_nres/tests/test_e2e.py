@@ -225,7 +225,7 @@ def init(configdb):
 
     mock_phoenix_models_in_db(os.environ["DB_ADDRESS"])
     for frame in BPM_FILES:
-        logger.info(f'adding bpm {frame['filename']} to the database')
+        logger.info(f'adding bpm {frame["filename"]} to the database')
         instrument = dbs.query_for_instrument(camera=frame['instrument'],
                                               site=frame['site'],
                                               db_address=os.environ['DB_ADDRESS'])
