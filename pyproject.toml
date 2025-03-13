@@ -41,7 +41,6 @@ docs = [
     "sphinx_rtd_theme",
     "nbsphinx",
     "ipykernel",
-    "pandoc"
 ]
 cpu  = ["torch"]
 cuda = ["torch"]
