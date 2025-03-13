@@ -144,8 +144,9 @@ def get_expected_number_of_calibrations(raw_filename_pattern, calibration_type):
 def check_if_individual_frames_exist(filename_pattern):
     for frame in TEST_FRAMES:
         if filename_pattern in frame['filename']:
-            processed_path = os.path.join(DATA_ROOT, frame['site'], frame['instrument'], frame['dayobs'], 'processed')
-            assert os.path.exists(processed_path, frame['filename'].replace('00', '92'))
+            processed_path = os.path.join(DATA_ROOT, frame['site'], frame['instrument'], str(frame['dayobs']),
+                                          'processed')
+            assert os.path.exists(os.path.join(processed_path, frame['filename'].replace('00', '92')))
 
 
 def run_check_if_stacked_calibrations_were_created(raw_filenames, calibration_type):
@@ -335,7 +336,7 @@ class TestScienceFrameProcessing:
         for frame in TEST_FRAMES:
             if 'e00.fits' in frame['filename']:
                 processed_path = os.path.join(DATA_ROOT, frame['site'], frame['instrument'],
-                                              frame['dayobs'], 'processed')
+                                              str(frame['dayobs']), 'processed')
                 assert os.path.exists(processed_path, frame['filename'].replace('00', '92'))
                 assert os.path.exists(processed_path, frame['filename'].replace('00', '92-1d'))
                 assert os.path.exists(processed_path, frame['filename'].replace('00', '92-2d'))

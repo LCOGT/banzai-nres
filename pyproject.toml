@@ -40,7 +40,8 @@ docs = [
     "sphinx-pyproject",
     "sphinx_rtd_theme",
     "nbsphinx",
-    "ipykernel"
+    "ipykernel",
+    "pandoc"
 ]
 cpu  = ["torch"]
 cuda = ["torch"]
