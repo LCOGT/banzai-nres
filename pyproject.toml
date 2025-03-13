@@ -21,7 +21,7 @@ urls = { "Documentation" = "https://banzai-nres.readthedocs.io/", "Source" = "ht
 
 dependencies = [
     "astropy>=6.0",
-    "lco-banzai @ git+https://github.com/lcogt/banzai.git@1.21.0",
+    "lco-banzai @ git+https://github.com/lcogt/banzai.git@increase-broker-timeout",
     "statsmodels",
     "xwavecal>=0.1.12",
     "astroquery",
@@ -53,9 +53,9 @@ packages = [
 
 [tool.poetry.dependencies]
 torch = [
-    { version = "^2.3", source = "pypi", markers = "sys_platform=='darwin'" },
-    { version = "^2.3", source = "pytorch-cpu", markers = "sys_platform!='darwin' and extra!='cuda'" },
-    { version = "^2.3", source = "pytorch-cuda", markers = "sys_platform!='darwin' and extra=='cuda'" }
+    { version = "^2.3", source = "pypi", markers = "sys_platform == 'darwin'" },
+    { version = "^2.3", source = "pytorch-cpu", markers = "sys_platform != 'darwin' and extra != 'cuda'" },
+    { version = "^2.3", source = "pytorch-cuda", markers = "sys_platform != 'darwin' and extra == 'cuda'" }
 ]
 
 [[tool.poetry.source]]
