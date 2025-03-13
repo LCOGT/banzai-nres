@@ -37,7 +37,8 @@ jobs:
       - name: Start banzai
         run: |
           # Deploy banzai stack
-          kubectl apply -f banzai_nres/tests/e2e-k8s.yaml 
+          kubectl create secret generic auth-token-secret --from-literal=auth-token=${{ secrets.ArchiveAuthToken }}
+          kubectl apply -k banzai_nres/tests/k8s
           POD=$(kubectl get pod -l app.kubernetes.io/name=banzai-nres-e2e -o jsonpath="{.items[0].metadata.name}")
           echo "POD=${POD}" >> $GITHUB_ENV
           # Wait for banzai to be ready
