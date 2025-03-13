@@ -14,4 +14,6 @@ RUN poetry install --directory /lco/banzai-nres -E cpu --no-cache
 
 RUN cp /lco/banzai-nres/pytest.ini /home/archive/pytest.ini
 
+RUN chown -R archive:domainusers /home/archive
+
 USER archive

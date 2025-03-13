@@ -35,7 +35,7 @@ DATA_ROOT = os.path.join(os.sep, 'archive', 'engineering')
 SITES = set([frame[:3] for frame in TEST_FRAMES['filename']])
 INSTRUMENTS = set([os.path.join(frame[:3], frame.split('-')[1]) for frame in TEST_FRAMES['filename']])
 
-DAYS_OBS = set([os.path.join(frame[:3], frame.split('-')[1], frame.split('-')[2]) for frame in TEST_FRAMES['filename']])
+DAYS_OBS = set([os.path.join(frame['site'], frame['instrument'], str(frame['dayobs'])) for frame in TEST_FRAMES])
 
 CONFIGDB_FILENAME = os.path.join(importlib.resources.files('banzai_nres.tests'), 'data', 'configdb_example.json')
 PHOENIX_FILENAME = os.path.join(importlib.resources.files('banzai_nres.tests'), 'data', 'phoenix.json')
@@ -83,7 +83,7 @@ def run_reduce_individual_frames(filename_pattern):
             file_utils.post_to_archive_queue(frame['filename'], frame['frameid'],
                                              os.getenv('FITS_BROKER'),
                                              exchange_name=os.getenv('FITS_EXCHANGE'),
-                                             SITEID=frame['site'], INSTRUME=frame['instrument'])
+                                             SITEID=frame['site'], INSTRUME=frame['camera'])
     celery_join()
     logger.info('Finished reducing individual frames for filenames: {filenames}'.format(filenames=filename_pattern))
 
@@ -91,7 +91,7 @@ def run_reduce_individual_frames(filename_pattern):
 def stack_calibrations(frame_type):
     logger.info('Stacking calibrations for frame type: {frame_type}'.format(frame_type=frame_type))
     for day_obs in DAYS_OBS:
-        site, camera, dayobs = day_obs.split('/')
+        site, _, dayobs = day_obs.split('/')
         timezone = dbs.get_timezone(site, db_address=os.environ['DB_ADDRESS'])
         min_date, max_date = get_min_and_max_dates(timezone, dayobs=dayobs)
         runtime_context = dict(processed_path=DATA_ROOT, log_level='debug', post_to_archive=False,
@@ -124,8 +124,8 @@ def get_expected_number_of_calibrations(raw_filename_pattern, calibration_type):
         site, instrument, dayobs = day_obs.split('/')
         raw_frames_for_this_dayobs = [
             frame for frame in TEST_FRAMES
-            if site in frame['filename'] and instrument in frame['filename']
-            and dayobs in frame['filename'] and raw_filename_pattern in frame['filename']
+            if site == frame['site'] and instrument == frame['instrument']
+            and dayobs == str(frame['dayobs']) and raw_filename_pattern in frame['filename']
         ]
         if calibration_type.lower() == 'lampflat' or calibration_type.lower() == 'double':
             # Group by fibers lit if we are stacking lampflats or doubles (arc frames)
@@ -144,9 +144,10 @@ def get_expected_number_of_calibrations(raw_filename_pattern, calibration_type):
 def check_if_individual_frames_exist(filename_pattern):
     for frame in TEST_FRAMES:
         if filename_pattern in frame['filename']:
-            processed_path = os.path.join(DATA_ROOT, frame['site'], frame['instrument'], str(frame['dayobs']),
-                                          'processed')
-            assert os.path.exists(os.path.join(processed_path, frame['filename'].replace('00', '92')))
+            processed_path = os.path.join(DATA_ROOT, frame['site'], frame['instrument'],
+                                          str(frame['dayobs']), 'processed')
+            expected_filename = frame['filename'].replace('00.fits', '92.fits')
+            assert os.path.exists(os.path.join(processed_path, expected_filename))
 
 
 def run_check_if_stacked_calibrations_were_created(raw_filenames, calibration_type):
@@ -209,7 +210,6 @@ def mock_phoenix_models_in_db(db_address):
                                   'key': 'phoenix_wavelengths'})
 
 
-@pytest.mark.e2e
 @pytest.fixture(scope='module')
 @mock.patch('banzai.dbs.requests.get', return_value=FakeResponse(CONFIGDB_FILENAME))
 def init(configdb):
@@ -227,7 +227,7 @@ def init(configdb):
     mock_phoenix_models_in_db(os.environ["DB_ADDRESS"])
     for frame in BPM_FILES:
         logger.info(f'adding bpm {frame["filename"]} to the database')
-        instrument = dbs.query_for_instrument(camera=frame['instrument'],
+        instrument = dbs.query_for_instrument(camera=frame['camera'],
                                               site=frame['site'],
                                               db_address=os.environ['DB_ADDRESS'])
         calimage = dbs.CalibrationImage(
@@ -258,7 +258,7 @@ class TestMasterBiasCreation:
     def test_if_stacked_bias_frame_was_created(self):
         check_if_individual_frames_exist('b00')
         run_check_if_stacked_calibrations_were_created('b00.fits', 'bias')
-        run_check_if_stacked_calibrations_are_in_db('*b00.fits*', 'BIAS')
+        run_check_if_stacked_calibrations_are_in_db('b00.fits', 'BIAS')
 
 
 @pytest.mark.e2e
@@ -274,7 +274,7 @@ class TestMasterDarkCreation:
     def test_if_stacked_dark_frame_was_created(self):
         check_if_individual_frames_exist('d00')
         run_check_if_stacked_calibrations_were_created('d00.fits', 'dark')
-        run_check_if_stacked_calibrations_are_in_db('*d00.fits*', 'DARK')
+        run_check_if_stacked_calibrations_are_in_db('d00.fits', 'DARK')
 
 
 @pytest.mark.e2e
@@ -291,7 +291,7 @@ class TestMasterFlatCreation:
         check_if_individual_frames_exist('w00')
         run_check_if_stacked_calibrations_were_created('w00.fits', 'lampflat')
         run_check_if_stacked_calibrations_have_extensions('lampflat', ['TRACES', 'PROFILE', 'BLAZE'])
-        run_check_if_stacked_calibrations_are_in_db('*w00.fits*', 'LAMPFLAT')
+        run_check_if_stacked_calibrations_are_in_db('w00.fits', 'LAMPFLAT')
 
 
 @pytest.mark.e2e
@@ -308,7 +308,7 @@ class TestMasterArcCreation:
         check_if_individual_frames_exist('a00')
         run_check_if_stacked_calibrations_were_created('a00.fits', 'double')
         run_check_if_stacked_calibrations_have_extensions('double', ['WAVELENGTH', 'FEATURES'])
-        run_check_if_stacked_calibrations_are_in_db('*a00.fits*', 'DOUBLE')
+        run_check_if_stacked_calibrations_are_in_db('a00.fits', 'DOUBLE')
 
     def test_quality_of_wavelength_calibration(self, calibration_type='double', primaryextension=1):
         created_stacked_calibrations = []

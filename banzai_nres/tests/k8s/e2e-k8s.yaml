@@ -154,10 +154,7 @@ spec:
             - "--fpack"
             - "--broker-url=localhost"
             - "--log-level=debug"
-            - "--rlevel=91"
-            - "--prefer-same-block-cals"
-            - "--check-public-cals"
-            - "--prefer-same-proposal-cals"
+            - "--rlevel=92"
           resources:
             requests:
               cpu: "0.1"
