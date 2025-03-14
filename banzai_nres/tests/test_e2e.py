@@ -132,7 +132,7 @@ def get_expected_number_of_calibrations(raw_filename_pattern, calibration_type):
             # Group by fibers lit if we are stacking lampflats or doubles (arc frames)
             observed_fibers = []
             for frame in raw_frames_for_this_dayobs:
-                observed_fibers.append(frame['OBJECTS'])
+                observed_fibers.append(frame['objects'])
             observed_fibers = set(observed_fibers)
             number_of_stacks_that_should_have_been_created += len(observed_fibers)
         else:
