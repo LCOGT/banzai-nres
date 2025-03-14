@@ -100,7 +100,8 @@ def stack_calibrations(frame_type):
                                opensearch_url='https://opensearch.lco.global',
                                no_bpm=False, ignore_schedulability=True, use_only_older_calibrations=False,
                                preview_mode=False, max_tries=5, broker_url=os.getenv('FITS_BROKER'),
-                               no_file_cache=False)
+                               no_file_cache=False, prefer_same_block_cals=False, check_public_cals=False,
+                               prefer_same_proposal_cals=False)
         for setting in dir(settings):
             if '__' != setting[:2] and not isinstance(getattr(settings, setting), ModuleType):
                 runtime_context[setting] = getattr(settings, setting)
