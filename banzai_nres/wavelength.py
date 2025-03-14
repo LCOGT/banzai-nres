@@ -15,7 +15,7 @@ from xwavecal.fibers import IdentifyFibers
 
 import sep
 import os
-import pkg_resources
+import importlib.resources
 from astropy.table import Table
 
 
@@ -75,7 +75,7 @@ class LineListLoader(CalibrationUser):
     """
     Loads the reference line list for wavelength calibration
     """
-    LINE_LIST_FILENAME = pkg_resources.resource_filename('banzai_nres', 'data/ThAr_atlas_ESO_vacuum.txt')
+    LINE_LIST_FILENAME = os.path.join(importlib.resources.files('banzai_nres'), 'data', 'ThAr_atlas_ESO_vacuum.txt')
 
     @property
     def calibration_type(self):

@@ -2,8 +2,9 @@ from banzai_nres.frames import NRESObservationFrame
 from banzai.stages import Stage
 from scipy.signal import medfilt
 from scipy import interpolate
-import pkg_resources
+import importlib.resources
 import numpy as np
+import os
 from banzai_nres.utils.continuum_utils import mark_features
 from banzai_nres.utils.tellurics import generate_telluric_mask
 
@@ -77,7 +78,8 @@ class MaskTellurics(Stage):
     # in the spectrum that we try to fit with a smooth model in continuum normalizer. Also regions affected by
     # tellurics still tell us about the continuum -- we don't want to liberally cut those regions out when
     # fitting the continuum. So I think we always want MaskTellurics to come after continuum fitting.
-    TELLURIC_FILENAME = pkg_resources.resource_filename('banzai_nres', 'data/telluric_spectrum_50percent_humidity.dat')
+    TELLURIC_FILENAME = os.path.join(importlib.resources.files('banzai_nres'), 'data',
+                                     'telluric_spectrum_50percent_humidity.dat')
 
     def do_stage(self, image) -> NRESObservationFrame:
         telluric_spectrum = np.genfromtxt(self.TELLURIC_FILENAME)

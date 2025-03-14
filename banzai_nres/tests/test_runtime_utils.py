@@ -4,5 +4,6 @@ from banzai.data import HeaderOnly
 
 
 def test_get_telescope_filename():
-    image = NRESObservationFrame([HeaderOnly(meta={'OBJECTS': 'tung&tung&none', 'TELESCOP': 'nres01'})], 'foo.fits')
+    image = NRESObservationFrame([HeaderOnly(meta={'OBJECTS': 'tung&tung&none', 'TELESCOP': 'nres01'}, name='test')],
+                                 'foo.fits')
     assert runtime_utils.get_telescope_filename(image) == 'nrs01'

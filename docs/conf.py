@@ -29,6 +29,7 @@ import os
 import sys
 import datetime
 from importlib import import_module
+import tomllib
 
 try:
     from sphinx_astropy.conf.v1 import *  # noqa
@@ -36,12 +37,10 @@ except ImportError:
     print('ERROR: the documentation requires the sphinx-astropy package to be installed')
     sys.exit(1)
 
-# Get configuration information from setup.cfg
-from configparser import ConfigParser
-conf = ConfigParser()
-
-conf.read([os.path.join(os.path.dirname(__file__), '..', 'setup.cfg')])
-setup_cfg = dict(conf.items('metadata'))
+# Get project metadata from pyproject.toml
+with open(os.path.join(os.path.dirname(__file__), '..', 'pyproject.toml'), "rb") as f:
+    project_data = tomllib.load(f)
+setup_cfg = project_data['project']
 
 # -- General configuration ----------------------------------------------------
 
@@ -49,7 +48,7 @@ setup_cfg = dict(conf.items('metadata'))
 highlight_language = 'python3'
 
 # If your documentation needs a minimal Sphinx version, state it here.
-#needs_sphinx = '1.2'
+# needs_sphinx = '1.2'
 
 # To perform a Sphinx version check that needs to be more specific than
 # major.minor, call `check_sphinx_version("X.Y.Z")` here.
@@ -67,22 +66,19 @@ rst_epilog += """
 # -- Project information ------------------------------------------------------
 
 # This does not *have* to match the package name, but typically does
-project = setup_cfg['name']
-author = setup_cfg['author']
+project = setup_cfg['name'].replace('-', '_')
+author = ', '.join(author['name'] for author in setup_cfg['authors'])
 copyright = '{0}, {1}'.format(
-    datetime.datetime.now().year, setup_cfg['author'])
+    datetime.datetime.now().year, author)
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 
-import_module(setup_cfg['name'])
-package = sys.modules[setup_cfg['name']]
-
 # The short X.Y version.
-version = package.__version__.split('-', 1)[0]
+version = setup_cfg['version'].split('-', 1)[0]
 # The full version, including alpha/beta/rc tags.
-release = package.__version__
+release = setup_cfg['version']
 
 
 # -- Options for HTML output --------------------------------------------------
@@ -156,7 +152,7 @@ man_pages = [('index', project.lower(), project + u' Documentation',
 
 # -- Options for the edit_on_github extension ---------------------------------
 
-if setup_cfg.get('edit_on_github').lower() == 'true':
+if setup_cfg.get('edit_on_github', '').lower() == 'true':
 
     extensions += ['sphinx_astropy.ext.edit_on_github']
 
@@ -167,7 +163,7 @@ if setup_cfg.get('edit_on_github').lower() == 'true':
     edit_on_github_doc_root = "docs"
 
 # -- Resolving issue number to links in changelog -----------------------------
-github_issues_url = 'https://github.com/{0}/issues/'.format(setup_cfg['github_project'])
+github_issues_url = 'https://github.com/LCOGT/banzai-nres/issues/'
 
 
 # -- Options for linkcheck output -------------------------------------------
