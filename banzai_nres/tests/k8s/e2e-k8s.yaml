@@ -23,7 +23,7 @@ spec:
       volumes:
         - name: banzai-nres-e2e-tmp
           emptyDir:
-            sizeLimit: 10Gi
+            sizeLimit: 20Gi
 
       containers:
         - name: banzai-nres-e2e-redis
