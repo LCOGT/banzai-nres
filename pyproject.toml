@@ -21,12 +21,15 @@ urls = { "Documentation" = "https://banzai-nres.readthedocs.io/", "Source" = "ht
 
 dependencies = [
     "astropy>=6.0",
-    "lco-banzai @ git+https://github.com/lcogt/banzai.git@increase-broker-timeout",
+    "lco-banzai @ git+https://github.com/lcogt/banzai.git@1.21.0",
     "statsmodels",
     "xwavecal>=0.1.12",
     "astroquery",
     "pandas>=2",
-    "matplotlib"
+    "matplotlib",
+    "celery>=5.5.0rc5",
+    "kombu>=5.5.0",
+    "amqp>=5.3.1",
 ]
 [project.optional-dependencies]
 test = [

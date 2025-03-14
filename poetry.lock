@@ -525,61 +525,61 @@ doc = ["gitpython", "numpydoc", "sphinx"]
 
 [[package]]
 name = "celery"
-version = "5.4.0"
+version = "5.5.0rc5"
 description = "Distributed Task Queue."
 optional = false
 python-versions = ">=3.8"
 groups = ["main"]
 files = [
-    {file = "celery-5.4.0-py3-none-any.whl", hash = "sha256:369631eb580cf8c51a82721ec538684994f8277637edde2dfc0dacd73ed97f64"},
-    {file = "celery-5.4.0.tar.gz", hash = "sha256:504a19140e8d3029d5acad88330c541d4c3f64c789d85f94756762d8bca7e706"},
+    {file = "celery-5.5.0rc5-py3-none-any.whl", hash = "sha256:aeb41c7554c36f7a77b811c6667b367d28a9ed3edb6e5ee94c618ccdc9892da6"},
+    {file = "celery-5.5.0rc5.tar.gz", hash = "sha256:1aa3572b8bca45ce070bdfa4243e926ffcf3d553e90d0bb9f5cd022e066d64c7"},
 ]
 
 [package.dependencies]
-billiard = ">=4.2.0,<5.0"
+billiard = ">=4.2.1,<5.0"
 click = ">=8.1.2,<9.0"
 click-didyoumean = ">=0.3.0"
 click-plugins = ">=1.1.1"
 click-repl = ">=0.2.0"
-kombu = ">=5.3.4,<6.0"
+kombu = ">=5.5.0rc3,<6.0"
 python-dateutil = ">=2.8.2"
 redis = {version = ">=4.5.2,<4.5.5 || >4.5.5,<6.0.0", optional = true, markers = "extra == \"redis\""}
-tzdata = ">=2022.7"
 vine = ">=5.1.0,<6.0"
 
 [package.extras]
 arangodb = ["pyArango (>=2.0.2)"]
-auth = ["cryptography (==42.0.5)"]
-azureblockblob = ["azure-storage-blob (>=12.15.0)"]
+auth = ["cryptography (==44.0.1)"]
+azureblockblob = ["azure-identity (>=1.19.0)", "azure-storage-blob (>=12.15.0)"]
 brotli = ["brotli (>=1.0.0) ; platform_python_implementation == \"CPython\"", "brotlipy (>=0.7.0) ; platform_python_implementation == \"PyPy\""]
 cassandra = ["cassandra-driver (>=3.25.0,<4)"]
 consul = ["python-consul2 (==0.1.5)"]
 cosmosdbsql = ["pydocumentdb (==2.3.5)"]
 couchbase = ["couchbase (>=3.0.0) ; platform_python_implementation != \"PyPy\" and (platform_system != \"Windows\" or python_version < \"3.10\")"]
-couchdb = ["pycouchdb (==1.14.2)"]
+couchdb = ["pycouchdb (==1.16.0)"]
 django = ["Django (>=2.2.28)"]
 dynamodb = ["boto3 (>=1.26.143)"]
-elasticsearch = ["elastic-transport (<=8.13.0)", "elasticsearch (<=8.13.0)"]
+elasticsearch = ["elastic-transport (<=8.17.0)", "elasticsearch (<=8.17.1)"]
 eventlet = ["eventlet (>=0.32.0) ; python_version < \"3.10\""]
-gcs = ["google-cloud-storage (>=2.10.0)"]
+gcs = ["google-cloud-firestore (==2.20.0)", "google-cloud-storage (>=2.10.0)", "grpcio (==1.67.0)"]
 gevent = ["gevent (>=1.5.0)"]
 librabbitmq = ["librabbitmq (>=2.0.0) ; python_version < \"3.11\""]
 memcache = ["pylibmc (==1.6.3) ; platform_system != \"Windows\""]
-mongodb = ["pymongo[srv] (>=4.0.2)"]
-msgpack = ["msgpack (==1.0.8)"]
+mongodb = ["pymongo (==4.10.1)"]
+msgpack = ["msgpack (==1.1.0)"]
+pydantic = ["pydantic (>=2.4)"]
 pymemcache = ["python-memcached (>=1.61)"]
 pyro = ["pyro4 (==4.82) ; python_version < \"3.11\""]
-pytest = ["pytest-celery[all] (>=1.0.0)"]
+pytest = ["pytest-celery[all] (>=1.2.0)"]
 redis = ["redis (>=4.5.2,!=4.5.5,<6.0.0)"]
 s3 = ["boto3 (>=1.26.143)"]
 slmq = ["softlayer-messaging (>=1.0.3)"]
-solar = ["ephem (==4.1.5) ; platform_python_implementation != \"PyPy\""]
+solar = ["ephem (==4.2) ; platform_python_implementation != \"PyPy\""]
 sqlalchemy = ["sqlalchemy (>=1.4.48,<2.1)"]
-sqs = ["boto3 (>=1.26.143)", "kombu[sqs] (>=5.3.4)", "pycurl (>=7.43.0.5) ; sys_platform != \"win32\" and platform_python_implementation == \"CPython\"", "urllib3 (>=1.26.16)"]
+sqs = ["boto3 (>=1.26.143)", "kombu[sqs] (>=5.3.4)", "urllib3 (>=1.26.16)"]
 tblib = ["tblib (>=1.3.0) ; python_version < \"3.8.0\"", "tblib (>=1.5.0) ; python_version >= \"3.8.0\""]
 yaml = ["PyYAML (>=3.10)"]
 zookeeper = ["kazoo (>=1.3.1)"]
-zstd = ["zstandard (==0.22.0)"]
+zstd = ["zstandard (==0.23.0)"]
 
 [[package]]
 name = "certifi"
@@ -1525,14 +1525,14 @@ devel = ["colorama", "json-spec", "jsonschema", "pylint", "pytest", "pytest-benc
 
 [[package]]
 name = "filelock"
-version = "3.17.0"
+version = "3.18.0"
 description = "A platform independent file lock."
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "filelock-3.17.0-py3-none-any.whl", hash = "sha256:533dc2f7ba78dc2f0f531fc6c4940addf7b70a481e269a5a3b93be94ffbe8338"},
-    {file = "filelock-3.17.0.tar.gz", hash = "sha256:ee4e77401ef576ebb38cd7f13b9b28893194acc20a8e68e18730ba9c0e54660e"},
+    {file = "filelock-3.18.0-py3-none-any.whl", hash = "sha256:c401f4f8377c4464e6db25fff06205fd89bdd83b65eb0488ed1b160f780e21de"},
+    {file = "filelock-3.18.0.tar.gz", hash = "sha256:adbc88eabb99d2fec8c9c1b229b171f18afa655400173ddc653d5d01501fb9f2"},
 ]
 
 [package.extras]
@@ -2475,8 +2475,8 @@ test = ["coverage", "pytest (>=4.0)", "pytest-astropy"]
 [package.source]
 type = "git"
 url = "https://github.com/lcogt/banzai.git"
-reference = "increase-broker-timeout"
-resolved_reference = "825f5af760c2f42beab8af49a1ddfaf1c019c18b"
+reference = "1.21.0"
+resolved_reference = "39a67ff3f002f726986259abe01c798f30da422b"
 
 [[package]]
 name = "lcogt-logging"
@@ -5549,14 +5549,14 @@ test = ["pytest", "tornado (>=4.5)", "typeguard"]
 
 [[package]]
 name = "tifffile"
-version = "2025.2.18"
+version = "2025.3.13"
 description = "Read and write TIFF files"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "tifffile-2025.2.18-py3-none-any.whl", hash = "sha256:54b36c4d5e5b8d8920134413edfe5a7cfb1c7617bb50cddf7e2772edb7149043"},
-    {file = "tifffile-2025.2.18.tar.gz", hash = "sha256:8d731789e691b468746c1615d989bc550ac93cf753e9210865222e90a5a95d11"},
+    {file = "tifffile-2025.3.13-py3-none-any.whl", hash = "sha256:10f205b923c04678f744a6d553f6f86c639c9ba6e714f6758d81af0678ba75dc"},
+    {file = "tifffile-2025.3.13.tar.gz", hash = "sha256:30fcc4584216937b5993d0568452b6fea8e12e61f9afb1a8e967c07c281faa06"},
 ]
 
 [package.dependencies]
@@ -6187,4 +6187,4 @@ test = ["coverage", "mock", "pytest", "pytest-astropy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4"
-content-hash = "7fe6d95ec79df24ec783ee07eca27215cf97b4754de0e63371b1436a1b2ba805"
+content-hash = "1e145822ef118871dccb4fed92e9c7f01aa5d5533637e936720a97b5b12f9457"
