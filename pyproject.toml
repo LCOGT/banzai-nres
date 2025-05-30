@@ -21,7 +21,7 @@ urls = { "Documentation" = "https://banzai-nres.readthedocs.io/", "Source" = "ht
 
 dependencies = [
     "astropy>=6.0",
-    "lco-banzai @ git+https://github.com/lcogt/banzai.git@1.21.0",
+    "lco-banzai @ git+https://github.com/lcogt/banzai.git@1.22.0",
     "statsmodels",
     "xwavecal>=0.1.12",
     "astroquery",
