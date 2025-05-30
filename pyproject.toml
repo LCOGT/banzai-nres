@@ -1,7 +1,7 @@
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0",
             "cython", "extension-helpers",
-            "numpy>=1.24"]
+            "numpy>=1.24<2"]
 build-backend = "poetry.core.masonry.api"
 
 [project]
@@ -30,6 +30,7 @@ dependencies = [
     "celery>=5.5.0rc5",
     "kombu>=5.5.0",
     "amqp>=5.3.1",
+    "numpy<2"
 ]
 [project.optional-dependencies]
 test = [

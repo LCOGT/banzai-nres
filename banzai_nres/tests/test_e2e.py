@@ -60,19 +60,29 @@ def get_instrument_ids(db_address, names):
 
 def celery_join():
     celery_inspector = app.control.inspect()
+    celery_connection = app.connection()
+    celery_channel = celery_connection.channel()
     log_counter = 0
     while True:
         time.sleep(1)
-        log_counter += 1
-        if log_counter % 5 == 0:
-            logger.info('Processing: ' + '. ' * (log_counter // 5))
         queues = [celery_inspector.active(), celery_inspector.scheduled(), celery_inspector.reserved()]
-        if any([queue is None or 'celery@banzai-celery-worker' not in queue for queue in queues]):
-            logger.warning('No valid celery queues were detected, retrying...', extra_tags={'queues': queues})
+        log_counter += 1
+        if log_counter % 30 == 0:
+            logger.info('Processing: ' + '. ' * (log_counter // 30))
+        queue_names = []
+        for queue in queues:
+            if queue is not None:
+                queue_names += queue.keys()
+        if 'celery@banzai-celery-worker' not in queue_names:
+            logger.warning('Valid celery queues were not detected, retrying...', extra_tags={'queues': queues})
             # Reset the celery connection
             celery_inspector = app.control.inspect()
             continue
-        if all([len(queue['celery@banzai-celery-worker']) == 0 for queue in queues]):
+        jobs_left = celery_channel.queue_declare('e2e_task_queue').message_count
+        no_active_jobs = all(queue is None or
+                             len(queue['celery@banzai-celery-worker']) == 0
+                             for queue in queues)
+        if no_active_jobs and jobs_left == 0:
             break
 
 
@@ -298,7 +308,7 @@ class TestMasterFlatCreation:
 @pytest.mark.e2e
 @pytest.mark.master_arc
 class TestMasterArcCreation:
-    @pytest.fixture(autouse=True)
+    @pytest.fixture(autouse=True, scope='class')
     @mock.patch('banzai.utils.observation_utils.requests.get', side_effect=observation_portal_side_effect)
     def stack_arc_frames(self, mock_lake):
         run_reduce_individual_frames('a00.fits')
