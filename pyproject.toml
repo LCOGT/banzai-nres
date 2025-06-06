@@ -6,7 +6,7 @@ build-backend = "poetry.core.masonry.api"
 
 [project]
 name = "banzai-nres"
-version = "1.1.5"
+version = "1.2.0"
 requires-python = ">=3.10,<4"
 description = "BANZAI Data Reduction for NRES spectra"
 readme = "docs/README.rst"
@@ -21,7 +21,7 @@ urls = { "Documentation" = "https://banzai-nres.readthedocs.io/", "Source" = "ht
 
 dependencies = [
     "astropy>=6.0",
-    "lco-banzai @ git+https://github.com/lcogt/banzai.git@1.22.0",
+    "lco-banzai @ git+https://github.com/lcogt/banzai.git@1.24.1",
     "statsmodels",
     "xwavecal>=0.1.12",
     "astroquery",
@@ -30,7 +30,8 @@ dependencies = [
     "celery>=5.5.0rc5",
     "kombu>=5.5.0",
     "amqp>=5.3.1",
-    "numpy<2"
+    "numpy<2",
+    "torch"
 ]
 [project.optional-dependencies]
 test = [
@@ -57,20 +58,20 @@ packages = [
 
 [tool.poetry.dependencies]
 torch = [
-    { version = "^2.3", source = "pypi", markers = "sys_platform == 'darwin'" },
-    { version = "^2.3", source = "pytorch-cpu", markers = "sys_platform != 'darwin' and extra != 'cuda'" },
-    { version = "^2.3", source = "pytorch-cuda", markers = "sys_platform != 'darwin' and extra == 'cuda'" }
-]
+    { markers = "sys_platform == 'darwin'", source = "PyPI"},
+    { markers = "sys_platform != 'darwin' and extra == 'cpu' and extra != 'cuda'", source = "pytorch-cpu"},
+    { markers = "sys_platform != 'darwin' and extra == 'cuda' and extra != 'cpu'", source = "pytorch-cuda"},
+ ]
 
 [[tool.poetry.source]]
-    name     = "pytorch-cuda"
-    priority = "explicit"
-    url      = "https://download.pytorch.org/whl/cu121"
+name = "pytorch-cuda"
+url = "https://download.pytorch.org/whl/cu121"
+priority = "explicit"
 
 [[tool.poetry.source]]
-    name     = "pytorch-cpu"
-    priority = "explicit"
-    url      = "https://download.pytorch.org/whl/cpu"
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+priority = "explicit"
 
 [project.scripts]
 banzai_nres_reduce_night="banzai_nres.main:reduce_night"

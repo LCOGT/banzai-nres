@@ -1,4 +1,4 @@
-1.1.6 (2025-03-11)
+1.2.0 (2025-06-08)
 ------------------
 - Migrate to use poetry for dependency management
 - Use updated banzai from upstream

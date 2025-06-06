@@ -23,7 +23,7 @@ spec:
       volumes:
         - name: banzai-nres-e2e-tmp
           emptyDir:
-            sizeLimit: 20Gi
+            sizeLimit: 50Gi
 
       containers:
         - name: banzai-nres-e2e-redis
@@ -79,7 +79,7 @@ spec:
             - name: REDIS_HOST
               value: "redis://localhost:6379/0"
             - name: BANZAI_WORKER_LOGLEVEL
-              value: "DEBUG"
+              value: "INFO"
             - name: CALIBRATE_PROPOSAL_ID
               value: "calibrate"
             - name: OMP_NUM_THREADS
@@ -92,6 +92,16 @@ spec:
               value: "e2e_task_queue"
             - name: API_ROOT
               value: "https://archive-api.lco.global/"
+            - name: PHOENIX_MODEL_AWS_ACCESS_KEY_ID
+              valueFrom: # Corrected indentation
+                secretKeyRef: # Corrected indentation
+                  name: phoenix-model-secret
+                  key: access-key-id
+            - name: PHOENIX_MODEL_AWS_SECRET_ACCESS_KEY
+              valueFrom: # Corrected indentation
+                secretKeyRef: # Corrected indentation
+                  name: phoenix-model-secret
+                  key: secret-access-key
           command:
             - celery
             - -A
@@ -102,7 +112,7 @@ spec:
             - --concurrency
             - "2"
             - --loglevel
-            - "DEBUG"
+            - "INFO"
             - -Q
             - "$(CELERY_TASK_QUEUE_NAME)"
           resources:
@@ -148,12 +158,22 @@ spec:
               value: "e2e_task_queue"
             - name: API_ROOT
               value: "https://archive-api.lco.global/"
+            - name: PHOENIX_MODEL_AWS_ACCESS_KEY_ID
+              valueFrom: # Corrected indentation
+                secretKeyRef: # Corrected indentation
+                  name: phoenix-model-secret
+                  key: access-key-id
+            - name: PHOENIX_MODEL_AWS_SECRET_ACCESS_KEY
+              valueFrom: # Corrected indentation
+                secretKeyRef: # Corrected indentation
+                  name: phoenix-model-secret
+                  key: secret-access-key
           command:
             - banzai_nres_run_realtime_pipeline
             - "--db-address=sqlite:////archive/engineering/test.db"
             - "--fpack"
             - "--broker-url=localhost"
-            - "--log-level=debug"
+            - "--log-level=info"
             - "--rlevel=92"
           resources:
             requests:

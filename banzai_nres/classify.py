@@ -60,7 +60,7 @@ def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
         # truncated. If you add a new votable field, you will need to add it to the mocked table as well.
         simbad = import_utils.import_attribute(simbad_class)
         simbad_connection = simbad()
-        simbad_connection.add_votable_fields('pmra', 'pmdec', 'fe_h', 'otype')
+        simbad_connection.add_votable_fields('pmra', 'pmdec', 'mesfe_h', 'otype')
         try:
             results = simbad_connection.query_region(coordinate, radius='0d0m10s')
         except astroquery.exceptions.TableParseError:
@@ -70,22 +70,22 @@ def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
         if results:
             results = remove_planets_from_simbad(results)
             results = results[0]  # get the closest source.
-            image.classification = dbs.get_closest_phoenix_models(db_address, results['Fe_H_Teff'],
-                                                                  results['Fe_H_log_g'])[0]
+            image.classification = dbs.get_closest_phoenix_models(db_address, results['mesfe_h.teff'],
+                                                                  results['mesfe_h.log_g'])[0]
             # note that we always assume the proper motions are in mas/yr... which they should be.
-            if results['PMRA'] is not np.ma.masked:
-                image.pm_ra, image.pm_dec = results['PMRA'], results['PMDEC']
+            if results['pmra'] is not np.ma.masked:
+                image.pm_ra, image.pm_dec = results['pmra'], results['pmdec']
             # Update the ra and dec to the catalog coordinates as those will be consistent across observations.
             # Simbad always returns h:m:s, d:m:s, for ra, dec. If for some reason simbad does not, these coords will be
             # very wrong and barycenter correction will be very wrong.
-            coord = SkyCoord(results['RA'], results['DEC'], unit=(units.hourangle, units.deg))
+            coord = SkyCoord(results['ra'], results['dec'], unit=(units.hourangle, units.deg))
             image.ra, image.dec = coord.ra.deg, coord.dec.deg
         # If there are still no results, then do nothing
 
 
 def remove_planets_from_simbad(results):
     # Remove planets. See https://simbad.u-strasbg.fr/simbad/sim-display?data=otypes for otype designations.
-    return results[['Pl' not in row['OTYPE'] for row in results]]
+    return results[['Pl' not in row['otype'] for row in results]]
 
 
 class StellarClassifier(Stage):

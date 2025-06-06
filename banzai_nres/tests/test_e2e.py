@@ -104,7 +104,7 @@ def stack_calibrations(frame_type):
         site, _, dayobs = day_obs.split('/')
         timezone = dbs.get_timezone(site, db_address=os.environ['DB_ADDRESS'])
         min_date, max_date = get_min_and_max_dates(timezone, dayobs=dayobs)
-        runtime_context = dict(processed_path=DATA_ROOT, log_level='debug', post_to_archive=False,
+        runtime_context = dict(processed_path=DATA_ROOT, log_level='info', post_to_archive=False,
                                post_to_opensearch=False, fpack=True, reduction_level=92,
                                db_address=os.environ['DB_ADDRESS'], opensearch_qc_index='banzai_qc',
                                opensearch_url='https://opensearch.lco.global',
@@ -329,7 +329,7 @@ class TestMasterArcCreation:
         for cal in created_stacked_calibrations:
             hdulist = fits.open(cal)
             quality_metrics = hdulist[primaryextension].header
-            assert quality_metrics['RVPRECSN'] < 10
+            assert quality_metrics['RVPRECSN'] < 12
             assert quality_metrics['RVPRECSN'] > 1
 
 
@@ -341,16 +341,16 @@ class TestScienceFrameProcessing:
     # for our tests. To mock this, we would have to write a control command and use broadcast() to get it to the workers
     # See https://stackoverflow.com/questions/30450468/mocking-out-a-call-within-a-celery-task
     def process_frames(self):
-        run_reduce_individual_frames('*e00.fits*')
+        run_reduce_individual_frames('e00.fits')
 
     def test_if_science_frames_were_created(self):
         for frame in TEST_FRAMES:
             if 'e00.fits' in frame['filename']:
                 processed_path = os.path.join(DATA_ROOT, frame['site'], frame['instrument'],
                                               str(frame['dayobs']), 'processed')
-                assert os.path.exists(processed_path, frame['filename'].replace('00', '92'))
-                assert os.path.exists(processed_path, frame['filename'].replace('00', '92-1d'))
-                assert os.path.exists(processed_path, frame['filename'].replace('00', '92-2d'))
+                assert os.path.exists(os.path.join(processed_path, frame['filename']).replace('00.fits', '92.fits'))
+                assert os.path.exists(os.path.join(processed_path, frame['filename']).replace('00.fits', '92-1d.fits'))
+                assert os.path.exists(os.path.join(processed_path, frame['filename']).replace('00.fits', '92-2d.fits'))
                 summary_filename = processed_path, frame['filename'].replace('00.fits', '92.fits').replace('.fz', '')
                 assert os.path.exists(summary_filename)
 

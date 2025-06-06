@@ -95,10 +95,10 @@ class NRESObservationFrame(LCOObservationFrame):
                 frame_1d_meta.pop('EXTNAME')
 
             if 'CCF' in self:
-                frame_1d = LCOObservationFrame([HeaderOnly(frame_1d_meta), self['SPECTRUM1D'], self['CCF']],
+                frame_1d = LCOObservationFrame([HeaderOnly(frame_1d_meta, None), self['SPECTRUM1D'], self['CCF']],
                                                os.path.join(self.get_output_directory(runtime_context), filename_1d))
             else:
-                frame_1d = LCOObservationFrame([HeaderOnly(frame_1d_meta), self['SPECTRUM1D']],
+                frame_1d = LCOObservationFrame([HeaderOnly(frame_1d_meta, None), self['SPECTRUM1D']],
                                                os.path.join(self.get_output_directory(runtime_context), filename_1d))
             fits_1d = frame_1d.to_fits(runtime_context)
             fits_1d['SPECTRUM1D'].name = 'SPECTRUM'
