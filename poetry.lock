@@ -6202,4 +6202,4 @@ test = ["coverage", "mock", "pytest", "pytest-astropy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4"
-content-hash = "74b62d757113f03c39a0d4dd7af92d6818ba4b02fbbd0ca10692f3a4463db915"
+content-hash = "4ee461dbf9703729c7f8972fd1a1ec4213b1d230d6fa84337ee478c37694cf01"
