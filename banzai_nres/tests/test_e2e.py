@@ -350,7 +350,7 @@ class TestScienceFrameProcessing:
                                               str(frame['dayobs']), 'processed')
                 assert os.path.exists(os.path.join(processed_path, frame['filename']).replace('00.fits', '92-1d.fits'))
                 assert os.path.exists(os.path.join(processed_path, frame['filename']).replace('00.fits', '92-2d.fits'))
-                summary_filename = processed_path, frame['filename'].replace('00.fits', '92-summary.pdf').replace('.fz', '')
-                assert os.path.exists(summary_filename)
+                summary_filename = frame['filename'].replace('00.fits', '92-summary.pdf').replace('.fz', '')
+                assert os.path.exists(os.path.join(processed_path, summary_filename))
 
         check_extracted_spectra('*e92-1d.fits*', 'SPECTRUM', ['wavelength', 'flux', 'uncertainty'])
