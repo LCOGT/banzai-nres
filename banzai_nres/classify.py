@@ -43,10 +43,8 @@ def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
     # motions and effective temperatures.
     results = results[np.logical_and(results['phot_rp_mean_mag'] < 12.0, results['phot_rp_mean_mag'] > 5.0)]
     if len(results) > 0:
-        # convert the luminosity from the LSun units that Gaia provides to cgs units
-        results[0]['lum_val'] *= constants.L_sun.to('erg / s').value
-        image.classification = dbs.get_closest_HR_phoenix_models(db_address, results[0]['teff_val'],
-                                                                 results[0]['lum_val'])
+        image.classification = dbs.get_closest_HR_phoenix_models(db_address, results[0]['teff_gspphot'],
+                                                                 results[0]['logg_gspphot'])
         # Update the ra and dec to the catalog coordinates as those are basically always better than a user enters
         # manually.
         image.ra, image.dec = results[0]['ra'], results[0]['dec']
@@ -76,9 +74,8 @@ def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
             if results['pmra'] is not np.ma.masked:
                 image.pm_ra, image.pm_dec = results['pmra'], results['pmdec']
             # Update the ra and dec to the catalog coordinates as those will be consistent across observations.
-            # Simbad always returns h:m:s, d:m:s, for ra, dec. If for some reason simbad does not, these coords will be
-            # very wrong and barycenter correction will be very wrong.
-            coord = SkyCoord(results['ra'], results['dec'], unit=(units.hourangle, units.deg))
+            # The new version of astroquery returns ra and dec in degrees, so we can use them directly.
+            coord = SkyCoord(results['ra'], results['dec'], unit=(units.deg, units.deg))
             image.ra, image.dec = coord.ra.deg, coord.dec.deg
         # If there are still no results, then do nothing
 
