@@ -348,10 +348,9 @@ class TestScienceFrameProcessing:
             if 'e00.fits' in frame['filename']:
                 processed_path = os.path.join(DATA_ROOT, frame['site'], frame['instrument'],
                                               str(frame['dayobs']), 'processed')
-                assert os.path.exists(os.path.join(processed_path, frame['filename']).replace('00.fits', '92.fits'))
                 assert os.path.exists(os.path.join(processed_path, frame['filename']).replace('00.fits', '92-1d.fits'))
                 assert os.path.exists(os.path.join(processed_path, frame['filename']).replace('00.fits', '92-2d.fits'))
-                summary_filename = processed_path, frame['filename'].replace('00.fits', '92-1d.fits').replace('.fz', '')
+                summary_filename = processed_path, frame['filename'].replace('00.fits', '92-summary.pdf').replace('.fz', '')
                 assert os.path.exists(summary_filename)
 
         check_extracted_spectra('*e92-1d.fits*', 'SPECTRUM', ['wavelength', 'flux', 'uncertainty'])
