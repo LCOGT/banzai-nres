@@ -256,9 +256,18 @@ class IdentifyFeatures(Stage):
         features = group_features_by_trace(features, image.traces)
         features = features[features['id'] != 0]  # throw out features that are outside of any trace.
         # get total flux in each emission feature. For now just sum_circle, although we should use sum_ellipse.
-        features['flux'], features['fluxerr'], _ = sep.sum_circle(image.data, features['xcentroid'],
+        data = image.data.copy()
+        if not data.dtype.isnative:
+            data = data = data.astype(data.dtype.newbyteorder('='))
+        uncertainty = image.uncertainty.copy()
+        if uncertainty is not None and not uncertainty.dtype.isnative:
+            uncertainty = uncertainty.astype(uncertainty.dtype.newbyteorder('='))
+        mask = image.mask.copy()
+        if mask is not None and not mask.dtype.isnative:
+            mask = mask.astype(mask.dtype.newbyteorder('='))
+        features['flux'], features['fluxerr'], _ = sep.sum_circle(data, features['xcentroid'],
                                                                   features['ycentroid'], self.fwhm, gain=1.0,
-                                                                  err=image.uncertainty, mask=image.mask)
+                                                                  err=uncertainty, mask=mask)
         if image.blaze is not None:
             logger.info('Blaze correcting emission feature fluxes', image=image)
             # blaze correct the emission features fluxes. This speeds up and improves overlap fitting in xwavecal.

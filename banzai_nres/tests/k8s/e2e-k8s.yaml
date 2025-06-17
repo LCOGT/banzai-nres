@@ -93,13 +93,13 @@ spec:
             - name: API_ROOT
               value: "https://archive-api.lco.global/"
             - name: PHOENIX_MODEL_AWS_ACCESS_KEY_ID
-              valueFrom: # Corrected indentation
-                secretKeyRef: # Corrected indentation
+              valueFrom:
+                secretKeyRef:
                   name: phoenix-model-secret
                   key: access-key-id
             - name: PHOENIX_MODEL_AWS_SECRET_ACCESS_KEY
-              valueFrom: # Corrected indentation
-                secretKeyRef: # Corrected indentation
+              valueFrom:
+                secretKeyRef:
                   name: phoenix-model-secret
                   key: secret-access-key
           command:
