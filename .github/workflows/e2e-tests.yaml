@@ -45,77 +45,36 @@ jobs:
           echo "POD=${POD}" >> $GITHUB_ENV
           # Wait for banzai to be ready
           kubectl wait --for=condition=Ready --timeout=60m pod/${POD}
-          
-      - name: Test Bias Subtraction
-        run: |
-          set +e
-          export START=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
-          kubectl exec $POD -c banzai-nres-e2e-listener -- pytest -s --pyargs banzai_nres --durations=0 -m master_bias
-          EXIT_CODE=$?
-          
-          # Always print logs even if (especially if?) the reduction fails
-          kubectl logs $POD -c banzai-nres-e2e-listener --since-time=$START --prefix=true
-          kubectl logs $POD -c banzai-nres-e2e-celery-workers --since-time=$START --prefix=true
-
-          # Exit with the captured status so the job properly fails or succeeds
-          exit $EXIT_CODE
+        
+      - name: Test Bias Subtraction    
+        uses: ./.github/actions/run-e2e-step
+        with:
+          pod_name: ${{ env.POD }}
+          test_module: master_bias
 
       - name: Test Dark Subtraction
-        run: |
-          set +e
-          export START=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
-          kubectl exec $POD -c banzai-nres-e2e-listener -- pytest -s --pyargs banzai_nres --durations=0 -m master_dark
-          EXIT_CODE=$?
-          
-          # Always print logs even if (especially if?) the reduction fails
-          kubectl logs $POD -c banzai-nres-e2e-listener --since-time=$START --prefix=true
-          kubectl logs $POD -c banzai-nres-e2e-celery-workers --since-time=$START --prefix=true
+        uses: ./.github/actions/run-e2e-step
+        with:
+          pod_name: ${{ env.POD }}
+          test_module: master_dark
 
-          # Exit with the captured status so the job properly fails or succeeds
-          exit $EXIT_CODE
-    
       - name: Test Flat Fielding
-        run: |
-          set +e
-          export START=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
-          kubectl exec $POD -c banzai-nres-e2e-listener -- pytest -s --pyargs banzai_nres --durations=0 -m master_flat
-          EXIT_CODE=$?
-          
-          # Always print logs even if (especially if?) the reduction fails
-          kubectl logs $POD -c banzai-nres-e2e-listener --since-time=$START --prefix=true
-          kubectl logs $POD -c banzai-nres-e2e-celery-workers --since-time=$START --prefix=true
-
-          # Exit with the captured status so the job properly fails or succeeds
-          exit $EXIT_CODE
+        uses: ./.github/actions/run-e2e-step
+        with:
+          pod_name: ${{ env.POD }}
+          test_module: master_flat
 
       - name: Test Arc Frames
-        run: |
-          set +e
-          export START=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
-          kubectl exec $POD -c banzai-nres-e2e-listener -- pytest -s --pyargs banzai_nres --durations=0 -m master_arc
-          EXIT_CODE=$?
-          
-          # Always print logs even if (especially if?) the reduction fails
-          kubectl logs $POD -c banzai-nres-e2e-listener --since-time=$START --prefix=true
-          kubectl logs $POD -c banzai-nres-e2e-celery-workers --since-time=$START --prefix=true
-
-          # Exit with the captured status so the job properly fails or succeeds
-          exit $EXIT_CODE
+        uses: ./.github/actions/run-e2e-step
+        with:
+          pod_name: ${{ env.POD }}
+          test_module: master_arc
 
       - name: Test Science Frame Creation
-        run: |
-          set +e
-          export START=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
-
-          kubectl exec $POD -c banzai-nres-e2e-listener -- pytest -s --pyargs banzai_nres --durations=0 -m science_frames
-          EXIT_CODE=$?
-
-          # Always print logs even if (especially if?) the reduction fails
-          kubectl logs $POD -c banzai-nres-e2e-listener --since-time=$START --prefix=true
-          kubectl logs $POD -c banzai-nres-e2e-celery-workers --since-time=$START --prefix=true
-
-          # Exit with the captured status so the job properly fails or succeeds
-          exit $EXIT_CODE
+        uses: ./.github/actions/run-e2e-step
+        with:
+          pod_name: ${{ env.POD }}
+          test_module: science_frames
 
       - name: Cleanup
         run: |
