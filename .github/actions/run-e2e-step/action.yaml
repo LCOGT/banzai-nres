@@ -18,7 +18,7 @@ runs:
         kubectl exec ${{ inputs.pod_name }} -c banzai-nres-e2e-listener -- pytest -s --pyargs banzai_nres --durations=0 -m ${{ inputs.test_marker }}
         EXIT_CODE=$?
 
-        echo "::group::Logs for ${{ inputs.test_module }}"
+        echo "::group::Logs for ${{ inputs.test_marker }}"
         # Always print logs even if (especially if?) the reduction fails
         kubectl logs ${{ inputs.pod_name }} -c banzai-nres-e2e-listener --since-time=$START --prefix=true
         kubectl logs ${{ inputs.pod_name }} -c banzai-nres-e2e-celery-workers --since-time=$START --prefix=true
