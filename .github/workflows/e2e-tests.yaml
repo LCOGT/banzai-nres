@@ -1,0 +1,81 @@
+name: E2E Tests
+
+on:
+  pull_request:
+    branches:
+        - '*'
+
+jobs:
+  test:
+    runs-on:
+      - banzai-runner
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: "v1.22.17"
+
+      - name: Start a Kind cluster
+        uses: helm/kind-action@v1.8.0
+        with:
+          cluster_name: kind
+          version: "v0.19.0"
+          node_image: kindest/node:v1.22.17@sha256:9af784f45a584f6b28bce2af84c494d947a05bd709151466489008f80a9ce9d5
+          wait: "600s"
+
+      - name: Build docker image
+        run: |
+          docker build -t banzai-nres:test-latest .
+
+      - name: Copy docker image to nodes
+        run: |
+          kind load docker-image banzai-nres:test-latest
+
+      - name: Start banzai
+        run: |
+          # Deploy banzai stack
+          kubectl create secret generic phoenix-model-secret --from-literal=access-key-id=${{ secrets.phoenixModelAccessID }} --from-literal=secret-access-key=${{ secrets.phoenixModelSecretKey }}
+          kubectl create secret generic auth-token-secret --from-literal=auth-token=${{ secrets.ArchiveAuthToken }}
+          kubectl apply -k banzai_nres/tests/k8s
+
+          POD=$(kubectl get pod -l app.kubernetes.io/name=banzai-nres-e2e -o jsonpath="{.items[0].metadata.name}")
+          echo "POD=${POD}" >> $GITHUB_ENV
+          # Wait for banzai to be ready
+          kubectl wait --for=condition=Ready --timeout=60m pod/${POD}
+        
+      - name: Test Bias Subtraction    
+        uses: ./.github/actions/run-e2e-step
+        with:
+          pod_name: ${{ env.POD }}
+          test_marker : master_bias
+
+      - name: Test Dark Subtraction
+        uses: ./.github/actions/run-e2e-step
+        with:
+          pod_name: ${{ env.POD }}
+          test_marker: master_dark
+
+      - name: Test Flat Fielding
+        uses: ./.github/actions/run-e2e-step
+        with:
+          pod_name: ${{ env.POD }}
+          test_marker: master_flat
+
+      - name: Test Arc Frames
+        uses: ./.github/actions/run-e2e-step
+        with:
+          pod_name: ${{ env.POD }}
+          test_marker: master_arc
+
+      - name: Test Science Frame Creation
+        uses: ./.github/actions/run-e2e-step
+        with:
+          pod_name: ${{ env.POD }}
+          test_marker: science_frames
+
+      - name: Cleanup
+        run: |
+          kubectl delete deployment banzai-nres-e2e

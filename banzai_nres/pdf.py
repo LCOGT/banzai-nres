@@ -68,7 +68,7 @@ class MakePDFSummary(Stage):
             pl.title('CCF')
 
         pl.subplot(2, 3, 5)
-        snr, snr_wavelength = np.zeros(len(order), dtype=np.float), np.zeros(len(order), dtype=np.float)
+        snr, snr_wavelength = np.zeros(len(order), dtype=float), np.zeros(len(order), dtype=float)
         for snr_order in order:
             snr[snr_order - order[0]], snr_wavelength[snr_order - order[0]] \
                                        = get_snr(image, snr_order, self.runtime_context.PIXELS_PER_RESOLUTION_ELEMENT)

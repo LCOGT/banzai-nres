@@ -29,7 +29,7 @@ banzaiNres:
   useDifferentArchiveSources: true
   rawDataApiRoot: http://archiveapi-internal.prod/
   calibrateProposalId: calibrate
-  banzaiWorkerLogLevel: debug
+  banzaiWorkerLogLevel: info
   fitsBroker: rabbitmq.lco.gtn
   fitsExchange: archived_fits
   queueName: banzai_nres_dev_pipeline

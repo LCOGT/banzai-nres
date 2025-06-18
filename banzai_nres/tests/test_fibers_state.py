@@ -15,5 +15,5 @@ def test_creation_from_header():
 
 
 def test_fiber_state_to_filename():
-    image = NRESObservationFrame([HeaderOnly(meta={'OBJECTS': 'tung&tung&none'})], 'foo.fits')
+    image = NRESObservationFrame([HeaderOnly(meta={'OBJECTS': 'tung&tung&none'}, name='fibertest')], 'foo.fits')
     assert fibers_state_to_filename(image) == '110'

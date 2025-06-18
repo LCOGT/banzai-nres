@@ -1,17 +1,19 @@
-FROM ghcr.io/lcogt/banzai:1.13.1
+FROM ghcr.io/lcogt/banzai:1.24.3
 
 USER root
 
-RUN conda install -y coveralls sphinx statsmodels docutils
+RUN poetry config virtualenvs.create false
 
-RUN pip install astropy==5.3.4
+COPY pyproject.toml poetry.lock /lco/banzai-nres/
 
-COPY --chown=10087:10000 . /lco/banzai-nres
+RUN poetry install --directory=/lco/banzai-nres -E cpu --no-root --no-cache
 
-RUN apt-get -y update && apt-get install gcc && \
-    pip install /lco/banzai-nres/ --no-cache-dir && \
-    apt-get -y remove gcc
+COPY . /lco/banzai-nres
 
-RUN chown -R archive /home/archive
+RUN poetry install --directory /lco/banzai-nres -E cpu --no-cache
+
+RUN cp /lco/banzai-nres/pytest.ini /home/archive/pytest.ini
+
+RUN chown -R archive:domainusers /home/archive
 
 USER archive

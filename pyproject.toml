@@ -1,8 +1,86 @@
 [build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0",
+            "cython", "extension-helpers",
+            "numpy>=1.24<2"]
+build-backend = "poetry.core.masonry.api"
 
-requires = ["setuptools",
-            "setuptools_scm",
-            "wheel",
-            "extension_helpers"]
+[project]
+name = "banzai-nres"
+version = "1.2.0"
+requires-python = ">=3.10,<3.13"
+description = "BANZAI Data Reduction for NRES spectra"
+readme = "docs/README.rst"
+authors = [
+    { name = "Curtis McCully", email = "cmccully@lco.global" },
+    { name = "G. Mirek Brandt"},
+    { name = "Marshall Johnson"}
+]
+license = {text="GPL-3.0-or-later"}
+keywords = ["astronomy", "spectroscopy", "data reduction", "Las Cumbres Observatory"]
+urls = { "Documentation" = "https://banzai-nres.readthedocs.io/", "Source" = "https://github.com/lcogt/banzai-nres" }
 
-build-backend = "setuptools.build_meta"
+dependencies = [
+    # Fix the version of astropy for the moment because updates to sigma clipping were creating different results
+    "astropy==5.3.4",
+    "lco-banzai @ git+https://github.com/lcogt/banzai.git@1.24.3",
+    "statsmodels",
+    "xwavecal>=0.1.12",
+    "astroquery",
+    "pandas>=2",
+    "matplotlib",
+    "celery>=5.5.0rc5",
+    "kombu>=5.5.0",
+    "amqp>=5.3.1",
+    "numpy<2",
+    "torch"
+]
+[project.optional-dependencies]
+test = [
+    "pytest>=4.0",
+    "coverage",
+    "pytest-astropy",
+    "mock"
+]
+docs = [
+    "sphinx-astropy", 
+    "sphinx-pyproject",
+    "sphinx_rtd_theme",
+    "nbsphinx",
+    "ipykernel",
+]
+cpu  = ["torch"]
+cuda = ["torch"]
+style = ["pycodestyle"]
+
+[tool.poetry]
+packages = [
+  { include = "banzai_nres" }
+]
+
+[tool.poetry.dependencies]
+torch = [
+    { markers = "sys_platform == 'darwin'", source = "PyPI"},
+    { markers = "sys_platform != 'darwin' and extra == 'cpu' and extra != 'cuda'", source = "pytorch-cpu"},
+    { markers = "sys_platform != 'darwin' and extra == 'cuda' and extra != 'cpu'", source = "pytorch-cuda"},
+ ]
+
+[[tool.poetry.source]]
+name = "pytorch-cuda"
+url = "https://download.pytorch.org/whl/cu121"
+priority = "explicit"
+
+[[tool.poetry.source]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+priority = "explicit"
+
+[project.scripts]
+banzai_nres_reduce_night="banzai_nres.main:reduce_night"
+banzai_nres_run_realtime_pipeline="banzai_nres.main:nres_run_realtime_pipeline"
+banzai_nres_start_stacking_scheduler="banzai_nres.main:nres_start_stacking_scheduler"
+banzai_nres_make_master_calibrations="banzai_nres.main:nres_make_master_calibrations"
+banzai_nres_add_bpm="banzai_nres.main:add_bpm"
+banzai_nres_populate_bpms="banzai_nres.main:add_bpms_from_archive"
+banzai_nres_munge_phoenix="banzai_nres.main:munge_phoenix_files"
+banzai_nres_create_db="banzai_nres.main:create_db"
+banzai_nres_populate_phoenix_models="banzai_nres.main:populate_phoenix_models"
