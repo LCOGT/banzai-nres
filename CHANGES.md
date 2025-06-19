@@ -1,3 +1,7 @@
+1.2.1 (2025-06-19)
+------------------
+- Minor fix to have the docker image repo point to ghcr instead of our internal docker registry
+
 1.2.0 (2025-06-08)
 ------------------
 - Migrate to use poetry for dependency management
