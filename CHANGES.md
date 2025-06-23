@@ -1,3 +1,7 @@
+1.2.2 (2025-06-23)
+------------------
+- Typo fix in numpy requirement for building
+
 1.2.1 (2025-06-19)
 ------------------
 - Minor fix to have the docker image repo point to ghcr instead of our internal docker registry
