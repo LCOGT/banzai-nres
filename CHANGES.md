@@ -1,6 +1,6 @@
 1.2.3 (2025-07-02)
 ------------------
-- Fixed a regression removing the meta data when uploading summary pdfs
+- Fixed a regression removing the metadata when uploading summary pdfs
 
 1.2.2 (2025-06-23)
 ------------------
