@@ -3,6 +3,7 @@ from banzai.lco import LCOFrameFactory, LCOObservationFrame, LCOCalibrationFrame
 from banzai.frames import ObservationFrame
 from banzai.data import DataProduct, ArrayData, HeaderOnly, DataTable
 from banzai.logs import get_logger
+from banzai.utils import fits_utils
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib import pyplot
 from io import BytesIO
@@ -111,6 +112,11 @@ class NRESObservationFrame(LCOObservationFrame):
             fits_2d[0].header['L1ID1D'] = filename_1d
             output_product_2d = DataProduct.from_fits(fits_2d, filename_2d, self.get_output_directory(runtime_context))
 
+            summary_pdf_meta = fits_utils.sanitize_header(self.meta.copy())
+            for keyword in ['NAXIS1', 'NAXIS2', 'EXTNAME', 'EXTVER']:
+                if keyword in summary_pdf_meta:
+                    summary_pdf_meta.pop(keyword)
+
             summary_buffer = BytesIO()
             pp = PdfPages(summary_buffer, keep_empty=False)
             for fig in self.summary_figures:
@@ -120,7 +126,8 @@ class NRESObservationFrame(LCOObservationFrame):
             pp.close()
             summary_buffer.seek(0)
 
-            output_summary = DataProduct(summary_buffer, filename_summary, self.get_output_directory(runtime_context))
+            output_summary = DataProduct(summary_buffer, filename_summary, self.get_output_directory(runtime_context),
+                                         meta=dict(summary_pdf_meta))
 
             return [output_product_1d, output_product_2d, output_summary]
 
