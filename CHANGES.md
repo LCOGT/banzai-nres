@@ -1,3 +1,7 @@
+1.2.4 (2025-08-28)
+------------------
+- Bugfix to update to celery 5 API for celery beat (cron) entries
+
 1.2.3 (2025-07-02)
 ------------------
 - Fixed a regression removing the metadata when uploading summary pdfs

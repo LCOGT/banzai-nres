@@ -49,9 +49,8 @@ def nres_start_stacking_scheduler():
         app.add_periodic_task(crontab(minute=entry['minute'], hour=entry['hour']),
                               schedule_calibration_stacking.s(site=site, runtime_context=vars(runtime_context)))
 
-    beat = celery.bin.beat.beat(app=app)
     logger.info('Starting celery beat')
-    beat.run()
+    app.Beat(schedule='/tmp/celerybeat-schedule', pidfile='/tmp/celerybeat.pid', working_directory='/tmp').run()
 
 
 def nres_make_master_calibrations():
