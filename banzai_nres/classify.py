@@ -36,20 +36,23 @@ def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
         gaia = import_utils.import_attribute(gaia_class)
         gaia_connection = gaia()
         gaia_connection.ROW_LIMIT = 200
-        results = gaia_connection.query_object(coordinate=transformed_coordinate, radius=10.0 * units.arcsec)
+        # Use a radius of 2.6 arcseconds which is the fiber size
+        results = gaia_connection.query_object(coordinate=transformed_coordinate, radius=2.6 * units.arcsec)
 
     # Filter out objects fainter than r=12 and brighter than r = 5.
     # There is at least one case (gamma cas) that is in gaia but does not have a complete catalog record like proper
     # motions and effective temperatures.
     results = results[np.logical_and(results['phot_rp_mean_mag'] < 12.0, results['phot_rp_mean_mag'] > 5.0)]
     if len(results) > 0:
-        image.classification = dbs.get_closest_HR_phoenix_models(db_address, results[0]['teff_gspphot'],
+        # Take the brightest object in the fiber
+        brightest = np.argmin(results['phot_rp_mean_mag'])
+        image.classification = dbs.get_closest_HR_phoenix_models(db_address, results[brightest]['teff_gspphot'],
                                                                  results[0]['logg_gspphot'])
         # Update the ra and dec to the catalog coordinates as those are basically always better than a user enters
         # manually.
-        image.ra, image.dec = results[0]['ra'], results[0]['dec']
-        if results[0]['pmra'] is not np.ma.masked:
-            image.pm_ra, image.pm_dec = results[0]['pmra'], results[0]['pmdec']
+        image.ra, image.dec = results[brightest]['ra'], results[brightest]['dec']
+        if results[brightest]['pmra'] is not np.ma.masked:
+            image.pm_ra, image.pm_dec = results[brightest]['pmra'], results[brightest]['pmdec']
     # If nothing in Gaia fall back to simbad. This should only be for stars that are brighter than mag = 3
     else:
         # IMPORTANT NOTE:
@@ -58,16 +61,20 @@ def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
         # truncated. If you add a new votable field, you will need to add it to the mocked table as well.
         simbad = import_utils.import_attribute(simbad_class)
         simbad_connection = simbad()
-        simbad_connection.add_votable_fields('pmra', 'pmdec', 'mesfe_h', 'otype')
+        simbad_connection.add_votable_fields('pmra', 'pmdec', 'mesfe_h', 'otype', 'r')
         try:
-            results = simbad_connection.query_region(coordinate, radius='0d0m10s')
+            # Use a radius of 2.6 arcseconds which is the fiber size
+            results = simbad_connection.query_region(coordinate, radius='0d0m2.6s')
         except astroquery.exceptions.TableParseError:
             response = simbad_connection.last_response.content
             logger.error(f'Error querying SIMBAD. Response from SIMBAD: {response}', image=image)
             results = []
         if results:
             results = remove_planets_from_simbad(results)
-            results = results[0]  # get the closest source.
+            # Get the brightest object in the fiber
+            brightest = np.argmin([row['r'] for row in results])
+            results = results[brightest]  # get the closest source.
+
             image.classification = dbs.get_closest_phoenix_models(db_address, results['mesfe_h.teff'],
                                                                   results['mesfe_h.log_g'])[0]
             # note that we always assume the proper motions are in mas/yr... which they should be.
@@ -95,7 +102,6 @@ class StellarClassifier(Stage):
             else:
                 logger.error('RA or Dec or Proper Motion is malformed in header.', image=image)
             return image
-
         closest_previous_classification = dbs.get_closest_existing_classification(self.runtime_context.db_address,
                                                                                   image.ra, image.dec)
         if closest_previous_classification is not None:
