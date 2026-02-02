@@ -47,7 +47,7 @@ def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
         # Take the brightest object in the fiber
         brightest = np.argmin(results['phot_rp_mean_mag'])
         image.classification = dbs.get_closest_HR_phoenix_models(db_address, results[brightest]['teff_gspphot'],
-                                                                 results[0]['logg_gspphot'])
+                                                                 results[brightest]['logg_gspphot'])
         # Update the ra and dec to the catalog coordinates as those are basically always better than a user enters
         # manually.
         image.ra, image.dec = results[brightest]['ra'], results[brightest]['dec']
@@ -73,7 +73,7 @@ def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
             results = remove_planets_from_simbad(results)
             # Get the brightest object in the fiber
             brightest = np.argmin([row['r'] for row in results])
-            results = results[brightest]  # get the closest source.
+            results = results[brightest]  # get the brightest source.
 
             image.classification = dbs.get_closest_phoenix_models(db_address, results['mesfe_h.teff'],
                                                                   results['mesfe_h.log_g'])[0]
