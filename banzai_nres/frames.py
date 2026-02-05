@@ -338,7 +338,8 @@ class NRESObservationFrame(LCOObservationFrame):
     def parallax(self):
         if self.primary_hdu.meta['PARALLAX'] == 'N/A':
             return None
-        return self.primary_hdu.meta['PARALLAX']
+        # Parallax is stored in arcseconds but we always use it in mas
+        return self.primary_hdu.meta['PARALLAX'] * 1000.0
 
     @parallax.setter
     def parallax(self, value):
@@ -347,7 +348,7 @@ class NRESObservationFrame(LCOObservationFrame):
         elif not np.isfinite(value):
             self.primary_hdu.meta['PARALLAX'] = 'N/A'
         else:
-            self.primary_hdu.meta['PARALLAX'] = value
+            self.primary_hdu.meta['PARALLAX'] = value / 1000.0, 'Parallax [arcsec]'
 
     @property
     def num_traces(self):

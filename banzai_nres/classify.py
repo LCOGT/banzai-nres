@@ -5,7 +5,7 @@ from banzai.logs import get_logger
 import warnings
 from astropy import units
 from astropy.time import Time
-from astropy.coordinates import SkyCoord
+from astropy.coordinates import SkyCoord, Distance
 from banzai_nres.rv import cross_correlate_over_traces, calculate_rv
 from banzai_nres import phoenix
 import numpy as np
@@ -22,11 +22,15 @@ def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
     :return:
     """
     # Assume that the equinox and input epoch are both j2000.
+    if image.parallax is not None:
+        distance = Distance(parallax=image.parallax * units.mas)
+    else:
+        distance = None
     coordinate = SkyCoord(ra=image.ra, dec=image.dec, unit=(units.deg, units.deg),
                           frame='icrs', pm_ra_cosdec=image.pm_ra * units.mas / units.year,
                           pm_dec=image.pm_dec * units.mas / units.year, equinox='j2000',
                           obstime=Time(2000.0, format='decimalyear'),
-                          parallax=image.parallax * units.mas if image.parallax is not None else None)
+                          distance=distance)
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         # 10 arcseconds should be a large enough radius to capture bright objects.
@@ -61,6 +65,9 @@ def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
             # that is our convention
             if results[brightest]['pmra'] is not np.ma.masked:
                 image.pm_ra, image.pm_dec = results[brightest]['pmra'], results[brightest]['pmdec']
+            if results[brightest]['parallax'] is not np.ma.masked:
+                image.parallax = results[brightest]['parallax']
+                distance = Distance(parallax=image.parallax * units.mas)
             gaia_coordinate = SkyCoord(
                 ra=results[brightest]['ra'],
                 dec=results[brightest]['dec'],
