@@ -335,6 +335,21 @@ class NRESObservationFrame(LCOObservationFrame):
             self.meta['ALPHA'] = ''
 
     @property
+    def parallax(self):
+        if self.primary_hdu.meta['PARALLAX'] == 'N/A':
+            return None
+        return self.primary_hdu.meta['PARALLAX']
+
+    @parallax.setter
+    def parallax(self, value):
+        if value is None:
+            self.primary_hdu.meta['PARALLAX'] = 'N/A'
+        elif not np.isfinite(value):
+            self.primary_hdu.meta['PARALLAX'] = 'N/A'
+        else:
+            self.primary_hdu.meta['PARALLAX'] = value
+
+    @property
     def num_traces(self):
         """
         Counts the number of illuminated orders on the detector by taking
@@ -407,5 +422,9 @@ class NRESFrameFactory(LCOFrameFactory):
                 # the portal does so we add it in here.
                 image.pm_ra = image[f'TELESCOPE_{telescope_num}'].meta['PM-RA'] * 1000.0 * np.cos(np.deg2rad(image.dec))
                 image.pm_dec = image[f'TELESCOPE_{telescope_num}'].meta['PM-DEC'] * 1000.0
+            if image[f'TELESCOPE_{telescope_num}'].meta['PARALLAX'] == 'N/A':
+                image.parallax = None
+            else:
+                image.parallax = image[f'TELESCOPE_{telescope_num}'].meta['PARALLAX']
             image.meta['RADESYS'] = image[f'TELESCOPE_{telescope_num}'].meta['RADESYS']
         return image

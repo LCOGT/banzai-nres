@@ -25,7 +25,8 @@ def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
     coordinate = SkyCoord(ra=image.ra, dec=image.dec, unit=(units.deg, units.deg),
                           frame='icrs', pm_ra_cosdec=image.pm_ra * units.mas / units.year,
                           pm_dec=image.pm_dec * units.mas / units.year, equinox='j2000',
-                          obstime=Time(2000.0, format='decimalyear'))
+                          obstime=Time(2000.0, format='decimalyear'),
+                          parallax=image.parallax * units.mas if image.parallax is not None else None)
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         # 10 arcseconds should be a large enough radius to capture bright objects.
@@ -42,6 +43,7 @@ def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
     # There is at least one case (gamma cas) that is in gaia but does not have a complete catalog record like proper
     # motions and effective temperatures.
     results = results[np.logical_and(results['phot_rp_mean_mag'] < 12.0, results['phot_rp_mean_mag'] > 5.0)]
+    results = results[np.logical_not(np.ma.is_masked(results['teff_gspphot']))]
     if len(results) > 0:
         # Take the brightest object in the fiber
         brightest = np.ma.argmin(results['phot_rp_mean_mag'])
@@ -66,7 +68,8 @@ def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
                 frame='icrs',
                 pm_ra_cosdec=image.pm_ra * units.mas / units.year,
                 pm_dec=image.pm_dec * units.mas / units.year, equinox='j2000',
-                obstime=Time(2016.0, format='decimalyear')
+                obstime=Time(2016.0, format='decimalyear'),
+                parallax=image.parallax * units.mas if image.parallax is not None else None
             )
             epoch2000 = Time(2000.0, format='decimalyear')
             transformed_gaia_coordinate = gaia_coordinate.apply_space_motion(new_obstime=epoch2000)
@@ -93,6 +96,8 @@ def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
             if len(results) == 0:
                 logger.warning('All objects in SIMBAD query are planets. Will not classify.', image=image)
                 return
+            # Remove objects without effective temperatures as we cannot classify them.
+            results = results[np.logical_not(np.ma.is_masked(results['mesfe_h.teff']))]
             # Get the brightest object in the fiber
             brightest = np.ma.argmin([row['V'] for row in results])
             if results[brightest]['V'] is np.ma.masked:
