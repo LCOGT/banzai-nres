@@ -47,7 +47,7 @@ def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
     # There is at least one case (gamma cas) that is in gaia but does not have a complete catalog record like proper
     # motions and effective temperatures.
     results = results[np.logical_and(results['phot_rp_mean_mag'] < 12.0, results['phot_rp_mean_mag'] > 5.0)]
-    results = results[np.logical_not(np.ma.is_masked(results['teff_gspphot']))]
+    results = results[np.logical_not(results['teff_gspphot'].mask)]
     if len(results) > 0:
         # Take the brightest object in the fiber
         brightest = np.ma.argmin(results['phot_rp_mean_mag'])
@@ -104,7 +104,7 @@ def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
                 logger.warning('All objects in SIMBAD query are planets. Will not classify.', image=image)
                 return
             # Remove objects without effective temperatures as we cannot classify them.
-            results = results[np.logical_not(np.ma.is_masked(results['mesfe_h.teff']))]
+            results = results[np.logical_not(results['mesfe_h.teff'].mask)]
             # Get the brightest object in the fiber
             brightest = np.ma.argmin([row['V'] for row in results])
             if results[brightest]['V'] is np.ma.masked:
