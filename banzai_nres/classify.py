@@ -22,7 +22,7 @@ def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
     :return:
     """
     # Assume that the equinox and input epoch are both j2000.
-    if image.parallax is not None:
+    if image.parallax is not None and image.parallax > 0.0:
         distance = Distance(parallax=image.parallax * units.mas)
     else:
         distance = None
@@ -65,7 +65,7 @@ def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
             # that is our convention
             if results[brightest]['pmra'] is not np.ma.masked:
                 image.pm_ra, image.pm_dec = results[brightest]['pmra'], results[brightest]['pmdec']
-            if results[brightest]['parallax'] is not np.ma.masked:
+            if results[brightest]['parallax'] is not np.ma.masked and results[brightest]['parallax'] > 0.0:
                 image.parallax = results[brightest]['parallax']
                 distance = Distance(parallax=image.parallax * units.mas)
             gaia_coordinate = SkyCoord(
@@ -76,7 +76,7 @@ def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
                 pm_ra_cosdec=image.pm_ra * units.mas / units.year,
                 pm_dec=image.pm_dec * units.mas / units.year, equinox='j2000',
                 obstime=Time(2016.0, format='decimalyear'),
-                parallax=image.parallax * units.mas if image.parallax is not None else None
+                distance=distance
             )
             epoch2000 = Time(2000.0, format='decimalyear')
             transformed_gaia_coordinate = gaia_coordinate.apply_space_motion(new_obstime=epoch2000)
