@@ -26,6 +26,7 @@ class MockSimbad:
             'Fe_H_bibcode': ['2019A&A...624A..19B', '2015ApJS..219...19L'],
             'OTYPE': ['SB*', 'WD*'],
             'SCRIPT_NUMBER_ID': [1, 1],
-            'r': [-0.5, 11.0]
+            'r': [-0.5, 11.0],
+            'V': [0.0, 12.0]
             }
         return Table(data)
