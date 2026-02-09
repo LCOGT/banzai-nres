@@ -100,11 +100,12 @@ def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
             results = []
         if results:
             results = remove_planets_from_simbad(results)
+            # Remove objects without effective temperatures as we cannot classify them.
+            results = results[np.logical_not(results['mesfe_h.teff'].mask)]
             if len(results) == 0:
                 logger.warning('All objects in SIMBAD query are planets. Will not classify.', image=image)
                 return
-            # Remove objects without effective temperatures as we cannot classify them.
-            results = results[np.logical_not(results['mesfe_h.teff'].mask)]
+
             # Get the brightest object in the fiber
             brightest = np.ma.argmin([row['V'] for row in results])
             if results[brightest]['V'] is np.ma.masked:
