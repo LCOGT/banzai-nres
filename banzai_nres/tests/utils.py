@@ -4,7 +4,7 @@ import numpy as np
 
 class MockGaiaCatalog:
     def query_object(self, *args, **kwargs):
-        return Table({'phot_rp_mean_mag': [21.0]})
+        return Table({'phot_rp_mean_mag': [21.0], 'parallax': [0.0]})
 
 
 class MockSimbad:
@@ -26,5 +26,7 @@ class MockSimbad:
             'Fe_H_bibcode': ['2019A&A...624A..19B', '2015ApJS..219...19L'],
             'OTYPE': ['SB*', 'WD*'],
             'SCRIPT_NUMBER_ID': [1, 1],
+            'r': [-0.5, 11.0],
+            'V': [0.0, 12.0]
             }
         return Table(data)

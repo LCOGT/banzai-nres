@@ -296,7 +296,7 @@ class NRESObservationFrame(LCOObservationFrame):
             # Proper motion is stored in arcseconds/year but we always use it in mas/year
             # Note that the RA proper motion has the cos dec term included both in the header and when we use it
             self.primary_hdu.meta['PM-RA'] = value / 1000.0
-        self.primary_hdu.meta.comments['PM-RA'] = 'RA proper motion from Gaia [mas/yr * cos(Dec)]'
+        self.primary_hdu.meta.comments['PM-RA'] = 'RA proper motion [mas/yr * cos(Dec)]'
 
     @property
     def pm_dec(self):
@@ -314,7 +314,7 @@ class NRESObservationFrame(LCOObservationFrame):
         else:
             # Proper motion is stored in arcseconds/year but we always use it in mas/year
             self.primary_hdu.meta['PM-DEC'] = value / 1000.0
-        self.primary_hdu.meta.comments['PM-DEC'] = 'Dec proper motion from Gaia [mas/yr]'
+        self.primary_hdu.meta.comments['PM-DEC'] = 'Dec proper motion [mas/yr]'
 
     @property
     def classification(self):
@@ -333,6 +333,22 @@ class NRESObservationFrame(LCOObservationFrame):
             self.meta['LOGG'] = ''
             self.meta['FEH'] = ''
             self.meta['ALPHA'] = ''
+
+    @property
+    def parallax(self):
+        if self.primary_hdu.meta['PARALLAX'] == 'N/A':
+            return None
+        # Parallax is stored in arcseconds but we always use it in mas
+        return self.primary_hdu.meta['PARALLAX'] * 1000.0
+
+    @parallax.setter
+    def parallax(self, value):
+        if value is None:
+            self.primary_hdu.meta['PARALLAX'] = 'N/A'
+        elif not np.isfinite(value):
+            self.primary_hdu.meta['PARALLAX'] = 'N/A'
+        else:
+            self.primary_hdu.meta['PARALLAX'] = value / 1000.0, 'Parallax [arcsec]'
 
     @property
     def num_traces(self):
@@ -402,7 +418,14 @@ class NRESFrameFactory(LCOFrameFactory):
                 image.pm_dec = np.nan
             else:
                 # Convert to mas / yr from arcsec / year
-                image.pm_ra = image[f'TELESCOPE_{telescope_num}'].meta['PM-RA'] * 1000.0
+                # Note that our telescope headers do not include the cos(dec)
+                # term in the RA proper motion, but all the catalogs and
+                # the portal does so we add it in here.
+                image.pm_ra = image[f'TELESCOPE_{telescope_num}'].meta['PM-RA'] * 1000.0 * np.cos(np.deg2rad(image.dec))
                 image.pm_dec = image[f'TELESCOPE_{telescope_num}'].meta['PM-DEC'] * 1000.0
+            if image[f'TELESCOPE_{telescope_num}'].meta['PARALLAX'] == 'N/A':
+                image.parallax = None
+            else:
+                image.parallax = image[f'TELESCOPE_{telescope_num}'].meta['PARALLAX']
             image.meta['RADESYS'] = image[f'TELESCOPE_{telescope_num}'].meta['RADESYS']
         return image

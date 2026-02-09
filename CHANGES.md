@@ -1,3 +1,8 @@
+1.2.5 (2026-02-02)
+------------------
+- Fixed an issue with close separation binaries choosing the wrong star for
+  an RV template. We now choose the brightest object in the fiber.
+
 1.2.4 (2025-08-28)
 ------------------
 - Bugfix to update to celery 5 API for celery beat (cron) entries

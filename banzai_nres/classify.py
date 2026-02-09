@@ -5,8 +5,7 @@ from banzai.logs import get_logger
 import warnings
 from astropy import units
 from astropy.time import Time
-from astropy.coordinates import SkyCoord
-from astropy import constants
+from astropy.coordinates import SkyCoord, Distance
 from banzai_nres.rv import cross_correlate_over_traces, calculate_rv
 from banzai_nres import phoenix
 import numpy as np
@@ -23,33 +22,66 @@ def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
     :return:
     """
     # Assume that the equinox and input epoch are both j2000.
-    # Gaia uses an equinox of 2000, but epoch of 2015.5 for the proper motion
+    if image.parallax is not None and image.parallax > 0.0:
+        distance = Distance(parallax=image.parallax * units.mas)
+    else:
+        distance = None
     coordinate = SkyCoord(ra=image.ra, dec=image.dec, unit=(units.deg, units.deg),
                           frame='icrs', pm_ra_cosdec=image.pm_ra * units.mas / units.year,
                           pm_dec=image.pm_dec * units.mas / units.year, equinox='j2000',
-                          obstime=Time(2000.0, format='decimalyear'))
-    transformed_coordinate = coordinate.apply_space_motion(new_obstime=Time(2015.5, format='decimalyear'))
-
+                          obstime=Time(2000.0, format='decimalyear'),
+                          distance=distance)
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         # 10 arcseconds should be a large enough radius to capture bright objects.
         gaia = import_utils.import_attribute(gaia_class)
         gaia_connection = gaia()
         gaia_connection.ROW_LIMIT = 200
-        results = gaia_connection.query_object(coordinate=transformed_coordinate, radius=10.0 * units.arcsec)
+        # Gaia uses an equinox of 2000, but epoch of 2016 for the proper motion
+        transformed_coordinate = coordinate.apply_space_motion(new_obstime=Time(2016.0, format='decimalyear'))
+
+        # Use a radius of 2.6 arcseconds which is the fiber size
+        results = gaia_connection.query_object(coordinate=transformed_coordinate, radius=2.6 * units.arcsec)
 
     # Filter out objects fainter than r=12 and brighter than r = 5.
     # There is at least one case (gamma cas) that is in gaia but does not have a complete catalog record like proper
     # motions and effective temperatures.
     results = results[np.logical_and(results['phot_rp_mean_mag'] < 12.0, results['phot_rp_mean_mag'] > 5.0)]
+    results = results[np.logical_not(results['teff_gspphot'].mask)]
     if len(results) > 0:
-        image.classification = dbs.get_closest_HR_phoenix_models(db_address, results[0]['teff_gspphot'],
-                                                                 results[0]['logg_gspphot'])
-        # Update the ra and dec to the catalog coordinates as those are basically always better than a user enters
-        # manually.
-        image.ra, image.dec = results[0]['ra'], results[0]['dec']
-        if results[0]['pmra'] is not np.ma.masked:
-            image.pm_ra, image.pm_dec = results[0]['pmra'], results[0]['pmdec']
+        # Take the brightest object in the fiber
+        brightest = np.ma.argmin(results['phot_rp_mean_mag'])
+        # If the entire set of results has masked magnitudes, move on to
+        # simbad.
+        if not np.ma.is_masked(results['phot_rp_mean_mag'][brightest]):
+            image.classification = dbs.get_closest_HR_phoenix_models(
+                db_address,
+                results[brightest]['teff_gspphot'],
+                results[brightest]['logg_gspphot']
+            )
+            # Update the ra and dec to the catalog coordinates as those are basically always better than a user enters
+            # manually.
+            # We now have to rewind the coordinates from 2016 to 2000 since
+            # that is our convention
+            if results[brightest]['pmra'] is not np.ma.masked:
+                image.pm_ra, image.pm_dec = results[brightest]['pmra'], results[brightest]['pmdec']
+            if results[brightest]['parallax'] is not np.ma.masked and results[brightest]['parallax'] > 0.0:
+                image.parallax = results[brightest]['parallax']
+                distance = Distance(parallax=image.parallax * units.mas)
+            gaia_coordinate = SkyCoord(
+                ra=results[brightest]['ra'],
+                dec=results[brightest]['dec'],
+                unit=(units.deg, units.deg),
+                frame='icrs',
+                pm_ra_cosdec=image.pm_ra * units.mas / units.year,
+                pm_dec=image.pm_dec * units.mas / units.year, equinox='j2000',
+                obstime=Time(2016.0, format='decimalyear'),
+                distance=distance
+            )
+            epoch2000 = Time(2000.0, format='decimalyear')
+            transformed_gaia_coordinate = gaia_coordinate.apply_space_motion(new_obstime=epoch2000)
+            image.ra, image.dec = transformed_gaia_coordinate.ra.deg, transformed_gaia_coordinate.dec.deg
+
     # If nothing in Gaia fall back to simbad. This should only be for stars that are brighter than mag = 3
     else:
         # IMPORTANT NOTE:
@@ -58,19 +90,43 @@ def find_object_in_catalog(image, db_address, gaia_class, simbad_class):
         # truncated. If you add a new votable field, you will need to add it to the mocked table as well.
         simbad = import_utils.import_attribute(simbad_class)
         simbad_connection = simbad()
-        simbad_connection.add_votable_fields('pmra', 'pmdec', 'mesfe_h', 'otype')
+        simbad_connection.add_votable_fields('pmra', 'pmdec', 'mesfe_h', 'otype', 'V', 'r')
         try:
-            results = simbad_connection.query_region(coordinate, radius='0d0m10s')
+            # Use a radius of 2.6 arcseconds which is the fiber size
+            results = simbad_connection.query_region(coordinate, radius='0d0m2.6s')
         except astroquery.exceptions.TableParseError:
             response = simbad_connection.last_response.content
             logger.error(f'Error querying SIMBAD. Response from SIMBAD: {response}', image=image)
             results = []
         if results:
             results = remove_planets_from_simbad(results)
-            results = results[0]  # get the closest source.
-            image.classification = dbs.get_closest_phoenix_models(db_address, results['mesfe_h.teff'],
-                                                                  results['mesfe_h.log_g'])[0]
+            if len(results) == 0:
+                logger.warning('All objects in SIMBAD query are planets. Will not classify.', image=image)
+                return
+            # Remove objects without effective temperatures as we cannot classify them.
+            results = results[np.logical_not(results['mesfe_h.teff'].mask)]
+            # Get the brightest object in the fiber
+            brightest = np.ma.argmin([row['V'] for row in results])
+            if results[brightest]['V'] is np.ma.masked:
+                # Try r band if there no V band
+                brightest = np.ma.argmin([row['r'] for row in results])
+                if results[brightest]['r'] is np.ma.masked:
+                    logger.warning(
+                        'All objects in SIMBAD query are missing V and r magnitudes. '
+                        'Cannot determine which is brightest. Will not classify.',
+                        image=image
+                    )
+                    return
+            results = results[brightest]  # get the brightest source.
+
+            phoenix_models = dbs.get_closest_phoenix_models(
+                db_address,
+                results['mesfe_h.teff'],
+                results['mesfe_h.log_g']
+            )
+            image.classification = phoenix_models[0]
             # note that we always assume the proper motions are in mas/yr... which they should be.
+            # And that they include cos(dec)
             if results['pmra'] is not np.ma.masked:
                 image.pm_ra, image.pm_dec = results['pmra'], results['pmdec']
             # Update the ra and dec to the catalog coordinates as those will be consistent across observations.
@@ -95,7 +151,6 @@ class StellarClassifier(Stage):
             else:
                 logger.error('RA or Dec or Proper Motion is malformed in header.', image=image)
             return image
-
         closest_previous_classification = dbs.get_closest_existing_classification(self.runtime_context.db_address,
                                                                                   image.ra, image.dec)
         if closest_previous_classification is not None:
