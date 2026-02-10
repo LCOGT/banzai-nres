@@ -11,7 +11,7 @@ horizontalPodAutoscaler:
   targetCPUUtilizationPercentage: 50
 
 image:
-  repository: docker.lco.global/banzai-nres
+  repository: ghcr.io/lcogt/banzai-nres
   pullPolicy: IfNotPresent
 
 # Values for the OCS Ingester library, used by BANZAI-NRES.
