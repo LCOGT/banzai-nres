@@ -110,6 +110,7 @@ def stack_calibrations(frame_type):
                                post_to_opensearch=False, fpack=True, reduction_level=92,
                                db_address=os.environ['DB_ADDRESS'], opensearch_qc_index='banzai_qc',
                                opensearch_url='https://opensearch.lco.global',
+                               cal_db_address=os.environ['DB_ADDRESS'],
                                no_bpm=False, ignore_schedulability=True, use_only_older_calibrations=False,
                                preview_mode=False, max_tries=5, broker_url=os.getenv('FITS_BROKER'),
                                no_file_cache=False, prefer_same_block_cals=False, check_public_cals=False,
