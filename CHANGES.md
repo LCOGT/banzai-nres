@@ -1,3 +1,8 @@
+1.2.6 (2026-02-20)
+------------------
+- Bumped BANZAI dependency so that we no longer override the date data should
+  become public if it is provided.
+
 1.2.5 (2026-02-02)
 ------------------
 - Fixed an issue with close separation binaries choosing the wrong star for

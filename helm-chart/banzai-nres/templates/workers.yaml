@@ -29,7 +29,7 @@ spec:
           command:
             - "celery"
             - "-A"
-            - "banzai"
+            - "banzai.scheduling"
             - "worker"
             - "--concurrency"
             - "1"

@@ -40,7 +40,7 @@ jobs:
           kubectl create secret generic phoenix-model-secret --from-literal=access-key-id=${{ secrets.phoenixModelAccessID }} --from-literal=secret-access-key=${{ secrets.phoenixModelSecretKey }}
           kubectl create secret generic auth-token-secret --from-literal=auth-token=${{ secrets.ArchiveAuthToken }}
           kubectl apply -k banzai_nres/tests/k8s
-
+          kubectl rollout status deployment/banzai-nres-e2e
           POD=$(kubectl get pod -l app.kubernetes.io/name=banzai-nres-e2e -o jsonpath="{.items[0].metadata.name}")
           echo "POD=${POD}" >> $GITHUB_ENV
           # Wait for banzai to be ready

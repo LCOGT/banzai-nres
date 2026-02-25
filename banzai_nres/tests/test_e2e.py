@@ -8,7 +8,7 @@ import numpy as np
 from banzai.utils import file_utils
 import time
 from glob import glob
-from banzai.celery import app, schedule_calibration_stacking
+from banzai.scheduling import app, schedule_calibration_stacking
 from banzai.dbs import get_session
 from banzai import dbs
 from types import ModuleType
@@ -90,10 +90,12 @@ def run_reduce_individual_frames(filename_pattern):
     logger.info('Reducing individual frames for filenames: {filenames}'.format(filenames=filename_pattern))
     for frame in TEST_FRAMES:
         if filename_pattern in frame['filename']:
-            file_utils.post_to_archive_queue(frame['filename'], frame['frameid'],
+            file_utils.post_to_archive_queue(frame['filename'],
                                              os.getenv('FITS_BROKER'),
+                                             frameid=frame['frameid'],
                                              exchange_name=os.getenv('FITS_EXCHANGE'),
                                              SITEID=frame['site'], INSTRUME=frame['camera'])
+
     celery_join()
     logger.info('Finished reducing individual frames for filenames: {filenames}'.format(filenames=filename_pattern))
 
@@ -108,6 +110,7 @@ def stack_calibrations(frame_type):
                                post_to_opensearch=False, fpack=True, reduction_level=92,
                                db_address=os.environ['DB_ADDRESS'], opensearch_qc_index='banzai_qc',
                                opensearch_url='https://opensearch.lco.global',
+                               cal_db_address=os.environ['DB_ADDRESS'],
                                no_bpm=False, ignore_schedulability=True, use_only_older_calibrations=False,
                                preview_mode=False, max_tries=5, broker_url=os.getenv('FITS_BROKER'),
                                no_file_cache=False, prefer_same_block_cals=False, check_public_cals=False,

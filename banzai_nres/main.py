@@ -9,7 +9,7 @@ Authors
 import banzai_nres.settings
 from banzai.main import start_listener, parse_args, add_settings_to_context
 from celery.schedules import crontab
-from banzai.celery import app, schedule_calibration_stacking
+from banzai.scheduling import app, schedule_calibration_stacking
 import celery
 import celery.bin.beat
 from banzai.utils import date_utils, import_utils
