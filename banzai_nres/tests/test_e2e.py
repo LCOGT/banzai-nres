@@ -8,7 +8,7 @@ import numpy as np
 from banzai.utils import file_utils
 import time
 from glob import glob
-from banzai.celery import app, schedule_calibration_stacking
+from banzai.scheduling import app, schedule_calibration_stacking
 from banzai.dbs import get_session
 from banzai import dbs
 from types import ModuleType
