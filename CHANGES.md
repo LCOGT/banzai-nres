@@ -1,3 +1,7 @@
+1.2.7 (2026-03-05)
+------------------
+- Bump banzai dependency to 1.30.0 to pull in date parsing fix
+
 1.2.6 (2026-02-20)
 ------------------
 - Bumped BANZAI dependency so that we no longer override the date data should
