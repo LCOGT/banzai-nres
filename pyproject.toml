@@ -25,6 +25,7 @@ dependencies = [
     "astroquery",
     "pandas>=2",
     "matplotlib",
+    'sep'
 ]
 [project.optional-dependencies]
 test = [
