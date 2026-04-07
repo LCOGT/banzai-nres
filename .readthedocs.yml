@@ -1,15 +1,12 @@
 version: 2
 
 build:
-  image: latest
-
-python:
-  version: 3.7
-  install:
-    - method: pip
-      path: .
-      extra_requirements:
-        - docs
-        - all
+  os: ubuntu-24.04
+  tools:
+    python: "3.12"
+  commands:
+    - pip install uv
+    - uv sync --extra docs --extra cpu
+    - uv run sphinx-build -b html docs $READTHEDOCS_OUTPUT/html
 
 formats: []

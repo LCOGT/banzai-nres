@@ -1,16 +1,18 @@
-FROM ghcr.io/lcogt/banzai:1.30.0
+FROM ghcr.io/lcogt/banzai:1.33.0
 
 USER root
 
-RUN poetry config virtualenvs.create false
+RUN pip install uv
 
-COPY pyproject.toml poetry.lock /lco/banzai-nres/
+ENV UV_PROJECT_ENVIRONMENT=/lco/banzai/.venv
 
-RUN poetry install --directory=/lco/banzai-nres -E cpu --no-root --no-cache
+COPY pyproject.toml uv.lock /lco/banzai-nres/
+
+RUN uv sync --directory=/lco/banzai-nres --no-install-project
 
 COPY . /lco/banzai-nres
 
-RUN poetry install --directory /lco/banzai-nres -E cpu --no-cache
+RUN uv sync --directory /lco/banzai-nres
 
 RUN cp /lco/banzai-nres/pytest.ini /home/archive/pytest.ini
 
