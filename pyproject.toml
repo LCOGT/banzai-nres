@@ -19,7 +19,7 @@ urls = { "Documentation" = "https://banzai-nres.readthedocs.io/", "Source" = "ht
 
 dependencies = [
     # Fix the version of astropy for the moment because updates to sigma clipping were creating different results
-    "lco-banzai @ git+https://github.com/lcogt/banzai.git@1.33.0",
+    "lco-banzai @ git+https://github.com/lcogt/banzai.git@1.33.2",
     "statsmodels",
     "xwavecal>=0.1.12",
     "astroquery",

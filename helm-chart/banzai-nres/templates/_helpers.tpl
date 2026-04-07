@@ -152,7 +152,7 @@ BANZAI-NRES DB Configuration
 - name: DB_NAME
   value: {{ .Values.postgresql.postgresqlDatabase | quote }}
 - name: DB_ADDRESS
-  value: postgresql://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST)/$(DB_NAME)
+  value: postgresql+psycopg://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST)/$(DB_NAME)
 {{/*
 Celery task queue configuration
 */ -}}
