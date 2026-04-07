@@ -18,7 +18,8 @@ keywords = ["astronomy", "spectroscopy", "data reduction", "Las Cumbres Observat
 urls = { "Documentation" = "https://banzai-nres.readthedocs.io/", "Source" = "https://github.com/lcogt/banzai-nres" }
 
 dependencies = [
-    # Fix the version of astropy for the moment because updates to sigma clipping were creating different results
+    # We have to upgrade from astropy 5 to 7 which unfortunately will change the results from 
+    # past reductions due to a difference in the sigma clipping algorithm
     "lco-banzai @ git+https://github.com/lcogt/banzai.git@1.33.2",
     "statsmodels",
     "xwavecal>=0.1.12",
