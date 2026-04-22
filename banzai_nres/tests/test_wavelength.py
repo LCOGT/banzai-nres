@@ -26,7 +26,7 @@ class TestIdentifyFeatures:
         features = identify_features(self.data, self.err, nsigma=0.5, fwhm=self.sigma)
         assert np.allclose(features['peak'], 1, atol=0.001)
         assert np.allclose(features['pixel'], self.xcoords, atol=0.001)
-        assert np.allclose(features['ycentroid'], self.ycoords, atol=0.001)
+        assert np.allclose(features['y_centroid'], self.ycoords, atol=0.001)
         assert len(features) == 4
 
     def test_extract(self):
@@ -49,7 +49,7 @@ class TestIdentifyFeatures:
         image.features.sort('pixel')
         assert np.allclose(image.features['corrected_flux'], image.features['flux'] / blaze_factor, rtol=1E-4)
         assert np.allclose(image.features['pixel'], self.xcoords, atol=0.001)
-        assert np.allclose(image.features['ycentroid'], self.ycoords, atol=0.001)
+        assert np.allclose(image.features['y_centroid'], self.ycoords, atol=0.001)
         assert np.allclose(image.features['id'], 1)
 
     def test_do_stage_no_blaze(self):
@@ -62,7 +62,7 @@ class TestIdentifyFeatures:
         image = stage.do_stage(image)
         image.features.sort('pixel')
         assert np.allclose(image.features['pixel'], self.xcoords, atol=0.001)
-        assert np.allclose(image.features['ycentroid'], self.ycoords, atol=0.001)
+        assert np.allclose(image.features['y_centroid'], self.ycoords, atol=0.001)
         assert np.allclose(image.features['id'], 1)
 
     def test_do_stage_on_empty_features(self):
