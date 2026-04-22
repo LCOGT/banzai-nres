@@ -170,7 +170,7 @@ relating back to the IDL Commissioning Pipeline. These spectra have the followin
   of the rest of the image extensions produced by LCO, because GZip is lossless.
 
 - 'FEATURES': FITS binary table with the centroids of the detected features in the stacked ThAr arc lamp frames.
-  These features are used to fit the wavelength solution. The pixel positions are stored in the 'xcentroid' and 'ycentroid' columns.
+  These features are used to fit the wavelength solution. The pixel positions are stored in the 'x_centroid' and 'y_centroid' columns.
   The 'flux' and 'fluxerr' columns store the brightness of the features, while 'corrected_flux' is the blaze-corrected flux
   and 'peak' is the peak flux in a pixel within the feature.
   The error on the centroid is stored in

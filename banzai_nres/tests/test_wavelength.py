@@ -96,8 +96,8 @@ class TestWavelengthCalibrate:
         # test that feature wavelengths are populated from the old solutions.
         image = self.generate_image()
         image.wavelengths = np.random.random(size=image.traces.shape)
-        image.features['xcentroid'], image.features['ycentroid'] = np.array([0, 1, 2, 0]), np.array([2, 0, 1, 0])
-        expected_wavelengths = image.wavelengths[image.features['ycentroid'], image.features['xcentroid']]
+        image.features['x_centroid'], image.features['y_centroid'] = np.array([0, 1, 2, 0]), np.array([2, 0, 1, 0])
+        expected_wavelengths = image.wavelengths[image.features['y_centroid'], image.features['x_centroid']]
         image = WavelengthCalibrate(context.Context({})).do_stage(image)
         assert np.allclose(image.features['wavelength'], expected_wavelengths)
 
@@ -126,7 +126,7 @@ class TestWavelengthCalibrate:
 
 def test_group_features_by_trace():
     traces = np.array([[0, 0, 1, 1], [2, 2, 0, 0]])
-    features = {'xcentroid': [0, 2, 0, 2], 'ycentroid': [0, 0, 1, 1]}
+    features = {'x_centroid': [0, 2, 0, 2], 'y_centroid': [0, 0, 1, 1]}
     features = group_features_by_trace(features, traces)
     assert np.allclose(features['id'], [0, 1, 2, 0])
 

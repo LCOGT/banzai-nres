@@ -6,7 +6,7 @@ build:
     python: "3.12"
   commands:
     - pip install uv
-    - uv sync --extra docs --extra cpu
+    - uv sync --extra docs --locked
     - uv run sphinx-build -b html docs $READTHEDOCS_OUTPUT/html
 
 formats: []
