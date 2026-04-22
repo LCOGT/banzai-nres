@@ -194,7 +194,7 @@ def check_extracted_spectra(raw_filename, spec_extname, columns):
         created_images += glob(os.path.join(DATA_ROOT, day_obs, 'processed', raw_filename))
     for filename in created_images:
         with fits.open(filename) as f:
-            hdu = fits_utils.unpack(f)
+            hdu = fits.unpack(f)
         spectrum = Table(hdu[spec_extname].data)
         for colname in columns:
             assert colname in spectrum.colnames
