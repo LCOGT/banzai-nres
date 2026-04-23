@@ -18,9 +18,9 @@ keywords = ["astronomy", "spectroscopy", "data reduction", "Las Cumbres Observat
 urls = { "Documentation" = "https://banzai-nres.readthedocs.io/", "Source" = "https://github.com/lcogt/banzai-nres" }
 
 dependencies = [
-    "lco-banzai @ git+https://github.com/lcogt/banzai.git@cleanup",
+    "lco-banzai @ git+https://github.com/lcogt/banzai.git@1.35.2",
     "statsmodels",
-    "xwavecal @ git+https://github.com/lcogt/xwavecal.git@pyproject-numpy2",
+    "xwavecal @ git+https://github.com/lcogt/xwavecal.git@0.2.0",
     "astroquery",
     "pandas>=2",
     "matplotlib",
