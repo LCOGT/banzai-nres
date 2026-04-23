@@ -14,17 +14,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
         with:
-          python-version: '3.12' # Specify your desired version
-      - name: Install dependencies
-        run: pip install poetry
+          python-version: '3.12'
       - name: Set up project
-        run: poetry install -E cpu -E docs
+        run: uv sync --extra docs
       - name: Install pandoc
         run: sudo apt-get update
       - name: Install pandoc
         run: sudo apt-get install pandoc
       - name: Build Docs
-        run: poetry run sphinx-build -W -b html docs docs/_build/html
+        run: uv run sphinx-build -W -b html docs docs/_build/html

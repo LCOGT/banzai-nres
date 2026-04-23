@@ -17,14 +17,17 @@ def identify_features(data, err, mask=None, nsigma=2., fwhm=6.0, **kwargs):
                  Features with fwhm below this will not be counted.
     :param kwargs: extra key word arguments to pass to photutils.DAOStarFinder, e.g. theta .
     :return: features. Table.
-             catalog of features (e.g. emission lines). features['xcentroid'][j] gives the horizontal pixel position
-             of the jth feature. features['ycentroid'][j] gives the y pixel (vertical) position of the jth feature.
+             catalog of features (e.g. emission lines). features['x_centroid'][j] gives the horizontal pixel position
+             of the jth feature. features['y_centroid'][j] gives the y pixel (vertical) position of the jth feature.
     """
     daofind = DAOStarFinder(fwhm=fwhm, threshold=nsigma, exclude_border=True, **kwargs)
     features = daofind(data / err, mask=mask)
     if features is None:
-        features = Table({'xcentroid': [], 'ycentroid': [], 'flux': []})
-    features['pixel'] = features['xcentroid']  # because xwavecal uses 'pixel' as the coordinate key.
+        features = Table({'x_centroid': [], 'y_centroid': [], 'flux': []})
+    else:
+        # DAOStarFinder adds a 'version' dict to meta that can't be written to FITS headers
+        features.meta.pop('version', None)
+    features['pixel'] = features['x_centroid']  # because xwavecal uses 'pixel' as the coordinate key.
     return features
 
 
@@ -43,7 +46,7 @@ def group_features_by_trace(features, traces):
     :return: features.
              where features['id'][j] gives the id number of the trace that the feature falls in.
     """
-    features['id'] = traces[np.array(features['ycentroid'], dtype=int), np.array(features['xcentroid'], dtype=int)]
+    features['id'] = traces[np.array(features['y_centroid'], dtype=int), np.array(features['x_centroid'], dtype=int)]
     return features
 
 

@@ -67,7 +67,7 @@ class ArcLoader(CalibrationUser):
         # TODO should not load a master arc calibration if it is older than ~a week.
         image.wavelengths = master_calibration_image.wavelengths
         image.fibers = master_calibration_image.fibers
-        image.meta['L1IDARC'] = master_calibration_image.filename, 'ID of ARC/DOUBLE frame'
+        image.meta['L1IDARC'] = master_calibration_image.filename, 'ID of arc'
         return image
 
 
@@ -126,8 +126,8 @@ class WavelengthCalibrate(Stage):
         else:
             logger.info('Getting feature wavelengths from past solution.')
             # Note: we could improve this estimate by using ndimage.map_coordinates(..., order=1, prefilter=False).
-            image.features['wavelength'] = image.wavelengths[image.features['ycentroid'].astype(int),
-                                                             image.features['xcentroid'].astype(int)]
+            image.features['wavelength'] = image.wavelengths[image.features['y_centroid'].astype(int),
+                                                             image.features['x_centroid'].astype(int)]
         self.refine_wavelengths(image)
 
         # remove daofind parameters that are not relevant to our case from the features table
@@ -265,15 +265,15 @@ class IdentifyFeatures(Stage):
         mask = image.mask.copy()
         if mask is not None and not mask.dtype.isnative:
             mask = mask.astype(mask.dtype.newbyteorder('='))
-        features['flux'], features['fluxerr'], _ = sep.sum_circle(data, features['xcentroid'],
-                                                                  features['ycentroid'], self.fwhm, gain=1.0,
+        features['flux'], features['fluxerr'], _ = sep.sum_circle(data, features['x_centroid'],
+                                                                  features['y_centroid'], self.fwhm, gain=1.0,
                                                                   err=uncertainty, mask=mask)
         if image.blaze is not None:
             logger.info('Blaze correcting emission feature fluxes', image=image)
             # blaze correct the emission features fluxes. This speeds up and improves overlap fitting in xwavecal.
             features['corrected_flux'] = features['flux']
             features['corrected_flux'] /= image.blaze['blaze'][np.array(features['id'], dtype=int) - 1,
-                                                               np.array(features['xcentroid'], dtype=int)]
+                                                               np.array(features['x_centroid'], dtype=int)]
 
         # cutting which lines to keep:
         # calculate the error in the centroids provided by identify_features()
