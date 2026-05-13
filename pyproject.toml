@@ -30,7 +30,7 @@ dependencies = [
 ]
 [project.optional-dependencies]
 test = [
-    "pytest>=4.0",
+    "pytest>=9.0.3",
     "coverage",
     "pytest-astropy",
     "mock"
