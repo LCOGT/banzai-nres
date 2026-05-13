@@ -29,7 +29,7 @@ ingester:
 banzaiNres:
   astrometryServiceUrl: http://astrometry.lco.gtn/catalog
   configdbUrl: http://configdb.lco.gtn/sites/
-  observationPortalUrl: http://internal-observation-portal.lco.gtn/api/observations/
+  observationPortalUrl: https://observe-internal.lco.earth/api/observations/
   useDifferentArchiveSources: false
   calibrateProposalId: calibrate
   banzaiWorkerLogLevel: info

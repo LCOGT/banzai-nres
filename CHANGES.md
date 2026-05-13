@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.1 (2026-05-13)
+
+- Update to use lco.earth suffix in url for obs portal.
+  The .gtn proxy was stripping out the authetication.
+
 ## 1.3.0 (2026-04-07)
 
 - Update to use uv and bump banzai dep
