@@ -16,7 +16,7 @@ image:
 
 # Values for the OCS Ingester library, used by BANZAI-NRES.
 ingester:
-  apiRoot: http://archiveapi-internal.prod/
+  apiRoot: http://archiveapi-internal.prod-science-archive/
   s3Bucket: archive-lco-global
   ingesterProcessName: banzai_nres
   opentsdbHostname: opentsdb.lco.gtn
@@ -33,7 +33,7 @@ banzaiNres:
   useDifferentArchiveSources: false
   calibrateProposalId: calibrate
   banzaiWorkerLogLevel: info
-  rawDataApiRoot: http://archiveapi-internal.prod/
+  rawDataApiRoot: http://archiveapi-internal.prod-science-archive/
   fitsBroker: "amqp://science-archive:science-archive@rabbitmq.prod-rmq-shared.svc:5672/science-archive"
   fitsExchange: archived_fits
   queueName: banzai_nres_pipeline
