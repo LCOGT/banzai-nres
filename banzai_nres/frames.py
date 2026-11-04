@@ -384,8 +384,8 @@ class NRESFrameFactory(LCOFrameFactory):
     def is_empty_coordinate(coordinate):
         return any(coordinate.lower() in value for value in ['nan', 'n/a', 'unknown'])
 
-    def open(self, path, runtime_context) -> Optional[ObservationFrame]:
-        image = super().open(path, runtime_context)
+    def open(self, path, runtime_context, sectioned=False) -> Optional[ObservationFrame]:
+        image = super().open(path, runtime_context, sectioned=sectioned)
         # Currently we can't distinguish between the NRES composite data products and the raw frames off the telescope
         # As such we have to check an an extra header keyword. We put nres01 etc in TELESCOP in the composite data
         # products to distinguish.
